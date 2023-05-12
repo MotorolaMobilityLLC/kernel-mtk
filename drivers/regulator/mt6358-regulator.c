@@ -490,6 +490,7 @@ static int mt6358_regulator_set_mode(struct regulator_dev *rdev,
 		val = MT6358_BUCK_MODE_AUTO;
 		break;
 	default:
+		dev_dbg(&rdev->dev, "%s set mode fail\n", __func__);
 		return -EINVAL;
 	}
 
@@ -521,6 +522,7 @@ static unsigned int mt6358_regulator_get_mode(struct regulator_dev *rdev)
 	case MT6358_BUCK_MODE_FORCE_PWM:
 		return REGULATOR_MODE_FAST;
 	default:
+		dev_dbg(&rdev->dev, "%s get mode fail\n", __func__);
 		return -EINVAL;
 	}
 }
@@ -852,7 +854,6 @@ static int mt6358_of_parse_cb(struct device_node *np,
 					   &info->oc_irq_enable_delay_ms);
 		if (ret || !info->oc_irq_enable_delay_ms)
 			info->oc_irq_enable_delay_ms = DEF_OC_IRQ_ENABLE_DELAY_MS;
-		INIT_DELAYED_WORK(&info->oc_work, mt6358_oc_irq_enable_work);
 	}
 	return 0;
 }
@@ -882,6 +883,7 @@ static int mt6358_regulator_probe(struct platform_device *pdev)
 	for (i = 0; i < MT6358_MAX_REGULATOR; i++) {
 		info = &mt6358_regulators[i];
 		info->irq = platform_get_irq_byname_optional(pdev, info->desc.name);
+		info->oc_irq_enable_delay_ms = DEF_OC_IRQ_ENABLE_DELAY_MS;
 		config.driver_data = info;
 
 		if (mt6397->chip_id == 0x58 && mt6358_bypass_register(info))
@@ -899,6 +901,8 @@ static int mt6358_regulator_probe(struct platform_device *pdev)
 
 		if (info->irq <= 0)
 			continue;
+		else
+			INIT_DELAYED_WORK(&info->oc_work, mt6358_oc_irq_enable_work);
 		ret = devm_request_threaded_irq(&pdev->dev, info->irq, NULL,
 						mt6358_oc_irq,
 						IRQF_TRIGGER_HIGH,
@@ -927,7 +931,16 @@ static struct platform_driver mt6358_regulator_driver = {
 	.probe = mt6358_regulator_probe,
 	.id_table = mt6358_platform_ids,
 };
+
+#if IS_BUILTIN(CONFIG_REGULATOR_MT6358)
+static int __init mt6358_regulator_init(void)
+{
+	return platform_driver_register(&mt6358_regulator_driver);
+}
+subsys_initcall(mt6358_regulator_init);
+#else
 module_platform_driver(mt6358_regulator_driver);
+#endif
 
 MODULE_AUTHOR("Hsin-Hsiung Wang <hsin-hsiung.wang@mediatek.com>");
 MODULE_DESCRIPTION("Regulator Driver for MediaTek MT6358 PMIC");

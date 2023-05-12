@@ -30,6 +30,14 @@ config MTK_IMGSENSOR_MT6853
 	  To compile this driver as a module, choose M here: the
 	  module will be called imgsensor_mt6853.
 
+config MTK_SENSOR_PROJECT
+    string "MTK camera sensor project folder name"
+	help
+	  This config is set as project folder name
+	  which imgsenor driver used for.
+	  When MTK_SENSOR_PROJECT is set, imgsensor
+	  will use the driver in this project folder.
+
 config MTK_IMGSENSOR_MT6893
 	tristate "MTK PLATFORM for MT6893"
 	help
@@ -37,6 +45,38 @@ config MTK_IMGSENSOR_MT6893
 	  image sensors.
 	  To compile this driver as a module, choose M here: the
 	  module will be called imgsensor_mt6893.
+
+config MTK_IMGSENSOR_ISP3_Z
+	tristate "MediaTek image sensor support"
+	help
+	  This is a driver for the MediaTek
+	  image sensors.
+	  To compile this driver as a module, choose M here: the
+	  module will be called imgsensor_isp3_z.
+
+config MTK_IMGSENSOR_ISP4
+	tristate "MediaTek image sensor support"
+	help
+	  This is a driver for the MediaTek
+	  image sensors.
+	  To compile this driver as a module, choose M here: the
+	  module will be called imgsensor_isp4.
+
+config MTK_IMGSENSOR_ISP4_C
+	tristate "MediaTek image sensor support"
+	help
+	  This is a driver for the MediaTek
+	  image sensors.
+	  To compile this driver as a module, choose M here: the
+	  module will be called imgsensor_isp4_c.
+
+config MTK_IMGSENSOR_ISP3_M
+	tristate "MediaTek image sensor support"
+	help
+	  This is a driver for the MediaTek
+	  image sensors.
+	  To compile this driver as a module, choose M here: the
+	  module will be called imgsensor_isp3_m.
 
 config MTK_IMGSENSOR_PLATFORM
 	string "set imgsensor platform name"

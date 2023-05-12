@@ -52,24 +52,34 @@
 
 static void debug_in_flight_mode(struct ccci_modem *md);
 
-#ifdef CCCI_KMODULE_ENABLE
-bool spm_is_md1_sleep(void)
+static bool (*s_spm_md_sleep_callback)(void);
+void ccci_set_spm_md_sleep_cb(bool (*spm_md_sleep_cb)(void))
+{
+	s_spm_md_sleep_callback = spm_md_sleep_cb;
+}
+EXPORT_SYMBOL(ccci_set_spm_md_sleep_cb);
+
+bool spm_is_md1_sleep_ccci(void)
 {
 	struct arm_smccc_res res;
 
+	if ((md_cd_plat_val_ptr.md_gen < 6295) &&
+	    s_spm_md_sleep_callback) {
+		CCCI_NORMAL_LOG(0, TAG, "[%s][%d] using spm\n",
+				__func__, md_cd_plat_val_ptr.md_gen);
+		return s_spm_md_sleep_callback();
+	}
 	arm_smccc_smc(MTK_SIP_KERNEL_CCCI_CONTROL, MD_CLOCK_REQUEST,
 		MD_GET_SLEEP_MODE, 0, 0, 0, 0, 0, &res);
 
-	CCCI_NORMAL_LOG(-1, TAG,
-		"[%s] flag_1=%llx, flag_2=%llx, flag_3=%llx, flag_4=%llx\n",
+	CCCI_NORMAL_LOG(0, TAG,
+		"[%s] flag_1=%lx, flag_2=%lx, flag_3=%lx, flag_4=%lx\n",
 		__func__, res.a0, res.a1, res.a2, res.a3);
 	if (res.a0 == 0)
 		return res.a1; /* 1-md is sleep, 0 - is not */
 	else
 		return 2; /* not support, no wait */
 }
-
-#endif
 
 void ccif_enable_irq(struct ccci_modem *md)
 {
@@ -475,17 +485,6 @@ void __weak md1_sleep_timeout_proc(void)
 
 static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 {
-	u32 pending;
-	struct ccci_smem_region *mdccci_dbg =
-		ccci_md_get_smem_by_user_id(md->index,
-			SMEM_USER_RAW_MDCCCI_DBG);
-	struct ccci_smem_region *mdss_dbg =
-		ccci_md_get_smem_by_user_id(md->index,
-			SMEM_USER_RAW_MDSS_DBG);
-	struct ccci_per_md *per_md_data =
-		ccci_get_per_md_data(md->index);
-	int md_dbg_dump_flag = per_md_data->md_dbg_dump_flag;
-
 	/* 1. mutex check */
 	if (atomic_add_return(1, &md->reset_on_going) > 1) {
 		CCCI_NORMAL_LOG(md->index, TAG,
@@ -499,35 +498,8 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 	wdt_disable_irq(md);
 
 	/* only debug in Flight mode */
-	if (stop_type == MD_FLIGHT_MODE_ENTER) {
+	if (stop_type == MD_FLIGHT_MODE_ENTER)
 		debug_in_flight_mode(md);
-#ifdef CCCI_KMODULE_ENABLE
-		pending = 0;
-#else
-		pending = mt_irq_get_pending(md->md_wdt_irq_id);
-#endif
-		if (pending) {
-			CCCI_NORMAL_LOG(md->index, TAG, "WDT IRQ occur.");
-			CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD EX log\n");
-			if (md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM)) {
-				ccci_util_mem_dump(md->index,
-					CCCI_DUMP_MEM_DUMP,
-					mdccci_dbg->base_ap_view_vir,
-					mdccci_dbg->size);
-				ccci_util_mem_dump(md->index,
-					CCCI_DUMP_MEM_DUMP,
-					mdss_dbg->base_ap_view_vir,
-					mdss_dbg->size);
-			}
-			if (md->hw_info->plat_ptr->debug_reg)
-				md->hw_info->plat_ptr->debug_reg(md);
-			/* cldma_dump_register(CLDMA_HIF_ID);*/
-#if IS_ENABLED(CONFIG_MTK_AEE_FEATURE)
-			aed_md_exception_api(NULL, 0, NULL, 0,
-				"WDT IRQ occur.", DB_OPT_DEFAULT);
-#endif
-		}
-	}
 
 	CCCI_NORMAL_LOG(md->index, TAG, "Reset when MD state: %d\n",
 			ccci_fsm_get_md_state(md->index));
@@ -543,12 +515,17 @@ static void debug_in_flight_mode(struct ccci_modem *md)
 	struct ccci_smem_region *mdss_dbg =
 		ccci_md_get_smem_by_user_id(md->index,
 			SMEM_USER_RAW_MDSS_DBG);
+	int md_dbg_dump_flag;
 	struct ccci_per_md *per_md_data =
 		ccci_get_per_md_data(md->index);
-	int md_dbg_dump_flag = per_md_data->md_dbg_dump_flag;
+
+	if (per_md_data == NULL)
+		return;
+
+	md_dbg_dump_flag = per_md_data->md_dbg_dump_flag;
 
 	count = 5;
-	while (spm_is_md1_sleep() == 0) {
+	while (spm_is_md1_sleep_ccci() == 0) {
 		count--;
 		if (count == 0) {
 			if (en_power_check) {
@@ -1356,9 +1333,12 @@ int ccci_modem_init_common(struct platform_device *plat_dev,
 
 	ret = of_property_read_u32(plat_dev->dev.of_node,
 		"mediatek,mdhif_type", &md->hif_flag);
-	if (ret != 0)
-		md->hif_flag = (1 << MD1_NET_HIF | 1 << MD1_NORMAL_HIF);
-
+	if (ret != 0) {
+		if (md->hw_info->plat_val->md_gen < 6295)
+			md->hif_flag = (1 << CLDMA_HIF_ID | 1 << MD1_NORMAL_HIF);
+		else
+			md->hif_flag = (1 << MD1_NET_HIF | 1 << MD1_NORMAL_HIF);
+	}
 	//ret = ccci_hif_init(md->index, md->hif_flag);
 	//if (ret < 0) {
 	//	CCCI_ERROR_LOG(md->index, TAG,

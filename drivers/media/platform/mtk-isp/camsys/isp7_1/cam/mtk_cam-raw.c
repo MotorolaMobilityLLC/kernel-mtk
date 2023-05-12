@@ -1607,8 +1607,12 @@ static void init_dma_threshold(struct mtk_raw_device *dev)
 	bool is_srt = mtk_cam_is_srt(dev->pipeline->hw_mode);
 	unsigned int raw_urgent, yuv_urgent;
 
+	if (!yuv_dev) {
+		dev_info(dev->dev, "%s: yuv_dev is null\n",
+			 __func__);
+		return;
+	}
 	cam_dev = dev->cam;
-
 	dev_info(dev->dev, "%s: SRT:%d\n", __func__, is_srt);
 
 	set_fifo_threshold(dev->base + REG_IMGO_R1_BASE);
@@ -1696,7 +1700,7 @@ static void init_dma_threshold(struct mtk_raw_device *dev)
 		mtk_smi_larb_ultra_dis(&dev->larb_pdev->dev, true);
 		mtk_smi_larb_ultra_dis(&yuv_dev->larb_pdev->dev, true);
 	} else {
-		writel_relaxed(RAW_WDMA_PORT, cam_dev->base + raw_urgent);
+		writel_relaxed(RAW_WDMA_PORT | RAW_RAWIR2_PORT, cam_dev->base + raw_urgent);
 		writel_relaxed(YUV_WDMA_PORT, cam_dev->base + yuv_urgent);
 
 		mtk_smi_larb_ultra_dis(&dev->larb_pdev->dev, false);
@@ -1817,13 +1821,17 @@ void initialize(struct mtk_raw_device *dev, int is_slave)
 #if USINGSCQ
 	u32 val;
 
+	if (!dev) {
+		pr_info("%s: dev is null\n",
+			 __func__);
+		return;
+	}
 	val = readl_relaxed(dev->base + REG_CQ_EN);
 	writel_relaxed(val | SCQ_EN | CQ_DROP_FRAME_EN, dev->base + REG_CQ_EN);
 
 	//writel_relaxed(0x100010, dev->base + REG_CQ_EN);
 	writel_relaxed(0xffffffff, dev->base + REG_SCQ_START_PERIOD);
 #endif
-
 	writel_relaxed(CQ_THR0_MODE_IMMEDIATE | CQ_THR0_EN,
 		       dev->base + REG_CQ_THR0_CTL);
 	writel_relaxed(CQ_THR0_MODE_IMMEDIATE | CQ_THR0_EN,
@@ -1976,7 +1984,8 @@ void stream_on(struct mtk_raw_device *dev, int on)
 			fps_ratio = get_fps_ratio(dev);
 			dev_info(dev->dev, "VF on - REG_TG_TIME_STAMP_CNT val:%d fps(30x):%d\n",
 			val, fps_ratio);
-			if (mtk_cam_feature_is_stagger(feature))
+			if (mtk_cam_feature_is_stagger(feature) ||
+				mtk_cam_feature_is_ext_isp(feature))
 				writel_relaxed(SCQ_DEADLINE_MS * 3 * 1000 * SCQ_DEFAULT_CLK_RATE /
 				(val * 2) / fps_ratio, dev->base + REG_SCQ_START_PERIOD);
 			else
@@ -3158,6 +3167,7 @@ int mtk_cam_raw_stagger_select(struct mtk_cam_ctx *ctx,
 	bool selected;
 	struct mtk_raw_stagger_select result;
 
+	memset(&result, 0, sizeof(result));
 	selected = raw_stagger_select(ctx,
 				raw_status,
 				ctx->pipe->hw_mode,
@@ -4121,6 +4131,7 @@ static int mtk_raw_set_fmt(struct v4l2_subdev *sd,
 	if (!stream_data) {
 		dev_info(cam->dev, "%s: stream_data is null\n",
 		__func__);
+		return -EINVAL;
 	}
 	stream_data->pad_fmt_update |= (1 << fmt->pad);
 	stream_data->pad_fmt[fmt->pad] = *fmt;

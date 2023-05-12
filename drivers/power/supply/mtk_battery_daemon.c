@@ -4798,13 +4798,21 @@ void fg_update_sw_iavg(struct mtk_battery *gm)
 	dtime = ktime_sub(ctime, gm->sw_iavg_time);
 	diff = ktime_to_timespec64(dtime);
 
-	bm_debug("[%s]diff time:%ld\n",
-		__func__,
-		diff.tv_sec);
+	bm_debug("[%s]diff time:%ld\n", __func__, diff.tv_sec);
 	if (diff.tv_sec >= 60) {
 		fg_coulomb = gauge_get_int_property(GAUGE_PROP_COULOMB);
+#if defined(__LP64__) || defined(_LP64)
 		gm->sw_iavg = (fg_coulomb - gm->sw_iavg_car)
 			* 3600 / diff.tv_sec;
+#else
+		if (diff.tv_sec < 65535)
+			gm->sw_iavg = (fg_coulomb - gm->sw_iavg_car)
+			* 3600 / (int)(diff.tv_sec);
+		else {
+			gm->sw_iavg = 0;
+			bm_err("[%s]diff.tv_sec:%d\n", __func__, diff.tv_sec);
+		}
+#endif
 		gm->sw_iavg_time = ctime;
 		gm->sw_iavg_car = fg_coulomb;
 		version = gauge_get_int_property(GAUGE_PROP_HW_VERSION);
@@ -4848,8 +4856,10 @@ int wakeup_fg_daemon(unsigned int flow_state, int cmd, int para1)
 			if (size > PAGE_SIZE)
 				fgd_msg = vmalloc(size);
 
-			if (fgd_msg == NULL)
+			if (fgd_msg == NULL) {
+				bm_err(" %s: request memory fail !!\n", __func__);
 				return -1;
+			}
 		}
 		Intr_Number_to_Name(intr_name, flow_state);
 
@@ -4867,9 +4877,10 @@ int wakeup_fg_daemon(unsigned int flow_state, int cmd, int para1)
 		kvfree(fgd_msg);
 
 		return 0;
-	} else
+	} else {
+		bm_err(" %s: gm->fgd_pid exception, valule is %d !!\n", __func__, gm->fgd_pid);
 		return -1;
-
+	}
 }
 
 void fg_drv_update_daemon(struct mtk_battery *gm)
@@ -5004,8 +5015,10 @@ int mtk_battery_daemon_init(struct platform_device *pdev)
 	gauge = dev_get_drvdata(&pdev->dev);
 	gm = gauge->gm;
 
-	if (is_daemon_support(gm) == false)
+	if (is_daemon_support(gm) == false) {
+		bm_err(" %s: daemon not support !!\n", __func__);
 		return -EIO;
+	}
 
 	if (gm->mtk_battery_sk == NULL) {
 		bm_err("[%s]netlink_kernel_create error\n", __func__);

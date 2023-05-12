@@ -194,6 +194,7 @@ struct mml_comp_hdr {
 	struct mml_comp comp;
 	const struct hdr_data *data;
 	bool ddp_bound;
+	u16 event_vcp_readback_done;
 };
 
 enum hdr_label_index {
@@ -386,27 +387,19 @@ static s32 hdr_config_frame(struct mml_comp *comp, struct mml_task *task,
 	}
 	hdr_relay(pkt, base_pa, 0x0);
 
-	ret = mml_pq_get_comp_config_result(task, CONFIG_FRAME_WAIT_TIME_MS);
-
+	ret = mml_pq_get_comp_config_result(task, HDR_WAIT_TIMEOUT_MS);
 	if (ret) {
 		mml_pq_comp_config_clear(task);
-		mml_pq_err("%s get hdr param timeout: %d in %dms",
-			__func__, ret, CONFIG_FRAME_WAIT_TIME_MS);
+		mml_pq_err("get hdr param timeout: %d in %dms",
+			ret, HDR_WAIT_TIMEOUT_MS);
 		ret = -ETIMEDOUT;
+		goto err;
 	}
 
 	result = get_hdr_comp_config_result(task);
 	if (!result) {
 		mml_pq_err("%s: not get result from user lib", __func__);
 		ret = -EBUSY;
-		hdr_frm->config_success = false;
-		goto err;
-	}
-
-	if (!result->hdr_reg_cnt) {
-		hdr_frm->config_success = false;
-		mml_pq_err("%s: not get correct reg count", __func__);
-		hdr_relay(pkt, base_pa, 0x1);
 		goto err;
 	}
 
@@ -513,6 +506,11 @@ static s32 hdr_config_tile(struct mml_comp *comp, struct mml_task *task,
 	else
 		hdr_hist_end_x = tile->out.xe - tile->in.xs;
 
+	if (tile->in.xs + hdr_hist_begin_x > tile->in.xe)
+		hdr_hist_begin_x = tile->in.xe - tile->in.xs;
+	if (hdr_hist_end_x < hdr_hist_begin_x)
+		hdr_hist_end_x = hdr_hist_begin_x;
+
 	cmdq_pkt_write(pkt, NULL, base_pa + HDR_HIST_CTRL_0, hdr_hist_begin_x, 0x0000ffff);
 	cmdq_pkt_write(pkt, NULL, base_pa + HDR_HIST_CTRL_1, hdr_hist_end_x, 0x0000ffff);
 
@@ -595,10 +593,12 @@ static void hdr_readback_vcp(struct mml_comp *comp, struct mml_task *task,
 
 	cmdq_vcp_enable(true);
 
+	cmdq_pkt_acquire_event(pkt, hdr->event_vcp_readback_done);
 	cmdq_pkt_readback(pkt, engine, task->pq_task->hdr_hist[pipe]->va_offset,
 		HDR_HIST_NUM, gpr,
 		&reuse->labels[reuse->label_idx],
 		&hdr_frm->polling_reuse);
+	cmdq_pkt_clear_event(pkt, hdr->event_vcp_readback_done);
 
 	add_reuse_label(reuse, &hdr_frm->labels[HDR_POLLGPR_0],
 		task->pq_task->hdr_hist[pipe]->va_offset);
@@ -639,7 +639,7 @@ static void hdr_readback_cmdq(struct mml_comp *comp, struct mml_task *task,
 	/* readback to this pa */
 	mml_assign(pkt, idx_out, (u32)pa,
 		reuse, cache, &hdr_frm->labels[HDR_POLLGPR_0]);
-	mml_assign(pkt, idx_out + 1, (u32)(pa >> 32),
+	mml_assign(pkt, idx_out + 1, (u32)DO_SHIFT_RIGHT(pa, 32),
 		reuse, cache, &hdr_frm->labels[HDR_POLLGPR_1]);
 
 	/* counter init to 0 */
@@ -748,6 +748,7 @@ static s32 hdr_reconfig_frame(struct mml_comp *comp, struct mml_task *task,
 		mml_pq_err("get hdr param timeout: %d in %dms",
 			ret, HDR_WAIT_TIMEOUT_MS);
 		ret = -ETIMEDOUT;
+		goto err;
 	}
 
 	result = get_hdr_comp_config_result(task);
@@ -774,6 +775,8 @@ static s32 hdr_reconfig_frame(struct mml_comp *comp, struct mml_task *task,
 	mml_pq_msg("%s is_hdr_need_readback[%d]",
 		__func__, result->is_hdr_need_readback);
 	hdr_frm->is_hdr_need_readback = result->is_hdr_need_readback;
+
+	return 0;
 
 err:
 	return ret;
@@ -831,7 +834,7 @@ static s32 hdr_config_repost(struct mml_comp *comp, struct mml_task *task,
 		mml_update(reuse, hdr_frm->labels[HDR_POLLGPR_0],
 			(u32)task->pq_task->hdr_hist[pipe]->pa);
 		mml_update(reuse, hdr_frm->labels[HDR_POLLGPR_1],
-			(u32)(task->pq_task->hdr_hist[pipe]->pa >> 32));
+			(u32)DO_SHIFT_RIGHT(task->pq_task->hdr_hist[pipe]->pa, 32));
 
 		begin_pa = cmdq_pkt_get_pa_by_offset(pkt, hdr_frm->begin_offset);
 		condi_inst = (u32 *)cmdq_pkt_get_va_by_offset(pkt, hdr_frm->condi_offset);
@@ -956,6 +959,8 @@ static void hdr_task_done_readback(struct mml_comp *comp, struct mml_task *task,
 	if (vcp) {
 		mml_pq_put_vcp_buf_offset(task, engine, task->pq_task->hdr_hist[pipe]);
 		cmdq_vcp_enable(false);
+		kfree(task->pq_task->hdr_hist[pipe]);
+		task->pq_task->hdr_hist[pipe] = NULL;
 	} else
 		mml_pq_put_readback_buffer(task, pipe, task->pq_task->hdr_hist[pipe]);
 exit:
@@ -1011,8 +1016,19 @@ static void hdr_debug_dump(struct mml_comp *comp)
 		value[13], value[14], value[15]);
 }
 
+static void hdr_reset(struct mml_comp *comp, struct mml_frame_config *cfg, u32 pipe)
+{
+	const struct mml_topology_path *path = cfg->path[pipe];
+	struct mml_comp_hdr *hdr = comp_to_hdr(comp);
+	bool vcp = hdr->data->vcp_readback;
+
+	if (vcp)
+		cmdq_clear_event(path->clt->chan, hdr->event_vcp_readback_done);
+}
+
 static const struct mml_comp_debug_ops hdr_debug_ops = {
 	.dump = &hdr_debug_dump,
+	.reset = &hdr_reset,
 };
 
 static int mml_bind(struct device *dev, struct device *master, void *data)
@@ -1080,6 +1096,15 @@ static int probe(struct platform_device *pdev)
 		dev_err(dev, "Failed to init mml component: %d\n", ret);
 		return ret;
 	}
+
+	if (priv->data->vcp_readback) {
+		if (of_property_read_u16(dev->of_node, "event_vcp_readback_done",
+				&priv->event_vcp_readback_done)) {
+			dev_err(dev, "read event_vcp_readback_done fail\n");
+			return -ENOENT;
+		}
+	}
+
 	/* assign ops */
 	priv->comp.tile_ops = &hdr_tile_ops;
 	priv->comp.config_ops = &hdr_cfg_ops;

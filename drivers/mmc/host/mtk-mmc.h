@@ -23,6 +23,7 @@
 #include <linux/pm_qos.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
+#include <linux/sched/clock.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/interconnect.h>
@@ -39,6 +40,9 @@
 
 #include "cqhci.h"
 #include "mtk-mmc-autok.h"
+#if IS_ENABLED(CONFIG_MMC_MTK_SW_CQHCI)
+#include "mtk-mmc-swcqhci.h"
+#endif
 
 #define MAX_BD_NUM          1024
 #define MSDC_NR_CLOCKS      3
@@ -425,6 +429,16 @@
 #define CQHCI_RD_CMD_WND_SEL	  (0x1 << 14) /* RW */
 #define CQHCI_WR_CMD_WND_SEL	  (0x1 << 15) /* RW */
 
+/*
+ * EMMC51_CFG0 mask, host use these registers bits
+ * to send class11(CMDQ) cmds during data transmission.
+ */
+#define EMMC51_CFG_CMDQEN          (0x1    <<  0)
+#define EMMC51_CFG_NUM             (0x3F   <<  1)
+#define EMMC51_CFG_RSPTYPE         (0x7    <<  7)
+#define EMMC51_CFG_DTYPE           (0x3    << 10)
+#define EMMC51_CMDQ_MASK           (0xFFF)
+
 /* EMMC_TOP_CONTROL mask */
 #define PAD_RXDLY_SEL           (0x1 << 0)	/* RW */
 #define DELAY_EN                (0x1 << 1)	/* RW */
@@ -669,6 +683,9 @@ struct msdc_host {
 	struct msdc_tune_para def_tune_para; /* default tune setting */
 	struct msdc_tune_para saved_tune_para; /* tune result of CMD21/CMD19 */
 	struct cqhci_host *cq_host;
+#if IS_ENABLED(CONFIG_MMC_MTK_SW_CQHCI)
+	struct swcq_host *swcq_host;
+#endif
 	struct reg_oc_msdc sd_oc;
 	/* autok */
 	int	id;		/* host id */
@@ -687,11 +704,15 @@ struct msdc_host {
 	u32 req_vcore;
 	u32 ocr_volt;
 	struct regulator *dvfsrc_vcore_power;
+#if IS_ENABLED(CONFIG_MTK_SPM_V4)
+	int dvfs_opp_index;
+#endif
 	bool use_cmd_intr;
 	struct pm_qos_request pm_qos_req;
 	bool qos_enable;
 	struct icc_path *bw_path;
 	unsigned int peak_bw;
+	u8 tf_ver; /* save trust frameware version. e.g: atf, tf-a */
 };
 
 /*--------------------------------------------------------------------------*/
@@ -713,21 +734,21 @@ struct msdc_host {
 /* we take it as bad sd when the bad sd condition occurs
  * out of tolerance
  */
-u32 bad_sd_tolerance[BAD_SD_DETECTER_COUNT] = {10};
+static u32 bad_sd_tolerance[BAD_SD_DETECTER_COUNT] = {10};
 
 /* bad sd condition occur times
  */
-u32 bad_sd_detecter[BAD_SD_DETECTER_COUNT] = {0};
+static u32 bad_sd_detecter[BAD_SD_DETECTER_COUNT] = {0};
 
 /* bad sd condition occur times will reset to zero by self
  * when reach the forget time (when set to 0, means not
  * reset to 0 by self), unit:s
  */
-u32 bad_sd_forget[BAD_SD_DETECTER_COUNT] = {3};
+static u32 bad_sd_forget[BAD_SD_DETECTER_COUNT] = {3};
 
 /* the latest occur time of the bad sd condition,
  * unit: clock
  */
-unsigned long bad_sd_timer[BAD_SD_DETECTER_COUNT] = {0};
+static unsigned long bad_sd_timer[BAD_SD_DETECTER_COUNT] = {0};
 
 #endif  /* _MTK_MMC_H_ */

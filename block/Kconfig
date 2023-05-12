@@ -242,12 +242,13 @@ config BLK_MQ_RDMA
 config BLK_PM
 	def_bool BLOCK && PM
 
-config MTK_BLOCK_IO_PM_DEBUG
-	bool "Enable Blocktag BLK PM Tracer"
-	help
-	  If it is enabled, there are some pm-related trace
-	  events will be created in block layer.
-	  Our blocktag module will registered these event and
-	  records the pm information.
-
 source "block/Kconfig.iosched"
+
+config MTK_BLK_IO_BOOST
+	bool "block IO boost for low-end devices"
+	depends on BLOCK
+	help
+	  Enable this feature for non GKI project.
+	  It is available only for non GKI project,
+	  which revert block io request merge to
+	  improve IO performance.

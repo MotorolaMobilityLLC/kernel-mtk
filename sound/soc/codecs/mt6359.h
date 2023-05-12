@@ -4826,6 +4826,12 @@ enum {
 };
 
 enum {
+	AUDIO_ANALOG_CHANNELS_L = 0,
+	AUDIO_ANALOG_CHANNELS_R,
+	AUDIO_ANALOG_CHANNELS_3,
+};
+
+enum {
 	MUX_MIC_TYPE_0,	/* ain0, micbias 0 */
 	MUX_MIC_TYPE_1,	/* ain1, micbias 1 */
 	MUX_MIC_TYPE_2,	/* ain2/3, micbias 2 */
@@ -5167,6 +5173,9 @@ struct mt6359_priv {
 	/* vow dmic low power mode, 1: enable, 0: disable */
 	int vow_dmic_lp;
 	int vow_single_mic_select;
+
+	/* regulator */
+	struct regulator *reg_vaud18;
 };
 
 #define MT_SOC_ENUM_EXT_ID(xname, xenum, xhandler_get, xhandler_put, id) \

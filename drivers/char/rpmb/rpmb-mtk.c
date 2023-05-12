@@ -40,9 +40,7 @@
 #include <net/net_namespace.h>
 #include <linux/netlink.h>
 
-#if IS_ENABLED(CONFIG_SCSI_UFS_MEDIATEK)
 #include "ufs-mediatek.h"
-#endif
 
 #if IS_ENABLED(CONFIG_MMC_MTK_PRO)
 #include <uapi/linux/mmc/ioctl.h>
@@ -341,6 +339,8 @@ static int rpmb_cal_hmac(struct rpmb_frame *frame, int blk_cnt,
 	u8 *buf, *buf_start;
 
 	buf = buf_start = kzalloc(RPMB_SZ_CAL_HMAC * blk_cnt, 0);
+	if (!buf_start)
+		return -ENOMEM;
 
 	for (i = 0; i < blk_cnt; i++) {
 		memcpy(buf, frame[i].data, RPMB_SZ_CAL_HMAC);
@@ -381,10 +381,13 @@ static void rpmb_dump_frame(u8 *data_frame)
 	MSG(DBG_INFO, "type, frame[511] = 0x%x\n", data_frame[511]);
 }
 
+#if IS_ENABLED(CONFIG_SCSI_UFS_MEDIATEK)
 static struct rpmb_frame *rpmb_alloc_frames(unsigned int cnt)
 {
 	return kzalloc(sizeof(struct rpmb_frame) * cnt, 0);
 }
+#endif
+
 
 #ifdef __RPMB_KERNEL_NL_SUPPORT
 static int nl_rpmb_cmd_req(const struct rpmb_data *rpmbd)
@@ -714,6 +717,10 @@ static int rpmb_req_write_data_ufs(u8 *frame, u32 blk_cnt)
 
 #ifdef __RPMB_MTK_DEBUG_HMAC_VERIFY
 	key_mac = kzalloc(RPMB_SZ_MAC, 0);
+	if (!key_mac) {
+		kfree(rpmbdata.ocmd.frames);
+		return -ENOMEM;
+	}
 
 	rpmb_cal_hmac((struct rpmb_frame *)frame, blk_cnt, g_rpmb_key, key_mac);
 
@@ -748,14 +755,12 @@ static int rpmb_req_write_data_ufs(u8 *frame, u32 blk_cnt)
 	MSG(DBG_INFO, "%s: result 0x%x\n", __func__,
 		rpmbdata.ocmd.frames->result);
 
-	kfree(rpmbdata.ocmd.frames);
-
 	MSG(DBG_INFO, "%s: ret 0x%x\n", __func__, ret);
 
 #ifdef __RPMB_MTK_DEBUG_HMAC_VERIFY
 out:
 #endif
-
+	kfree(rpmbdata.ocmd.frames);
 	return ret;
 }
 
@@ -1616,7 +1621,7 @@ error:
 
 	mmc_put_card(card, NULL);
 
-	/* rpmb_dump_frame(rpmb_req->data_frame); */
+	rpmb_dump_frame(rpmb_req->data_frame);
 	vfree(part_md);
 	return ret;
 }
@@ -2355,6 +2360,8 @@ static int rpmb_gp_listenDci(void *arg)
 			mc_ret = rpmb_gp_execute_ufs(cmdId);
 #endif
 		/* Notify the STH*/
+		// fix for TEE Driver issue, Swd can not receive msg from Nwd with time issue.
+		MSG(INFO, "%s, Nwd Call notify to Swd...\n", __func__);
 		mc_ret = mc_notify(&rpmb_gp_session);
 		if (mc_ret != MC_DRV_OK) {
 			MSG(ERR, "%s: mcNotify returned: %d\n",
@@ -2686,7 +2693,7 @@ static int rpmb_mtk_snd_msg(void *pbuf, u16 len)
 		MSG(ERR, "%s nlmsg_put failure\n", __func__);
 		ret = -ENOBUFS;
 		nlmsg_free(skb);
-		goto send_fail_skb;
+		goto send_fail;
 	}
 
 	memcpy(nlmsg_data(nlh), pbuf, len);
@@ -2695,14 +2702,14 @@ static int rpmb_mtk_snd_msg(void *pbuf, u16 len)
 	if (ret < 0) {
 		MSG(ERR, "%s send failed ret=%d, pid=%d\n",
 			__func__, ret, nl_pid);
-		goto send_fail;
+		goto send_fail_skb;
 	}
 
+	kfree_skb(skb);
 	return 0;
 
 send_fail_skb:
 	kfree_skb(skb);
-
 send_fail:
 	return ret;
 }
@@ -2805,6 +2812,9 @@ static int dt_get_boot_type(void)
 int mmc_rpmb_register(struct mmc_host *mmc)
 {
 	int ret = 0;
+
+	if (!mmc)
+		return -EINVAL;
 
 	if (!(mmc->caps2 & MMC_CAP2_NO_MMC))
 		mtk_mmc_host[0] = mmc;

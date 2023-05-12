@@ -61,7 +61,7 @@ EXPORT_SYMBOL(mtk_ccci_register_md_state_cb);
 
 int force_md_stop(struct ccci_fsm_monitor *monitor_ctl)
 {
-	int ret = -1;
+	int ret;
 	struct ccci_fsm_ctl *ctl = fsm_get_entity_by_md_id(monitor_ctl->md_id);
 
 	needforcestop = 1;
@@ -475,8 +475,19 @@ static void fsm_routine_stop(struct ccci_fsm_ctl *ctl,
 	struct ccci_fsm_command *ee_cmd = NULL;
 	struct port_t *port = NULL;
 	struct sk_buff *skb = NULL;
+	struct ccci_modem *md = NULL;
 	unsigned long flags;
+	int ret;
 
+	if (ctl == NULL) {
+		CCCI_ERROR_LOG(0, FSM, "%s, ctl is NULL!!!\n", __func__);
+		return;
+	}
+	md = ccci_md_get_modem_by_id(ctl->md_id);
+	if (md == NULL) {
+		CCCI_ERROR_LOG(0, FSM, "%s, md NULL!!!\n", __func__);
+		return;
+	}
 	/* 1. state sanity check */
 	if (ctl->curr_state == CCCI_FSM_GATED)
 		goto success;
@@ -541,6 +552,17 @@ success:
 			ccci_free_skb(skb);
 		spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
 	}
+
+	/* Cleare MD WDT pending bit */
+	ret = irq_set_irqchip_state(md->md_wdt_irq_id,
+			IRQCHIP_STATE_PENDING, false);
+	if (ret)
+		CCCI_ERROR_LOG(ctl->md_id, FSM,
+			"clear md wdt pending irq fail %d\n", ret);
+	else
+		CCCI_NORMAL_LOG(ctl->md_id, FSM,
+			"clear md wdt irq(%d) success\n", md->md_wdt_irq_id);
+
 	ctl->last_state = ctl->curr_state;
 	ctl->curr_state = CCCI_FSM_GATED;
 	fsm_broadcast_state(ctl, GATED);
@@ -557,7 +579,7 @@ static int ccci_md_epon_set(int md_id)
 	switch (md_id) {
 	case MD_SYS1:
 		if (!md || !md->hw_info) {
-			CCCI_NORMAL_LOG(md_id, FSM, "%s, NULL!!!\n", __func__);
+			CCCI_ERROR_LOG(md_id, FSM, "%s, NULL!!!\n", __func__);
 			break;
 		}
 		if (md->hw_info->md_l2sram_base) {
@@ -571,6 +593,10 @@ static int ccci_md_epon_set(int md_id)
 				+ md->hw_info->md_epon_offset)) == 0xBAEBAE10;
 		break;
 	case MD_SYS3:
+		if (!mdss_dbg) {
+			CCCI_ERROR_LOG(md_id, FSM, "%s, mdss_dbg is NULL!!!\n", __func__);
+			break;
+		}
 		ret = *((int *)(mdss_dbg->base_ap_view_vir
 			+ CCCI_EE_OFFSET_EPON_MD3))
 				== 0xBAEBAE10;
@@ -878,13 +904,7 @@ int ccci_fsm_init(int md_id)
 	}
 	ctl->fsm_thread = kthread_run(fsm_main_thread, ctl,
 		"ccci_fsm%d", md_id + 1);
-#ifndef CCCI_KMODULE_ENABLE
-#ifdef FEATURE_SCP_CCCI_SUPPORT
-	fsm_scp_init(&ctl->scp_ctl);
-#endif
-#else
-	CCCI_NORMAL_LOG(md_id, FSM, "%s oringinal position scp_init\n", __func__);
-#endif
+
 	fsm_poller_init(&ctl->poller_ctl);
 	fsm_ee_init(&ctl->ee_ctl);
 	fsm_monitor_init(&ctl->monitor_ctl);
@@ -894,7 +914,6 @@ int ccci_fsm_init(int md_id)
 	return 0;
 }
 
-#ifdef CCCI_KMODULE_ENABLE
 void ccci_fsm_scp_register(int md_id, struct ccci_fsm_scp *scp_ctl)
 {
 	struct ccci_fsm_ctl *ctl = fsm_get_entity_by_md_id(md_id);
@@ -909,7 +928,7 @@ void ccci_fsm_scp_register(int md_id, struct ccci_fsm_scp *scp_ctl)
 
 }
 EXPORT_SYMBOL(ccci_fsm_scp_register);
-#endif
+
 enum MD_STATE ccci_fsm_get_md_state(int md_id)
 {
 	struct ccci_fsm_ctl *ctl = fsm_get_entity_by_md_id(md_id);
@@ -976,9 +995,8 @@ int ccci_fsm_recv_control_packet(int md_id, struct sk_buff *skb)
 	struct c2k_ctrl_port_msg *c2k_ctl_msg = NULL;
 	struct ccci_per_md *per_md_data = ccci_get_per_md_data(md_id);
 
-	if (!ctl)
+	if (!ctl || !per_md_data)
 		return -CCCI_ERR_INVALID_PARAM;
-
 	CCCI_NORMAL_LOG(ctl->md_id, FSM,
 		"control message 0x%X,0x%X\n",
 		ccci_h->data[1], ccci_h->reserved);
@@ -1011,11 +1029,6 @@ int ccci_fsm_recv_control_packet(int md_id, struct sk_buff *skb)
 			per_md_data->dtr_state = 1; /*connect */
 		else
 			per_md_data->dtr_state = 0; /*disconnect */
-		break;
-	case C2K_CCISM_SHM_INIT_ACK:
-#ifndef CCCI_KMODULE_ENABLE
-		fsm_ccism_init_ack_handler(ctl->md_id, ccci_h->reserved);
-#endif
 		break;
 	case C2K_FLOW_CTRL_MSG:
 		ccci_hif_start_queue(ctl->md_id, ccci_h->reserved, OUT);

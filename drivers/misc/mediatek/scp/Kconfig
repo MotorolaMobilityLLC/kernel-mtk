@@ -23,6 +23,16 @@ config MTK_TINYSYS_SCP_VERSION
 	help
 	  MTK_TINYSYS_SCP_VERSION define which scp version will be used
 
+config MTK_TINYSYS_SCP_CM4_SUPPORT
+	bool "Specify micro processor CM4 supported by SCP"
+	depends on MTK_TINYSYS_SCP_SUPPORT
+	default n
+	help
+	  CM4 is one uP supported by SCP which designed by ARM corp.
+	  Set Y to enable this feature.
+	  If unsure,
+	  Set N to stay with legacy feature.
+
 config MTK_TINYSYS_SCP_DEBUG_SUPPORT
 	bool "SCP Debug support"
 	help
@@ -31,3 +41,10 @@ config MTK_TINYSYS_SCP_DEBUG_SUPPORT
 	  Set N to disable this feature.
 	  If unsure, Set N to disable it.
 
+config SCP_DVFS_NOT_READY
+	bool "SCP DVFS Disable"
+	help
+	  This config is used to disable SCP DVFS
+	  Set Y to enable this feature.
+	  Set N to disable this feature.
+	  If unsure, Set N to disable it.

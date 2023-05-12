@@ -48,6 +48,14 @@
 #define AFE_AGENT_SET_OFFSET 4
 #define AFE_AGENT_CLR_OFFSET 8
 
+static unsigned int g_channel;
+
+int mtk_get_channel_value(void)
+{
+	return g_channel;
+}
+EXPORT_SYMBOL(mtk_get_channel_value);
+
 static bool is_semaphore_control_need(bool is_scp_sema_support)
 {
 	bool is_adsp_active = false;
@@ -294,7 +302,7 @@ int mtk_afe_fe_hw_params(struct snd_pcm_substream *substream,
 	}
 MEM_ALLOCATE_DONE:
 	dev_info(afe->dev,
-		 "%s(), %s, use_adsp_share_mem %d, using_sram %d, use_dram_only %d, ch %d, rate %d, fmt %d, dma_addr %pad, dma_area %p, dma_bytes 0x%zx\n",
+		 "%s(), %s, use_adsp_share_mem %d, using_sram %d, use_dram_only %d, ch %d, rate %d, fmt %d, dma_addr %pad, dma_area %llx, dma_bytes 0x%zx\n",
 		 __func__, memif->data->name,
 		 memif->use_adsp_share_mem,
 		 memif->using_sram, memif->use_dram_only,
@@ -302,6 +310,11 @@ MEM_ALLOCATE_DONE:
 		 &substream->runtime->dma_addr,
 		 substream->runtime->dma_area,
 		 substream->runtime->dma_bytes);
+
+	if (strstr(memif->data->name, "DL11"))
+		afe->memif_32bit_supported = 0;
+	else
+		afe->memif_32bit_supported = 1;
 
 	memset_io(substream->runtime->dma_area, 0,
 		  substream->runtime->dma_bytes);
@@ -924,6 +937,15 @@ int mtk_memif_set_channel(struct mtk_base_afe *afe,
 		mono = (channel == 1) ? 0 : 1;
 	else
 		mono = (channel == 1) ? 1 : 0;
+
+	if (memif->data->ch_num_maskbit) {
+		mtk_regmap_update_bits(afe->regmap, memif->data->ch_num_reg,
+				       memif->data->ch_num_maskbit,
+				       channel, memif->data->ch_num_shift);
+	}
+
+	/* save channel value for cm get*/
+	g_channel = channel;
 
 	return mtk_regmap_update_bits(afe->regmap, memif->data->mono_reg,
 				      1, mono, memif->data->mono_shift);

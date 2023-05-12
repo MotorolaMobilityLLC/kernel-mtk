@@ -22,7 +22,7 @@
 #define DISP_MUTEX_INT_MSK                                                     \
 	((__DISP_MUTEX_INT_MSK << DISP_MUTEX_TOTAL) | __DISP_MUTEX_INT_MSK)
 
-/* CHIST path select*/
+/* CHIST path select */
 #define DISP_CHIST0_FROM_RDMA0_POS 0
 #define DISP_CHIST1_FROM_RDMA0_POS 1
 #define DISP_CHIST0_FROM_POSTMASK0 2
@@ -115,10 +115,11 @@ struct mtk_mmsys_reg_data {
 	const unsigned int *dispsys_map;
 };
 
-#define MT6983_DUMMY_REG_CNT 56
+#define MT6983_DUMMY_REG_CNT 61
 extern struct dummy_mapping mt6983_dispsys_dummy_register[MT6983_DUMMY_REG_CNT];
+extern struct dummy_mapping mt6895_dispsys_dummy_register[MT6983_DUMMY_REG_CNT];
 
-#define MT6879_DUMMY_REG_CNT 48
+#define MT6879_DUMMY_REG_CNT 53
 extern struct dummy_mapping mt6879_dispsys_dummy_register[MT6879_DUMMY_REG_CNT];
 
 
@@ -198,6 +199,10 @@ void mtk_ddp_insert_dsc_prim_MT6983(struct mtk_drm_crtc *mtk_crtc,
 	struct cmdq_pkt *handle);
 void mtk_ddp_remove_dsc_prim_MT6983(struct mtk_drm_crtc *mtk_crtc,
 	struct cmdq_pkt *handle);
+void mtk_ddp_insert_dsc_ext_MT6983(struct mtk_drm_crtc *mtk_crtc,
+	struct cmdq_pkt *handle);
+void mtk_ddp_remove_dsc_ext_MT6983(struct mtk_drm_crtc *mtk_crtc,
+	struct cmdq_pkt *handle);
 void mtk_ddp_insert_dsc_prim_MT6895(struct mtk_drm_crtc *mtk_crtc,
 	struct cmdq_pkt *handle);
 void mtk_ddp_remove_dsc_prim_MT6895(struct mtk_drm_crtc *mtk_crtc,
@@ -239,6 +244,18 @@ void mutex_dump_analysis_mt6833(struct mtk_disp_mutex *mutex);
 
 void mmsys_config_dump_analysis_mt6879(void __iomem *config_regs);
 void mutex_dump_analysis_mt6879(struct mtk_disp_mutex *mutex);
+
+void mmsys_config_dump_analysis_mt6768(void __iomem *config_regs);
+void mutex_dump_analysis_mt6768(struct mtk_disp_mutex *mutex);
+
+void mmsys_config_dump_analysis_mt6765(void __iomem *config_regs);
+void mutex_dump_analysis_mt6765(struct mtk_disp_mutex *mutex);
+
+void mmsys_config_dump_analysis_mt6761(void __iomem *config_regs);
+void mutex_dump_analysis_mt6761(struct mtk_disp_mutex *mutex);
+
+void mmsys_config_dump_analysis_mt6739(void __iomem *config_regs);
+void mutex_dump_analysis_mt6739(struct mtk_disp_mutex *mutex);
 
 void mmsys_config_dump_analysis_mt6855(void __iomem *config_regs);
 void mutex_dump_analysis_mt6855(struct mtk_disp_mutex *mutex);

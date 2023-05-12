@@ -1055,7 +1055,6 @@ static void init_buffer_info(struct dma_heap *heap,
 			     struct mtk_sec_heap_buffer *buffer)
 {
 	struct task_struct *task = current->group_leader;
-
 	INIT_LIST_HEAD(&buffer->attachments);
 	mutex_init(&buffer->lock);
 	mutex_init(&buffer->map_lock);
@@ -1064,7 +1063,18 @@ static void init_buffer_info(struct dma_heap *heap,
 	get_task_comm(buffer->tid_name, current);
 	buffer->pid = task_pid_nr(task);
 	buffer->tid = task_pid_nr(current);
-	buffer->ts  = sched_clock() / 1000;
+
+	/*
+	 * in 32bit project compile the arithmetic division, the "/" will
+	 * cause the __aeabi_uldivmod error.
+	 *
+	 * use DO_DMA_BUFFER_COMMON_DIV and DO_DMA_BUFFER_COMMON_MOD to
+	 * intead "/".
+	 *
+	 * original code is
+	 * buffer->ts  = sched_clock() / 1000;
+	 */
+	buffer->ts  = DO_DMA_BUFFER_COMMON_DIV(sched_clock(), 1000);
 }
 
 static struct dma_buf *alloc_dmabuf(struct dma_heap *heap, struct mtk_sec_heap_buffer *buffer,
@@ -1213,7 +1223,7 @@ static int sec_buf_priv_dump(const struct dma_buf *dmabuf,
 	struct mtk_sec_heap_buffer *buf = dmabuf->priv;
 	u32 sec_handle = 0;
 
-	dmabuf_dump(s, "\t\tbuf_priv: uncached:%d alloc_pid:%d(%s)tid:%d(%s) alloc_time:%luus\n",
+	dmabuf_dump(s, "\t\tbuf_priv: uncached:%d alloc_pid:%d(%s)tid:%d(%s) alloc_time:%lluus\n",
 		    !!buf->uncached,
 		    buf->pid, buf->pid_name,
 		    buf->tid, buf->tid_name,
@@ -1348,6 +1358,31 @@ int dmabuf_to_sec_id(const struct dma_buf *dmabuf, u32 *sec_hdl)
 	return tmem_type2sec_id(sec_heap->tmem_type);
 }
 EXPORT_SYMBOL_GPL(dmabuf_to_sec_id);
+
+int dmabuf_to_tmem_type(const struct dma_buf *dmabuf, u32 *sec_hdl)
+{
+	struct mtk_sec_heap_buffer *buffer = NULL;
+	struct secure_heap_region *sec_heap = NULL;
+
+	if (!is_region_base_dmabuf(dmabuf)) {
+		pr_err("%s err, dmabuf is not region base\n", __func__);
+		return -1;
+	}
+
+	*sec_hdl = dmabuf_to_secure_handle(dmabuf);
+
+	buffer = dmabuf->priv;
+	sec_heap = sec_heap_region_get(buffer->heap);
+	if (!sec_heap) {
+		pr_err("%s, sec_heap_region_get(%s) failed!!\n", __func__,
+		       buffer->heap ? dma_heap_get_name(buffer->heap) :
+		       "null ptr");
+		return -1;
+	}
+
+	return sec_heap->tmem_type;
+}
+EXPORT_SYMBOL_GPL(dmabuf_to_tmem_type);
 
 /*
  * NOTE: the range of heap_id is (s, e), not [s, e] or [s, e)

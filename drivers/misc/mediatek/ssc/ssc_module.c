@@ -299,46 +299,12 @@ static const struct of_device_id ssc_of_ids[] = {
 };
 static int mt_ssc_pdrv_probe(struct platform_device *pdev)
 {
-
-	ssc_vcore_voter = regulator_get(&pdev->dev, SSC_VCORE_REGULATOR);
-	if (IS_ERR(ssc_vcore_voter)) {
-		pr_info("[SSC] get ssc vcore regulator fail\n");
-		ssc_vcore_voter = NULL;
-		return -1;
-	}
-	return 0;
-}
-static int mt_ssc_pdrv_remove(struct platform_device *pdev)
-{
-	return 0;
-}
-static struct platform_driver mt_ssc_pdrv = {
-	.probe = mt_ssc_pdrv_probe,
-	.remove = mt_ssc_pdrv_remove,
-	.driver = {
-		.name = "ssc_dvfs",
-		.owner = THIS_MODULE,
-		.of_match_table = ssc_of_ids,
-	},
-
-};
-
-static int __init ssc_init(void)
-{
 	struct device_node *ssc_node;
 	int ret;
 	unsigned long flags;
 #if IS_ENABLED(CONFIG_ARM_SCMI_PROTOCOL)
 	struct scmi_tinysys_info_st *tinfo = NULL;
 #endif
-
-	pr_info("[SSC] %s\n", __func__);
-
-	ret = platform_driver_register(&mt_ssc_pdrv);
-	if (ret)
-		pr_info("[SSC] fail to register SSC platform driver\n");
-
-	spin_lock_irqsave(&ssc_locker, flags);
 
 	ssc_node = of_find_compatible_node(NULL, NULL, MTK_SSC_DTS_COMPATIBLE);
 
@@ -357,7 +323,6 @@ static int __init ssc_init(void)
 				&ssc_disable);
 
 		if (!ret && ssc_disable == 1) {
-			spin_unlock_irqrestore(&ssc_locker, flags);
 			pr_info("[SSC] disabled\n");
 			return 0;
 		}
@@ -365,32 +330,12 @@ static int __init ssc_init(void)
 		of_node_put(ssc_node);
 	}
 
-	/* set gpu vlogic bound 0.6V if gpueb not ready */
-#if IS_ENABLED(CONFIG_GPU_SUPPORT)
-	ssc_node = of_find_compatible_node(NULL, NULL, MTK_GPU_DTS_COMPATIBLE);
-
-	if (ssc_node) {
-		ret = of_property_read_u32(ssc_node,
-			"gpueb-support",
-			&gpueb_enable);
-
-		pr_info("[SSC] gpueb enable = 0x%x\n", gpueb_enable);
-
-		if (gpueb_enable == 0)
-			gpufreq_set_limit(TARGET_DEFAULT, LIMIT_SRAMRC, GPUPPM_KEEP_IDX, 60000);
-
-		of_node_put(ssc_node);
-	}
-#endif
-	spin_unlock_irqrestore(&ssc_locker, flags);
-
 	/* scmi interface initialization */
-
 #if IS_ENABLED(CONFIG_ARM_SCMI_PROTOCOL)
 	tinfo = get_scmi_tinysys_info();
 	if (!tinfo) {
 		pr_info("[SSC] get SCMI info fail\n");
-		goto SKIP_SCMI;
+		return -EPROBE_DEFER;
 	}
 	ret = of_property_read_u32(tinfo->sdev->dev.of_node, "scmi_ssc", &ssc_scmi_feature_id);
 
@@ -411,8 +356,35 @@ static int __init ssc_init(void)
 		ssc_aee_print("[SSC] SCMI common set fail!\n");
 	else
 		pr_info("[SSC] notify done!\n");
-SKIP_SCMI:
 #endif
+
+	ssc_vcore_voter = regulator_get(&pdev->dev, SSC_VCORE_REGULATOR);
+	if (IS_ERR(ssc_vcore_voter)) {
+		pr_info("[SSC] get ssc vcore regulator fail\n");
+		ssc_vcore_voter = NULL;
+		return -1;
+	}
+
+	spin_lock_irqsave(&ssc_locker, flags);
+
+	/* set gpu vlogic bound 0.6V if gpueb not ready */
+#if IS_ENABLED(CONFIG_GPU_SUPPORT)
+	ssc_node = of_find_compatible_node(NULL, NULL, MTK_GPU_DTS_COMPATIBLE);
+
+	if (ssc_node) {
+		ret = of_property_read_u32(ssc_node,
+			"gpueb-support",
+			&gpueb_enable);
+
+		pr_info("[SSC] gpueb enable = 0x%x\n", gpueb_enable);
+
+		if (gpueb_enable == 0)
+			gpufreq_set_limit(TARGET_DEFAULT, LIMIT_SRAMRC, GPUPPM_KEEP_IDX, 60000);
+
+		of_node_put(ssc_node);
+	}
+#endif
+	spin_unlock_irqrestore(&ssc_locker, flags);
 
 	ssc_vlogic_bound_register_notifier(&ssc_vlogic_notifier_func);
 	atomic_set(&vlogic_bound_counter, 0);
@@ -423,6 +395,35 @@ SKIP_SCMI:
 	if (ssc_kobj)
 		ret = sysfs_create_file(ssc_kobj, __ATTR_OF(vlogic_bound));
 #endif
+
+	pr_info("[SSC] %s done\n", __func__);
+	return 0;
+}
+static int mt_ssc_pdrv_remove(struct platform_device *pdev)
+{
+	return 0;
+}
+static struct platform_driver mt_ssc_pdrv = {
+	.probe = mt_ssc_pdrv_probe,
+	.remove = mt_ssc_pdrv_remove,
+	.driver = {
+		.name = "ssc_dvfs",
+		.owner = THIS_MODULE,
+		.of_match_table = ssc_of_ids,
+	},
+
+};
+
+static int __init ssc_init(void)
+{
+	int ret;
+
+	pr_info("[SSC] %s\n", __func__);
+
+	ret = platform_driver_register(&mt_ssc_pdrv);
+	if (ret)
+		pr_info("[SSC] fail to register SSC platform driver\n");
+
 	return 0;
 }
 static void __exit ssc_deinit(void)

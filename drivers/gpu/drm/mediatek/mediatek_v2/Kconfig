@@ -1,5 +1,6 @@
 config DRM_MEDIATEK_V2
 	bool "Version 2 of DRM Support for Mediatek SoCs"
+	select FONT_SUPPORT
 	help
 	  Choose this option if you have a phone Mediatek
 	  SoCs. The module will be called mediatek-drm v2
@@ -47,3 +48,17 @@ config MTK_RECU_FENCE_LOCK
 	  reduced to zero in fence signal flow because of linux fence
 	  limitation. So the option will control whether display run
 	  workaround flow.
+
+config MTK_FB_MMDVFS_SUPPORT
+       bool "No HRT hardware is required to support MMDVFS"
+       help
+         If HRT hardware is not in the platform, then support for
+         MMDVFS needs to be added through software.
+
+config MTK_MT6382_BDG
+	tristate "Support Bridge IC 6382"
+	help
+	  This config decide if device with BridgeIC 6382
+	  BridgeIC 6382 can support VESA-1.2 DSC, compressing display framedata
+	  Normal project will disable it first
+	  If you are not sure about this, do not set it to y

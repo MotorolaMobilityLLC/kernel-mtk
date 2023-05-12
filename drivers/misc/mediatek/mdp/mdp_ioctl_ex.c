@@ -360,7 +360,7 @@ static s32 translate_meta(struct op_meta *meta,
 			reg_addr_msb = cmdq_mdp_get_hw_reg_msb(meta->engine, meta->offset);
 			if (reg_addr_msb) {
 				status = cmdq_op_write_reg_ex(
-					handle, cmd_buf, reg_addr_msb, mva >> 32, ~0);
+					handle, cmd_buf, reg_addr_msb, DO_SHIFT_RIGHT(mva, 32), ~0);
 			} else {
 				CMDQ_ERR("%s: op:%u, get reg_addr_msb fail, eng:%d, offset 0x%x\n",
 					__func__, meta->op, meta->engine, meta->offset);
@@ -414,7 +414,7 @@ static s32 translate_meta(struct op_meta *meta,
 
 			/* check platform support LSB/MSB or not */
 			if (gMdpRegMSBSupport) {
-				src_base_msb = mva >> 32;
+				src_base_msb = DO_SHIFT_RIGHT(mva, 32);
 				src_base_lsb = mva & U32_MAX;
 			} else {
 				src_base_msb = 0;
@@ -539,13 +539,22 @@ static s32 translate_meta(struct op_meta *meta,
 		break;
 	}
 	case CMDQ_MOP_POLL:
+	{
+		u32 gpr;
+
 		reg_addr = cmdq_mdp_get_hw_reg(meta->engine, meta->offset);
 		if (!reg_addr)
 			return -EINVAL;
 
+		/* get gpr based on meta->engine */
+		gpr = cmdq_mdp_get_poll_gpr(meta->engine, reg_addr);
+		if (!gpr)
+			return -EINVAL;
+
 		status = cmdq_op_poll_ex(handle, cmd_buf, reg_addr,
-					meta->value, meta->mask);
+			meta->value, meta->mask, gpr);
 		break;
+	}
 	case CMDQ_MOP_WAIT:
 		status = cmdq_op_wait_ex(handle, cmd_buf, meta->event);
 		break;
@@ -599,6 +608,11 @@ static s32 translate_meta(struct op_meta *meta,
 
 		/* secure fd -> secure handle */
 		buf = dma_buf_get(meta->fd);
+		if (IS_ERR(buf)) {
+			CMDQ_ERR("%s: fail to get dma_buf:%ld, meta->fd:%d\n",
+				__func__, PTR_ERR(buf), meta->fd);
+			return -EINVAL;
+		}
 		meta->sec_handle = dmabuf_to_secure_handle(buf);
 		CMDQ_MSG("CMDQ_MOP_WRITE_SEC_FD: translate fd %d to sec_handle %d\n",
 			meta->fd, meta->sec_handle);
@@ -1092,7 +1106,7 @@ s32 mdp_ioctl_alloc_readback_slots(void *fp, unsigned long param)
 	s32 status;
 	u32 free_slot, free_slot_group, alloc_slot_index;
 	u64 exec_cost = sched_clock(), alloc;
-	dma_addr_t vcp_iova_base;
+	dma_addr_t vcp_iova_base = 0;
 	void *vcp_va_base;
 
 	if (copy_from_user(&rb_req, (void *)param, sizeof(rb_req))) {

@@ -1,5 +1,41 @@
 # SPDX-License-Identifier: GPL-2.0
 
+config MTK_SMI_BWC
+	tristate "MediaTek BWC driver"
+	help
+	  BWC is mainy to optimize the bus access latency based on
+	  multimedia scenarios.
+	  It is required for many MTK multimedia middlewares including
+	  camera and video middlewares on some legacy chips.
+	  This config enables BWC functions.
+
+config MTK_SMI_BWC_MT6761
+	tristate "MediaTek BWC driver for MT6761"
+	help
+	  BWC is mainly to optimize the bus access latency based on
+	  multimedia scenarios.
+	  It is required for many MTK multimedia middlewares including
+	  camera and video middlewares on some legacy chips.
+	  This config enables BWC functions.
+
+config MTK_SMI_BWC_MT6739
+	tristate "MediaTek BWC driver for MT6739"
+	help
+	  BWC is mainly to optimize the bus access latency based on
+	  multimedia scenarios.
+	  It is required for many MTK multimedia middlewares including
+	  camera and video middlewares on some legacy chips.
+	  This config enables BWC functions.
+
+config MTK_SMI_BWC_MT6765
+	tristate "MediaTek BWC driver for MT6765"
+	help
+	  BWC is mainly to optimize the bus access latency based on
+	  multimedia scenarios.
+	  It is required for many MTK multimedia middlewares including
+	  camera and video middlewares on some legacy chips.
+	  This config enables BWC functions.
+
 config HAVE_MTK_MC
 	bool "MediaTek Memory Controller support"
 	help
@@ -9,6 +45,33 @@ config HAVE_MTK_MC
 	  DRAMC drivers.
 
 if HAVE_MTK_MC
+
+config MTK_EMI_LEGACY_V0
+	tristate "MediaTek External Memory Interface Legacy V0 driver"
+	depends on HAVE_MTK_MC
+	help
+	  This selects the MediaTek(R) EMI driver.
+	  Provide the API for MPU registration, EMI MPU violation handling,
+	  the API for EMI information, the BWL golden setting,
+	  and the sysfs for EMI ISU control.
+
+config MTK_EMI_LEGACY
+	tristate "MediaTek External Memory Interface Legacy driver"
+	depends on HAVE_MTK_MC
+	help
+	  This selects the MediaTek(R) EMI driver.
+	  Provide the API for MPU registration, EMI MPU violation handling,
+	  the API for EMI information, the BWL golden setting,
+	  and the sysfs for EMI ISU control.
+
+config MTK_EMI_BWL_VERSION
+	int "MTK_EMI_BWL_VERSION"
+	depends on HAVE_MTK_MC
+	default 0
+	help
+	  This selects the MediaTek(R) EMI driver.
+	  Provide version for emi bwl implementation in kernel,
+	  0 means not support by default.
 
 config MTK_EMI
 	tristate "MediaTek External Memory Interface driver"
@@ -28,6 +91,15 @@ config MTK_EMI_MPU_TEST
 	  This driver is mainly for testing purposes. It creates interfaces
 	  for the self-test code of EMI MPU running in the user space.
 	  This driver should not be enabled in the release version.
+
+config MTK_DRAMC_LEGACY
+        tristate "MediaTek DRAMC LEGACY driver"
+        depends on HAVE_MTK_MC
+        help
+          This selects the MediaTek(R) DRAMC driver.
+          Provide the API for DRAMC low power scenario, and the interface
+          for reporting DRAM information, e.g. DRAM mode register (MR) for
+          DRAM vendor ID, temperature, and density.
 
 config MTK_DRAMC
 	tristate "MediaTek DRAMC driver"

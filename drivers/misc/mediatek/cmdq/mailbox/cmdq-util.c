@@ -79,8 +79,6 @@ struct cmdq_record {
 	u64 irq;	/* epoch time of IRQ event */
 	u64 done;	/* epoch time of sw leaving wait and task finish */
 
-	unsigned long start;	/* buffer start address */
-	unsigned long end;	/* command end address */
 	u64 last_inst;	/* last instruction, jump addr */
 
 	u32 exec_begin;	/* task execute time in hardware thread */
@@ -106,7 +104,7 @@ static DEFINE_MUTEX(cmdq_dump_mutex);
 struct cmdq_util_controller_fp controller_fp = {
 	.track_ctrl = cmdq_util_track_ctrl,
 };
-struct cmdq_util_helper_fp helper_fp = {
+static struct cmdq_util_helper_fp helper_fp = {
 	.is_feature_en = cmdq_util_is_feature_en,
 	.dump_lock = cmdq_util_dump_lock,
 	.dump_unlock = cmdq_util_dump_unlock,
@@ -122,6 +120,7 @@ struct cmdq_util_platform_fp *cmdq_platform;
 void cmdq_util_set_fp(struct cmdq_util_platform_fp *cust_cmdq_platform)
 {
 	s32 i;
+
 	if (!cust_cmdq_platform) {
 		cmdq_err("%s cmdq_util_platform_fp is NULL ", __func__);
 		return;
@@ -135,6 +134,23 @@ void cmdq_util_set_fp(struct cmdq_util_platform_fp *cust_cmdq_platform)
 		cmdq_mbox_set_hw_id(util.cmdq_mbox[i]);
 }
 EXPORT_SYMBOL(cmdq_util_set_fp);
+
+void cmdq_util_reset_fp(struct cmdq_util_platform_fp *cust_cmdq_platform)
+{
+	s32 i;
+
+	if (!cust_cmdq_platform) {
+		cmdq_err("%s cmdq_util_platform_fp is NULL ", __func__);
+		return;
+	}
+	controller_fp.thread_ddr_module = NULL;
+	helper_fp.hw_name = NULL;
+	helper_fp.event_module_dispatch = NULL;
+	helper_fp.thread_module_dispatch = NULL;
+	for (i = 0; i < util.mbox_cnt; i++)
+		cmdq_mbox_reset_hw_id(util.cmdq_mbox[i]);
+}
+EXPORT_SYMBOL(cmdq_util_reset_fp);
 
 const char *cmdq_util_event_module_dispatch(phys_addr_t gce_pa, const u16 event, s32 thread)
 {
@@ -300,8 +316,8 @@ static int cmdq_util_status_print(struct seq_file *seq, void *data)
 static int cmdq_util_record_print(struct seq_file *seq, void *data)
 {
 	struct cmdq_record *rec;
-	u32 acq_time, irq_time, begin_wait, exec_time, total_time, hw_time;
-	u64 submit_sec;
+	u32 acq_time, irq_time, begin_wait, exec_time, total_time;
+	u64 submit_sec, hw_time;
 	unsigned long submit_rem, hw_time_rem;
 	s32 i, idx;
 
@@ -309,7 +325,7 @@ static int cmdq_util_record_print(struct seq_file *seq, void *data)
 
 	seq_puts(seq, "index,pkt,task priority,sec,size,gce,thread,");
 	seq_puts(seq,
-		"submit,acq_time(us),irq_time(us),begin_wait(us),exec_time(us),total_time(us),start,end,jump,");
+		"submit,acq_time(us),irq_time(us),begin_wait(us),exec_time(us),total_time(us),jump,");
 	seq_puts(seq, "exec begin,exec end,hw_time(us),\n");
 
 	idx = util.record_idx;
@@ -335,17 +351,16 @@ static int cmdq_util_record_print(struct seq_file *seq, void *data)
 		util_time_to_us(rec->trigger, rec->done, exec_time);
 		util_time_to_us(rec->submit, rec->done, total_time);
 		seq_printf(seq,
-			"%llu.%06lu,%u,%u,%u,%u,%u,%#lx,%#lx,%#llx,",
+			"%llu.%06lu,%u,%u,%u,%u,%u,%#llx,",
 			submit_sec, submit_rem / 1000, acq_time, irq_time,
-			begin_wait, exec_time, total_time,
-			rec->start, rec->end, rec->last_inst);
+			begin_wait, exec_time, total_time, rec->last_inst);
 
 		hw_time = rec->exec_end > rec->exec_begin ?
 			rec->exec_end - rec->exec_begin :
 			~rec->exec_begin + 1 + rec->exec_end;
 		hw_time_rem = (u32)CMDQ_TICK_TO_US(hw_time);
 
-		seq_printf(seq, "%u,%u,%u.%06lu,\n",
+		seq_printf(seq, "%u,%u,%llu.%06lu,\n",
 			rec->exec_begin, rec->exec_end, hw_time, hw_time_rem);
 	}
 
@@ -550,12 +565,10 @@ void cmdq_util_track(struct cmdq_pkt *pkt)
 
 	if (!list_empty(&pkt->buf)) {
 		buf = list_first_entry(&pkt->buf, typeof(*buf), list_entry);
-		record->start = CMDQ_BUF_ADDR(buf);
 
 		buf = list_last_entry(&pkt->buf, typeof(*buf), list_entry);
 		offset = CMDQ_CMD_BUFFER_SIZE - (pkt->buf_size -
 			pkt->cmd_buf_size);
-		record->end = CMDQ_BUF_ADDR(buf) + offset;
 		record->last_inst = *(u64 *)(buf->va_base + offset -
 			CMDQ_INST_SIZE);
 

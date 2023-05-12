@@ -38,6 +38,7 @@
 #define I2C_I3C_EN			(1 << 15)
 #define I2C_HFIFO_UNLOCK		(1 << 15)
 #define I2C_HFIFO_NINTH_BIT		(2 << 8)
+#define I2C_HHS_SAMPLE_CNT_DIV		(1 << 9)
 #define I2C_HFIFO_MASTER_CODE		0x0008
 #define I2C_DCM_DISABLE			0x0000
 #define I2C_IO_CONFIG_OPEN_DRAIN	0x0003
@@ -58,6 +59,7 @@
 #define I2C_CHN_CLR_FLAG		0x0000
 #define I2C_SCL_MIS_COMP_VALUE		0x0000
 #define I2C_CHN_CLR_FLAG		0x0000
+#define I2C_IO_CONFIG_AED_MASK		0xfff0
 
 #define I2C_DMA_CON_TX			0x0000
 #define I2C_DMA_CON_RX			0x0001
@@ -180,6 +182,7 @@ static const u16 mt_i2c_regs_v1[] = {
 	[OFFSET_TIMING] = 0x20,
 	[OFFSET_START] = 0x24,
 	[OFFSET_EXT_CONF] = 0x28,
+	[OFFSET_LTIMING] = 0x2c,
 	[OFFSET_FIFO_STAT] = 0x30,
 	[OFFSET_FIFO_THRESH] = 0x34,
 	[OFFSET_FIFO_ADDR_CLR] = 0x38,
@@ -250,6 +253,8 @@ struct mtk_i2c_compatible {
 	unsigned char max_dma_support;
 	unsigned char slave_addr_ver;
 	unsigned char fifo_size;
+	unsigned char need_add_hhs_div;
+	unsigned char set_aed: 1;
 };
 
 struct mtk_i2c_ac_timing {
@@ -286,12 +291,14 @@ struct mtk_i2c {
 	unsigned int clk_src_in_hz;
 	unsigned int ch_offset_i2c;
 	unsigned int ch_offset_dma;
+	unsigned int aed;
 	enum mtk_trans_op op;
 	u16 timing_reg;
 	u16 high_speed_reg;
 	u16 ltiming_reg;
 	unsigned char auto_restart;
 	bool ignore_restart_irq;
+	bool clk_div_ctrl;
 	struct mtk_i2c_ac_timing ac_timing;
 	const struct mtk_i2c_compatible *dev_comp;
 };
@@ -451,6 +458,38 @@ static const struct mtk_i2c_compatible mt8192_compat = {
 	.max_dma_support = 36,
 };
 
+static const struct mtk_i2c_compatible mt6765_compat = {
+	.regs = mt_i2c_regs_v2,
+	.pmic_i2c = 0,
+	.dcm = 0,
+	.auto_restart = 1,
+	.aux_len_reg = 1,
+	.timing_adjust = 1,
+	.dma_sync = 1,
+	.ltiming_adjust = 1,
+	.dma_ver = 0,
+	.apdma_sync = 1,
+	.max_dma_support = 36,
+	.fifo_size = 8,
+	.need_add_hhs_div = 0,
+};
+
+static const struct mtk_i2c_compatible mt6768_compat = {
+	.regs = mt_i2c_regs_v2,
+	.pmic_i2c = 0,
+	.dcm = 0,
+	.auto_restart = 1,
+	.aux_len_reg = 1,
+	.timing_adjust = 1,
+	.dma_sync = 1,
+	.ltiming_adjust = 1,
+	.dma_ver = 0,
+	.apdma_sync = 1,
+	.max_dma_support = 36,
+	.fifo_size = 8,
+	.need_add_hhs_div = 1,
+};
+
 static const struct mtk_i2c_compatible mt6873_compat = {
 	.regs = mt_i2c_regs_v2,
 	.pmic_i2c = 0,
@@ -498,6 +537,37 @@ static const struct mtk_i2c_compatible mt6983_compat = {
 	.fifo_size = 16,
 };
 
+static const struct mtk_i2c_compatible mt6761_compat = {
+	.regs = mt_i2c_regs_v2,
+	.pmic_i2c = 0,
+	.dcm = 0,
+	.auto_restart = 1,
+	.aux_len_reg = 1,
+	.timing_adjust = 1,
+	.dma_sync = 1,
+	.ltiming_adjust = 1,
+	.dma_ver = 0,
+	.apdma_sync = 1,
+	.max_dma_support = 36,
+	.fifo_size = 8,
+};
+
+static const struct mtk_i2c_compatible mt6739_compat = {
+	.regs = mt_i2c_regs_v1,
+	.pmic_i2c = 0,
+	.dcm = 0,
+	.auto_restart = 1,
+	.aux_len_reg = 1,
+	.timing_adjust = 1,
+	.dma_sync = 1,
+	.ltiming_adjust = 1,
+	.dma_ver = 0,
+	.apdma_sync = 1,
+	.max_dma_support = 32,
+	.fifo_size = 8,
+	.set_aed = 1,
+};
+
 static const struct of_device_id mtk_i2c_of_match[] = {
 	{ .compatible = "mediatek,mt2712-i2c", .data = &mt2712_compat },
 	{ .compatible = "mediatek,mt6577-i2c", .data = &mt6577_compat },
@@ -509,6 +579,10 @@ static const struct of_device_id mtk_i2c_of_match[] = {
 	{ .compatible = "mediatek,mt8173-i2c", .data = &mt8173_compat },
 	{ .compatible = "mediatek,mt8183-i2c", .data = &mt8183_compat },
 	{ .compatible = "mediatek,mt8192-i2c", .data = &mt8192_compat },
+	{ .compatible = "mediatek,mt6765-i2c", .data = &mt6765_compat },
+	{ .compatible = "mediatek,mt6768-i2c", .data = &mt6768_compat },
+	{ .compatible = "mediatek,mt6761-i2c", .data = &mt6761_compat },
+	{ .compatible = "mediatek,mt6739-i2c", .data = &mt6739_compat },
 	{}
 };
 MODULE_DEVICE_TABLE(of, mtk_i2c_of_match);
@@ -595,6 +669,7 @@ static void mtk_i2c_init_hw(struct mtk_i2c *i2c)
 	u16 control_reg;
 	u16 intr_stat_reg;
 	u16 ext_conf_val;
+	u16 ioconfig_reg;
 
 	mtk_i2c_writew(i2c, I2C_CHN_CLR_FLAG, OFFSET_START);
 	intr_stat_reg = mtk_i2c_readw(i2c, OFFSET_INTR_STAT);
@@ -624,8 +699,12 @@ static void mtk_i2c_init_hw(struct mtk_i2c *i2c)
 	/* Set ioconfig */
 	if (i2c->use_push_pull)
 		mtk_i2c_writew(i2c, I2C_IO_CONFIG_PUSH_PULL, OFFSET_IO_CONFIG);
-	else
-		mtk_i2c_writew(i2c, I2C_IO_CONFIG_OPEN_DRAIN, OFFSET_IO_CONFIG);
+	else {
+		ioconfig_reg = I2C_IO_CONFIG_OPEN_DRAIN;
+		if (i2c->dev_comp->set_aed)
+			ioconfig_reg |= ((i2c->aed<<4) & I2C_IO_CONFIG_AED_MASK);
+		mtk_i2c_writew(i2c, ioconfig_reg, OFFSET_IO_CONFIG);
+	}
 
 	if (i2c->dev_comp->dcm)
 		mtk_i2c_writew(i2c, I2C_DCM_DISABLE, OFFSET_DCM_EN);
@@ -642,7 +721,12 @@ static void mtk_i2c_init_hw(struct mtk_i2c *i2c)
 
 	if (i2c->dev_comp->timing_adjust) {
 		ext_conf_val = i2c->ac_timing.ext;
-		mtk_i2c_writew(i2c, i2c->ac_timing.inter_clk_div,
+		if (i2c->clk_div_ctrl == true)
+			mtk_i2c_writew(i2c, ((i2c->clk_src_div - 1) << 8) +
+					(i2c->clk_src_div - 1),
+					OFFSET_CLOCK_DIV);
+		else
+			mtk_i2c_writew(i2c, i2c->ac_timing.inter_clk_div,
 			       OFFSET_CLOCK_DIV);
 		mtk_i2c_writew(i2c, I2C_SCL_MIS_COMP_VALUE,
 			       OFFSET_SCL_MIS_COMP_POINT);
@@ -771,6 +855,9 @@ static int mtk_i2c_check_ac_timing(struct mtk_i2c *i2c,
 			i2c->ac_timing.hs = I2C_TIME_DEFAULT_VALUE |
 				I2C_TIME_HS_SPEED_VALUE | (sample_cnt << 12) |
 				(high_cnt << 8);
+			/* Add hs smaple cnt div to make data correct */
+			if (i2c->dev_comp->need_add_hhs_div == 1)
+				i2c->ac_timing.hs |= I2C_HHS_SAMPLE_CNT_DIV;
 			i2c->ac_timing.ltiming &= ~GENMASK(15, 9);
 			i2c->ac_timing.ltiming |= (sample_cnt << 12) |
 				(low_cnt << 9);
@@ -1534,8 +1621,10 @@ static int mtk_i2c_parse_dt(struct device_node *np, struct mtk_i2c *i2c)
 	of_property_read_u32(np, "clk_src_in_hz", &i2c->clk_src_in_hz);
 	of_property_read_u32(np, "ch_offset_i2c", &i2c->ch_offset_i2c);
 	of_property_read_u32(np, "ch_offset_dma", &i2c->ch_offset_dma);
-	dev_dbg(i2c->dev, "clk_src=%d,ch_offset_i2c=0x%x, ch_offset_dma=0x%x\n",
-			i2c->clk_src_in_hz, i2c->ch_offset_i2c, i2c->ch_offset_dma);
+	of_property_read_u32(np, "aed", &i2c->aed);
+	i2c->clk_div_ctrl = of_property_read_bool(np, "mediatek,clk_div_ctrl");
+	dev_dbg(i2c->dev, "clk_src=%d,ch_offset_i2c=0x%x, ch_offset_dma=0x%x, aed=0x%x, clk_div_ctrl=%d\n",
+			i2c->clk_src_in_hz, i2c->ch_offset_i2c, i2c->ch_offset_dma, i2c->aed, i2c->clk_div_ctrl);
 	i2c->have_pmic = of_property_read_bool(np, "mediatek,have-pmic");
 	i2c->use_push_pull =
 		of_property_read_bool(np, "mediatek,use-push-pull");

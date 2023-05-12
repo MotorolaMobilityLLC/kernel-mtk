@@ -39,6 +39,7 @@ static const char longname[] = "Gadget Android";
 extern void bootprof_log_boot(char *str);
 #endif
 
+#if !IS_BUILTIN(CONFIG_MTK_USB_META)
 /****************************************************
  *   Begin - copy function from composite.c
  ****************************************************/
@@ -91,6 +92,7 @@ void usb_remove_config(struct usb_composite_dev *cdev,
 
 	remove_config(cdev, config);
 }
+#endif
 /****************************************************
  *   End - copy function from composite.c
  ****************************************************/
@@ -1348,6 +1350,13 @@ static int usb_meta_probe(struct platform_device *pdev)
 		.dev		= &device_desc,
 		.strings	= dev_strings,
 		.bind		= dummy_bind,
+#if IS_BUILTIN(CONFIG_MTK_USB_META)
+#if IS_ENABLED(CONFIG_USB_MU3D_DRV)
+		.max_speed	= USB_SPEED_SUPER
+#else
+		.max_speed	= USB_SPEED_HIGH
+#endif
+#endif
 	};
 	int err;
 	int config = 0;

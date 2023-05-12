@@ -16,6 +16,51 @@
 //#include <linux/interconnect-provider.h>
 #include "mtk-interconnect.h"
 
+/* Compatibility with 32-bit shift operation */
+#if IS_ENABLED(CONFIG_ARCH_DMA_ADDR_T_64BIT)
+#define DO_SHIFT_RIGHT(x, n) ({     \
+	(n) < (8 * sizeof(u64)) ? (x) >> (n) : 0;	\
+})
+#define DO_SHIFT_LEFT(x, n) ({      \
+	(n) < (8 * sizeof(u64)) ? (x) << (n) : 0;	\
+})
+#else
+#define DO_SHIFT_RIGHT(x, n) ({     \
+	(n) < (8 * sizeof(u32)) ? (x) >> (n) : 0;	\
+})
+#define DO_SHIFT_LEFT(x, n) ({      \
+	(n) < (8 * sizeof(u32)) ? (x) << (n) : 0;	\
+})
+#endif
+
+/* Compatible with 32bit division and mold operation */
+#if IS_ENABLED(CONFIG_ARCH_DMA_ADDR_T_64BIT)
+#define DO_COMMON_DIV(x, base) ((x) / (base))
+#define DO_COMMMON_MOD(x, base) ((x) % (base))
+#else
+#define DO_COMMON_DIV(x, base) ({                   \
+	uint64_t result = 0;                        \
+	if (sizeof(x) < sizeof(uint64_t))           \
+		result = ((x) / (base));            \
+	else {                                      \
+		uint64_t __x = (x);                 \
+		do_div(__x, (base));                \
+		result = __x;                       \
+	}                                           \
+	result;                                     \
+})
+#define DO_COMMMON_MOD(x, base) ({                  \
+	uint32_t result = 0;                        \
+	if (sizeof(x) < sizeof(uint64_t))           \
+		result = ((x) % (base));            \
+	else {                                      \
+		uint64_t __x = (x);                 \
+		result = do_div(__x, (base));       \
+	}                                           \
+	result;                                     \
+})
+#endif
+
 struct device;
 struct device_node;
 struct drm_crtc;
@@ -31,6 +76,14 @@ struct drm_crtc_state;
 
 #define MMSYS_DUMMY0 0x0400
 #define DISP_REG_CONFIG_MMSYS_MISC                0x0F0
+
+#define MT6739_MMSYS_SODI_REQ_MASK                       0xF8
+#define MT6739_SODI_REQ_MASK_ALL                  REG_FLD_MSB_LSB(4, 0)
+	#define MT6739_SODI_REQ_MASK_RDMA0            REG_FLD_MSB_LSB(0, 0)
+
+#define MT6739_DVFS_HALT_MASK_SEL_ALL             REG_FLD_MSB_LSB(20, 16)
+	#define MT6739_DVFS_HALT_MASK_SEL_RDMA0       REG_FLD_MSB_LSB(16, 16)
+	#define MT6739_DVFS_HALT_MASK_SEL_WDMA0       REG_FLD_MSB_LSB(17, 17)
 
 #define SODI_HRT_FIFO_SEL                         REG_FLD_MSB_LSB(3, 0)
 	#define SODI_HRT_FIFO_SEL_DISP0_PD_MODE       REG_FLD_MSB_LSB(0, 0)
@@ -381,6 +434,8 @@ enum mtk_ddp_io_cmd {
 	DSI_VFP_DEFAULT_MODE,
 	DSI_GET_TIMING,
 	DSI_GET_MODE_BY_MAX_VREFRESH,
+	DSI_GET_MODE_CONT,
+	DSI_SET_PANEL_PARAMS_BY_IDX,
 	DSI_FILL_MODE_BY_CONNETOR,
 	PMQOS_SET_BW,
 	PMQOS_SET_HRT_BW,
@@ -401,6 +456,8 @@ enum mtk_ddp_io_cmd {
 	DSI_SET_CRTC_AVAIL_MODES,
 	DSI_TIMING_CHANGE,
 	GET_PANEL_NAME,
+	GET_ALL_CONNECTOR_PANEL_NAME,
+	GET_CRTC0_CONNECTOR_ID,
 	DSI_CHANGE_MODE,
 	BACKUP_OVL_STATUS,
 	MIPI_HOPPING,
@@ -787,8 +844,11 @@ int mtk_ddp_comp_init(struct device *dev, struct device_node *comp_node,
 int mtk_ddp_comp_register(struct drm_device *drm, struct mtk_ddp_comp *comp);
 void mtk_ddp_comp_unregister(struct drm_device *drm, struct mtk_ddp_comp *comp);
 int mtk_ddp_comp_get_type(enum mtk_ddp_comp_id comp_id);
+int mtk_ddp_comp_get_alias(enum mtk_ddp_comp_id comp_id);
 bool mtk_dsi_is_cmd_mode(struct mtk_ddp_comp *comp);
+enum mtk_ddp_comp_id mtk_dsi_get_comp_id(struct drm_connector *c);
 bool mtk_ddp_comp_is_output(struct mtk_ddp_comp *comp);
+bool mtk_ddp_comp_is_output_by_id(enum mtk_ddp_comp_id id);
 void mtk_ddp_comp_get_name(struct mtk_ddp_comp *comp, char *buf, int buf_len);
 int mtk_ovl_layer_num(struct mtk_ddp_comp *comp);
 void mtk_ddp_write(struct mtk_ddp_comp *comp, unsigned int value,
@@ -804,6 +864,14 @@ void mtk_ddp_comp_clk_prepare(struct mtk_ddp_comp *comp);
 void mtk_ddp_comp_clk_unprepare(struct mtk_ddp_comp *comp);
 void mtk_ddp_comp_iommu_enable(struct mtk_ddp_comp *comp,
 			       struct cmdq_pkt *handle);
+void mt6739_mtk_sodi_config(struct drm_device *drm, enum mtk_ddp_comp_id id,
+			    struct cmdq_pkt *handle, void *data);
+void mt6765_mtk_sodi_config(struct drm_device *drm, enum mtk_ddp_comp_id id,
+			    struct cmdq_pkt *handle, void *data);
+void mt6761_mtk_sodi_config(struct drm_device *drm, enum mtk_ddp_comp_id id,
+			    struct cmdq_pkt *handle, void *data);
+void mt6768_mtk_sodi_config(struct drm_device *drm, enum mtk_ddp_comp_id id,
+			    struct cmdq_pkt *handle, void *data);
 void mt6779_mtk_sodi_config(struct drm_device *drm, enum mtk_ddp_comp_id id,
 			    struct cmdq_pkt *handle, void *data);
 void mt6885_mtk_sodi_config(struct drm_device *drm, enum mtk_ddp_comp_id id,

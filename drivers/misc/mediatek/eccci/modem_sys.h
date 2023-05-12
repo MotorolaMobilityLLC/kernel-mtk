@@ -37,21 +37,35 @@ enum MODEM_EE_FLAG {
 };
 
 enum LOGGING_MODE {
-	MODE_UNKNOWN = -1,	  /* -1 */
-	MODE_IDLE,			  /* 0 */
-	MODE_USB,			   /* 1 */
-	MODE_SD,				/* 2 */
-	MODE_POLLING,		   /* 3 */
-	MODE_WAITSD,			/* 4 */
+	MODE_UNKNOWN = -1,	/* -1 */
+	MODE_IDLE,		/* 0 */
+	MODE_USB,		/* 1 */
+	MODE_SD,		/* 2 */
+	MODE_POLLING,		/* 3 */
+	MODE_WAITSD,		/* 4 */
 };
 
-#define MD_SETTING_ENABLE (1<<0)
-#define MD_SETTING_RELOAD (1<<1)
-#define MD_SETTING_FIRST_BOOT (1<<2)	/* this is the first time of boot up */
-#define MD_SETTING_DUMMY  (1<<7)
+#define MD_SETTING_ENABLE	(1<<0)
+#define MD_SETTING_RELOAD	(1<<1)
+/* this is the first time of boot up */
+#define MD_SETTING_FIRST_BOOT	(1<<2)
+#define MD_SETTING_DUMMY	(1<<7)
+#define MD_IMG_DUMP_SIZE	(1<<8)
+#define DSP_IMG_DUMP_SIZE	(1<<9)
 
-#define MD_IMG_DUMP_SIZE (1<<8)
-#define DSP_IMG_DUMP_SIZE (1<<9)
+#define INFRA_AP2MD_DUMMY_REG	(0x370)
+#define INFRA_AP2MD_DUMMY_BIT	0
+#define	INFRA_MD2PERI_PROT_EN	(0x250)
+#define	INFRA_MD2PERI_PROT_RDY	(0x258)
+#define	INFRA_MD2PERI_PROT_SET	(0x2A8)
+#define	INFRA_MD2PERI_PROT_CLR	(0x2AC)
+#define	INFRA_MD2PERI_PROT_BIT	6
+
+#define	INFRA_PERI2MD_PROT_EN	(0x220)
+#define	INFRA_PERI2MD_PROT_RDY	(0x228)
+#define	INFRA_PERI2MD_PROT_SET	(0x2A0)
+#define	INFRA_PERI2MD_PROT_CLR	(0x2A4)
+#define	INFRA_PERI2MD_PROT_BIT	7
 
 struct ccci_force_assert_shm_fmt {
 	unsigned int  error_code;
@@ -194,16 +208,6 @@ static inline void *ccci_md_get_hw_info(int md_id)
 	return modem_sys[md_id]->hw_info;
 }
 
-static inline int ccci_md_recv_skb(unsigned char md_id,
-	unsigned char hif_id, struct sk_buff *skb)
-{
-	int flag = NORMAL_DATA;
-
-	if (hif_id == MD1_NET_HIF)
-		flag = CLDMA_NET_DATA;
-	return ccci_port_recv_skb(md_id, hif_id, skb, flag);
-}
-
 /****************************************************************************/
 /* API Region called by port_proxy class */
 /****************************************************************************/
@@ -218,6 +222,8 @@ int ccci_md_get_ex_type(struct ccci_modem *md);
 /* API Region called by ccci modem object */
 /***************************************************************************/
 
+extern struct ccci_plat_val md_cd_plat_val_ptr;
+
 #if defined(FEATURE_SYNC_C2K_MEID)
 extern unsigned char tc1_read_meid_syncform(unsigned char *meid, int leng);
 #endif
@@ -225,7 +231,6 @@ extern unsigned char tc1_read_meid_syncform(unsigned char *meid, int leng);
 #if defined(FEATURE_TC1_CUSTOMER_VAL)
 extern int get_md_customer_val(unsigned char *value, unsigned int len);
 #endif
-extern bool spm_is_md1_sleep(void);
 
 //extern unsigned int trace_sample_time;
 

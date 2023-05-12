@@ -757,7 +757,7 @@ int mtk_smi_dbg_unregister_notifier(struct notifier_block *nb)
 }
 EXPORT_SYMBOL_GPL(mtk_smi_dbg_unregister_notifier);
 
-s32 mtk_smi_dbg_hang_detect(const char *user)
+s32 mtk_smi_dbg_hang_detect(char *user)
 {
 	struct mtk_smi_dbg	*smi = gsmi;
 	struct mtk_smi_dbg_node	node;
@@ -779,7 +779,7 @@ s32 mtk_smi_dbg_hang_detect(const char *user)
 	//mtk_dump_reg_for_hang_issue(0, 0);
 	//mtk_dump_reg_for_hang_issue(0, 1);
 
-	raw_notifier_call_chain(&smi_notifier_list, 0, NULL);
+	raw_notifier_call_chain(&smi_notifier_list, 0, user);
 
 	//check LARB status
 	for (i = 0; i < ARRAY_SIZE(smi->larb); i++) {
@@ -1004,7 +1004,7 @@ int smi_get_larb_dump(const char *val, const struct kernel_param *kp)
 	s32		result, larb_id, ret;
 
 	result = kstrtoint(val, 0, &larb_id);
-	if (result || larb_id < 0) {
+	if (result != 0 || larb_id < 0 || larb_id >= MTK_LARB_NR_MAX) {
 		pr_notice("SMI get larb dump failed: %d\n", result);
 		return result;
 	}
@@ -1029,7 +1029,7 @@ int smi_put_larb(const char *val, const struct kernel_param *kp)
 	s32		result, larb_id;
 
 	result = kstrtoint(val, 0, &larb_id);
-	if (result || larb_id < 0) {
+	if (result != 0 || larb_id < 0 || larb_id >= MTK_LARB_NR_MAX) {
 		pr_notice("SMI put larb failed: %d\n", result);
 		return result;
 	}
@@ -1044,7 +1044,11 @@ static struct kernel_param_ops smi_put_larb_ops = {
 module_param_cb(smi_larb_disable, &smi_put_larb_ops, NULL, 0644);
 MODULE_PARM_DESC(smi_larb_disable, "disable smi larb");
 
+#if IS_MODULE(CONFIG_MTK_SMI)
 module_init(mtk_smi_dbg_init);
+#else
+late_initcall(mtk_smi_dbg_init);
+#endif
 MODULE_LICENSE("GPL v2");
 
 int smi_larb_force_all_on(char *buf, const struct kernel_param *kp)

@@ -99,7 +99,6 @@ static int normal_tx_ring2queue[NORMAL_TXQ_NUM];
 
 struct md_cd_ctrl *cldma_ctrl;
 
-static void __iomem *md_cldma_misc_base;
 
 struct ccci_cldma_clk_node cldma_clk_table[CLDMA_CLOCK_COUNT] = {
 	{ NULL,	"infra-cldma-bclk"},
@@ -126,10 +125,6 @@ static inline struct device *ccci_md_get_dev_by_id(int md_id)
 
 static void cldma_dump_register(struct md_cd_ctrl *md_ctrl)
 {
-	if (md_cldma_misc_base)
-		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
-			"MD CLDMA IP busy = %x\n",
-			ccci_read32(md_cldma_misc_base, 0));
 
 	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
 		"dump AP CLDMA Tx pdn register, active=%x\n",
@@ -2958,16 +2953,14 @@ static struct syscore_ops ccci_cldma_sysops = {
 
 static int ccci_cldma_set_plat_ops(void)
 {
-	if (cldma_ctrl->cldma_platform == 6761 ||
-		cldma_ctrl->cldma_platform == 6765) {
+	if (cldma_ctrl->plat_val.md_gen <= 6293) {
 		cldma_ctrl->cldma_plat_ops.hw_reset = &cldma_plat_hw_reset;
 		cldma_ctrl->cldma_plat_ops.set_clk_cg = &cldma_plat_set_clk_cg;
 		cldma_ctrl->cldma_plat_ops.syssuspend = &cldma_plat_suspend;
 		cldma_ctrl->cldma_plat_ops.sysresume = &cldma_plat_resume;
 
 	} else {
-		CCCI_ERROR_LOG(-1, TAG,
-			"error: platform number is invalid.\n");
+		CCCI_ERROR_LOG(-1, TAG, "error: platform number is invalid\n");
 		return -1;
 	}
 
@@ -2983,7 +2976,6 @@ static u64 s_cldma_dmamask = DMA_BIT_MASK(36);
 static int ccci_cldma_hif_init(struct platform_device *pdev,
 		unsigned char hif_id, unsigned char md_id)
 {
-	struct device_node *node = NULL;
 	struct md_cd_ctrl *md_ctrl;
 	int i, idx;
 
@@ -3049,21 +3041,6 @@ static int ccci_cldma_hif_init(struct platform_device *pdev,
 		kfree(md_ctrl);
 		return -1;
 	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mdcldmamisc");
-	if (node) {
-		md_cldma_misc_base = of_iomap(node, 0);
-		if (!md_cldma_misc_base) {
-			CCCI_ERROR_LOG(-1, TAG,
-				"%s: md_cldma_misc_base of_iomap failed\n",
-				node->full_name);
-			return -1;
-		}
-
-	} else
-		CCCI_BOOTUP_LOG(-1, TAG,
-			"warning: no md cldma misc in dts\n");
-
 
 	for (idx = 0; idx < ARRAY_SIZE(cldma_clk_table); idx++) {
 		cldma_clk_table[idx].clk_ref = devm_clk_get(&pdev->dev,
@@ -3217,7 +3194,7 @@ int ccci_hif_cldma_probe(struct platform_device *pdev)
 {
 	int ret;
 
-	CCCI_ERROR_LOG(-1, TAG, "[%s] start", __func__);
+	CCCI_DEBUG_LOG(-1, TAG, "[%s] start", __func__);
 
 	ret = ccci_cldma_hif_init(pdev, CLDMA_HIF_ID, MD_SYS1);
 	if (ret < 0) {
@@ -3249,7 +3226,7 @@ static int __init ccci_cldma_init(void)
 
 	ret = platform_driver_register(&ccci_cldma_driver);
 	if (ret) {
-		CCCI_ERROR_LOG(-1, TAG, "ccci hif_cldma driver init fail %d",
+		CCCI_ERROR_LOG(-1, TAG, "ccci hif_cldma driver init fail %d\n",
 			ret);
 		return ret;
 	}

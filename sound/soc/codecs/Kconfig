@@ -50,6 +50,7 @@ config SND_SOC_ALL_CODECS
 	imply SND_SOC_AK5558
 	imply SND_SOC_ALC5623
 	imply SND_SOC_ALC5632
+	imply SND_SOC_AW883XX
 	imply SND_SOC_BT_SCO
 	imply SND_SOC_BD28623
 	imply SND_SOC_CQ0093VC
@@ -164,6 +165,7 @@ config SND_SOC_ALL_CODECS
 	imply SND_SOC_RT1015P
 	imply SND_SOC_RT1305
 	imply SND_SOC_RT1308
+	imply SND_SOC_RT5509
 	imply SND_SOC_RT5512
 	imply SND_SOC_RT5514
 	imply SND_SOC_RT5616
@@ -212,6 +214,8 @@ config SND_SOC_ALL_CODECS
         imply SND_SOC_AA006
 	imply SND_SOC_BB007
 	imply SND_SOC_TFA9879
+	imply SND_SOC_FS1894U
+	imply SND_SOC_AD10
 	imply SND_SOC_TLV320ADCX140
 	imply SND_SOC_TLV320AIC23_I2C
 	imply SND_SOC_TLV320AIC23_SPI
@@ -533,6 +537,12 @@ config SND_SOC_ALC5632
 	tristate
 	depends on I2C
 
+config SND_SOC_AW883XX
+	tristate "SoC Audio for awinic aw883xx series"
+	depends on I2C
+	help
+	  This option enables support for aw883xx series Smart PA.
+
 config SND_SOC_BD28623
 	tristate "ROHM BD28623 CODEC"
 	help
@@ -668,6 +678,7 @@ config SND_SOC_CS4349
 
 config SND_SOC_CS47L15
 	tristate
+	depends on MFD_CS47L15
 
 config SND_SOC_CS47L24
 	tristate
@@ -675,15 +686,19 @@ config SND_SOC_CS47L24
 
 config SND_SOC_CS47L35
 	tristate
+	depends on MFD_CS47L35
 
 config SND_SOC_CS47L85
 	tristate
+	depends on MFD_CS47L85
 
 config SND_SOC_CS47L90
 	tristate
+	depends on MFD_CS47L90
 
 config SND_SOC_CS47L92
 	tristate
+	depends on MFD_CS47L92
 
 # Cirrus Logic Quad-Channel ADC
 config SND_SOC_CS53L30
@@ -861,7 +876,6 @@ config SND_SOC_MAX98095
 
 config SND_SOC_MAX98357A
 	tristate "Maxim MAX98357A CODEC"
-	depends on GPIOLIB
 
 config SND_SOC_MAX98371
 	tristate
@@ -1103,7 +1117,6 @@ config SND_SOC_RT1015
 
 config SND_SOC_RT1015P
 	tristate
-	depends on GPIOLIB
 
 config SND_SOC_RT1305
 	tristate
@@ -1117,6 +1130,16 @@ config SND_SOC_RT1308_SDW
 	tristate "Realtek RT1308 Codec - SDW"
 	depends on I2C && SOUNDWIRE
 	select REGMAP_SOUNDWIRE
+
+config SND_SOC_RT5509
+	tristate "Richtek RT5509 speaker amplifier"
+	depends on I2C
+	select MTK_SUBPMIC_MISC
+	help
+	  Config of RT5509. It is a Smart power
+	  amplifier which contain speaker protection,
+	  multi-band DRC, equalizer function. It would
+	  be set to yes if device with RT5509 on it.
 
 config SND_SOC_RT5512
 	tristate "Mediatek RT5512 speaker amplifier"
@@ -1381,6 +1404,21 @@ config SND_SOC_AA006
 config SND_SOC_TFA9879
 	tristate "NXP Semiconductors TFA9879 amplifier"
 	depends on I2C
+
+config SND_SOC_FS1894U
+	tristate "FourSemi fs16xx Codec Driver"
+	depends on I2C
+#	default y
+	help
+	  for FourSemi True Smart Amplifier.
+
+config SND_SOC_AD10
+	tristate "Support AD10 driver"
+	depends on I2C
+	help
+	  This option enables support for AD10 boards.
+	  Speaker amp use FourSemi FS1894 codec,
+	  This only using on special project phone.
 
 config SND_SOC_BB007
 	tristate "Support BB007 driver"
@@ -1810,6 +1848,23 @@ config SND_SOC_MT6338
 	  three DAC for downlink path(handset,
 	  headset, lineout).
 
+config SND_SOC_MT6358_ACCDET
+	tristate "MediaTek MT6358 ACCDET driver"
+	depends on MFD_MT6397
+	help
+	  ACCDET means Accessory Detection technology,
+	  MediaTek develop it for ASoC codec soc-jack
+	  detection mechanism. Select N if you don't
+	  have jack on board.
+
+config SND_SOC_MT6357_ACCDET
+	tristate "MediaTek MT6357 ACCDET driver"
+	default MFD_MT6397
+	help
+	  ACCDET means Accessory Detection technology, MediaTek develop it
+	  for ASoC codec soc-jack detection mechanism.
+	  Select N if you don't have jack on board.
+
 config SND_SOC_MT6338_ACCDET
 	tristate "MediaTek MT6338 ACCDET driver"
 	depends on MFD_MT6338
@@ -1818,6 +1873,9 @@ config SND_SOC_MT6338_ACCDET
 	  MediaTek develop it for ASoC codec soc-jack
 	  detection mechanism. Select N if you don't
 	  have jack on board.
+
+config SND_SOC_CS35L45
+	tristate "cirrus Semiconductors cs35l45 amplifier"
 
 config SND_SOC_MT6351
 	tristate "MediaTek MT6351 Codec"

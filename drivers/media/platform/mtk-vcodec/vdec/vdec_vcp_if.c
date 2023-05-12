@@ -746,16 +746,52 @@ static int vdec_vcp_ipi_isr(unsigned int id, void *prdata, void *data,
 	return 0;
 }
 
-static int vdec_vcp_backup(struct vdec_inst *inst)
+static struct mtk_vcodec_ctx *get_valid_ctx(struct mtk_vcodec_dev *dev)
 {
+	struct list_head *p, *q;
+	struct mtk_vcodec_ctx *tmp_ctx;
+
+	if (!is_vcp_ready(VCP_A_ID))
+		return NULL;
+
+	mutex_lock(&dev->ctx_mutex);
+	if (list_empty(&dev->ctx_list)) {
+		mutex_unlock(&dev->ctx_mutex);
+		return NULL;
+	}
+
+	list_for_each_safe(p, q, &dev->ctx_list) {
+		tmp_ctx = list_entry(p, struct mtk_vcodec_ctx, list);
+		if (tmp_ctx != NULL && tmp_ctx->drv_handle != 0 &&
+		    tmp_ctx->state < MTK_STATE_ABORT && tmp_ctx->state > MTK_STATE_FREE) {
+			mutex_unlock(&dev->ctx_mutex);
+			return tmp_ctx;
+		}
+	}
+	mutex_unlock(&dev->ctx_mutex);
+	return NULL;
+}
+
+static int vdec_vcp_backup(struct mtk_vcodec_dev *dev)
+{
+	struct mtk_vcodec_ctx *ctx;
+	struct vdec_inst *inst;
 	struct vdec_ap_ipi_cmd msg;
 	int err = 0;
+
+	ctx = get_valid_ctx(dev);
+	if (!ctx) {
+		mtk_v4l2_debug(2, "no valid inst need backup");
+		return err;
+	}
+	inst = (struct vdec_inst *)ctx->drv_handle;
+	mtk_v4l2_debug(1, "backup by ctx %d", ctx->id);
 
 	mtk_vcodec_debug_enter(inst);
 
 	memset(&msg, 0, sizeof(msg));
 	msg.msg_id = AP_IPIMSG_DEC_BACKUP;
-	msg.ctx_id = inst->ctx->id;
+	msg.ctx_id = ctx->id;
 	msg.vcu_inst_addr = inst->vcu.inst_addr;
 
 	err = vdec_vcp_ipi_send(inst, &msg, sizeof(msg), 0);
@@ -771,7 +807,7 @@ static int vcp_vdec_notify_callback(struct notifier_block *this,
 	struct list_head *p, *q;
 	struct mtk_vcodec_ctx *ctx;
 	int timeout = 0;
-	bool backup = false;
+	int val, wait_cnt, i;
 
 	if (!(mtk_vcodec_vcp & (1 << MTK_INST_DECODER)))
 		return 0;
@@ -788,20 +824,52 @@ static int vcp_vdec_notify_callback(struct notifier_block *this,
 				break;
 			}
 		}
-		mutex_lock(&dev->ctx_mutex);
-		// check release all ctx lock
-		list_for_each_safe(p, q, &dev->ctx_list) {
-			ctx = list_entry(p, struct mtk_vcodec_ctx, list);
-			if (ctx != NULL && ctx->state != MTK_STATE_ABORT) {
-				ctx->state = MTK_STATE_ABORT;
-				vdec_check_release_lock(ctx);
-				mtk_vdec_queue_error_event(ctx);
+		if (is_vcp_ready(VCP_A_ID)) {
+			// vcp ready case STOP from vcp_disable_pm_clk pwclkcnt == 0
+			vdec_vcp_backup(dev);
+		} else {
+			// vcp not ready case STOP from vcp_sys_reset_ws
+			mutex_lock(&dev->ctx_mutex);
+			// check release all ctx lock
+			list_for_each_safe(p, q, &dev->ctx_list) {
+				ctx = list_entry(p, struct mtk_vcodec_ctx, list);
+				if (ctx != NULL && ctx->state != MTK_STATE_ABORT) {
+					ctx->state = MTK_STATE_ABORT;
+					vdec_check_release_lock(ctx);
+					mtk_vdec_queue_error_event(ctx);
+				}
 			}
+			mutex_unlock(&dev->ctx_mutex);
 		}
-		mutex_unlock(&dev->ctx_mutex);
+	break;
+	case VCP_EVENT_PRE_SUSPEND:
+		mtk_vcodec_alive_checker_suspend(dev);
 	break;
 	case VCP_EVENT_SUSPEND:
 		dev->is_codec_suspending = 1;
+		// check no more ipi in progress
+		mutex_lock(&dev->ipi_mutex);
+		mutex_lock(&dev->ipi_mutex_res);
+		mutex_unlock(&dev->ipi_mutex_res);
+		mutex_unlock(&dev->ipi_mutex);
+
+		// send backup ipi to vcp by one of any instances
+		vdec_vcp_backup(dev);
+
+		// check all hw lock is released
+		for (i = 0; i < MTK_VDEC_HW_NUM; i++) {
+			val = down_trylock(&dev->dec_sem[i]);
+			for (wait_cnt = 0; val == 1 && wait_cnt < 5; wait_cnt++) {
+				usleep_range(10000, 20000);
+				val = down_trylock(&dev->dec_sem[i]);
+			}
+			if (val == 1)
+				mtk_v4l2_err("waiting hw_id %d relase lock fail", i);
+			else
+				up(&dev->dec_sem[i]);
+		}
+
+		// wait msg q of ipi_recv all done
 		while (atomic_read(&dev->mq.cnt)) {
 			timeout += 20;
 			usleep_range(10000, 20000);
@@ -810,30 +878,16 @@ static int vcp_vdec_notify_callback(struct notifier_block *this,
 				break;
 			}
 		}
-		// check no more ipi in progress
-		mutex_lock(&dev->ipi_mutex);
-		mutex_lock(&dev->ipi_mutex_res);
-		mutex_unlock(&dev->ipi_mutex_res);
-		mutex_unlock(&dev->ipi_mutex);
-		mutex_lock(&dev->ctx_mutex);
-		// send backup ipi to vcp by one of any instances
-		list_for_each_safe(p, q, &dev->ctx_list) {
-			ctx = list_entry(p, struct mtk_vcodec_ctx, list);
-			if (ctx != NULL && ctx->state < MTK_STATE_ABORT
-					&& ctx->state > MTK_STATE_FREE) {
-				mutex_unlock(&dev->ctx_mutex);
-				backup = true;
-				vdec_vcp_backup((struct vdec_inst *)ctx->drv_handle);
-				break;
-			}
-		}
-		if (!backup)
-			mutex_unlock(&dev->ctx_mutex);
+	break;
+	case VCP_EVENT_RESUME:
+		mtk_vcodec_alive_checker_resume(dev);
+		dev->is_codec_suspending = 0;
 	break;
 	}
 	return NOTIFY_DONE;
 }
 
+#if IS_ENABLED(CONFIG_MTK_TINYSYS_VCP_SUPPORT)
 void vdec_vcp_probe(struct mtk_vcodec_dev *dev)
 {
 	int ret;
@@ -860,6 +914,7 @@ void vdec_vcp_probe(struct mtk_vcodec_dev *dev)
 
 	mtk_v4l2_debug_leave();
 }
+#endif
 
 static int vdec_vcp_init(struct mtk_vcodec_ctx *ctx, unsigned long *h_vdec)
 {

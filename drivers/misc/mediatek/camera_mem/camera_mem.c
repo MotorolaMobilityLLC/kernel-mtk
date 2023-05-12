@@ -451,11 +451,13 @@ static bool cam_mem_get_secure_handle(struct ION_BUFFER *mmu,
 
 	mmu->dmaBuf = buf;
 
+	#if IS_ENABLED(CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM)
 	IonNode->sec_handle = dmabuf_to_secure_handle(mmu->dmaBuf);
 	if (IonNode->sec_handle == 0) {
 		LOG_NOTICE("Get sec_handle failed! memID(%d)\n", IonNode->memID);
 		return false;
 	}
+	#endif
 
 	return true;
 }
@@ -480,6 +482,7 @@ static bool cam_mem_mmu_get_dma_buffer(
 	}
 	mmu->dmaBuf = buf;
 
+	#if IS_ENABLED(CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM)
 	if (IonNode->need_sec_handle) {
 		IonNode->sec_handle = dmabuf_to_secure_handle(mmu->dmaBuf);
 		if (IonNode->sec_handle == 0) {
@@ -487,6 +490,7 @@ static bool cam_mem_mmu_get_dma_buffer(
 			return false;
 		}
 	}
+	#endif
 
 	mmu->attach = dma_buf_attach(mmu->dmaBuf, cam_mem_dev.dev);
 	if (IS_ERR(mmu->attach)) {
@@ -574,7 +578,7 @@ static long cam_mem_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Pa
 
 			/* Map iova. */
 			/*TZMP1 non-support get iova, support get secure handle*/
-			if (unlikely((IS_MT6789(g_platform_id)) && IonNode.need_sec_handle)) {
+			if (unlikely((IS_SECURE_TZMP1(g_platform_id)) && IonNode.need_sec_handle)) {
 				if (unlikely(cam_mem_get_secure_handle(&mmu, &IonNode) == false)) {
 					LOG_NOTICE(
 					"CAM_MEM_ION_MAP_PA: cam_mem_get_secure_handle fail, memID(%d)\n",
@@ -1066,6 +1070,7 @@ static int cam_mem_probe(struct platform_device *pDev)
 {
 	int Ret = 0;
 	struct device *dev = NULL;
+	unsigned int bit_mask_val = 0;
 
 	LOG_NOTICE("+\n");
 
@@ -1086,9 +1091,17 @@ static int cam_mem_probe(struct platform_device *pDev)
 
 	CamMem_get_larb(pDev);
 
-	if (dma_set_mask_and_coherent(&pDev->dev, DMA_BIT_MASK(34)))
-		LOG_NOTICE("%s: No suitable DMA available\n",
-			pDev->dev.of_node->name);
+#if IS_ENABLED(CONFIG_ARM64)
+	bit_mask_val = 34;
+#else
+	bit_mask_val = 31;
+#endif
+	if (dma_set_mask_and_coherent(&pDev->dev, DMA_BIT_MASK(bit_mask_val)))
+		LOG_NOTICE("%s: No suitable DMA available, DMA_BIT_MASK(%d)\n",
+			pDev->dev.of_node->name, bit_mask_val);
+	else
+		LOG_INF("dma_set_mask_and_coherent(%s, DMA_BIT_MASK(%d))\n",
+			pDev->dev.of_node->name, bit_mask_val);
 
 	/* Create class register */
 	pCamMemClass = class_create(THIS_MODULE, "CamMemDrv");

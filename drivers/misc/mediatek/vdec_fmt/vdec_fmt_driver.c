@@ -422,6 +422,19 @@ static void fmt_dump_addr_reg(void)
 
 	if (fmt->dtsInfo.RDMA_needWA)
 		cmdq_util_prebuilt_dump(1, CMDQ_TOKEN_PREBUILT_VFMT_WAIT);
+
+	if (!fmt->dtsInfo.RDMA_needWA) {
+		for (idx = 0; idx < fmt->dtsInfo.pipeNum; idx++) {
+			fmt_debug(0, "RDMA%d(0x%lx) 0x%x (0x%lx) 0x%x (0x%lx) 0x%x",
+			idx, ADDR0(0xF00), REG0(0xF00), ADDR0(0xF08), REG0(0xF08),
+			ADDR0(0xF10), REG0(0xF10));
+			fmt_debug(0, "RDMA%d(0x%lx) 0x%x (0x%lx) 0x%x (0x%lx) 0x%x",
+			idx, ADDR0(0xF20), REG0(0xF20), ADDR0(0xF28), REG0(0xF28),
+			ADDR0(0xF54), REG0(0xF54));
+		}
+	}
+
+
 	for (idx = 0; idx < fmt->dtsInfo.pipeNum; idx++) {
 		fmt_debug(0, "RDMA%d(0x%lx) 0x%x (0x%lx) 0x%x (0x%lx) 0x%x (0x%lx) 0x%x",
 		idx, ADDR0(0x0), REG0(0x0), ADDR0(0x4), REG0(0x4),
@@ -614,10 +627,6 @@ static int fmt_gce_cmd_flush(unsigned long arg)
 		usleep_range(10000, 20000);
 	}
 
-	mutex_lock(&fmt->mux_active_time);
-	ktime_get_real_ts64(&fmt->fmt_active_time);
-	mutex_unlock(&fmt->mux_active_time);
-
 	mutex_lock(fmt->mux_gce_th[identifier]);
 	while (lock != 0) {
 		lock = fmt_lock(identifier,
@@ -682,6 +691,7 @@ static int fmt_gce_cmd_flush(unsigned long arg)
 			return ret;
 		}
 	}
+	mutex_lock(&fmt->mux_active_time);
 
 	mutex_lock(&fmt->mux_fmt);
 	if ((atomic_read(&fmt->gce_job_cnt[0])
@@ -696,17 +706,26 @@ static int fmt_gce_cmd_flush(unsigned long arg)
 			cmdq_mbox_disable(fmt->clt_fmt[0]->chan);
 			mutex_unlock(fmt->mux_gce_th[identifier]);
 			mutex_unlock(&fmt->mux_fmt);
+			mutex_unlock(&fmt->mux_active_time);
 			return -EINVAL;
+		}
+		if ((FMT_GET32(fmt->map_base[0].va + 0x30) & 0x20000) == 0) {
+			fmt_debug(0, "fmt_clock_on: RDMA0(0x%lx) 0x%x",
+				(fmt->map_base[0].base + 0x30),
+				(FMT_GET32(fmt->map_base[0].va + 0x30)));
 		}
 	}
 	atomic_inc(&fmt->gce_job_cnt[identifier]);
 	mutex_unlock(&fmt->mux_fmt);
 
+	taskid = fmt_set_gce_task(pkt_ptr, identifier, iinfo, oinfo);
+
+	ktime_get_real_ts64(&fmt->fmt_active_time);
+	mutex_unlock(&fmt->mux_active_time);
+
 	fmt_start_dvfs_emi_bw(fmt, buff.pmqos_param, identifier);
 
 	mutex_unlock(fmt->mux_gce_th[identifier]);
-
-	taskid = fmt_set_gce_task(pkt_ptr, identifier, iinfo, oinfo);
 
 	if (taskid < 0) {
 		fmt_err("failed to set task id");
@@ -1355,7 +1374,6 @@ static int vdec_fmt_probe(struct platform_device *pdev)
 	for (i = 0; i < FMT_INST_MAX; i++)
 		atomic_set(&fmt->gce_task_wait_cnt[i], 0);
 
-
 	fmt_debug(0, "initialization completed");
 	return 0;
 
@@ -1410,6 +1428,7 @@ static int __init fmt_init(void)
 {
 	int ret;
 
+	fmt_debug(0, "+ fmt init +");
 	ret = platform_driver_register(&vdec_fmt_driver);
 	if (ret) {
 		fmt_err("failed to init fmt_device");
@@ -1419,6 +1438,9 @@ static int __init fmt_init(void)
 	ret = fmt_sync_device_init();
 	if (ret != 0)
 		fmt_debug(0, "fmt_sync init failed");
+
+	fmt_debug(0, "- fmt init -");
+
 	return 0;
 }
 static void __init fmt_exit(void)
@@ -1426,7 +1448,7 @@ static void __init fmt_exit(void)
 	platform_driver_unregister(&vdec_fmt_driver);
 }
 
-module_init(fmt_init);
+subsys_initcall(fmt_init);
 module_exit(fmt_exit);
 
 

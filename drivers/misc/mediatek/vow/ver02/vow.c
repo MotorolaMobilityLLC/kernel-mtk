@@ -575,13 +575,6 @@ static void vow_service_Init(void)
 #else
 	VOWDRV_DEBUG("%s(), vow: SCP no support\n\r", __func__);
 #endif
-	vow_ipi_send(IPIMSG_VOW_GET_ALEXA_ENGINE_VER, 0, NULL,
-			 VOW_IPI_BYPASS_ACK);
-	vow_ipi_send(IPIMSG_VOW_GET_GOOGLE_ENGINE_VER, 0, NULL,
-			 VOW_IPI_BYPASS_ACK);
-	vow_ipi_send(IPIMSG_VOW_GET_GOOGLE_ARCH, 0, NULL,
-			 VOW_IPI_BYPASS_ACK);
-
 	//audio_load_task(TASK_SCENE_VOW);
 
 	if (init_flag != 1) {
@@ -648,14 +641,17 @@ static void vow_service_Init(void)
 		vow_pcm_dump_init();
 		vowserv.scp_dual_mic_switch = VOW_ENABLE_DUAL_MIC;
 		vowserv.mtkif_type = 0;
-		//set default value to platform identifier and version
+		/* set meaningless default value to platform identifier and version */
 		memset(vowserv.google_engine_arch, 0, VOW_ENGINE_INFO_LENGTH_BYTE);
-		if (sprintf(vowserv.google_engine_arch, "32fe89be-5205-3d4b-b8cf-55d650d9d200") < 0)
+		if (sprintf(vowserv.google_engine_arch, "12345678-1234-1234-1234-123456789012") < 0)
 			VOWDRV_DEBUG("%s(), sprintf fail", __func__);
 		vowserv.google_engine_version = DEFAULT_GOOGLE_ENGINE_VER;
 		memset(vowserv.alexa_engine_version, 0, VOW_ENGINE_INFO_LENGTH_BYTE);
 	} else {
 		int ipi_size;
+		vow_ipi_send(IPIMSG_VOW_GET_ALEXA_ENGINE_VER, 0, NULL, VOW_IPI_BYPASS_ACK);
+		vow_ipi_send(IPIMSG_VOW_GET_GOOGLE_ENGINE_VER, 0, NULL, VOW_IPI_BYPASS_ACK);
+		vow_ipi_send(IPIMSG_VOW_GET_GOOGLE_ARCH, 0, NULL, VOW_IPI_BYPASS_ACK);
 		for (I = 0; I < MAX_VOW_SPEAKER_MODEL; I++) {
 			if ((vowserv.vow_speaker_model[I].flag > 1) ||
 			    (vowserv.vow_speaker_model[I].enabled > 1)) {
@@ -1595,7 +1591,7 @@ static void vow_service_GetVowDumpData(void)
 			}
 
 			if (((temp_dump_info.user_dump_idx + idx) > temp_dump_info.user_dump_size)
-			    && (temp_dump_info.user_dump_idx <= temp_dump_info.user_dump_size)) {
+			   && (temp_dump_info.user_dump_idx <= temp_dump_info.user_dump_size)) {
 				size = temp_dump_info.user_dump_size -
 						 temp_dump_info.user_dump_idx;
 			} else {
@@ -1638,8 +1634,10 @@ static void vow_service_GetVowDumpData(void)
 					   size_left);
 				mutex_unlock(&vow_vmalloc_lock);
 				temp_dump_info.kernel_dump_idx = size_left;
-			} else
+			} else {
 				temp_dump_info.kernel_dump_idx = 0;
+				temp_dump_info.user_dump_idx = 0;
+			}
 			spin_lock_irqsave(&vowdrv_dump_lock, flags);
 			vow_dump_info[i].kernel_dump_idx = temp_dump_info.kernel_dump_idx;
 			vow_dump_info[i].user_dump_idx = temp_dump_info.user_dump_idx;
@@ -1713,6 +1711,8 @@ static void vow_service_reset(void)
 	bool ret = false;
 
 	VOWDRV_DEBUG("+%s()\n", __func__);
+	vowserv.scp_command_flag = false;
+	vowserv.tx_keyword_start = false;
 	vow_hal_reboot();
 	for (I = 0; I < MAX_VOW_SPEAKER_MODEL; I++) {
 		if (vowserv.vow_speaker_model[I].enabled  == 1) {
@@ -2766,7 +2766,7 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		break;
 #if IS_ENABLED(CONFIG_MTK_VOW_1STSTAGE_PCMCALLBACK)
 	case VOW_SET_PAYLOADDUMP_INFO: {
-		struct vow_payloaddump_info_t payload;
+		struct vow_payloaddump_info_t payload = NULL;
 
 		copy_from_user((void *)&payload,
 				 (const void __user *)arg,
@@ -2778,6 +2778,10 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 			     (unsigned int)payload.return_payloaddump_addr,
 			     (unsigned int)payload.max_payloaddump_size);
 			return false;
+		}
+		if (payload.return_payloaddump_size_addr != 0) {
+			VOWDRV_DEBUG("vow size_addr_%x\n",
+			     (unsigned int)payload.return_payloaddump_size_addr);
 		}
 		vowserv.payloaddump_user_addr =
 		    payload.return_payloaddump_addr;
@@ -3372,8 +3376,9 @@ static struct platform_driver VowDrv_driver = {
 static int vow_nvmem_device_probe(struct platform_device *pdev)
 {
 	struct nvmem_device *nvmem;
-	int ret;
-	int ver_reg, ver_mask;
+	int ret = -1;
+	int ver_reg = -1;
+	int ver_mask = -1;
 
 	nvmem = devm_nvmem_device_get(&pdev->dev, "vow_efuse_device");
 	if (PTR_ERR(nvmem) == -EPROBE_DEFER)

@@ -1163,12 +1163,8 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 	/* It's an abnormal status */
 	pr_info(PFX "WARNING: Abnormal Status\n");
 	print_vio_mask_sta(false);
-	if ((perm == 0 || perm > 3) && (!strcmp(vio_master, "MCU_AP_M"))
-		&& (slave_type == 2) && (vio_idx == 0x18)) {
-		pr_info("MCU_AP_M access msdc voilation when clk is not enable");
-	} else {
-		BUG_ON(1);
-	}
+	BUG_ON(1);
+
 	spin_unlock_irqrestore(&devapc_lock, flags);
 	return IRQ_HANDLED;
 }
@@ -1202,19 +1198,22 @@ static void devapc_ut(uint32_t cmd)
 		pr_info(PFX "%s, cmd(0x%x) not supported\n", __func__, cmd);
 		return;
 	}
-
 	pr_info(PFX "%s, cmd:0x%x\n", __func__, cmd);
-
-	irq_type = cmd - 1;
-	dapc_ao_base = mtk_devapc_ctx->devapc_ao_base[irq_type];
-
-	pr_info(PFX "%s, irq_type:0x%x\n", __func__, irq_type);
 
 	if (cmd == DEVAPC_UT_DAPC_INFRA_VIO ||
 		cmd == DEVAPC_UT_DAPC_VLP_VIO ||
 		cmd == DEVAPC_UT_DAPC_ADSP_VIO ||
 		cmd == DEVAPC_UT_DAPC_MMINFRA_VIO ||
 		cmd == DEVAPC_UT_DAPC_MMUP_VIO) {
+		irq_type = cmd - 1;
+		if (irq_type >= IRQ_TYPE_NUM_MAX) {
+			pr_info(PFX "%s, invalid parameter\n", __func__);
+			return;
+		}
+
+		dapc_ao_base = mtk_devapc_ctx->devapc_ao_base[irq_type];
+		pr_info(PFX "%s, irq_type:0x%x\n", __func__, irq_type);
+
 		if (unlikely(dapc_ao_base == NULL)) {
 			pr_err(PFX "%s:%d NULL pointer\n", __func__, __LINE__);
 			return;

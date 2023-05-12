@@ -237,6 +237,7 @@ static long eara_ioctl(struct file *filp,
 	return eara_ioctl_impl(filp, cmd, arg, NULL);
 }
 
+#if IS_ENABLED(CONFIG_COMPAT)
 static long eara_compat_ioctl(struct file *filp,
 		unsigned int cmd, unsigned long arg)
 {
@@ -295,10 +296,13 @@ static long eara_compat_ioctl(struct file *filp,
 unlock_and_return:
 	return ret;
 }
+#endif
 
 static const struct proc_ops eara_Fops = {
 	.proc_ioctl = eara_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
 	.proc_compat_ioctl = eara_compat_ioctl,
+#endif
 	.proc_open = eara_open,
 	.proc_read = seq_read,
 	.proc_lseek = seq_lseek,
@@ -325,8 +329,10 @@ static long eas_ioctl_impl(struct file *filp,
 		unsigned int cmd, unsigned long arg, void *pKM)
 {
 	ssize_t ret = 0;
+#if IS_ENABLED(CONFIG_MTK_SCHEDULER)
 	unsigned int sync;
 	unsigned int val;
+#endif
 	void __user *ubuf = (struct _CORE_CTL_PACKAGE *)arg;
 	struct _CORE_CTL_PACKAGE msgKM = {0};
 	bool bval;
@@ -478,7 +484,9 @@ static long eas_ioctl(struct file *filp,
 
 static const struct proc_ops eas_Fops = {
 	.proc_ioctl = eas_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
 	.proc_compat_ioctl = eas_ioctl,
+#endif
 	.proc_open = eas_open,
 	.proc_read = seq_read,
 	.proc_lseek = seq_lseek,
@@ -498,6 +506,8 @@ EXPORT_SYMBOL(xgff_frame_startend_fp);
 void (*xgff_frame_getdeplist_maxsize_fp)(
 		unsigned int *pdeplistsize);
 EXPORT_SYMBOL(xgff_frame_getdeplist_maxsize_fp);
+void (*xgff_frame_min_cap_fp)(unsigned int min_cap);
+EXPORT_SYMBOL(xgff_frame_min_cap_fp);
 
 static int xgff_show(struct seq_file *m, void *v)
 {
@@ -573,6 +583,14 @@ static long xgff_ioctl_impl(struct file *filp,
 
 		break;
 
+	case XGFFRAME_MIN_CAP:
+		if (!xgff_frame_min_cap_fp) {
+			ret = -EAGAIN;
+			goto ret_ioctl;
+		}
+		xgff_frame_min_cap_fp((unsigned int)msgKM->min_cap);
+		break;
+
 	default:
 		pr_debug(TAG "%s %d: unknown cmd %x\n",
 			__FILE__, __LINE__, cmd);
@@ -590,6 +608,7 @@ static long xgff_ioctl(struct file *filp,
 	return xgff_ioctl_impl(filp, cmd, arg, NULL);
 }
 
+#if IS_ENABLED(CONFIG_COMPAT)
 static long xgff_compat_ioctl(struct file *filp,
 		unsigned int cmd, unsigned long arg)
 {
@@ -628,10 +647,13 @@ static long xgff_compat_ioctl(struct file *filp,
 unlock_and_return:
 	return ret;
 }
+#endif
 
 static const struct proc_ops xgff_Fops = {
 	.proc_ioctl = xgff_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
 	.proc_compat_ioctl = xgff_compat_ioctl,
+#endif
 	.proc_open = xgff_open,
 	.proc_read = seq_read,
 	.proc_lseek = seq_lseek,
@@ -795,7 +817,9 @@ ret_ioctl:
 }
 
 static const struct proc_ops Fops = {
+#if IS_ENABLED(CONFIG_COMPAT)
 	.proc_compat_ioctl = device_ioctl,
+#endif
 	.proc_ioctl = device_ioctl,
 	.proc_open = device_open,
 	.proc_read = seq_read,

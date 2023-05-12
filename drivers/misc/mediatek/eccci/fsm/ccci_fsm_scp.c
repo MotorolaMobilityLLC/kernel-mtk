@@ -3,13 +3,11 @@
  * Copyright (C) 2016 MediaTek Inc.
  */
 
-#ifdef CCCI_KMODULE_ENABLE
 #include <linux/device.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
-#endif
 #include <linux/clk.h> /* for clk_prepare/un* */
 
 #include "ccci_config.h"
@@ -21,7 +19,6 @@
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 #include "scp_ipi.h"
 
-#ifdef CCCI_KMODULE_ENABLE
 void ccci_scp_md_state_sync(int md_state);
 
 struct ccci_fsm_scp ccci_scp_ctl = {
@@ -39,7 +36,7 @@ void ccci_scp_md_state_sync(int md_state)
 	schedule_work(&ccci_scp_ctl.scp_md_state_sync_work);
 }
 
-
+#ifdef CCCI_KMODULE_ENABLE
 /*
  * for debug log:
  * 0 to disable; 1 for print to ram; 2 for print to uart
@@ -59,13 +56,17 @@ static wait_queue_head_t scp_ipi_rx_wq;
 static struct ccci_skb_queue scp_ipi_rx_skb_list;
 static unsigned int init_work_done;
 static unsigned int scp_clk_last_state;
+#if !IS_ENABLED(CONFIG_MTK_TINYSYS_SCP_CM4_SUPPORT) //#if (MD_GENERATION >= 6297)
 static struct ccci_ipi_msg scp_ipi_rx_msg;
+#endif
 
 static int ccci_scp_ipi_send(int md_id, int op_id, void *data)
 {
 	int ret = 0;
+#if !IS_ENABLED(CONFIG_MTK_TINYSYS_SCP_CM4_SUPPORT)//#if (MD_GENERATION >= 6297)
 	int ipi_status = 0;
 	unsigned int cnt = 0;
+#endif
 
 	if (atomic_read(&scp_state) == SCP_CCCI_STATE_INVALID) {
 		CCCI_ERROR_LOG(md_id, FSM,
@@ -84,6 +85,7 @@ static int ccci_scp_ipi_send(int md_id, int op_id, void *data)
 		scp_ipi_tx_msg.op_id, scp_ipi_tx_msg.data[0],
 		(int)sizeof(struct ccci_ipi_msg));
 
+#if !IS_ENABLED(CONFIG_MTK_TINYSYS_SCP_CM4_SUPPORT)//#if (MD_GENERATION >= 6297)
 	while (1) {
 		ipi_status = mtk_ipi_send(&scp_ipidev, IPI_OUT_APCCCI_0,
 		0, &scp_ipi_tx_msg, (sizeof(scp_ipi_tx_msg) / 4), 1);
@@ -91,19 +93,28 @@ static int ccci_scp_ipi_send(int md_id, int op_id, void *data)
 			break;
 		cnt++;
 		if (cnt > 10) {
-			CCCI_ERROR_LOG(md_id, FSM, "IPI send 10 times!\n");
+			CCCI_ERROR_LOG(0, FSM, "IPI send 10 times!\n");
 			/* aee_kernel_warning("ccci", "ipi:tx busy");*/
 			break;
 		}
 	}
 	if (ipi_status != IPI_ACTION_DONE) {
-		CCCI_ERROR_LOG(md_id, FSM, "IPI send fail!\n");
+		CCCI_ERROR_LOG(0, FSM, "IPI send fail!\n");
 		ret = -CCCI_ERR_MD_NOT_READY;
 	}
+#else
+	if (scp_ipi_send(IPI_APCCCI, &scp_ipi_tx_msg,
+			sizeof(scp_ipi_tx_msg), 1, SCP_A_ID) != SCP_IPI_DONE) {
+		CCCI_ERROR_LOG(0, FSM, "IPI send fail!\n");
+		ret = -CCCI_ERR_MD_NOT_READY;
+	}
+#endif
 
 	mutex_unlock(&scp_ipi_tx_mutex);
 	return ret;
 }
+
+#ifdef FEATURE_SCP_CCCI_SUPPORT
 
 static int scp_set_clk_cg(unsigned int on)
 {
@@ -153,6 +164,7 @@ static int scp_set_clk_cg(unsigned int on)
 
 	return 0;
 }
+#endif
 
 static void ccci_notify_atf_set_scpmem(void)
 {
@@ -162,7 +174,6 @@ static void ccci_notify_atf_set_scpmem(void)
 		0, 0, 0, 0, 0, 0, &res);
 	CCCI_NORMAL_LOG(MD_SYS1, FSM, "%s [done]\n", __func__);
 }
-
 
 static void ccci_scp_md_state_sync_work(struct work_struct *work)
 {
@@ -174,7 +185,7 @@ static void ccci_scp_md_state_sync_work(struct work_struct *work)
 	int count = 0;
 
 	if (!ctl) {
-		CCCI_ERROR_LOG(ctl->md_id, FSM, "%s ctl is NULL !\n", __func__);
+		CCCI_ERROR_LOG(-1, FSM, "%s ctl is NULL !\n", __func__);
 		return;
 	}
 
@@ -196,7 +207,10 @@ static void ccci_scp_md_state_sync_work(struct work_struct *work)
 				CCCI_ERROR_LOG(scp_ctl->md_id, FSM,
 					"SCP init not ready!\n");
 			else {
+#ifdef FEATURE_SCP_CCCI_SUPPORT
 				ret = scp_set_clk_cg(1);
+#endif
+
 				if (ret) {
 					CCCI_ERROR_LOG(scp_ctl->md_id, FSM,
 						"fail to set scp clk, ret = %d\n", ret);
@@ -291,7 +305,10 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 			case SCP_CCCI_STATE_STOP:
 				CCCI_NORMAL_LOG(ipi_msg_ptr->md_id, FSM,
 						"MD INVALID,scp send ack to ap\n");
+#ifdef FEATURE_SCP_CCCI_SUPPORT
 				ret = scp_set_clk_cg(0);
+#endif
+
 				if (ret)
 					CCCI_ERROR_LOG(ipi_msg_ptr->md_id, FSM,
 						"fail to set scp clk, ret = %d\n", ret);
@@ -308,6 +325,7 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 	}
 }
 
+#if !IS_ENABLED(CONFIG_MTK_TINYSYS_SCP_CM4_SUPPORT)//#if (MD_GENERATION >= 6297)
 /*
  * IPI for logger init
  * @param id:   IPI id
@@ -330,7 +348,6 @@ static int ccci_scp_ipi_handler(unsigned int id, void *prdata, void *data,
 	skb = ccci_alloc_skb(len, 0, 0);
 	if (!skb)
 		return -1;
-
 	memcpy(skb_put(skb, len), data, len);
 	ccci_skb_enqueue(&scp_ipi_rx_skb_list, skb);
 	/* ipi_send use mutex, can not be called from ISR context */
@@ -338,20 +355,46 @@ static int ccci_scp_ipi_handler(unsigned int id, void *prdata, void *data,
 
 	return 0;
 }
+#else
+static void ccci_scp_ipi_handler(int id, void *data, unsigned int len)
+{
+	struct ccci_ipi_msg *ipi_msg_ptr = (struct ccci_ipi_msg *)data;
+	struct sk_buff *skb = NULL;
+
+	if (len != sizeof(struct ccci_ipi_msg)) {
+		CCCI_ERROR_LOG(-1, CORE,
+		"IPI handler, data length wrong %d vs. %d\n",
+		len, (int)sizeof(struct ccci_ipi_msg));
+		return;
+	}
+	CCCI_NORMAL_LOG(0, CORE, "IPI handler %d/0x%x, %d\n",
+		ipi_msg_ptr->op_id,
+		ipi_msg_ptr->data[0], len);
+
+	skb = ccci_alloc_skb(len, 0, 0);
+	if (!skb)
+		return;
+	memcpy(skb_put(skb, len), data, len);
+	ccci_skb_enqueue(&scp_ipi_rx_skb_list, skb);
+	/* ipi_send use mutex, can not be called from ISR context */
+	schedule_work(&scp_ipi_rx_work);
+}
+#endif
 #endif
 
-int fsm_ccism_init_ack_handler(int md_id, int data)
-{
 #ifdef FEATURE_SCP_CCCI_SUPPORT
+static int fsm_ccism_init_ack_handler(int md_id, int data)
+{
 	struct ccci_smem_region *ccism_scp =
 		ccci_md_get_smem_by_user_id(md_id, SMEM_USER_CCISM_SCP);
 
 	memset_io(ccism_scp->base_ap_view_vir, 0, ccism_scp->size);
 	ccci_scp_ipi_send(md_id, CCCI_OP_SHM_INIT,
 		&ccism_scp->base_ap_view_phy);
-#endif
+
 	return 0;
 }
+#endif
 
 static int fsm_sim_type_handler(int md_id, int data)
 {
@@ -361,7 +404,6 @@ static int fsm_sim_type_handler(int md_id, int data)
 	return 0;
 }
 
-#ifdef CCCI_KMODULE_ENABLE
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 void fsm_scp_init0(void)
 {
@@ -378,10 +420,16 @@ void fsm_scp_init0(void)
 
 	CCCI_NORMAL_LOG(-1, FSM, "register IPI\n");
 
+#if !IS_ENABLED(CONFIG_MTK_TINYSYS_SCP_CM4_SUPPORT)
 	if (mtk_ipi_register(&scp_ipidev, IPI_IN_APCCCI_0,
 		(void *)ccci_scp_ipi_handler, NULL,
 		&scp_ipi_rx_msg) != IPI_ACTION_DONE)
 		CCCI_ERROR_LOG(-1, FSM, "register IPI fail!\n");
+#else
+	if (scp_ipi_registration(IPI_APCCCI, ccci_scp_ipi_handler,
+		"AP CCCI") != SCP_IPI_DONE)
+		CCCI_ERROR_LOG(-1, FSM, "register IPI fail!\n");
+#endif
 
 	atomic_set(&scp_state, SCP_CCCI_STATE_BOOTING);
 
@@ -405,8 +453,8 @@ static struct notifier_block apsync_notifier = {
 	.notifier_call = apsync_event,
 };
 #endif
-#endif
 
+#ifdef FEATURE_SCP_CCCI_SUPPORT
 static int ccif_scp_clk_init(struct device *dev)
 {
 	int idx = 0;
@@ -425,6 +473,8 @@ static int ccif_scp_clk_init(struct device *dev)
 
 	return 0;
 }
+#endif
+
 
 static int fsm_scp_hw_init(struct ccci_fsm_scp *scp_ctl, struct device *dev)
 {
@@ -443,18 +493,16 @@ static int fsm_scp_hw_init(struct ccci_fsm_scp *scp_ctl, struct device *dev)
 int fsm_scp_init(struct ccci_fsm_scp *scp_ctl, struct device *dev)
 {
 	int ret = 0;
-#ifndef CCCI_KMODULE_ENABLE
-	struct ccci_fsm_ctl *ctl =
-		container_of(scp_ctl, struct ccci_fsm_ctl, scp_ctl);
-#endif
 
 	ret = fsm_scp_hw_init(scp_ctl, dev);
 	if (ret < 0) {
 		CCCI_ERROR_LOG(-1, FSM, "ccci scp hw init fail\n");
 		return ret;
 	}
-
+#ifdef FEATURE_SCP_CCCI_SUPPORT
 	ret = ccif_scp_clk_init(dev);
+#endif
+
 	if (ret < 0) {
 		CCCI_ERROR_LOG(-1, FSM, "ccif scp clk init fail\n");
 		return ret;
@@ -462,11 +510,9 @@ int fsm_scp_init(struct ccci_fsm_scp *scp_ctl, struct device *dev)
 
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	scp_A_register_notify(&apsync_notifier);
-#endif
-#ifndef CCCI_KMODULE_ENABLE
-	scp_ctl->md_id = ctl->md_id;
-#endif
-#ifdef FEATURE_SCP_CCCI_SUPPORT
+
+	scp_ctl->md_id = MD_SYS1;
+
 	INIT_WORK(&scp_ctl->scp_md_state_sync_work,
 		ccci_scp_md_state_sync_work);
 	register_ccci_sys_call_back(scp_ctl->md_id, CCISM_SHM_INIT_ACK,
@@ -479,7 +525,6 @@ int fsm_scp_init(struct ccci_fsm_scp *scp_ctl, struct device *dev)
 	return ret;
 }
 
-#ifdef CCCI_KMODULE_ENABLE
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 int ccci_scp_probe(struct platform_device *pdev)
 {
@@ -532,4 +577,3 @@ MODULE_AUTHOR("ccci");
 MODULE_DESCRIPTION("ccci scp driver");
 MODULE_LICENSE("GPL");
 
-#endif

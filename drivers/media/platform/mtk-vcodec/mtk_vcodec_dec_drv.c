@@ -41,7 +41,7 @@ static int mtk_vcodec_vcp_log_write(const char *val, const struct kernel_param *
 {
 	if (!(val == NULL || strlen(val) == 0)) {
 		mtk_v4l2_debug(0, "val: %s, len: %zu", val, strlen(val));
-		mtk_vcodec_set_log(dev_ptr, val, MTK_VCODEC_LOG_INDEX_LOG);
+		mtk_vcodec_set_log(NULL, dev_ptr, val, MTK_VCODEC_LOG_INDEX_LOG, NULL);
 	}
 	return 0;
 }
@@ -54,7 +54,7 @@ static int mtk_vcodec_vcp_property_write(const char *val, const struct kernel_pa
 {
 	if (!(val == NULL || strlen(val) == 0)) {
 		mtk_v4l2_debug(0, "val: %s, len: %zu", val, strlen(val));
-		mtk_vcodec_set_log(dev_ptr, val, MTK_VCODEC_LOG_INDEX_PROP);
+		mtk_vcodec_set_log(NULL, dev_ptr, val, MTK_VCODEC_LOG_INDEX_PROP, NULL);
 	}
 	return 0;
 }
@@ -82,8 +82,10 @@ static int fops_vcodec_open(struct file *file)
 	}
 
 #if IS_ENABLED(CONFIG_MTK_TINYSYS_VCP_SUPPORT)
-	if (mtk_vcodec_vcp & (1 << MTK_INST_DECODER))
+	if (mtk_vcodec_vcp & (1 << MTK_INST_DECODER)) {
 		vcp_register_feature(VDEC_FEATURE_ID);
+		ctx->is_vcp_active = true;
+	}
 #endif
 
 	mutex_lock(&dev->dev_mutex);
@@ -103,6 +105,7 @@ static int fops_vcodec_open(struct file *file)
 	mutex_init(&ctx->worker_lock);
 	mutex_init(&ctx->hw_status);
 	mutex_init(&ctx->q_mutex);
+	mutex_init(&ctx->vcp_active_mutex);
 
 	ctx->type = MTK_INST_DECODER;
 	ret = mtk_vcodec_dec_ctrls_setup(ctx);
@@ -179,6 +182,7 @@ static int fops_vcodec_release(struct file *file)
 {
 	struct mtk_vcodec_dev *dev = video_drvdata(file);
 	struct mtk_vcodec_ctx *ctx = fh_to_ctx(file->private_data);
+	bool is_vcp_active;
 
 	mtk_v4l2_debug(0, "[%d][%d] decoder", ctx->id, dev->dec_cnt);
 	mutex_lock(&dev->dev_mutex);
@@ -209,13 +213,14 @@ static int fops_vcodec_release(struct file *file)
 	v4l2_fh_exit(&ctx->fh);
 	v4l2_ctrl_handler_free(&ctx->ctrl_hdl);
 
+	is_vcp_active = ctx->is_vcp_active;
 	kfree(ctx->dec_flush_buf);
 	kfree(ctx);
 	if (dev->dec_cnt > 0)
 		dev->dec_cnt--;
 	mutex_unlock(&dev->dev_mutex);
 #if IS_ENABLED(CONFIG_MTK_TINYSYS_VCP_SUPPORT)
-	if (mtk_vcodec_vcp & (1 << MTK_INST_DECODER))
+	if ((mtk_vcodec_vcp & (1 << MTK_INST_DECODER)) && is_vcp_active)
 		vcp_deregister_feature(VDEC_FEATURE_ID);
 #endif
 
@@ -265,15 +270,18 @@ static int mtk_vcodec_dec_resume(struct device *pDev)
 static int mtk_vcodec_dec_suspend_notifier(struct notifier_block *nb,
 					unsigned long action, void *data)
 {
+#if !IS_ENABLED(CONFIG_MTK_TINYSYS_VCP_SUPPORT)
 	int wait_cnt = 0;
 	int val = 0;
 	int i;
 	struct mtk_vcodec_dev *dev =
 		container_of(nb, struct mtk_vcodec_dev, pm_notifier);
+#endif
 
 	mtk_v4l2_debug(1, "action = %ld", action);
 	switch (action) {
 	case PM_SUSPEND_PREPARE:
+#if !IS_ENABLED(CONFIG_MTK_TINYSYS_VCP_SUPPORT)
 		dev->is_codec_suspending = 1;
 		for (i = 0; i < MTK_VDEC_HW_NUM; i++) {
 			val = down_trylock(&dev->dec_sem[i]);
@@ -291,9 +299,12 @@ static int mtk_vcodec_dec_suspend_notifier(struct notifier_block *nb,
 			}
 			up(&dev->dec_sem[i]);
 		}
+#endif
 		return NOTIFY_OK;
 	case PM_POST_SUSPEND:
+#if !IS_ENABLED(CONFIG_MTK_TINYSYS_VCP_SUPPORT)
 		dev->is_codec_suspending = 0;
+#endif
 		return NOTIFY_OK;
 	default:
 		return NOTIFY_DONE;
@@ -319,6 +330,7 @@ static int mtk_vcodec_dec_probe(struct platform_device *pdev)
 	if (!dev)
 		return -ENOMEM;
 
+	dev->type = MTK_INST_DECODER;
 	INIT_LIST_HEAD(&dev->ctx_list);
 	dev->plat_dev = pdev;
 
@@ -473,6 +485,11 @@ static int mtk_vcodec_dec_probe(struct platform_device *pdev)
 		goto err_event_workq;
 	}
 
+#ifdef VDEC_CHECK_ALIVE
+/*Init workqueue for vdec alive checker*/
+	dev->check_alive_workqueue = create_singlethread_workqueue("vdec_check_alive");
+	INIT_WORK(&dev->check_alive_work, mtk_vdec_check_alive_work);
+#endif
 	ret = video_register_device(vfd_dec, VFL_TYPE_VIDEO, -1);
 	if (ret) {
 		mtk_v4l2_err("Failed to register video device");
@@ -573,6 +590,7 @@ static const struct of_device_id mtk_vcodec_match[] = {
 	{.compatible = "mediatek,mt6895-vcodec-dec",},
 	{.compatible = "mediatek,mt6855-vcodec-dec",},
 	{.compatible = "mediatek,mt6833-vcodec-dec",},
+	{.compatible = "mediatek,mt6768-vcodec-dec",},
 	{.compatible = "mediatek,mt6789-vcodec-dec",},
 	{.compatible = "mediatek,vdec_gcon",},
 	{},

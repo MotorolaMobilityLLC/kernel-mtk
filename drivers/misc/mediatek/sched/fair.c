@@ -303,9 +303,11 @@ mtk_compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 		trace_sched_energy_util(dst_cpu, max_util_cur, sum_util_cur, cpu, util_cfs_cur,
 				util_cfs_energy_cur, cpu_util_cur);
 
+#if IS_ENABLED(CONFIG_MTK_THERMAL_INTERFACE)
 		/* get temperature for each cpu*/
 		cpu_temp[cpu] = get_cpu_temp(cpu);
 		cpu_temp[cpu] /= 1000;
+#endif
 	}
 
 	energy_base = mtk_em_cpu_energy(pd->em_pd, max_util_base, sum_util_base, cpu_temp);
@@ -692,14 +694,6 @@ static int mtk_active_load_balance_cpu_stop(void *data)
 	if (busiest_rq->nr_running <= 1)
 		goto out_unlock;
 
-	spin_lock(&per_cpu(cpufreq_idle_cpu_lock, target_cpu));
-	if (!per_cpu(cpufreq_idle_cpu, target_cpu) &&
-		is_task_latency_sensitive(target_task)) {
-		spin_unlock(&per_cpu(cpufreq_idle_cpu_lock, target_cpu));
-		goto out_unlock;
-	}
-
-	spin_unlock(&per_cpu(cpufreq_idle_cpu_lock, target_cpu));
 	update_rq_clock(busiest_rq);
 	deactivate_task(busiest_rq, target_task, DEQUEUE_NOCLOCK);
 	set_task_cpu(target_task, target_cpu);

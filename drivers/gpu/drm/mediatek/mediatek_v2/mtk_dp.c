@@ -219,7 +219,7 @@ int notify_uevent_user(struct notify_dev *sdev, int state)
 bool mdrv_DPTx_AuxWrite_Bytes(struct mtk_dp *mtk_dp, u8 ubCmd,
 	u32  usDPCDADDR, size_t ubLength, BYTE *pData)
 {
-	bool bReplyStatus = false;
+	UINT8 bReplyStatus = false;
 	u8 ubRetryLimit = 0x7;
 
 	if (!mtk_dp->training_info.bCablePlugIn ||
@@ -234,7 +234,7 @@ bool mdrv_DPTx_AuxWrite_Bytes(struct mtk_dp *mtk_dp, u8 ubCmd,
 		bReplyStatus = mhal_DPTx_AuxWrite_Bytes(mtk_dp, ubCmd,
 			usDPCDADDR, ubLength, pData);
 		ubRetryLimit--;
-		if (!bReplyStatus) {
+		if (bReplyStatus) {
 			udelay(50);
 			DPTXFUNC("Retry Num = %d\n", ubRetryLimit);
 		} else
@@ -292,7 +292,7 @@ bool mdrv_DPTx_AuxWrite_DPCD(struct mtk_dp *mtk_dp, u8 ubCmd,
 bool mdrv_DPTx_AuxRead_Bytes(struct mtk_dp *mtk_dp, u8 ubCmd,
 	u32 usDPCDADDR, size_t ubLength, BYTE *pData)
 {
-	bool bReplyStatus = false;
+	UINT8 bReplyStatus = false;
 	u8 ubRetryLimit = 7;
 
 	if (!mtk_dp->training_info.bCablePlugIn ||
@@ -306,7 +306,7 @@ bool mdrv_DPTx_AuxRead_Bytes(struct mtk_dp *mtk_dp, u8 ubCmd,
 	do {
 		bReplyStatus = mhal_DPTx_AuxRead_Bytes(mtk_dp, ubCmd,
 					usDPCDADDR, ubLength, pData);
-		if (!bReplyStatus) {
+		if (bReplyStatus) {
 			udelay(50);
 			DPTXFUNC("Retry Num = %d\n", ubRetryLimit);
 		} else
@@ -2361,6 +2361,7 @@ int mdrv_DPTx_Handle(struct mtk_dp *mtk_dp)
 		if (mtk_dp->video_enable) {
 			mtk_dp_video_config(mtk_dp);
 			mdrv_DPTx_Video_Enable(mtk_dp, true);
+			mhal_DPTx_Set_BS2BS_Cnt(mtk_dp, TRUE, mtk_dp->info.DPTX_OUTBL.Htt);
 		}
 
 		if (mtk_dp->audio_enable && (mtk_dp->info.audio_caps != 0)) {
@@ -2742,7 +2743,7 @@ DWORD getTimeDiff(DWORD dwPreTime)
 
 DWORD getSystemTime(void)
 {
-	DWORD tms = (DWORD)((sched_clock() / 1000000) % 1000000);
+	DWORD tms = (DWORD)(DO_COMMMON_MOD(DO_COMMON_DIV(sched_clock(), 1000000), 1000000));
 	return tms;
 }
 
@@ -3714,14 +3715,15 @@ void mtk_dp_fake_plugin(unsigned int status, unsigned int bpc)
 
 void mtk_dp_HPDInterruptSet(int bstatus)
 {
-
 	if (g_mtk_dp == NULL) {
 		DPTXERR("%s: dp not initial\n", __func__);
 		return;
 	}
-	DPTXMSG("%s\n", __func__);
-	DDPFUNC("status:%d[2:DISCONNECT, 4:CONNECT, 8:IRQ] Power:%d\n",
-		bstatus, g_mtk_dp->bPowerOn);
+
+	DPTXMSG("%s, status:%d[2:DISCONNECT, 4:CONNECT, 8:IRQ] Power:%d, uevent=%d\n",
+		__func__, bstatus, g_mtk_dp->bPowerOn, g_mtk_dp->bUeventToHwc);
+	DDPFUNC("%s, status:%d[2:DISCONNECT, 4:CONNECT, 8:IRQ] Power:%d, uevent=%d\n",
+		__func__, bstatus, g_mtk_dp->bPowerOn, g_mtk_dp->bUeventToHwc);
 
 	if ((bstatus == HPD_CONNECT && !g_mtk_dp->bPowerOn)
 		|| (bstatus == HPD_DISCONNECT && g_mtk_dp->bPowerOn)
@@ -3738,6 +3740,13 @@ void mtk_dp_HPDInterruptSet(int bstatus)
 		mdrv_DPTx_USBC_HPD_Event(bstatus);
 		return;
 	}
+
+	if (bstatus == HPD_CONNECT && g_mtk_dp->bPowerOn &&
+		g_mtk_dp->bUeventToHwc) {
+		DPTXMSG("force send uevent\n");
+		mtk_dp_hotplug_uevent(1);
+		g_mtk_dp->bUeventToHwc = false;
+	}
 }
 
 void mtk_dp_aux_swap_enable(bool enable)
@@ -3751,6 +3760,11 @@ void mtk_dp_SWInterruptSet(int bstatus)
 {
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return;
+
+	if (g_mtk_dp == NULL) {
+		DPTXERR("%s: dp not initial\n", __func__);
+		return;
+	}
 
 	mutex_lock(&dp_lock);
 
@@ -3823,6 +3837,8 @@ static int mtk_dp_bind(struct device *dev, struct device *master, void *data)
 	struct drm_device *drm = data;
 	int ret;
 	mtk_dp->drm_dev = drm;
+	mtk_dp->priv = drm->dev_private;
+
 	DPTXDBG("%s, %d, mtk_dp 0x%p\n", __func__, __LINE__, mtk_dp);
 	ret = drm_connector_init(drm, &mtk_dp->conn, &mtk_dp_connector_funcs,
 		DRM_MODE_CONNECTOR_DisplayPort);
@@ -3858,7 +3874,14 @@ err_encoder_init:
 static void mtk_dp_unbind(struct device *dev, struct device *master,
 		void *data)
 {
+	struct mtk_dp *mtk_dp = dev_get_drvdata(dev);
+
 	DPTXFUNC();
+
+	drm_encoder_cleanup(&mtk_dp->enc);
+	/* Skip connector cleanup if creation was delegated to the bridge */
+	if (mtk_dp->conn.dev)
+		drm_connector_cleanup(&mtk_dp->conn);
 }
 
 static const struct component_ops mtk_dp_component_ops = {

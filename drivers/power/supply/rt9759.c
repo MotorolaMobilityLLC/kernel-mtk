@@ -1753,6 +1753,7 @@ static int __rt9759_init_chip(struct rt9759_chip *chip)
 static int rt9759_check_devinfo(struct i2c_client *client, u8 *chip_rev,
 				enum rt9759_type *type)
 {
+	unsigned int ms_val;
 	int ret;
 
 	dev_info(&client->dev, "%s rev\n", __func__);
@@ -1772,12 +1773,13 @@ static int rt9759_check_devinfo(struct i2c_client *client, u8 *chip_rev,
 		dev_info(&client->dev, "%s 3 ret=%d\n", __func__, ret);
 		return ret;
 	}
-	*type = (ret & RT9759_MS_MASK) >> RT9759_MS_SHFT;
-	if (*type < 0)
+	ms_val = (ret & RT9759_MS_MASK) >> RT9759_MS_SHFT;
+	if (ms_val >= ARRAY_SIZE(rt9759_type_name))
 		return -EINVAL;
 	dev_info(&client->dev, "%s rev(0x%02X), type(%s)\n", __func__,
-		 *chip_rev, rt9759_type_name[*type]);
+		 *chip_rev, rt9759_type_name[ms_val]);
 
+	*type = ms_val;
 	return 0;
 }
 

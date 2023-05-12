@@ -29,7 +29,7 @@
 #endif
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
-#include "../mediatek/mtk_corner_pattern/mtk_data_hw_roundedpattern.h"
+#include "../mediatek/mediatek_v2/mtk_corner_pattern/mtk_data_hw_roundedpattern.h"
 #endif
 
 struct lcm {
@@ -114,7 +114,7 @@ static void lcm_panel_get_data(struct lcm *ctx)
 }
 #endif
 
-#if defined(CONFIG_RT5081_PMU_DSV) || defined(CONFIG_MT6370_PMU_DSV)
+#if IS_ENABLED(CONFIG_RT5081_PMU_DSV) || IS_ENABLED(CONFIG_REGULATOR_MT6370)
 static struct regulator *disp_bias_pos;
 static struct regulator *disp_bias_neg;
 
@@ -200,6 +200,15 @@ static int lcm_panel_bias_disable(void)
 }
 #endif
 
+static void udelay_panel(unsigned int del)
+{
+	unsigned int count = del / 1000;
+
+	while (count--)
+		udelay(1000);
+	udelay(del % 1000);
+}
+
 static void lcm_panel_init(struct lcm *ctx)
 {
 	ctx->reset_gpio =
@@ -211,11 +220,11 @@ static void lcm_panel_init(struct lcm *ctx)
 	}
 	gpiod_set_value(ctx->reset_gpio, 0);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	udelay(1 * 1000);
+	udelay_panel(1 * 1000);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	udelay(10 * 1000);
+	udelay_panel(10 * 1000);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	udelay(10 * 1000);
+	udelay_panel(10 * 1000);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 	lcm_dcs_write_seq_static(ctx, 0xFF, 0x24);
@@ -781,7 +790,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 
 	ctx->error = 0;
 	ctx->prepared = false;
-#if defined(CONFIG_RT5081_PMU_DSV) || defined(CONFIG_MT6370_PMU_DSV)
+#if IS_ENABLED(CONFIG_RT5081_PMU_DSV) || IS_ENABLED(CONFIG_REGULATOR_MT6370)
 	lcm_panel_bias_disable();
 #else
 	ctx->reset_gpio =
@@ -805,7 +814,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 	gpiod_set_value(ctx->bias_neg, 0);
 	devm_gpiod_put(ctx->dev, ctx->bias_neg);
 
-	udelay(1000);
+	udelay_panel(1000);
 
 	ctx->bias_pos = devm_gpiod_get_index(ctx->dev,
 		"bias", 0, GPIOD_OUT_HIGH);
@@ -830,7 +839,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	if (ctx->prepared)
 		return 0;
 
-#if defined(CONFIG_RT5081_PMU_DSV) || defined(CONFIG_MT6370_PMU_DSV)
+#if IS_ENABLED(CONFIG_RT5081_PMU_DSV) || IS_ENABLED(CONFIG_REGULATOR_MT6370)
 	lcm_panel_bias_enable();
 #else
 	ctx->bias_pos = devm_gpiod_get_index(ctx->dev,
@@ -843,7 +852,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	gpiod_set_value(ctx->bias_pos, 1);
 	devm_gpiod_put(ctx->dev, ctx->bias_pos);
 
-	udelay(2000);
+	udelay_panel(2000);
 
 	ctx->bias_neg = devm_gpiod_get_index(ctx->dev,
 		"bias", 1, GPIOD_OUT_HIGH);
@@ -891,10 +900,10 @@ static int lcm_enable(struct drm_panel *panel)
 	return 0;
 }
 
-#define HFP (50)
+#define HFP (40)
 #define HSA (10)
 #define HBP (20)
-#define VFP (70)
+#define VFP (40)
 #define VSA (2)
 #define VBP (8)
 #define VAC (1920)
@@ -904,7 +913,7 @@ static u32 fake_width = 1080;
 static bool need_fake_resolution;
 
 static struct drm_display_mode default_mode = {
-	.clock = 138345,
+	.clock = 135930,
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
@@ -987,9 +996,12 @@ static int lcm_get_virtual_width(void)
 
 static struct mtk_panel_params ext_params = {
 	.pll_clk = 443,
-	.vfp_low_power = 743,
+	.vfp_low_power = 1530,
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
+	.phy_timcon = {
+		.clk_hs_post = 0x24,
+	},
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x53,
 		.count = 1,
@@ -1047,6 +1059,7 @@ static void change_drm_disp_mode_params(struct drm_display_mode *mode)
 		mode->hsync_end = fake_width + HFP + HSA;
 		mode->htotal = fake_width + HFP + HSA + HBP;
 	}
+	mode->clock = 70626;//72960;
 }
 
 static int lcm_get_modes(struct drm_panel *panel, struct drm_connector *connector)
@@ -1105,6 +1118,7 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	int ret;
 	struct device_node *dsi_node, *remote_node = NULL, *endpoint = NULL;
 
+	pr_info("%s+\n", __func__);
 	dsi_node = of_get_parent(dev->of_node);
 	if (dsi_node) {
 		endpoint = of_graph_get_next_endpoint(dsi_node, NULL);
@@ -1152,6 +1166,10 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	}
 	devm_gpiod_put(dev, ctx->reset_gpio);
 
+#ifndef CONFIG_RT4831A_I2C
+#if IS_ENABLED(CONFIG_RT5081_PMU_DSV) || IS_ENABLED(CONFIG_REGULATOR_MT6370)
+	lcm_panel_bias_enable();
+#else
 	ctx->bias_pos = devm_gpiod_get_index(dev, "bias", 0, GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->bias_pos)) {
 		dev_info(dev, "%s: cannot get bias-pos 0 %ld\n",
@@ -1167,7 +1185,8 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 		return PTR_ERR(ctx->bias_neg);
 	}
 	devm_gpiod_put(dev, ctx->bias_neg);
-
+#endif
+#endif
 	ctx->prepared = true;
 	ctx->enabled = true;
 

@@ -1542,11 +1542,7 @@ static int csirx_seninf_csi2_setting(struct seninf_ctx *ctx)
 			    RG_CSI2_HEADER_LEN,
 			    map_hdr_len[(unsigned int)ctx->num_data_lanes]);
 	}
-#ifdef CAT_MORE_STATUS
-	dev_info(ctx->dev,
-		"[%s] csi2 en 0x%08x\n",
-		__func__, SENINF_READ_REG(pSeninf_csi2, SENINF_CSI2_EN));
-#endif
+
 	return 0;
 }
 
@@ -1556,11 +1552,7 @@ static int csirx_seninf_setting(struct seninf_ctx *ctx)
 
 	// enable/disable seninf csi2
 	SENINF_BITS(pSeninf, SENINF_CSI2_CTRL, RG_SENINF_CSI2_EN, 1);
-#ifdef CAT_MORE_STATUS
-	dev_info(ctx->dev,
-		"[%s] csi2 en 0x%08x\n",
-		__func__, SENINF_READ_REG(pSeninf, SENINF_CSI2_CTRL));
-#endif
+
 	// enable/disable seninf, enable after csi2, testmdl is done.
 	SENINF_BITS(pSeninf, SENINF_CTRL, SENINF_EN, 1);
 
@@ -2103,11 +2095,7 @@ static int mtk_cam_seninf_poweroff(struct seninf_ctx *ctx)
 	pSeninf_csi2 = ctx->reg_if_csi2[(unsigned int)ctx->seninfIdx];
 
 	SENINF_WRITE_REG(pSeninf_csi2, SENINF_CSI2_EN, 0x0);
-#ifdef CAT_MORE_STATUS
-	dev_info(ctx->dev,
-		"[%s] csi2 en 0x%08x\n",
-		__func__, SENINF_READ_REG(pSeninf_csi2, SENINF_CSI2_EN));
-#endif
+
 	if (ctx->is_4d1c) {
 		csirx_phyA_power_on(ctx, ctx->portA, 0);
 		csirx_phyA_power_on(ctx, ctx->portB, 0);
@@ -2241,9 +2229,6 @@ static ssize_t mtk_cam_seninf_show_status(struct device *dev,
 	struct media_pad *pad;
 	struct mtk_cam_seninf_mux_meter meter;
 	void *csi2, *rx, *pmux, *pcammux;
-#ifdef CAT_MORE_STATUS
-	unsigned int temp = 0;
-#endif
 
 	core = dev_get_drvdata(dev);
 	len = 0;
@@ -2273,25 +2258,9 @@ static ssize_t mtk_cam_seninf_show_status(struct device *dev,
 			continue;
 
 		csi2 = ctx->reg_if_csi2[(unsigned int)ctx->seninfIdx];
-#ifdef CAT_MORE_STATUS
-		temp = SENINF_READ_REG(csi2, SENINF_CSI2_IRQ_STATUS);
-		if (temp & ~(0x324)) {
-			SENINF_WRITE_REG(csi2,
-				SENINF_CSI2_IRQ_STATUS,
-				0xffffffff);
-		}
-#endif
 		rx = ctx->reg_ana_dphy_top[(unsigned int)ctx->port];
-#ifndef CAT_MORE_STATUS
 		SHOW(buf, len, "csi2 irq_stat 0x%08x\n",
 		     SENINF_READ_REG(csi2, SENINF_CSI2_IRQ_STATUS));
-#else
-		SHOW(buf, len, "csi2 en 0x%08x\n",
-		     SENINF_READ_REG(csi2, SENINF_CSI2_EN));
-		SHOW(buf, len, "csi2 opt 0x%08x\n",
-		     SENINF_READ_REG(csi2, SENINF_CSI2_OPT));
-		SHOW(buf, len, "csi2 irq_stat 0x%08x\n", temp);
-#endif
 		SHOW(buf, len, "csi2 line_frame_num 0x%08x\n",
 		     SENINF_READ_REG(csi2, SENINF_CSI2_LINE_FRAME_NUM));
 		SHOW(buf, len, "csi2 packet_status 0x%08x\n",
@@ -2434,7 +2403,7 @@ static int mtk_cam_seninf_debug(struct seninf_ctx *ctx)
 	int irq_status = 0;
 	int enabled = 0;
 	int ret = 0;
-	int i, j;
+	int i, j, k;
 
 	unsigned long debug_ft = FT_30_FPS * SCAN_TIME;//FIXME
 	unsigned long debug_vb = 3 * SCAN_TIME;//FIXME
@@ -2611,17 +2580,17 @@ static int mtk_cam_seninf_debug(struct seninf_ctx *ctx)
 		ret = -2; //multi lanes sync error, crc error, ecc error
 
 	/* SENINF_MUX */
-	for (j = SENINF_MUX1; j < _seninf_ops->mux_num; j++) {
-		base_mux = ctx->reg_if_mux[j];
+	for (k = SENINF_MUX1; k < _seninf_ops->mux_num; k++) {
+		base_mux = ctx->reg_if_mux[k];
 		if (SENINF_READ_REG(base_mux, SENINF_MUX_CTRL_0) & 0x1) {
 			dev_info(ctx->dev,
 				"SENINF%d_MUX_CTRL0(0x%x) SENINF%d_MUX_CTRL1(0x%x) SENINF_MUX_IRQ_STATUS(0x%x) SENINF%d_MUX_SIZE(0x%x) SENINF_MUX_ERR_SIZE(0x%x) SENINF_MUX_EXP_SIZE(0x%x)\n",
-				j,
+				k,
 				SENINF_READ_REG(base_mux, SENINF_MUX_CTRL_0),
-				j,
+				k,
 				SENINF_READ_REG(base_mux, SENINF_MUX_CTRL_1),
 				SENINF_READ_REG(base_mux, SENINF_MUX_IRQ_STATUS),
-				j,
+				k,
 				SENINF_READ_REG(base_mux, SENINF_MUX_SIZE),
 				SENINF_READ_REG(base_mux, SENINF_MUX_ERR_SIZE),
 				SENINF_READ_REG(base_mux, SENINF_MUX_IMG_SIZE));
@@ -2637,7 +2606,7 @@ static int mtk_cam_seninf_debug(struct seninf_ctx *ctx)
 					"after reset overrun, SENINF_MUX_IRQ_STATUS(0x%x) SENINF%d_MUX_SIZE(0x%x)\n",
 					SENINF_READ_REG(base_mux,
 							SENINF_MUX_IRQ_STATUS),
-					j,
+					k,
 					SENINF_READ_REG(base_mux, SENINF_MUX_SIZE));
 			}
 		}

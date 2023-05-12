@@ -27,12 +27,14 @@
 #include <gpufreq_debug.h>
 #include <gpu_misc.h>
 #include <gpufreq_ipi.h>
+#if defined(MTK_GPU_EB_SUPPORT)
 #include <gpueb_ipi.h>
 #include <gpueb_reserved_mem.h>
 #include <gpueb_debug.h>
+#endif
 #include <mtk_gpu_utility.h>
 
-#if IS_ENABLED(CONFIG_MTK_PBM)
+#if IS_ENABLED(CONFIG_MTK_PBM) || IS_ENABLED(CONFIG_MTK_PBM_LEGACY)
 #include <mtk_pbm_gpu_cb.h>
 #endif
 #if IS_ENABLED(CONFIG_MTK_BATTERY_OC_POWER_THROTTLING)
@@ -50,8 +52,10 @@
  * Local Function Declaration
  * ===============================================
  */
-static int gpufreq_wrapper_pdrv_probe(struct platform_device *pdev);
+#if defined(MTK_GPU_EB_SUPPORT)
 static int gpufreq_gpueb_init(void);
+#endif
+static int gpufreq_wrapper_pdrv_probe(struct platform_device *pdev);
 static void gpufreq_init_external_callback(void);
 static int gpufreq_ipi_to_gpueb(struct gpufreq_ipi_data data);
 static int gpufreq_validate_target(unsigned int *target);
@@ -1030,6 +1034,60 @@ done:
 EXPORT_SYMBOL(gpufreq_set_limit);
 
 /***********************************************************************************
+ * Function Name      : gpufreq_set_limit_by_power
+ * Inputs             : target          - Target of GPU DVFS (GPU, STACK, DEFAULT)
+ *                      limiter         - Pre-defined user that set limit to GPU DVFS
+ *                      ceiling_info    - Upper limit power info
+ *                      floor_info      - Lower limit power info
+ * Outputs            : -
+ * Returns            : GPUFREQ_SUCCESS - Success
+ *                      GPUFREQ_EINVAL  - Failure
+ *                      GPUFREQ_ENOENT  - Null implementation
+ * Description        : Set ceiling and floor limit to GPU DVFS by specified limiter
+ *                      It will immediately trigger DVFS if current OPP violates limit
+ ***********************************************************************************/
+int gpufreq_set_limit_by_power(enum gpufreq_target target,
+	enum gpuppm_limiter limiter, int ceiling_info, int floor_info)
+{
+	int ceiling_idx = -1, floor_idx = -1;
+	int ceiling_freq = GPUPPM_KEEP_IDX, floor_freq = GPUPPM_KEEP_IDX;
+	int ret = GPUFREQ_SUCCESS;
+
+	//update the power table with current temp.
+	if (gpufreq_fp && gpufreq_fp->update_power_table)
+		gpufreq_fp->update_power_table();
+
+	//use the power info to get freq
+	if (ceiling_info > 0) {
+		if (gpufreq_fp && gpufreq_fp->get_idx_by_pgpu)
+			ceiling_idx = gpufreq_fp->get_idx_by_pgpu((unsigned int)ceiling_info);
+
+		if (gpufreq_fp && gpufreq_fp->get_fgpu_by_idx)
+			ceiling_freq =  gpufreq_fp->get_fgpu_by_idx(ceiling_idx);
+
+	} else {
+		//if info is gpuppm_reserved_idx, just pass to set_limit.
+		ceiling_freq = ceiling_info;
+	}
+	//use the power info to get freq
+	if (floor_info > 0) {
+		if (gpufreq_fp && gpufreq_fp->get_idx_by_pgpu)
+			floor_idx = gpufreq_fp->get_idx_by_pgpu((unsigned int)floor_info);
+
+		if (gpufreq_fp && gpufreq_fp->get_fgpu_by_idx)
+			floor_freq =  gpufreq_fp->get_fgpu_by_idx(floor_idx);
+
+	} else {
+		//if info is gpuppm_reserved_idx, just pass to set_limit.
+		floor_freq = floor_info;
+	}
+	//pass the freq info to set_limit.
+	ret = gpufreq_set_limit(target, limiter, ceiling_freq, floor_freq);
+	return ret;
+}
+EXPORT_SYMBOL(gpufreq_set_limit_by_power);
+
+/***********************************************************************************
  * Function Name      : gpufreq_get_cur_limit_idx
  * Inputs             : target    - Target of GPU DVFS (GPU, STACK, DEFAULT)
  *                      limit     - Type of limit (GPUPPM_CEILING, GPUPPM_FLOOR)
@@ -1696,6 +1754,7 @@ static int gpufreq_ipi_to_gpueb(struct gpufreq_ipi_data data)
 {
 	int ret = GPUFREQ_SUCCESS;
 
+#if defined(MTK_GPU_EB_SUPPORT)
 	if (data.cmd_id < 0 || data.cmd_id >= CMD_NUM) {
 		GPUFREQ_LOGE("invalid gpufreq IPI command: %d (EINVAL)", data.cmd_id);
 		ret = GPUFREQ_EINVAL;
@@ -1707,6 +1766,7 @@ static int gpufreq_ipi_to_gpueb(struct gpufreq_ipi_data data)
 
 	ret = mtk_ipi_send_compl(get_gpueb_ipidev(), g_ipi_channel, IPI_SEND_POLLING,
 		(void *)&data, GPUFREQ_IPI_DATA_LEN, IPI_TIMEOUT_MS);
+
 	if (unlikely(ret != IPI_ACTION_DONE)) {
 		GPUFREQ_LOGE("[ABORT] fail to send IPI command: %s (%d)",
 			gpufreq_ipi_cmd_name[data.cmd_id], ret);
@@ -1718,8 +1778,8 @@ static int gpufreq_ipi_to_gpueb(struct gpufreq_ipi_data data)
 
 	GPUFREQ_LOGD("channel: %d receive IPI command: %s (%d)",
 		g_ipi_channel, gpufreq_ipi_cmd_name[g_recv_msg.cmd_id], g_recv_msg.cmd_id);
-
 done:
+#endif /*MTK_GPU_EB_SUPPORT*/
 	return ret;
 }
 
@@ -1782,11 +1842,17 @@ static void gpufreq_dump_dvfs_status(void)
  ***********************************************************************************/
 static void gpufreq_abort(void)
 {
+#if defined(MTK_GPU_EB_SUPPORT)
 	gpueb_dump_status();
+#endif
+
 	gpufreq_dump_infra_status();
 
+
 #if GPUFREQ_FORCE_WDT_ENABLE
+#if defined(MTK_GPU_EB_SUPPORT)
 	gpueb_trigger_wdt("GPUFREQ");
+#endif
 #else
 	BUG_ON(1);
 #endif /* GPUFREQ_FORCE_WDT_ENABLE */
@@ -1831,7 +1897,7 @@ static void gpufreq_low_batt_callback(enum LOW_BATTERY_LEVEL_TAG low_batt_level)
 
 static void gpufreq_init_external_callback(void)
 {
-#if IS_ENABLED(CONFIG_MTK_PBM)
+#if IS_ENABLED(CONFIG_MTK_PBM) || IS_ENABLED(CONFIG_MTK_PBM_LEGACY)
 	struct pbm_gpu_callback_table pbm_cb = {
 		.get_max_pb = gpufreq_get_max_power,
 		.get_min_pb = gpufreq_get_min_power,
@@ -1848,7 +1914,7 @@ static void gpufreq_init_external_callback(void)
 	mtk_get_gpu_cur_oppidx_fp = gpufreq_get_cur_oppidx;
 
 	/* register PBM callback */
-#if IS_ENABLED(CONFIG_MTK_PBM)
+#if IS_ENABLED(CONFIG_MTK_PBM) || IS_ENABLED(CONFIG_MTK_PBM_LEGACY)
 	register_pbm_gpu_notify(&pbm_cb);
 #endif /* CONFIG_MTK_PBM */
 
@@ -1899,6 +1965,7 @@ void gpufreq_register_gpuppm_fp(struct gpuppm_platform_fp *platform_fp)
 }
 EXPORT_SYMBOL(gpufreq_register_gpuppm_fp);
 
+#if defined(MTK_GPU_EB_SUPPORT)
 static int gpufreq_gpueb_init(void)
 {
 	struct gpufreq_ipi_data send_msg = {};
@@ -1914,6 +1981,7 @@ static int gpufreq_gpueb_init(void)
 		ret = GPUFREQ_ENOENT;
 		goto done;
 	}
+
 	mtk_ipi_register(get_gpueb_ipidev(), g_ipi_channel, NULL, NULL, (void *)&g_recv_msg);
 
 	/* init shared memory */
@@ -1959,10 +2027,11 @@ static int gpufreq_gpueb_init(void)
 		status_shared_mem_pa, g_status_shared_mem_va, status_shared_mem_size);
 	GPUFREQ_LOGI("debug shared memory phy_addr: 0x%llx, virt_addr: 0x%llx, size: 0x%x",
 		debug_shared_mem_pa, g_debug_shared_mem_va, debug_shared_mem_size);
-
 done:
 	return ret;
+
 }
+#endif /*MTK_GPU_EB_SUPPORT*/
 
 static int gpufreq_wrapper_pdrv_probe(struct platform_device *pdev)
 {
@@ -1980,6 +2049,7 @@ static int gpufreq_wrapper_pdrv_probe(struct platform_device *pdev)
 	of_property_read_u32(of_wrapper, "dual-buck", &g_dual_buck);
 	of_property_read_u32(of_wrapper, "gpueb-support", &g_gpueb_support);
 
+#if defined(MTK_GPU_EB_SUPPORT)
 	/* init gpueb setting if gpueb is enabled */
 	if (g_gpueb_support) {
 		ret = gpufreq_gpueb_init();
@@ -1988,6 +2058,7 @@ static int gpufreq_wrapper_pdrv_probe(struct platform_device *pdev)
 			goto done;
 		}
 	}
+#endif
 
 	GPUFREQ_LOGI("gpufreq wrapper driver probe done, dual_buck: %s, gpueb: %s",
 		g_dual_buck ? "true" : "false",

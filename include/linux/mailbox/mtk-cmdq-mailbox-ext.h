@@ -35,7 +35,7 @@ void cmdq_controller_set_fp(struct cmdq_util_controller_fp *cust_cmdq_util);
 #define CMDQ_PREDUMP_MS(timeout_ms)	\
 	((timeout_ms == CMDQ_NO_TIMEOUT) ? CMDQ_PREDUMP_DEFAULT_MS : timeout_ms / 5)
 
-#define CMDQ_THR_MAX_COUNT		24
+#define CMDQ_THR_MAX_COUNT		32
 
 #define CMDQ_INST_SIZE			8 /* instruction is 64-bit */
 #define CMDQ_SUBSYS_SHIFT		16
@@ -174,7 +174,10 @@ struct cmdq_pkt {
 	struct cmdq_pkt_err	err_data;
 	cmdq_aee_cb		aee_cb;
 	u32			vcp_eng;
-
+#if IS_ENABLED(CONFIG_MTK_MT6382_BDG)
+	void			*bdg_data;
+	bool			reuse;
+#endif
 	struct work_struct	destroy_work;
 };
 
@@ -325,8 +328,9 @@ unsigned long cmdq_get_tracing_mark(void);
 u32 cmdq_thread_timeout_backup(struct cmdq_thread *thread, const u32 ms);
 void cmdq_thread_timeout_restore(struct cmdq_thread *thread, const u32 ms);
 s32 cmdq_mbox_set_hw_id(void *cmdq);
+s32 cmdq_mbox_reset_hw_id(void *cmdq);
 
-#if IS_ENABLED(CONFIG_MMPROFILE)
+#if IS_ENABLED(CONFIG_DEBUG_FS)
 void cmdq_mmp_wait(struct mbox_chan *chan, void *pkt);
 #endif
 

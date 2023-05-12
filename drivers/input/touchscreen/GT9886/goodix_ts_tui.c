@@ -24,6 +24,7 @@
 atomic_t gt9886_tui_flag = ATOMIC_INIT(0);
 EXPORT_SYMBOL(gt9886_tui_flag);
 
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_MTK_TUI_COMMON_API)
 int gt9886_tpd_enter_tui(void)
 {
 	int ret = 0;
@@ -50,5 +51,32 @@ int gt9886_tpd_exit_tui(void)
 	return ret;
 }
 EXPORT_SYMBOL(gt9886_tpd_exit_tui);
-#endif
+#else
+int tpd_enter_tui(void)
+{
+	int ret = 0;
 
+	ts_info("[%s] enter TUI", __func__);
+
+	atomic_set(&gt9886_tui_flag, true);
+
+	return ret;
+}
+EXPORT_SYMBOL(tpd_enter_tui);
+
+int tpd_exit_tui(void)
+{
+	int ret = 0;
+
+	ts_info("[%s] exit TUI", __func__);
+
+	atomic_set(&gt9886_tui_flag, false);
+
+	goodix_ts_irq_enable(resume_core_data, false);
+	goodix_ts_irq_enable(resume_core_data, true);
+
+	return ret;
+}
+EXPORT_SYMBOL(tpd_exit_tui);
+#endif
+#endif

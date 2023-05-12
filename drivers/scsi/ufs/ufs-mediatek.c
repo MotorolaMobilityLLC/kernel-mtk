@@ -73,8 +73,6 @@ static struct ufs_dev_fix ufs_mtk_dev_fixups[] = {
 		UFS_DEVICE_QUIRK_DELAY_BEFORE_LPM | UFS_DEVICE_QUIRK_DELAY_AFTER_LPM),
 	UFS_FIX(UFS_VENDOR_SKHYNIX, "H9HQ21AFAMZDAR",
 		UFS_DEVICE_QUIRK_SUPPORT_EXTENDED_FEATURES),
-	UFS_FIX(UFS_VENDOR_SKHYNIX, "H9HQ15AFAMBDAR",
-		UFS_DEVICE_QUIRK_DELAY_BEFORE_LPM | UFS_DEVICE_QUIRK_DELAY_AFTER_LPM),
 	END_FIX
 };
 
@@ -214,6 +212,14 @@ static int ufs_mtk_hce_enable_notify(struct ufs_hba *hba,
 	if (status == PRE_CHANGE) {
 		if (host->unipro_lpm) {
 			hba->vps->hba_enable_delay_us = 0;
+			/*
+			 * UFS may need recovery in suspned error state.
+			 * Force host reset or recovery may fail.
+			 */
+			if (hba->ufshcd_state != UFSHCD_STATE_OPERATIONAL) {
+				hba->vps->hba_enable_delay_us = 600;
+				ufs_mtk_host_reset(hba);
+			}
 		} else {
 			hba->vps->hba_enable_delay_us = 600;
 			ufs_mtk_host_reset(hba);
@@ -619,7 +625,7 @@ static void ufs_mtk_init_va09_pwr_ctrl(struct ufs_hba *hba)
 	struct ufs_mtk_host *host = ufshcd_get_variant(hba);
 
 	host->reg_va09 = regulator_get(hba->dev, "va09");
-	if (!host->reg_va09)
+	if (IS_ERR(host->reg_va09))
 		dev_info(hba->dev, "failed to get va09");
 	else
 		host->caps |= UFS_MTK_CAP_VA09_PWR_CTRL;
@@ -887,6 +893,21 @@ static void ufs_mtk_trace_vh_compl_command(void *data, struct ufs_hba *hba, stru
 #endif
 }
 
+static void ufs_mtk_trace_vh_update_sdev(void *data, struct scsi_device *sdev)
+{
+	struct ufs_hba *hba = shost_priv(sdev->host);
+	struct ufs_mtk_host *host = ufshcd_get_variant(hba);
+
+	dev_info(hba->dev, "lu %d slave configured", sdev->lun);
+
+	if (ufshcd_scsi_to_upiu_lun(sdev->lun) == UFS_UPIU_BOOT_WLUN) {
+		/* The last LUs */
+		dev_info(hba->dev, "LUNs ready");
+		complete(&host->luns_added);
+	}
+
+}
+
 static struct tracepoints_table interests[] = {
 	{
 		.name = "android_vh_ufs_send_command",
@@ -895,6 +916,10 @@ static struct tracepoints_table interests[] = {
 	{
 		.name = "android_vh_ufs_compl_command",
 		.func = ufs_mtk_trace_vh_compl_command
+	},
+	{
+		.name = "android_vh_ufs_update_sdev",
+		.func = ufs_mtk_trace_vh_update_sdev
 	},
 #if defined(CONFIG_UFSFEATURE)
 	{
@@ -977,6 +1002,7 @@ static int ufs_mtk_install_tracepoints(struct ufs_hba *hba)
 
 	return 0;
 }
+
 
 static void ufs_mtk_get_controller_version(struct ufs_hba *hba)
 {
@@ -1170,22 +1196,16 @@ static void ufs_mtk_rpmb_add(void *data, async_cookie_t cookie)
 	u8 *desc_buf;
 	struct rpmb_dev *rdev;
 	u8 rw_size;
-	int retry = 10;
 	struct ufs_mtk_host *host;
 	struct ufs_hba *hba = (struct ufs_hba *)data;
 
 	host = ufshcd_get_variant(hba);
 
 	/* wait ufshcd_scsi_add_wlus add sdev_rpmb  */
-	while (hba->sdev_rpmb == NULL) {
-		if (retry) {
-			retry--;
-			msleep(1000);
-		} else {
-			dev_err(hba->dev,
-				"scsi rpmb device cannot found\n");
-			goto out;
-		}
+	err = wait_for_completion_timeout(&host->luns_added, 10 * HZ);
+	if (err == 0) {
+		dev_warn(hba->dev, "%s: LUNs not ready before timeout. RPMB init failed");
+		goto out;
 	}
 
 	desc_buf = kmalloc(QUERY_DESC_MAX_SIZE, GFP_KERNEL);
@@ -1281,6 +1301,7 @@ ufs_mtk_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 			__func__, err);
 		goto out_release_mem;
 	}
+
 
 #if defined(CONFIG_UFSFEATURE)
 	if (ufsf_check_query(ioctl_data->opcode)) {
@@ -1671,6 +1692,8 @@ skip_vcc:
 	cpu_latency_qos_add_request(&host->pm_qos_req,
 	     	   PM_QOS_DEFAULT_VALUE);
 	host->pm_qos_init = true;
+
+	init_completion(&host->luns_added);
 
 	ufs_mtk_biolog_init(host->qos_allowed, host->boot_device);
 

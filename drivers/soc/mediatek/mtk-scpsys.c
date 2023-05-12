@@ -436,6 +436,8 @@ static int scpsys_bus_protect_disable(struct scp_domain *scpd, unsigned int inde
 	struct regmap *smi_common = scp->smi_common;
 	struct regmap *vlpcfg = scp->vlpcfg;
 	struct regmap *mfgrpc = scp->mfgrpc;
+	struct regmap *nemi = scp->nemi;
+	struct regmap *semi = scp->semi;
 	int i;
 
 	for (i = index; i >= 0; i--) {
@@ -451,9 +453,17 @@ static int scpsys_bus_protect_disable(struct scp_domain *scpd, unsigned int inde
 			map = vlpcfg;
 		else if (bp.type == MFGRPC_TYPE)
 			map = mfgrpc;
+		else if (bp.type == NEMI_TYPE)
+			map = nemi;
+		else if (bp.type == SEMI_TYPE)
+			map = semi;
 		else
 			continue;
-
+		if (map == NULL) {
+			pr_err("%s pd-domain:%s bp.type:%d index= %d map is NULL please check\n",
+				__func__, scpd->data->name, bp.type, i);
+			return -1;
+		}
 		if (index != (MAX_STEPS - 1)) {
 			unsigned int val = 0, val2 = 0;
 
@@ -483,6 +493,8 @@ static int scpsys_bus_protect_enable(struct scp_domain *scpd)
 	struct regmap *smi_common = scp->smi_common;
 	struct regmap *vlpcfg = scp->vlpcfg;
 	struct regmap *mfgrpc = scp->mfgrpc;
+	struct regmap *nemi = scp->nemi;
+	struct regmap *semi = scp->semi;
 	int i;
 
 	for (i = 0; i < MAX_STEPS; i++) {
@@ -498,6 +510,10 @@ static int scpsys_bus_protect_enable(struct scp_domain *scpd)
 			map = vlpcfg;
 		else if (bp.type == MFGRPC_TYPE)
 			map = mfgrpc;
+		else if (bp.type == NEMI_TYPE)
+			map = nemi;
+		else if (bp.type == SEMI_TYPE)
+			map = semi;
 		else
 			break;
 
@@ -1143,6 +1159,7 @@ struct scp *init_scp(struct platform_device *pdev,
 	struct resource *res;
 	int i, ret;
 	struct scp *scp;
+	struct device_node *smi_node;
 
 	scp = devm_kzalloc(&pdev->dev, sizeof(*scp), GFP_KERNEL);
 	if (!scp)
@@ -1178,8 +1195,12 @@ struct scp *init_scp(struct platform_device *pdev,
 		return ERR_CAST(scp->infracfg);
 	}
 
-	scp->smi_common = syscon_regmap_lookup_by_phandle(pdev->dev.of_node,
-			"smi_comm");
+	smi_node = of_parse_phandle(pdev->dev.of_node, "smi_comm", 0);
+
+	if (smi_node)
+		scp->smi_common = device_node_to_regmap(smi_node);
+	else
+		scp->smi_common = ERR_PTR(-ENODEV);
 
 	if (scp->smi_common == ERR_PTR(-ENODEV)) {
 		scp->smi_common = NULL;
@@ -1207,6 +1228,26 @@ struct scp *init_scp(struct platform_device *pdev,
 		dev_notice(&pdev->dev, "Cannot find mfgrpc controller: %ld\n",
 				PTR_ERR(scp->mfgrpc));
 		return ERR_CAST(scp->mfgrpc);
+	}
+
+	scp->nemi = syscon_regmap_lookup_by_phandle(pdev->dev.of_node,
+			"nemi_bus");
+	if (scp->nemi == ERR_PTR(-ENODEV)) {
+		scp->nemi = NULL;
+	} else if (IS_ERR(scp->nemi)) {
+		dev_notice(&pdev->dev, "Cannot find nemi controller: %ld\n",
+				PTR_ERR(scp->nemi));
+		return ERR_CAST(scp->nemi);
+	}
+
+	scp->semi = syscon_regmap_lookup_by_phandle(pdev->dev.of_node,
+			"semi_bus");
+	if (scp->semi == ERR_PTR(-ENODEV)) {
+		scp->semi = NULL;
+	} else if (IS_ERR(scp->semi)) {
+		dev_notice(&pdev->dev, "Cannot find semi controller: %ld\n",
+				PTR_ERR(scp->semi));
+		return ERR_CAST(scp->semi);
 	}
 
 	scp->hwv_regmap = syscon_regmap_lookup_by_phandle(pdev->dev.of_node,
@@ -1312,25 +1353,37 @@ int mtk_register_power_domains(struct platform_device *pdev,
 				struct scp *scp, int num)
 {
 	struct genpd_onecell_data *pd_data;
-	int i, ret;
+	int i = 0, ret = 0;
+	struct scp_domain *scpd;
+	struct generic_pm_domain *genpd;
+	bool on = true;
 
 	scpsys_init_flag = true;
-	for (i = 0; i < num; i++) {
-		struct scp_domain *scpd = &scp->domains[i];
-		struct generic_pm_domain *genpd = &scpd->genpd;
-		bool on;
+	for (i = num - 1; i >= 0; i--) {
+		scpd = &scp->domains[i];
+		genpd = &scpd->genpd;
 
+		if (MTK_SCPD_CAPS(scpd, MTK_SCPD_DISABLE_INIT_ON) &&
+			(scpsys_pwr_con_is_on(scpd))) {
+			on = WARN_ON(genpd->power_off(genpd) < 0);
+			dev_notice(&pdev->dev, "disable not reset power_domain:%s, on:%d\n",
+				genpd->name, on);
+			pm_genpd_init(genpd, NULL, !on);
+		}
+	}
+	for (i = 0; i < num; i++) {
+		scpd = &scp->domains[i];
+		genpd = &scpd->genpd;
 		/*
 		 * Initially turn on all domains to make the domains usable
 		 * with !CONFIG_PM and to get the hardware in sync with the
 		 * software.  The unused domains will be switched off during
 		 * late_init time.
 		 */
-		if (MTK_SCPD_CAPS(scpd, MTK_SCPD_BYPASS_INIT_ON))
+		if (MTK_SCPD_CAPS(scpd, MTK_SCPD_BYPASS_INIT_ON)) {
 			on = false;
-		else
+		} else
 			on = !WARN_ON(genpd->power_on(genpd) < 0);
-
 		pm_genpd_init(genpd, NULL, !on);
 	}
 

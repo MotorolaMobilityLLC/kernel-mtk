@@ -43,10 +43,8 @@ static char *mailbox_state_string(enum mtu3_vbus_id_state state)
 
 static void toggle_opstate(struct ssusb_mtk *ssusb)
 {
-	if (!ssusb->otg_switch.is_u3_drd) {
-		mtu3_setbits(ssusb->mac_base, U3D_DEVICE_CONTROL, DC_SESSION);
-		mtu3_setbits(ssusb->mac_base, U3D_POWER_MANAGEMENT, SOFT_CONN);
-	}
+	mtu3_setbits(ssusb->mac_base, U3D_DEVICE_CONTROL, DC_SESSION);
+	mtu3_setbits(ssusb->mac_base, U3D_POWER_MANAGEMENT, SOFT_CONN);
 }
 
 /* only port0 supports dual-role mode */
@@ -143,7 +141,6 @@ static void switch_port_to_on(struct ssusb_mtk *ssusb,
 		ssusb_phy_set_mode(ssusb, mode);
 		ssusb_ip_sw_reset(ssusb);
 	} else {
-		synchronize_irq(ssusb->u3d->irq);
 		ssusb_ip_sleep(ssusb);
 		ssusb_phy_power_off(ssusb);
 		ssusb_clks_disable(ssusb);

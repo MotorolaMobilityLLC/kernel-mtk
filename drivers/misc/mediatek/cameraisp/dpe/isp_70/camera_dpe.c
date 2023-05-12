@@ -378,7 +378,7 @@ struct DPE_CONFIG_STRUCT {
 	struct DPE_Config DpeFrameConfig[_SUPPORT_MAX_DPE_FRAME_REQUEST_];
 };
 static struct DPE_REQUEST_RING_STRUCT g_DPE_ReqRing;
-static struct DPE_CONFIG_STRUCT g_DpeEnqueReq_Struct;
+// static struct DPE_CONFIG_STRUCT g_DpeEnqueReq_Struct;
 static struct DPE_CONFIG_STRUCT g_DpeDequeReq_Struct;
 //static struct engine_requests dpe_reqs;
 static struct engine_requests dpe_reqs_dvs;
@@ -2009,6 +2009,9 @@ signed int dpe_enque_cb(struct frame *frames, void *req)
 	}
 	mutex_unlock(&gFDMutex);
 
+	if (pd_frame_num > MAX_FRAMES_PER_REQUEST)
+		return ENQUE_FAIL;
+
 	for (t = 0; t < pd_frame_num; t++) {
 		_req->m_pDpeConfig[ucnt].Dpe_DVSSettings.input_offset = ((t) *
 		_req->m_pDpeConfig[ucnt].Dpe_DVSSettings.occ_width) -
@@ -3264,19 +3267,7 @@ void cmdq_cb_destroy(struct cmdq_cb_data data)
 {
 	cmdq_pkt_destroy((struct cmdq_pkt *)data.data);
 }
-struct sg_table *dpe_dma_buf_map_attachment(struct dma_buf_attachment *attach,
-					enum dma_data_direction direction)
-{
-	struct sg_table *sg_table;
 
-	might_sleep();
-	if (WARN_ON(!attach || !attach->dmabuf))
-		return ERR_PTR(-EINVAL);
-	sg_table = attach->dmabuf->ops->map_dma_buf(attach, direction);
-	if (!sg_table)
-		sg_table = ERR_PTR(-ENOMEM);
-	return sg_table;
-}
 
 signed int CmdqDPEHW(struct frame *frame)
 {
@@ -4370,11 +4361,11 @@ static void DPE_EnableClock(bool En)
 static inline void DPE_Reset(void)
 {
 	LOG_DBG("- E.");
-	LOG_DBG(" DPE Reset start!\n");
+	LOG_INF(" DPE Reset start!\n");
 	mutex_lock(&(MutexDPERef));
 	if (DPEInfo.UserCount > 1) {
 		mutex_unlock(&(MutexDPERef));
-		LOG_DBG("Curr UserCount(%d) users exist", DPEInfo.UserCount);
+		LOG_INF("Curr UserCount(%d) users exist", DPEInfo.UserCount);
 	} else {
 		mutex_unlock(&(MutexDPERef));
 		/* Reset DPE flow */
@@ -4384,7 +4375,7 @@ static inline void DPE_Reset(void)
 		DPE_MASKWR(DVS_CTRL01_REG, 0x00000000, 0x70000000);
 		DPE_MASKWR(DVP_CTRL01_REG, 0x00000000, 0x70000000);
 		#endif
-		LOG_DBG(" DPE Reset end!\n");
+		LOG_INF(" DPE Reset end!\n");
 	}
 }
 
@@ -4700,12 +4691,12 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	struct DPE_CLEAR_IRQ_STRUCT ClearIrq;
 	struct DPE_Config dpe_DpeConfig;
 	struct DPE_Request dpe_DpeReq;
-	signed int enqnum;
+	// signed int enqnum;
 	struct DPE_USER_INFO_STRUCT *pUserInfo;
 	int enqueNum;
 	int dequeNum;
 	unsigned long flags;
-	int req_temp;
+	// int req_temp;
 	/* old: unsigned int flags;*//* FIX to avoid build warning */
 	/*  */
 	if (pFile->private_data == NULL) {
@@ -4721,9 +4712,10 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	switch (Cmd) {
 	case DPE_RESET:
 		{
-			spin_lock(&(DPEInfo.SpinLockDPE));
-			DPE_Reset();
-			spin_unlock(&(DPEInfo.SpinLockDPE));
+			LOG_INF("DPE ioctl DPE_RESET\n");
+			//spin_lock(&(DPEInfo.SpinLockDPE));
+			//DPE_Reset();
+			//spin_unlock(&(DPEInfo.SpinLockDPE));
 			break;
 		}
 		/*  */
@@ -4968,91 +4960,8 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case DPE_ENQUE_REQ:
 		{
-			if (copy_from_user(&dpe_DpeReq, (void *)Param,
-					sizeof(struct DPE_Request)) == 0) {
-				LOG_DBG("DPE_ENQNUE_NUM:%d, pid:%d\n",
-					dpe_DpeReq.m_ReqNum, pUserInfo->Pid);
-				if (dpe_DpeReq.m_ReqNum >
-					_SUPPORT_MAX_DPE_FRAME_REQUEST_) {
-					LOG_ERR(
-					"DPE Enque Num is bigger than enqueNum:%d\n",
-						dpe_DpeReq.m_ReqNum);
-					Ret = -EFAULT;
-					goto EXIT;
-				}
-				if (copy_from_user
-				    (g_DpeEnqueReq_Struct.DpeFrameConfig,
-				     (void *)dpe_DpeReq.m_pDpeConfig,
-				     dpe_DpeReq.m_ReqNum *
-					sizeof(struct DPE_Config)) != 0) {
-					LOG_ERR(
-					"copy DPEConfig from request fail!!\n");
-					Ret = -EFAULT;
-					goto EXIT;
-				}
-				//!mutex_lock(&gDpeMutex);
-				mutex_lock(&gDVSMutex);
-				spin_lock_irqsave(
-				&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DVP_ST]),
-						  flags);
-				kDpeReq.m_ReqNum = dpe_DpeReq.m_ReqNum;
-				kDpeReq.m_pDpeConfig =
-					g_DpeEnqueReq_Struct.DpeFrameConfig;
-				LOG_INF("[DPE ioctl DPE ENQUE REQ] Dpe_engineSelect = %d\n",
-				kDpeReq.m_pDpeConfig->Dpe_engineSelect);
-
-				if (kDpeReq.m_pDpeConfig->Dpe_engineSelect == MODE_DVS_ONLY) {
-					enqnum = dpe_enque_request(&dpe_reqs_dvs,
-					kDpeReq.m_ReqNum, &kDpeReq, pUserInfo->Pid);
-				}
-				if ((kDpeReq.m_pDpeConfig->Dpe_engineSelect == MODE_DVP_ONLY) ||
-					(kDpeReq.m_pDpeConfig->Dpe_engineSelect ==
-					MODE_DVS_DVP_BOTH)) {
-					enqnum = dpe_enque_request(&dpe_reqs_dvp,
-					kDpeReq.m_ReqNum, &kDpeReq, pUserInfo->Pid);
-				}
-
-				spin_unlock_irqrestore(
-				&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DVP_ST]),
-						       flags);
-				LOG_DBG("Config DPE Request!!\n");
-				/* Use a workqueue to set CMDQ to prevent
-				 * HW CMDQ request consuming speed from being
-				 * faster than SW frame-queue update speed.
-				 */
-				if (kDpeReq.m_pDpeConfig->Dpe_engineSelect == MODE_DVS_ONLY) {
-					req_temp = dpe_request_running(&dpe_reqs_dvs);
-					//LOG_INF("[DPE ioctl]dpe_request_running star = %d\n",
-					//req_temp);
-					if (!req_temp) {
-						//if (!dpe_request_running(&dpe_reqs)) {
-						LOG_INF("[dvs]direct request_handler\n");
-						dpe_request_handler(&dpe_reqs_dvs,
-						&(DPEInfo.SpinLockIrq[
-						DPE_IRQ_TYPE_INT_DVP_ST]));
-					}
-				}
-
-				if ((kDpeReq.m_pDpeConfig->Dpe_engineSelect == MODE_DVP_ONLY) ||
-					(kDpeReq.m_pDpeConfig->Dpe_engineSelect ==
-					MODE_DVS_DVP_BOTH)) {
-					req_temp = dpe_request_running(&dpe_reqs_dvp);
-					LOG_INF("[DPE ioctl]dpe_request_running star = %d\n",
-					req_temp);
-					if (!req_temp) {
-						LOG_INF("[DPE ioctl DVP]direct request_handler\n");
-						dpe_request_handler(&dpe_reqs_dvp,
-						&(DPEInfo.SpinLockIrq[
-						DPE_IRQ_TYPE_INT_DVP_ST]));
-					}
-				}
-				mutex_unlock(&gDVSMutex);
-				//mutex_unlock(&gDpeMutex);
-			} else {
-				LOG_ERR(
-				"DPE_ENQUE_REQ copy_from_user failed\n");
-				Ret = -EFAULT;
-			}
+			LOG_INF(
+			"DPE_ENQUE not support\n");
 			break;
 		}
 	case DPE_DEQUE_NUM:
@@ -6786,8 +6695,8 @@ int32_t DPE_DumpCallback(uint64_t engineFlag, int level)
 }
 int32_t DPE_ResetCallback(uint64_t engineFlag)
 {
-	LOG_DBG("DPE ResetCallback");
-	DPE_Reset();
+	LOG_INF("DPE ResetCallback");
+	//DPE_Reset();
 	return 0;
 }
 int32_t DPE_ClockOffCallback(uint64_t engineFlag)

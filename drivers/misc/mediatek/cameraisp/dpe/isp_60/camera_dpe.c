@@ -1934,19 +1934,7 @@ void cmdq_cb_destroy(struct cmdq_cb_data data)
 		kfree((struct tee_mmu *)data.data);
 	}
 }
-struct sg_table *dpe_dma_buf_map_attachment(struct dma_buf_attachment *attach,
-					enum dma_data_direction direction)
-{
-	struct sg_table *sg_table;
 
-	might_sleep();
-	if (WARN_ON(!attach || !attach->dmabuf))
-		return ERR_PTR(-EINVAL);
-	sg_table = attach->dmabuf->ops->map_dma_buf(attach, direction);
-	if (!sg_table)
-		sg_table = ERR_PTR(-ENOMEM);
-	return sg_table;
-}
 static bool dpe_get_dma_buffer(struct tee_mmu *mmu, int fd)
 {
 	struct dma_buf *buf;
@@ -4582,14 +4570,14 @@ static signed int DPE_probe(struct platform_device *pDev)
 /* parse hardware event */
 //dvs_event_id = cmdq_dev_get_event(&pDev->dev, "EVENT_IPE_DVS_DONE");
 		of_property_read_u32(pDev->dev.of_node,
-				"EVENT_IPE_DVS_DONE",
+				"event_ipe_dvs_done",
 				&dvs_event_id);
 		LOG_INF("[Debug]dvs_event_id %d\n", dvs_event_id);
 	} else if (nr_DPE_devs == 2) {
 /* parse hardware event */
-//dvp_event_id = cmdq_dev_get_event(&pDev->dev, "EVENT_IPE_DVP_DONE");
+//dvp_event_id = cmdq_dev_get_event(&pDev->dev, "event_ipe_dvp_done");
 		of_property_read_u32(pDev->dev.of_node,
-				"EVENT_IPE_DVP_DONE",
+				"event_ipe_dvp_done",
 				&dvp_event_id);
 		LOG_INF("[Debug]dvp_event_id %d\n", dvp_event_id);
 	}

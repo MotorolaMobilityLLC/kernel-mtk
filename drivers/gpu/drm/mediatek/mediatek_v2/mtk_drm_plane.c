@@ -35,12 +35,14 @@ static const u32 formats[] = {
 
 unsigned int to_crtc_plane_index(unsigned int plane_index)
 {
-	if ((plane_index >= 0) && (plane_index < OVL_LAYER_NR))
+	if (plane_index < OVL_LAYER_NR)
 		return plane_index;
 	else if (plane_index < (OVL_LAYER_NR + EXTERNAL_INPUT_LAYER_NR))
 		return plane_index - OVL_LAYER_NR;
-	else if (plane_index < MAX_PLANE_NR)
+	else if (plane_index < (OVL_LAYER_NR + EXTERNAL_INPUT_LAYER_NR + MEMORY_INPUT_LAYER_NR))
 		return plane_index - OVL_LAYER_NR - EXTERNAL_INPUT_LAYER_NR;
+	else if (plane_index < MAX_PLANE_NR)
+		return plane_index - OVL_LAYER_NR - EXTERNAL_INPUT_LAYER_NR - MEMORY_INPUT_LAYER_NR;
 	else
 		return 0;
 }
@@ -482,7 +484,7 @@ static void mtk_plane_atomic_update(struct drm_plane *plane,
 	DDPINFO("%s:%d en%d,pitch%d,fmt:%s\n",
 		__func__, __LINE__, (unsigned int)state->pending.enable,
 		state->pending.pitch, drm_get_format_name(state->pending.format, &format_name));
-	DDPINFO("addr:0x%llx,x%d,y%d,width%d,height%d\n",
+	DDPINFO("addr:0x%lx,x%d,y%d,width%d,height%d\n",
 		state->pending.addr, state->pending.dst_x,
 		state->pending.dst_y, state->pending.width,
 		state->pending.height);

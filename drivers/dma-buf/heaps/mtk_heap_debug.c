@@ -8,27 +8,29 @@
 
 #define pr_fmt(fmt) "dma_heap: mtk_debug "fmt
 
+#include <asm/memory.h>
+#include <linux/device/driver.h>
 #include <linux/dma-buf.h>
 #include <linux/dma-mapping.h>
 #include <linux/dma-heap.h>
 #include <linux/err.h>
-#include <linux/highmem.h>
-#include <linux/mm.h>
-#include <linux/scatterlist.h>
-#include <linux/slab.h>
-#include <linux/vmalloc.h>
-#include <linux/module.h>
-#include <linux/platform_device.h>
-#include <linux/device/driver.h>
-#include <linux/mod_devicetable.h>
-#include <linux/sizes.h>
-#include <uapi/linux/dma-heap.h>
-#include <linux/sched/clock.h>
-#include <linux/of_device.h>
 #include <linux/fdtable.h>
-#include <linux/oom.h>
-#include <linux/notifier.h>
+#include <linux/highmem.h>
 #include <linux/iommu.h>
+#include <linux/mm.h>
+#include <linux/module.h>
+#include <linux/mod_devicetable.h>
+#include <linux/notifier.h>
+#include <linux/of_device.h>
+#include <linux/oom.h>
+#include <linux/platform_device.h>
+#include <linux/scatterlist.h>
+#include <linux/sched/clock.h>
+#include <linux/sizes.h>
+#include <linux/slab.h>
+#include <linux/spinlock.h>
+#include <linux/vmalloc.h>
+#include <uapi/linux/dma-heap.h>
 #if IS_ENABLED(CONFIG_PROC_FS)
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
@@ -37,6 +39,15 @@
 #include "deferred-free-helper.h"
 #include "mtk_heap_priv.h"
 #include "mtk_heap.h"
+
+#if IS_ENABLED(CONFIG_MTK_HANG_DETECT)
+#include <hang_detect.h>
+#endif
+#include <mt-plat/mrdump.h>
+
+#ifndef __pa_nodebug
+#define __pa_nodebug __pa
+#endif
 
 /* debug flags */
 int vma_dump_enable;
@@ -48,7 +59,7 @@ int dump_all_attach;
 #define DMA_HEAP_CMDLINE_LEN      (30)
 #define DMA_HEAP_DUMP_ALLOC_GFP   (GFP_ATOMIC)
 #define OOM_DUMP_INTERVAL         (2000)  /* unit: ms */
-
+#define SET_PID_CMDLINE_LEN       (16)
 
 /* Bit map for error */
 #define DBG_ALLOC_MEM_FAIL        (1 << 0)
@@ -230,6 +241,58 @@ struct heap_status_s debug_heap_list[] = {
 };
 #define _DEBUG_HEAP_CNT_  (ARRAY_SIZE(debug_heap_list))
 
+#if IS_ENABLED(CONFIG_MTK_HANG_DETECT) && \
+	IS_ENABLED(CONFIG_MTK_HANG_DETECT_DB) && \
+	IS_ENABLED(CONFIG_MTK_AEE_IPANIC)
+
+#define MAX_STRING_SIZE 256
+#define MAX_HANG_INFO_SIZE (512*1024)
+
+DEFINE_MUTEX(g_minifile_dump_lock);
+
+static char *Hang_Info_In_Dma;
+static int Hang_Info_Size_In_Dma;
+static int MaxHangInfoSize = MAX_HANG_INFO_SIZE;
+
+static void mtk_dmabuf_dump_heap(struct dma_heap *heap,
+				 struct seq_file *s,
+				 int flag);
+
+static void hang_dmabuf_dump(const char *fmt, ...)
+{
+	unsigned long len;
+	va_list ap;
+
+	if (!Hang_Info_In_Dma || (Hang_Info_Size_In_Dma + MAX_STRING_SIZE) >=
+			(unsigned long)MaxHangInfoSize)
+		return;
+
+	va_start(ap, fmt);
+	len = vscnprintf(&Hang_Info_In_Dma[Hang_Info_Size_In_Dma],
+			 MAX_STRING_SIZE, fmt, ap);
+	va_end(ap);
+	Hang_Info_Size_In_Dma += len;
+}
+
+bool mrdump_add_file_done;
+static void mtk_dmabuf_dump_for_hang(void)
+{
+	mutex_lock(&g_minifile_dump_lock);
+	if (!mrdump_add_file_done) {
+		mrdump_add_file_done = true;
+		mutex_unlock(&g_minifile_dump_lock);
+		mrdump_mini_add_extra_file((unsigned long)Hang_Info_In_Dma,
+				   __pa_nodebug(Hang_Info_In_Dma),
+				   MaxHangInfoSize, "DMA_HEAP");
+	} else {
+		mutex_unlock(&g_minifile_dump_lock);
+	}
+
+	mtk_dmabuf_dump_heap(NULL, HANG_DMABUF_FILE_TAG, HEAP_DUMP_OOM);
+}
+
+#endif
+
 static inline struct dump_fd_data *
 fd_const_to_dump_fd_data(const struct fd_const *d)
 {
@@ -342,10 +405,12 @@ unsigned long long get_current_time_ms(void)
 static int is_dmabuf_from_dma_heap(const struct dma_buf *dmabuf)
 {
 	if (is_mtk_mm_heap_dmabuf(dmabuf) ||
-	    is_system_heap_dmabuf(dmabuf) ||
-	    is_mtk_sec_heap_dmabuf(dmabuf))
+	    is_system_heap_dmabuf(dmabuf))
 		return 1;
-
+#if IS_ENABLED(CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM)
+	if (is_mtk_sec_heap_dmabuf(dmabuf))
+		return 1;
+#endif
 	return 0;
 }
 
@@ -859,15 +924,24 @@ static int dma_heap_buf_dump_cb(const struct dma_buf *dmabuf, void *priv)
 	struct mtk_heap_dump_s *dump_param = priv;
 	struct seq_file *s = dump_param->file;
 	struct dma_heap *dump_heap = dump_param->heap;
+	struct dma_buf tmp_dmabuf;
+	struct file tmp_file;
 	unsigned long flag = dump_param->flag;
 	int delta = 0;
 
+	if (WARN_ON(!dmabuf || !dmabuf->file))
+		return 0;
 	/* heap is valid but buffer is not from this heap */
 	if (dump_heap && !is_dmabuf_from_heap(dmabuf, dump_heap))
 		return 0;
 
 	if (flag & HEAP_DUMP_DEC_1_REF)
 		delta = 1;
+
+	if (get_kernel_nofault(tmp_dmabuf, dmabuf) ||
+	    get_kernel_nofault(tmp_file, dmabuf->file) ||
+	    !is_dma_buf_file(dmabuf->file))
+		return 0;
 
 	spin_lock((spinlock_t *)&dmabuf->name_lock);
 	dmabuf_dump(s, "inode:%-8lu size(Byte):%-10zu count:%-2ld cache_sg:%d  exp:%s\tname:%s\n",
@@ -1123,7 +1197,7 @@ struct dump_fd_data *dmabuf_rbtree_add_all(struct dma_heap *heap,
 	rcu_read_unlock();
 	cur_ts2 = sched_clock();
 	if (dmabuf_rb_check)
-		dmabuf_dump(s, "%s: time:%lu max:%d count:%d\n", __func__,
+		dmabuf_dump(s, "%s: time:%llu max:%d count:%d\n", __func__,
 			    cur_ts2 - cur_ts1, pid_max, pid_count);
 
 	while (pid_count) {
@@ -1198,6 +1272,8 @@ static void dmabuf_rbtree_dump_buf(struct dump_fd_data *fddata, unsigned long fl
 
 		dbg_node = rb_entry(tmp_rb, struct dmabuf_debug_node, dmabuf_node);
 		dmabuf = dbg_node->dmabuf;
+		if (WARN_ON(!dmabuf))
+			return;
 
 		dma_heap_buf_dump_cb(dmabuf, &dump_param);
 
@@ -1289,7 +1365,7 @@ void dmabuf_rbtree_dump_all(struct dma_heap *heap, unsigned long flag,
 	if (!(flag & HEAP_DUMP_STATS)) {
 		dmabuf_dump(s, "allocated for debug dump: %lu KB\n", debug_alloc_sz / 1024);
 		dmabuf_dump(s, "freed     for debug dump: %lu KB\n", free_size / 1024);
-		dmabuf_dump(s, "start:%lums add_done:%lums dump_done:%lums end:%lums\n",
+		dmabuf_dump(s, "start:%llums add_done:%llums dump_done:%llums end:%llums\n",
 			    time1, time2, time3, get_current_time_ms());
 	}
 }
@@ -1374,7 +1450,7 @@ static void mtk_dmabuf_dump_heap(struct dma_heap *heap,
 		dmabuf_dump(s, "freelist: %lu KB\n", get_freelist_nr_pages() * 4);
 		dmabuf_sz = get_dma_heap_buffer_total(heap);
 		dmabuf_dump(s, "dmabuf buffer total:%ld KB\n", (dmabuf_sz * 4) / PAGE_SIZE);
-		dmabuf_dump(s, "\t|-normal dma_heap buffer total:%ld KB\n\n",
+		dmabuf_dump(s, "\t|-normal dma_heap buffer total:%lld KB\n\n",
 			    (atomic64_read(&dma_heap_normal_total) * 4) / PAGE_SIZE);
 
 		//dump all heaps
@@ -1610,14 +1686,24 @@ static ssize_t heap_stat_pid_proc_write(struct file *file, const char *buf,
 					size_t count, loff_t *data)
 {
 	int pid = 0;
-	char line[64] = {0};
-	size_t size = (count > sizeof(line)) ? sizeof(line) : count;
+	char line[SET_PID_CMDLINE_LEN];
 
-	if (copy_from_user(line, buf, size))
-		return 0;
+	if (count <= (strlen("pid:\n")) || count >= SET_PID_CMDLINE_LEN)
+		return -EINVAL;
 
-	if (sscanf(line, "pid:%d\n", &pid) != 1)
-		return 0;
+	if (copy_from_user(line, buf, count))
+		return -EFAULT;
+
+	line[count] = '\0';
+
+	if (!strstarts(line, "pid:"))
+		return -EINVAL;
+
+	if (sscanf(line, "pid:%u\n", &pid) != 1)
+		return -EINVAL;
+
+	if (pid < 0)
+		return -EINVAL;
 
 	g_stat_pid = pid;
 	return count;
@@ -1707,6 +1793,8 @@ static int dma_buf_init_procfs(void)
 {
 	struct proc_dir_entry *proc_file;
 	int ret = 0;
+	kuid_t uid;
+	kgid_t gid;
 
 	dma_heap_proc_root = proc_mkdir("dma_heap", NULL);
 	if (!dma_heap_proc_root) {
@@ -1749,7 +1837,7 @@ static int dma_buf_init_procfs(void)
 	pr_info("create debug file for stats\n");
 
 	dma_heaps_stat_pid = proc_create_data("rss_pid",
-					      S_IFREG | 0666,
+					      S_IFREG | 0660,
 					      dma_heap_proc_root,
 					      &heap_stat_pid_proc_fops,
 					      NULL);
@@ -1759,6 +1847,11 @@ static int dma_buf_init_procfs(void)
 		return -1;
 	}
 	pr_info("create debug file for stats_pid\n");
+
+	/* set group of proc file rss_pid to system */
+	uid = make_kuid(&init_user_ns, 0);
+	gid = make_kgid(&init_user_ns, 1000);
+	proc_set_user(dma_heaps_stat_pid, uid, gid);
 
 	return ret;
 }
@@ -1818,6 +1911,21 @@ static int __init mtk_dma_heap_debug(void)
 		return ret;
 	}
 
+#if IS_ENABLED(CONFIG_MTK_HANG_DETECT) && \
+		IS_ENABLED(CONFIG_MTK_HANG_DETECT_DB) && \
+		IS_ENABLED(CONFIG_MTK_AEE_IPANIC)
+
+	Hang_Info_In_Dma = kzalloc(MAX_HANG_INFO_SIZE, GFP_KERNEL);
+	if (IS_ERR_OR_NULL(Hang_Info_In_Dma)) {
+		pr_info("%s Hang_Info_In_Dma kmalloc fail\n", __func__);
+		Hang_Info_In_Dma = NULL;
+		return 0;
+	}
+
+	hang_dump_proc = hang_dmabuf_dump;
+	register_hang_callback(mtk_dmabuf_dump_for_hang);
+#endif
+
 	return 0;
 }
 
@@ -1831,9 +1939,19 @@ static void __exit mtk_dma_heap_debug_exit(void)
 			pr_info("unregister_oom_notifier failed:%d\n", ret);
 	}
 
+#if IS_ENABLED(CONFIG_MTK_HANG_DETECT) && \
+		IS_ENABLED(CONFIG_MTK_HANG_DETECT_DB) && \
+		IS_ENABLED(CONFIG_MTK_AEE_IPANIC)
+
+	if (Hang_Info_In_Dma != NULL)
+		unregister_hang_callback(mtk_dmabuf_dump_for_hang);
+
+#endif
+
 	dma_buf_uninit_procfs();
 
 }
 module_init(mtk_dma_heap_debug);
 module_exit(mtk_dma_heap_debug_exit);
 MODULE_LICENSE("GPL v2");
+MODULE_IMPORT_NS(MINIDUMP);

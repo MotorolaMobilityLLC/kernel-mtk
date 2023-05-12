@@ -190,6 +190,8 @@ static int mtk_mraw_sd_subscribe_event(struct v4l2_subdev *subdev,
 		return v4l2_event_subscribe(fh, sub, 0, NULL);
 	case V4L2_EVENT_REQUEST_DRAINED:
 		return v4l2_event_subscribe(fh, sub, 0, NULL);
+	case V4L2_EVENT_EOS:
+		return v4l2_event_subscribe(fh, sub, 0, NULL);
 	default:
 		return -EINVAL;
 	}
@@ -420,6 +422,10 @@ static int mtk_mraw_set_fmt(struct v4l2_subdev *sd,
 	}
 
 	stream_data = mtk_cam_req_get_s_data_no_chk(cam_req, pipe->id, 0);
+	if (!stream_data) {
+		dev_info(cam->dev, "stream data is null\n");
+		return 0;
+	}
 	stream_data->pad_fmt_update |= (1 << fmt->pad);
 	stream_data->pad_fmt[fmt->pad] = *fmt;
 
@@ -2310,6 +2316,7 @@ static irqreturn_t mtk_irq_mraw(int irq, void *data)
 	unsigned int irq_status5, irq_status6;
 	unsigned int err_status, dma_err_status;
 	unsigned int imgo_overr_status, imgbo_overr_status, cpio_overr_status;
+	unsigned int irq_flag = 0;
 	unsigned int fbc_ctrl2_imgo;
 	bool wake_thread = 0;
 	irq_status	= readl_relaxed(mraw_dev->base + REG_MRAW_CTL_INT_STATUS);
@@ -2386,8 +2393,8 @@ static irqreturn_t mtk_irq_mraw(int irq, void *data)
 		irq_info.irq_type |= (1 << CAMSYS_IRQ_SETTING_DONE);
 		dev_dbg(dev, "CQ done:%d\n", mraw_dev->sof_count);
 	}
-
-	if ((unsigned int)irq_info.irq_type && push_msgfifo(mraw_dev, &irq_info) == 0)
+	irq_flag = irq_info.irq_type;
+	if (irq_flag && push_msgfifo(mraw_dev, &irq_info) == 0)
 		wake_thread = 1;
 
 	/* Check ISP error status */

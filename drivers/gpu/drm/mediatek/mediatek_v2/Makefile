@@ -65,6 +65,9 @@ mediatek-drm-y += mtk_dp_intf.o \
 	mtk_dp_hal.o \
 	mtk_dp_debug.o
 
+#for 6382 bridge
+mediatek-drm-y += mtk_disp_bdg.o
+
 ifeq (yy, $(CONFIG_MTK_TEE_GP_SUPPORT)$(CONFIG_TRUSTONIC_TEE_SUPPORT))
 obj-y += ca/
 ccflags-y += -DDPTX_HDCP_ENABLE
@@ -79,14 +82,22 @@ obj-$(CONFIG_DRM_MEDIATEK) += mtk_sync.o
 
 obj-$(CONFIG_DRM_MEDIATEK) += mtk_panel_ext.o
 obj-$(CONFIG_DRM_MEDIATEK) += mtk_disp_notify.o
-obj-$(CONFIG_DRM_MEDIATEK) += mtk_aod_scp.o
 
+ifneq ($(CONFIG_MTK_TINYSYS_SCP_SUPPORT),)
+ifeq ($(CONFIG_MTK_TINYSYS_SCP_CM4_SUPPORT),)
+obj-$(CONFIG_DRM_MEDIATEK) += mtk_aod_scp.o
+endif
+endif
+ifneq ($(filter y m, $(or $(CONFIG_MTK_TEE_GP_COORDINATOR), $(CONFIG_MTK_GZ_TZ_SYSTEM))),)
 obj-$(CONFIG_DRM_MEDIATEK) += mtk_disp_sec.o
+endif
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)	\
              -I$(srctree)/drivers/misc/mediatek/smi/			\
              -I$(srctree)/drivers/misc/mediatek/mmp/			\
+             -I$(srctree)/drivers/misc/mediatek/spi_slave_drv/          \
+             -I$(srctree)/drivers/misc/mediatek/base/power/include/     \
              -I$(srctree)/drivers/misc/mediatek/mmdvfs/			\
              -I$(srctree)/drivers/misc/mediatek/pmic/			\
              -I$(srctree)/drivers/iommu/				\
@@ -103,7 +114,13 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)	\
              -I$(srctree)/drivers/misc/mediatek/slbc/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/mailbox/ \
              -I$(srctree)/drivers/misc/mediatek/clkbuf/v1/inc/ \
-             -I$(srctree)/drivers/dma-buf/heaps/ \
+             -I$(srctree)/drivers/dma-buf/heaps/          \
+	     -I$(srctree)/drivers/misc/mediatek/cmdq/bridge
+
+ifneq ($(filter y m, $(CONFIG_MTK_MDP)),)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/mdp/
+ccflags-y += -DSHARE_WROT_SRAM
+endif
 
 ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT) += -I$(srctree)/drivers/misc/mediatek/cmdq/mailbox
 

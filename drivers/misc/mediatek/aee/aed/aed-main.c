@@ -65,6 +65,7 @@ static int aee_force_exp = AEE_FORCE_EXP_NOT_SET;
 
 /* use ke_log_available to control aed_ke_poll */
 static int ke_log_available = 1;
+static int have_32bit_aedv;
 
 static struct proc_dir_entry *aed_proc_dir;
 
@@ -651,8 +652,14 @@ static void ke_destroy_log(void)
 
 static int ke_log_avail(void)
 {
-	if (aed_dev.kerec.lastlog)
+
+	if (aed_dev.kerec.lastlog) {
+		/* skip case: 32bit aedv is ready & 64bit aedv polling */
+		if (have_32bit_aedv && !is_compat_task())
+			return 0;
 		return 1;
+	}
+
 	return 0;
 }
 
@@ -1238,6 +1245,12 @@ static int aed_ke_open(struct inode *inode, struct file *filp)
 	if (compare_cmdline() != 0)
 		return -1;
 
+	if (strcmp(current->comm, "aee_aedv") == 0)
+		have_32bit_aedv = 1;
+
+	if (strcmp(current->comm, "aee_aedv64") == 0)
+		have_32bit_aedv = 1;
+
 	major = MAJOR(inode->i_rdev);
 	minor = MINOR(inode->i_rdev);
 	devname = filp->f_path.dentry->d_iname;
@@ -1568,7 +1581,7 @@ static void show_map_vma(unsigned char *Userthread_maps,
 	struct path base_path;
 	char tpath[512];
 	char *path_p = NULL;
-	char str[512];
+	char str[256];
 	int len;
 
 	if (file) {

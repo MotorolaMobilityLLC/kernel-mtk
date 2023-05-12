@@ -38,7 +38,7 @@ static int mtk_vcodec_vcp_log_write(const char *val, const struct kernel_param *
 {
 	if (!(val == NULL || strlen(val) == 0)) {
 		mtk_v4l2_debug(0, "val: %s, len: %zu", val, strlen(val));
-		mtk_vcodec_set_log(dev_ptr, val, MTK_VCODEC_LOG_INDEX_LOG);
+		mtk_vcodec_set_log(NULL, dev_ptr, val, MTK_VCODEC_LOG_INDEX_LOG, NULL);
 	}
 	return 0;
 }
@@ -51,7 +51,7 @@ static int mtk_vcodec_vcp_property_write(const char *val, const struct kernel_pa
 {
 	if (!(val == NULL || strlen(val) == 0)) {
 		mtk_v4l2_debug(0, "val: %s, len: %zu", val, strlen(val));
-		mtk_vcodec_set_log(dev_ptr, val, MTK_VCODEC_LOG_INDEX_PROP);
+		mtk_vcodec_set_log(NULL, dev_ptr, val, MTK_VCODEC_LOG_INDEX_PROP, NULL);
 	}
 	return 0;
 }
@@ -306,6 +306,7 @@ static int mtk_vcodec_enc_probe(struct platform_device *pdev)
 	if (!dev)
 		return -ENOMEM;
 
+	dev->type = MTK_INST_ENCODER;
 	INIT_LIST_HEAD(&dev->ctx_list);
 	dev->plat_dev = pdev;
 #if IS_ENABLED(CONFIG_VIDEO_MEDIATEK_VCU)
@@ -577,6 +578,7 @@ static const struct of_device_id mtk_vcodec_enc_match[] = {
 	{.compatible = "mediatek,mt6895-vcodec-enc",},
 	{.compatible = "mediatek,mt6855-vcodec-enc",},
 	{.compatible = "mediatek,mt6833-vcodec-enc",},
+	{.compatible = "mediatek,mt6768-vcodec-enc",},
 	{.compatible = "mediatek,mt6789-vcodec-enc",},
 	{.compatible = "mediatek,venc_gcon",},
 	{},

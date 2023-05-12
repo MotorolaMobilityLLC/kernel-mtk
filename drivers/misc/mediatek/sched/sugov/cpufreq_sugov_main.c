@@ -110,10 +110,12 @@ static bool sugov_up_down_rate_limit(struct sugov_policy *sg_policy, u64 time,
 static bool sugov_update_next_freq(struct sugov_policy *sg_policy, u64 time,
 				   unsigned int next_freq)
 {
-	if (sg_policy->next_freq == next_freq)
+	if (sugov_up_down_rate_limit(sg_policy, time, next_freq))
 		return false;
 
-	if (sugov_up_down_rate_limit(sg_policy, time, next_freq))
+	if (sg_policy->need_freq_update)
+		sg_policy->need_freq_update = false;
+	else if (sg_policy->next_freq == next_freq)
 		return false;
 
 	sg_policy->next_freq = next_freq;
@@ -193,6 +195,7 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 	return freq;
 }
 
+static bool ignore_irq_util;
 /*
  * This function computes an effective utilization for the given CPU, to be
  * used for frequency selection given the linear relation: f = u * f_max.
@@ -232,9 +235,11 @@ unsigned long mtk_cpu_util(int cpu, unsigned long util_cfs,
 	 * because of inaccuracies in how we track these -- see
 	 * update_irq_load_avg().
 	 */
-	irq = cpu_util_irq(rq);
-	if (unlikely(irq >= max))
-		return max;
+	if (likely(!ignore_irq_util)) {
+		irq = cpu_util_irq(rq);
+		if (unlikely(irq >= max))
+			return max;
+	}
 
 	/*
 	 * Because the time spend on RT/DL tasks is visible as 'lost' time to
@@ -283,8 +288,14 @@ unsigned long mtk_cpu_util(int cpu, unsigned long util_cfs,
 	 *   U' = irq + --------- * U
 	 *                 max
 	 */
-	util = scale_irq_capacity(util, irq, max);
-	util += irq;
+	if (trace_sugov_ext_util_debug_enabled())
+		trace_sugov_ext_util_debug(cpu, util_cfs, cpu_util_rt(rq), dl_util,
+				irq, util, ignore_irq_util ? 0 : scale_irq_capacity(util, irq, max),
+				cpu_bw_dl(rq));
+	if (likely(!ignore_irq_util)) {
+		util = scale_irq_capacity(util, irq, max);
+		util += irq;
+	}
 
 	/*
 	 * Bandwidth required by DEADLINE must always be granted while, for
@@ -303,35 +314,14 @@ unsigned long mtk_cpu_util(int cpu, unsigned long util_cfs,
 }
 EXPORT_SYMBOL(mtk_cpu_util);
 
-DEFINE_PER_CPU(int, cpufreq_idle_cpu);
-DEFINE_PER_CPU(int, pre_rt_throttled);
-EXPORT_SYMBOL(cpufreq_idle_cpu);
-
-DEFINE_PER_CPU(spinlock_t, cpufreq_idle_cpu_lock) = __SPIN_LOCK_UNLOCKED(cpufreq_idle_cpu_lock);
-EXPORT_SYMBOL(cpufreq_idle_cpu_lock);
 static unsigned long sugov_get_util(struct sugov_cpu *sg_cpu)
 {
 	struct rq *rq = cpu_rq(sg_cpu->cpu);
 	unsigned long util = cpu_util_cfs(rq);
 	unsigned long max = capacity_orig_of(sg_cpu->cpu);
-	int rt_throttled_toggle = 0;
 
 	sg_cpu->max = max;
 	sg_cpu->bw_dl = cpu_bw_dl(rq);
-
-	spin_lock(&per_cpu(cpufreq_idle_cpu_lock, sg_cpu->cpu));
-	if (per_cpu(pre_rt_throttled, sg_cpu->cpu) != rq->rt.rt_throttled) {
-		rt_throttled_toggle = 1;
-		per_cpu(cpufreq_idle_cpu, sg_cpu->cpu) = (rq->nr_running) ? 0 : 1;
-	}
-	per_cpu(pre_rt_throttled, sg_cpu->cpu) = rq->rt.rt_throttled;
-	if ((!rt_throttled_toggle && per_cpu(cpufreq_idle_cpu, sg_cpu->cpu)) ||
-		(rt_throttled_toggle &&  !rq->nr_running)) {
-		spin_unlock(&per_cpu(cpufreq_idle_cpu_lock, sg_cpu->cpu));
-		return 0;
-	}
-
-	spin_unlock(&per_cpu(cpufreq_idle_cpu_lock, sg_cpu->cpu));
 
 	return mtk_cpu_util(sg_cpu->cpu, util, max, FREQUENCY_UTIL, NULL);
 }
@@ -570,6 +560,7 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 	unsigned long util, max;
 	unsigned int next_f;
 	bool busy;
+	unsigned int cached_freq = sg_policy->cached_raw_freq;
 
 	raw_spin_lock(&sg_policy->update_lock);
 
@@ -609,8 +600,8 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 	if (busy && next_f < sg_policy->next_freq) {
 		next_f = sg_policy->next_freq;
 
-		/* Reset cached freq as next_freq has changed */
-		sg_policy->cached_raw_freq = 0;
+		/* Restore cached freq as next_freq has changed */
+		sg_policy->cached_raw_freq = cached_freq;
 	}
 
 	/*
@@ -817,9 +808,17 @@ static struct attribute *sugov_attrs[] = {
 };
 ATTRIBUTE_GROUPS(sugov);
 
+static void sugov_tunables_free(struct kobject *kobj)
+{
+	struct gov_attr_set *attr_set = container_of(kobj, struct gov_attr_set, kobj);
+
+	kfree(to_sugov_tunables(attr_set));
+}
+
 static struct kobj_type sugov_tunables_ktype = {
 	.default_groups = sugov_groups,
 	.sysfs_ops = &governor_sysfs_ops,
+	.release = &sugov_tunables_free,
 };
 
 /********************** cpufreq governor interface *********************/
@@ -919,12 +918,10 @@ static struct sugov_tunables *sugov_tunables_alloc(struct sugov_policy *sg_polic
 	return tunables;
 }
 
-static void sugov_tunables_free(struct sugov_tunables *tunables)
+static void sugov_clear_global_tunables(void)
 {
 	if (!have_governor_per_policy())
 		global_tunables = NULL;
-
-	kfree(tunables);
 }
 
 static int sugov_init(struct cpufreq_policy *policy)
@@ -990,7 +987,7 @@ out:
 fail:
 	kobject_put(&tunables->attr_set.kobj);
 	policy->governor_data = NULL;
-	sugov_tunables_free(tunables);
+	sugov_clear_global_tunables();
 
 stop_kthread:
 	sugov_kthread_stop(sg_policy);
@@ -1017,7 +1014,7 @@ static void sugov_exit(struct cpufreq_policy *policy)
 	count = gov_attr_set_put(&tunables->attr_set, &sg_policy->tunables_hook);
 	policy->governor_data = NULL;
 	if (!count)
-		sugov_tunables_free(tunables);
+		sugov_clear_global_tunables();
 
 	mutex_unlock(&global_tunables_lock);
 
@@ -1089,6 +1086,8 @@ static void sugov_limits(struct cpufreq_policy *policy)
 	}
 
 	sg_policy->limits_changed = true;
+	if (trace_sugov_ext_limits_changed_enabled())
+		trace_sugov_ext_limits_changed(policy->cpu, policy->cur, policy->min, policy->max);
 }
 
 struct cpufreq_governor mtk_gov = {
@@ -1101,6 +1100,45 @@ struct cpufreq_governor mtk_gov = {
 	.limits			= sugov_limits,
 };
 
+static int ignore_irq_util_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%s\n", ignore_irq_util ? "true" : "false");
+	return 0;
+}
+
+static int ignore_irq_util_open(struct inode *in, struct file *file)
+{
+	return single_open(file, ignore_irq_util_show, NULL);
+}
+
+static ssize_t ignore_irq_util_write(struct file *filp, const char *ubuf,
+	size_t count, loff_t *data)
+{
+	char buf[16] = {0};
+	int ret;
+	unsigned int input = 0;
+
+	if (!count)
+		return count;
+	if (count + 1 > 16)
+		return -ENOMEM;
+	ret = copy_from_user(buf, ubuf, count);
+	if (ret)
+		return -EFAULT;
+	buf[count] = '\0';
+	ret = kstrtouint(buf, 10, &input);
+	if (ret)
+		return -EFAULT;
+	ignore_irq_util = input > 0;
+	return count;
+}
+
+static const struct proc_ops ignore_irq_util_ops = {
+	.proc_open = ignore_irq_util_open,
+	.proc_read = seq_read,
+	.proc_write = ignore_irq_util_write
+};
+
 static int __init cpufreq_mtk_init(void)
 {
 	int ret = 0;
@@ -1109,7 +1147,7 @@ static int __init cpufreq_mtk_init(void)
 	dir = proc_mkdir("mtk_scheduler", NULL);
 	if (!dir)
 		return -ENOMEM;
-
+	proc_create("ignore_irq_util", 0644, dir, &ignore_irq_util_ops);
 	ret = init_opp_cap_info(dir);
 	if (ret)
 		return ret;
@@ -1129,7 +1167,7 @@ static void __exit cpufreq_mtk_exit(void)
 	cpufreq_unregister_governor(&mtk_gov);
 }
 
-module_init(cpufreq_mtk_init);
+late_initcall_sync(cpufreq_mtk_init);
 module_exit(cpufreq_mtk_exit);
 
 MODULE_LICENSE("GPL");

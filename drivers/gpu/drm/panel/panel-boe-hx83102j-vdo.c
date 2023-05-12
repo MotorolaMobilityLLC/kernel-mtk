@@ -1193,3 +1193,4 @@ module_mipi_dsi_driver(boe_driver);
 MODULE_AUTHOR("wulongchao <wulongchao@huaqin.com>");
 MODULE_DESCRIPTION("BOE HX83102J VDO 120HZ LCD Panel Driver");
 MODULE_LICENSE("GPL v2");
+

@@ -60,6 +60,7 @@ struct mtk_mmsys_driver_data {
 	const struct mtk_crtc_path_data *ext_path_data;
 	const struct mtk_crtc_path_data *ext_alter_path_data;
 	const struct mtk_crtc_path_data *third_path_data;
+	const struct mtk_crtc_path_data *fourth_path_data;
 	enum mtk_mmsys_id mmsys_id;
 	bool shadow_register;
 	const struct mtk_session_mode_tb *mode_tb;
@@ -99,6 +100,7 @@ struct mtk_drm_private {
 	enum MTK_DRM_SESSION_MODE session_mode;
 	atomic_t crtc_present[MAX_CRTC];
 	atomic_t crtc_sf_present[MAX_CRTC];
+	atomic_t crtc_rel_present[MAX_CRTC];
 
 	struct device_node *mutex_node;
 	struct device *mutex_dev;
@@ -175,6 +177,12 @@ struct mtk_drm_private {
 	bool dma_parms_allocated;
 
 	bool already_first_config;
+
+	/*
+	 * When legacy chip HDCP and SVP is enabled,
+	 * Prime display always uses OVL0,Virtual display always uses OVL0_2L.
+	 */
+	bool secure_static_path_switch;
 
 	struct mml_drm_ctx *mml_ctx;
 	atomic_t mml_job_done;
@@ -334,7 +342,7 @@ int lcm_fps_ctx_reset(struct drm_crtc *crtc);
 int lcm_fps_ctx_update(unsigned long long cur_ns,
 		unsigned int crtc_id, unsigned int mode);
 int mtk_mipi_clk_change(struct drm_crtc *crtc, unsigned int data_rate);
-bool mtk_drm_lcm_is_connect(void);
+bool mtk_drm_lcm_is_connect(struct mtk_drm_crtc *mtk_crtc);
 size_t mtk_gce_get_dummy_table(unsigned int mmsys_id, struct dummy_mapping **table);
 
 
@@ -348,5 +356,6 @@ void mtk_free_mml_submit(struct mml_submit *temp);
 int copy_mml_submit(struct mml_submit *src, struct mml_submit *dst);
 void **mtk_drm_disp_sec_cb_init(void);
 void **mtk_drm_disp_mtee_cb_init(void);
+bool mtk_disp_is_svp_on_mtee(void);
 
 #endif /* MTK_DRM_DRV_H */

@@ -731,6 +731,15 @@ config REGULATOR_MT6323
 	  This driver supports the control of different power rails of device
 	  through regulator interface.
 
+config REGULATOR_MT6357
+	tristate "MediaTek MT6357 PMIC"
+	depends on MFD_MT6397
+	help
+	  Say y here to select this option to enable the power regulator of
+	  MediaTek MT6357 PMIC.
+	  This driver supports the control of different power rails of device
+	  through regulator interface.
+
 config REGULATOR_MT6358
 	tristate "MediaTek MT6358 PMIC"
 	depends on MFD_MT6397
@@ -803,6 +812,14 @@ config REGULATOR_MT6369
 
 	  The driver can also be build as a module.
 	  If so, the module will be called mt6369_regulator
+
+config REGULATOR_MT6370
+	tristate "MT6370 SubPMIC Regulator"
+	depends on MFD_MT6370
+	help
+	  Say Y here to enable MT6370 regulator support.
+	  This driver supports the control for DisplayBias voltages and one
+	  general purpose LDO which is commonly used to drive the vibrator.
 
 config REGULATOR_MT6373
 	tristate "MT6373 SPMI Regulator driver"
@@ -1427,5 +1444,38 @@ config REGULATOR_MT6895_ALPHA_SUPPORT
 	  Set Y or M to select this feature for specific platform-mt6895,
 	  and set N to disable.
 
-endif
+config REGULATOR_WL2868C
+	tristate "Richtek WL2868C regulator driver"
+	help
+	  WL2868C is an integrated chip. It includes 8 LDOs and 3 GPIOs that
+	  can be used to drive output high/low purpose. The dependency of the
+	  GPIO block is internally LDO1 voltage. If LDO1 voltage output disabled,
+	  GPIO cannot be used to drive output high. It need to pay more
+	  attention on the usage.
 
+config REGULATOR_ALPHA_FOLDABLE_SUPPORT_ET5904
+	tristate "Specify Alpha REGULATOR Platform is mt6983 foldable"
+	help
+	  Select Alpha Foldable REGULATOR Platform is mt6983.
+	  To compile this dirver for used display.
+	  Set Y or M to select this feature for specific platform-mt6983,
+	  and set N to disable
+
+config REGULATOR_WL2864C
+	tristate "Richtek WL2864C regulator driver"
+	help
+	  WL2864C is an integrated chip. It includes 7 LDOs and 3 GPIOs that
+	  can be used to drive output high/low purpose. The dependency of the
+	  GPIO block is internally LDO1 voltage. If LDO1 voltage output disabled,
+	  GPIO cannot be used to drive output high. It need to pay more
+	  attention on the usage.
+
+config REGULATOR_FAN53870
+	tristate "Richtek WL2868C regulator driver is fan53870"
+	help
+	  Select MT8781p3 wifi REGULATOR Platform is fan53870.
+	  It includes 7 LDOs. To compile this dirver for used camera.
+	  Set Y or M to select this feature for specific fan53870,
+	  and set N to disable.
+
+endif

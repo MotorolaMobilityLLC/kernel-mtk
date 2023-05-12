@@ -3638,7 +3638,7 @@ static int dpmaif_stop_tx_sw(unsigned char hif_id)
 static void dpmaif_hw_reset(void)
 {
 	unsigned char md_id = 0;
-	unsigned int value;
+	unsigned int value = 0;
 	int ret;
 
 	//drv3_dpmaif_set_axi_out_gated();
@@ -4187,8 +4187,13 @@ static int ccci_dpmaif_hif_init(struct device *dev)
 		CCCI_ERROR_LOG(-1, TAG, "[%s] error: alloc g_isr_log fail\n", __func__);
 #if IS_ENABLED(CONFIG_MTK_AEE_IPANIC)
 	else
+#if IS_ENABLED(CONFIG_ARM64)
 		mrdump_mini_add_extra_file((unsigned long)g_isr_log, __pa_nodebug(g_isr_log),
 				(sizeof(struct dpmaif_isr_log) * ISR_LOG_DATA_LEN), "DPMAIF_ISR");
+#else
+		mrdump_mini_add_extra_file((unsigned long)g_isr_log, __pa(g_isr_log),
+			(sizeof(struct dpmaif_isr_log) * ISR_LOG_DATA_LEN), "DPMAIF_ISR");
+#endif
 #endif
 #endif
 	return 0;
@@ -4234,7 +4239,7 @@ int ccci_dpmaif_resume_noirq_v3(struct device *dev)
 			WAKE_SRC_HIF_DPMAIF, 0, 0, 0, 0, &res);
 
 	CCCI_NORMAL_LOG(-1, TAG,
-		"[%s] flag_1=0x%llx, flag_2=0x%llx, flag_3=0x%llx, flag_4=0x%llx\n",
+		"[%s] flag_1=0x%lx, flag_2=0x%lx, flag_3=0x%lx, flag_4=0x%lx\n",
 		__func__, res.a0, res.a1, res.a2, res.a3);
 
 	if ((!res.a0) && (res.a1 == WAKE_SRC_HIF_DPMAIF))

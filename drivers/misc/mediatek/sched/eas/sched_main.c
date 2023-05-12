@@ -58,7 +58,8 @@ static void sched_task_util_hook(void *data, struct sched_entity *se)
 		sa = &se->avg;
 
 		trace_sched_task_util(p->pid,
-				sa->util_avg, sa->util_est.enqueued, sa->util_est.ewma);
+				sa->util_avg, sa->util_est.enqueued & ~UTIL_AVG_UNCHANGED,
+				sa->util_est.ewma);
 	}
 }
 
@@ -66,8 +67,6 @@ static void sched_task_uclamp_hook(void *data, struct sched_entity *se)
 {
 	if (trace_sched_task_uclamp_enabled()) {
 		struct task_struct *p;
-		struct sched_avg *sa;
-		struct util_est ue;
 		struct uclamp_se *uc_min_req, *uc_max_req;
 		unsigned long util;
 
@@ -75,10 +74,7 @@ static void sched_task_uclamp_hook(void *data, struct sched_entity *se)
 			return;
 
 		p = container_of(se, struct task_struct, se);
-		sa = &se->avg;
-		ue = READ_ONCE(se->avg.util_est);
-		util = max(ue.ewma, ue.enqueued);
-		util = max(util, READ_ONCE(se->avg.util_avg));
+		util = task_util_est(p);
 		uc_min_req = &p->uclamp_req[UCLAMP_MIN];
 		uc_max_req = &p->uclamp_req[UCLAMP_MAX];
 
@@ -94,27 +90,17 @@ static int enqueue;
 static int dequeue;
 static void sched_queue_task_hook(void *data, struct rq *rq, struct task_struct *p, int flags)
 {
-	int cpu = rq->cpu;
-	int type = *(int *)data;
 	if (trace_sched_queue_task_enabled()) {
+		int cpu = rq->cpu;
 		unsigned long util = READ_ONCE(rq->cfs.avg.util_avg);
 
 		util = max_t(unsigned long, util,
 			     READ_ONCE(rq->cfs.avg.util_est.enqueued));
 
-		trace_sched_queue_task(cpu, p->pid, type, util,
+		trace_sched_queue_task(cpu, p->pid, *(int *)data, util,
 				rq->uclamp[UCLAMP_MIN].value, rq->uclamp[UCLAMP_MAX].value,
 				p->uclamp[UCLAMP_MIN].value, p->uclamp[UCLAMP_MAX].value);
 	}
-
-#if IS_ENABLED(CONFIG_MTK_CPUFREQ_SUGOV_EXT)
-	spin_lock(&per_cpu(cpufreq_idle_cpu_lock, cpu));
-	if ((type == dequeue) && dequeue_idle_cpu(cpu) && (flags & DEQUEUE_SLEEP))
-		per_cpu(cpufreq_idle_cpu, cpu) = 1;
-	else
-		per_cpu(cpufreq_idle_cpu, cpu) = 0;
-	spin_unlock(&per_cpu(cpufreq_idle_cpu_lock, cpu));
-#endif
 }
 
 static void mtk_sched_trace_init(void)
@@ -240,7 +226,7 @@ static void __exit mtk_scheduler_exit(void)
 	cleanup_sched_common_sysfs();
 }
 
-module_init(mtk_scheduler_init);
+late_initcall_sync(mtk_scheduler_init);
 module_exit(mtk_scheduler_exit);
 
 MODULE_LICENSE("GPL");

@@ -11,6 +11,23 @@
 #include "cmdq_helper_ext.h"
 #include <linux/types.h>
 
+/* Compatibility with 32-bit shift operation */
+#if IS_ENABLED(CONFIG_ARCH_DMA_ADDR_T_64BIT)
+#define DO_SHIFT_RIGHT(x, n) ({     \
+	(n) < (8 * sizeof(u64)) ? (x) >> (n) : 0;	\
+})
+#define DO_SHIFT_LEFT(x, n) ({      \
+	(n) < (8 * sizeof(u64)) ? (x) << (n) : 0;	\
+})
+#else
+#define DO_SHIFT_RIGHT(x, n) ({     \
+	(n) < (8 * sizeof(u32)) ? (x) >> (n) : 0;	\
+})
+#define DO_SHIFT_LEFT(x, n) ({      \
+	(n) < (8 * sizeof(u32)) ? (x) << (n) : 0;	\
+})
+#endif
+
 extern struct cmdqMDPFuncStruct mdp_funcs;
 extern int gCmdqRdmaPrebuiltSupport;
 
@@ -140,6 +157,12 @@ typedef bool (*MdpSvpSupportMetaData) (void);
 
 typedef u16 (*MdpGetReadbackEventLock) (void);
 typedef u16 (*MdpGetReadbackEventUnlock) (void);
+typedef u32 (*MdpGetPollGpr) (u16 engine, u32 reg_addr);
+
+typedef void (*CmdqMdpSetResourceCallback) (enum cmdq_event res_event,
+	CmdqResourceAvailableCB res_available,
+	CmdqResourceReleaseCB res_release);
+
 
 struct cmdqMDPFuncStruct {
 #ifdef CONFIG_MTK_SMI_EXT
@@ -208,6 +231,8 @@ struct cmdqMDPFuncStruct {
 	MdpSvpSupportMetaData mdpSvpSupportMetaData;
 	MdpGetReadbackEventLock mdpGetReadbackEventLock;
 	MdpGetReadbackEventUnlock mdpGetReadbackEventUnlock;
+	MdpGetPollGpr mdpGetPollGpr;
+	CmdqMdpSetResourceCallback cmdqMdpSetResourceCallback;
 };
 
 struct mdp_pmqos_record {
@@ -275,7 +300,7 @@ s32 cmdq_mdp_handle_flush(struct cmdqRecStruct *handle);
 s32 cmdq_mdp_handle_sec_setup(struct cmdqSecDataStruct *secData,
 			struct cmdqRecStruct *handle);
 void cmdq_mdp_cmdqSecIspMeta_fd_to_handle(struct cmdqSecIspMeta *ispMeta);
-void cmdq_mdp_init_secure_id(void *meta_array, u32 count);
+void cmdq_mdp_init_secure_id(void *meta_array, u32 count, bool mtee);
 s32 cmdq_mdp_update_sec_addr_index(struct cmdqRecStruct *handle,
 	u32 sec_handle, u32 index, u32 instr_index);
 u32 cmdq_mdp_handle_get_instr_count(struct cmdqRecStruct *handle);
@@ -340,6 +365,7 @@ s32 cmdq_mdp_get_rdma_idx(u32 base);
 u32 cmdq_mdp_vcp_pq_readback_support(void);
 void cmdq_mdp_vcp_pq_readback(struct cmdqRecStruct *handle, u16 engine,
 	u32 vcp_offset, u32 count);
+u32 cmdq_mdp_get_poll_gpr(u16 engine, u32 reg_addr);
 u16 mdp_get_rb_event_lock(void);
 u16 mdp_get_rb_event_unlock(void);
 

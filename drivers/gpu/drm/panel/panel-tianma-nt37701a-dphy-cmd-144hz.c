@@ -402,23 +402,7 @@ static struct mtk_panel_params ext_params_48hz = {
 		.rc_quant_incr_limit1 = 15,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
-		.pps_list = {
-			.count = 3,
-			.dsc_pps_params[0] = {
-				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD209D9E9,
-			},
-			.dsc_pps_params[1] = {
-				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD22BD229,
-			},
-			.dsc_pps_params[2] = {
-				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D271,
-			},
-		},
 	},
-	.te_delay = 1,
 };
 
 static struct mtk_panel_params ext_params_60hz = {
@@ -472,23 +456,7 @@ static struct mtk_panel_params ext_params_60hz = {
 		.rc_quant_incr_limit1 = 15,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
-		.pps_list = {
-			.count = 3,
-			.dsc_pps_params[0] = {
-				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD209D9E9,
-			},
-			.dsc_pps_params[1] = {
-				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD22BD229,
-			},
-			.dsc_pps_params[2] = {
-				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D271,
-			},
-		},
 	},
-	.te_delay = 1,
 };
 static struct mtk_panel_params ext_params_90hz = {
 	.dyn_fps = {
@@ -541,23 +509,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.rc_quant_incr_limit1 = 15,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
-		.pps_list = {
-			.count = 3,
-			.dsc_pps_params[0] = {
-				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD209D9E9,
-			},
-			.dsc_pps_params[1] = {
-				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD22BD229,
-			},
-			.dsc_pps_params[2] = {
-				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D271,
-			},
-		},
 	},
-	.te_delay = 1,
 };
 static struct mtk_panel_params ext_params_120hz = {
 	.dyn_fps = {
@@ -610,23 +562,7 @@ static struct mtk_panel_params ext_params_120hz = {
 		.rc_quant_incr_limit1 = 15,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
-		.pps_list = {
-			.count = 3,
-			.dsc_pps_params[0] = {
-				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD209D9E9,
-			},
-			.dsc_pps_params[1] = {
-				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD22BD229,
-			},
-			.dsc_pps_params[2] = {
-				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D271,
-			},
-		},
 	},
-	.te_delay = 1,
 };
 
 
@@ -681,23 +617,7 @@ static struct mtk_panel_params ext_params_144hz = {
 		.rc_quant_incr_limit1 = 15,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
-		.pps_list = {
-			.count = 3,
-			.dsc_pps_params[0] = {
-				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD209D9E9,
-			},
-			.dsc_pps_params[1] = {
-				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD22BD229,
-			},
-			.dsc_pps_params[2] = {
-				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D271,
-			},
-		},
 	},
-	.te_delay = 1,
 };
 
 
@@ -860,21 +780,7 @@ static int mode_switch(struct drm_panel *panel,
 	return ret;
 }
 
-static int panel_ext_powerdown(struct drm_panel *panel)
-{
-	struct lcm *ctx = panel_to_lcm(panel);
 
-	pr_info("%s+\n", __func__);
-	if (ctx->prepared)
-		return 0;
-
-	return 0;
-}
-
-static int panel_ext_init_power(struct drm_panel *panel)
-{
-	return 0;
-}
 
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
@@ -882,8 +788,6 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ata_check = panel_ata_check,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.mode_switch = mode_switch,
-	.init_power = panel_ext_init_power,
-	.power_down = panel_ext_powerdown,
 	//.panel_feature_set = panel_feature_set,
 };
 #endif

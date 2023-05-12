@@ -1004,6 +1004,17 @@ config MMC_HSQ
 
 	  If unsure, say N.
 
+config MMC_MTK_SW_CQHCI
+	tristate "Sofeware Command Queue Host Controller Interface support"
+	help
+		Some mmc host maybe not have CQHCI hardware.
+		This selects the Softeware Command Queue Host Controller Interface,
+		which will get better performance but will consume more CPU time.
+
+		If you want, say Y or M here.
+
+		f unsure, say N.
+
 config MMC_TOSHIBA_PCI
 	tristate "Toshiba Type A SD/MMC Card Interface Driver"
 	depends on PCI
@@ -1080,9 +1091,10 @@ config MMC_SDHCI_OMAP
 
 config MMC_SDHCI_AM654
 	tristate "Support for the SDHCI Controller in TI's AM654 SOCs"
-	depends on MMC_SDHCI_PLTFM && OF && REGMAP_MMIO
+	depends on MMC_SDHCI_PLTFM && OF
 	select MMC_SDHCI_IO_ACCESSORS
 	select MMC_CQHCI
+	select REGMAP_MMIO
 	help
 	  This selects the Secure Digital Host Controller Interface (SDHCI)
 	  support present in TI's AM654 SOCs. The controller supports

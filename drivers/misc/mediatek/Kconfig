@@ -8,9 +8,11 @@ menu "Power, PMIC, Battery & Low Power"
 source "drivers/misc/mediatek/clkbuf/Kconfig"
 source "drivers/misc/mediatek/slbc/Kconfig"
 source "drivers/misc/mediatek/cm_mgr/Kconfig"
+source "drivers/misc/mediatek/cm_mgr_legacy/Kconfig"
 source "drivers/misc/mediatek/mcupm/Kconfig"
 source "drivers/misc/mediatek/dvfsrc/Kconfig"
 source "drivers/misc/mediatek/dcm/Kconfig"
+source "drivers/misc/mediatek/dcm_v1/Kconfig"
 source "drivers/misc/mediatek/qos/Kconfig"
 source "drivers/misc/mediatek/srclken_rc/Kconfig"
 source "drivers/misc/mediatek/lpm/Kconfig"
@@ -21,11 +23,67 @@ source "drivers/misc/mediatek/pmic_protect/Kconfig"
 source "drivers/misc/mediatek/cpufreq_v1/Kconfig"
 source "drivers/misc/mediatek/cpufreq_lite/Kconfig"
 source "drivers/misc/mediatek/eemgpu/Kconfig"
+source "drivers/misc/mediatek/eem_v2/Kconfig"
 source "drivers/misc/mediatek/leakage_table/Kconfig"
-source "drivers/misc/mediatek/mdpm/Kconfig"
 source "drivers/misc/mediatek/pbm/Kconfig"
+source "drivers/misc/mediatek/pbm_v1/Kconfig"
+source "drivers/misc/mediatek/mdpm/Kconfig"
+source "drivers/misc/mediatek/mdpm_v1/Kconfig"
 source "drivers/misc/mediatek/pmsr/Kconfig"
 source "drivers/misc/mediatek/timer/Kconfig"
+source "drivers/misc/mediatek/cpufreq_v2/Kconfig"
+source "drivers/misc/mediatek/cpuidle/Kconfig"
+source "drivers/misc/mediatek/mcdi/Kconfig"
+source "drivers/misc/mediatek/cpuhotplug/Kconfig"
+source "drivers/misc/mediatek/upower/Kconfig"
+source "drivers/misc/mediatek/leakage_table_v2/Kconfig"
+source "drivers/misc/mediatek/spm/Kconfig"
+source "drivers/misc/mediatek/spm_v4/Kconfig"
+source "drivers/misc/mediatek/power_gs_v1/Kconfig"
+source "drivers/misc/mediatek/thermal/Kconfig"
+source "drivers/misc/mediatek/hps_v3/Kconfig"
+
+config MTK_PLAT_POWER_MT6739
+	tristate "Platform power specified macro"
+	help
+	  This macro is used to distinguish the platform dependent parts
+	  from those power related features.
+	  If the macro is enabled, compile the mt6761 related code.
+	  If unsure, say N.
+
+config MTK_PLAT_POWER_MT6761
+	tristate "Platform power specified macro"
+	help
+	  This macro is used to distinguish the platform dependent parts
+	  from those power related features.
+	  If the macro is enabled, compile the mt6761 related code.
+	  If unsure, say N.
+
+config MTK_PLAT_POWER_MT6768
+	tristate "Platform power specified macro"
+	help
+	  This macro is used to distinguish the platform dependent parts
+	  from those power related features.
+	  If the macro is enabled, compile the mt6768 related code.
+	  If unsure, say N.
+
+config MTK_PLAT_POWER_MT6765
+	tristate "Platform power specified macro"
+	select SCP_DVFS_NOT_READY
+	help
+	  This macro is used to distinguish the platform dependent parts
+	  from those power related features.
+	  If the macro is enabled, compile the mt6765 related code.
+	  If unsure, say N.
+
+config MTK_PLAT_POWER_MT6833
+	tristate "Platform power specified macro"
+	help
+	  This macro is used to distinguish the platform dependent parts
+	  from those power related features.
+	  If the macro is enabled, compile the mt6833 related code.
+	  If unsure, say N.
+
 endmenu # Power
 
 menu "MultiMedia, Display, Camera"
@@ -188,3 +246,88 @@ config FPGA_EARLY_PORTING
 	  Say Y here if you are doing FPGA early porting.
 	  If unsure, say N
 endmenu # Misc
+
+menu "PPM V3"
+config MTK_PPM_V3
+        tristate "MTK PPM V3"
+        help
+          Used for PPM V3 to build in order,
+          moved from base/power.
+          Say Y here if you need to build PPM V3.
+          If unsure, say N
+endmenu # PPM
+
+menu "Sensors"
+
+config MTK_SENSOR_ARCHITECTURE
+	string "MTK SENSOR ARCHITECTURE"
+	default "dummy"
+	help
+	  Sensor config for sensor architecture in project.
+	  Please set 1.0/2.0/3.0 etc if you want to support sensor
+	  with mediatek sensor architecture.
+	  If unsure, set dummy.
+
+source "drivers/misc/mediatek/sensors-1.0/Kconfig"
+source "drivers/misc/mediatek/sensor/Kconfig"
+endmenu # Sensors
+
+menu "MultiMedia, Display, Camera related configs"
+source "drivers/misc/mediatek/videocodec/Kconfig"
+endmenu # MultiMedia, Display, Camera related configs
+
+
+menu "Memory"
+
+config EXTREME_LOW_RAM
+	bool "Default disable GPU/CCCI debug mechanism"
+	default n
+	help
+	  Provide config to remove CPU/MD debug mechanism for memory slim.
+	  This is a group kernel setting of GMO mechanism,
+	  Select "y" separately is not suggested.
+	  Select "n" by default.
+
+config MTK_GMO_RAM_OPTIMIZE
+	bool "MTK RAM Optimize"
+	select MTK_ENABLE_GMO
+	select MTK_ENABLE_AGO
+	help
+	  Provide centeral config to use memory efficiently.
+	  GMO mechanism must set both in kernel & project config
+	  to prevent different flow.
+	  Select "y" if need to enable GMO RAM optimization mechanism.
+	  Select "n" if you are not familiar with GMO mechanism.
+
+config MTK_ENABLE_GMO
+	bool "Enable/Disable GMO related feautre"
+	select EXTREME_LOW_RAM
+	help
+	  Enable/Disable GMO related feautre.
+	  This is a group kernel setting of GMO mechanism,
+	  Select "y" separately is not suggested.
+	  Select "n" by default.
+
+config MTK_ENABLE_AGO
+	bool "Enable/Disable A-Go related feautre"
+	select CRYPTO_LZ4
+	select DM_VERITY
+	select DM_ANDROID_VERITY_AT_MOST_ONCE_DEFAULT_ENABLED
+	select DM_VERITY_FEC
+	select HZ_300
+	select PSI
+	select ZRAM_WRITEBACK
+	select SWAP
+	select SDCARD_FS
+	select F2FS_FS
+	select F2FS_FS_SECURITY
+	select F2FS_FS_ENCRYPTION
+	select UID_CPUTIME
+	select PROCESS_RECLAIM
+	help
+	  Enable/Disable AGO related feautre.
+	  This is a group kernel setting of AGO mechanism.
+	  Select "y" separately is not suggested.
+	  Select "n" by default.
+
+endmenu # Memory

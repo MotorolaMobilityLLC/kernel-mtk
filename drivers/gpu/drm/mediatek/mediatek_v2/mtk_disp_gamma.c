@@ -465,6 +465,10 @@ int mtk_drm_ioctl_bypass_disp_gamma(struct drm_device *dev, void *data,
 static void disp_gamma_wait_sof_irq(void)
 {
 	int ret = 0;
+	int sram_config_sel;
+	int sram_out_sel;
+	int sram_config;
+	struct mtk_ddp_comp *comp_gamma = default_comp;
 
 	if (atomic_read(&g_gamma_sof_irq_available) == 0) {
 		DDPINFO("wait_event_interruptible\n");
@@ -474,6 +478,24 @@ static void disp_gamma_wait_sof_irq(void)
 		DDPINFO("sof_irq_available = 1, waken up, ret = %d", ret);
 	} else {
 		DDPINFO("sof_irq_available = 0");
+		return;
+	}
+
+	if (default_comp->mtk_crtc->is_dual_pipe) {
+		struct mtk_drm_crtc *mtk_crtc = default_comp->mtk_crtc;
+		struct drm_crtc *crtc = &mtk_crtc->base;
+		struct mtk_drm_private *priv = crtc->dev->dev_private;
+
+		comp_gamma = priv->ddp_comp[DDP_COMPONENT_GAMMA1];
+	}
+	sram_config = readl(comp_gamma->regs + DISP_GAMMA_SHADOW_SRAM);
+	sram_config_sel = (sram_config & 0x2) >> 1;
+	sram_out_sel = sram_config & 0x1;
+
+	if (sram_config_sel != sram_out_sel) {
+		DDPPR_ERR("%s: g_gamma_sram_status is error\n", __func__);
+		mtk_crtc_check_trigger(default_comp->mtk_crtc, false, true);
+		CRTC_MMP_MARK(0, gamma_sof, 0, 1);
 		return;
 	}
 
@@ -493,7 +515,13 @@ static int mtk_gamma_sof_irq_trigger(void *data)
 	while (1) {
 		disp_gamma_wait_sof_irq();
 		atomic_set(&g_gamma_sof_irq_available, 0);
+
+		if (kthread_should_stop()) {
+			DDPPR_ERR("%s stopped\n", __func__);
+			break;
+		}
 	}
+	return 0;
 }
 
 static void mtk_gamma_start(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle)
@@ -614,20 +642,32 @@ void mtk_trans_gain_to_gamma(struct drm_crtc *crtc,
 		g_sb_param.gain[gain_b] = gain[gain_b];
 
 		if (g_gamma_data_mode == HW_8BIT) {
-			struct DISP_GAMMA_LUT_T data;
+			struct DISP_GAMMA_LUT_T *data;
 
-			calculateGammaLut(&data);
+			data = kmalloc(sizeof(struct DISP_GAMMA_LUT_T),
+				GFP_KERNEL);
+			if (data == NULL) {
+				DDPPR_ERR("%s: no memory\n", __func__);
+				return;
+			}
+			calculateGammaLut(data);
 			mtk_crtc_user_cmd(crtc, default_comp,
-				SET_GAMMALUT, (void *)&data);
-		}
-
-		if (g_gamma_data_mode == HW_12BIT_MODE_8BIT ||
+				SET_GAMMALUT, (void *)data);
+			kfree(data);
+		} else if (g_gamma_data_mode == HW_12BIT_MODE_8BIT ||
 			g_gamma_data_mode == HW_12BIT_MODE_12BIT) {
-			struct DISP_GAMMA_12BIT_LUT_T data;
+			struct DISP_GAMMA_12BIT_LUT_T *data;
 
-			calculateGamma12bitLut(&data);
+			data = kmalloc(sizeof(struct DISP_GAMMA_12BIT_LUT_T),
+				GFP_KERNEL);
+			if (data == NULL) {
+				DDPPR_ERR("%s: no memory\n", __func__);
+				return;
+			}
+			calculateGamma12bitLut(data);
 			mtk_crtc_user_cmd(crtc, default_comp,
-				SET_12BIT_GAMMALUT, (void *)&data);
+				SET_12BIT_GAMMALUT, (void *)data);
+			kfree(data);
 		}
 
 		mtk_leds_brightness_set("lcd-backlight", bl);
@@ -935,6 +975,10 @@ static int mtk_disp_gamma_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id mtk_disp_gamma_driver_dt_match[] = {
+	{ .compatible = "mediatek,mt6739-disp-gamma",},
+	{ .compatible = "mediatek,mt6765-disp-gamma",},
+	{ .compatible = "mediatek,mt6761-disp-gamma",},
+	{ .compatible = "mediatek,mt6768-disp-gamma",},
 	{ .compatible = "mediatek,mt6779-disp-gamma",},
 	{ .compatible = "mediatek,mt6789-disp-gamma",},
 	{ .compatible = "mediatek,mt6885-disp-gamma",},

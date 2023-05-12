@@ -78,6 +78,10 @@ static int perfserv_ta;
 
 int powerhal_tid;
 
+#if !IS_ENABLED(CONFIG_ARM64)
+int cap_ready;
+#endif
+
 void (*rsu_cpufreq_notifier_fp)(int cluster_id, unsigned long freq);
 
 /* TODO: event register & dispatch */
@@ -358,6 +362,12 @@ void fpsgo_notify_qudeq(int qudeq,
 	vpPush->identifier = id;
 
 	fpsgo_queue_work(vpPush);
+#if !IS_ENABLED(CONFIG_ARM64)
+	if (!cap_ready) {
+		fbt_update_pwd_tbl();
+		cap_ready = 1;
+	}
+#endif
 }
 void fpsgo_notify_connect(int pid,
 		int connectedAPI, unsigned long long id)
@@ -744,7 +754,7 @@ static void fpsgo_cpu_frequency_tracer(void *ignore, unsigned int frequency, uns
 
 	if (policy) {
 		fpsgo_notify_cpufreq(cluster, frequency);
-		cpufreq_cpu_put(policy);
+		//cpufreq_cpu_put(policy);
 	}
 }
 
@@ -765,7 +775,11 @@ static void lookup_tracepoints(struct tracepoint *tp, void *ignore)
 	}
 }
 
+#if IS_BUILTIN(CONFIG_MTK_FPSGO_V3)
+static void tracepoint_cleanup(void)
+#else
 void tracepoint_cleanup(void)
+#endif
 {
 	int i;
 
@@ -804,6 +818,10 @@ static int __init fpsgo_init(void)
 {
 	int i;
 	int ret;
+
+#if !IS_ENABLED(CONFIG_ARM64)
+	cap_ready = 0;
+#endif
 
 	FPSGO_LOGI("[FPSGO_CTRL] init\n");
 
@@ -873,8 +891,11 @@ fail_reg_cpu_frequency_entry:
 
 	return 0;
 }
-
+#if IS_BUILTIN(CONFIG_MTK_FPSGO_V3)
+late_initcall(fpsgo_init);
+#else
 module_init(fpsgo_init);
+#endif
 module_exit(fpsgo_exit);
 
 MODULE_LICENSE("GPL");

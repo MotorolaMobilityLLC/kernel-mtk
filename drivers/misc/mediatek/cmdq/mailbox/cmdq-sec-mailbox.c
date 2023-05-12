@@ -25,7 +25,9 @@
 
 #ifdef CMDQ_GP_SUPPORT
 #include "cmdq-sec-gp.h"
+#if IS_ENABLED(CONFIG_MTK_IOMMU_MISC_SECURE)
 static atomic_t m4u_init = ATOMIC_INIT(0);
+#endif
 #endif
 
 #if IS_ENABLED(CONFIG_MMPROFILE)
@@ -177,7 +179,7 @@ static const s32 cmdq_max_task_in_secure_thread[
 static const s32 cmdq_tz_cmd_block_size[CMDQ_MAX_SECURE_THREAD_COUNT] = {
 	4 << 12, 4 << 12, 20 << 12, 4 << 12, 4 << 12};
 
-struct cmdq_sec_helper_fp helper_fp = {
+static struct cmdq_sec_helper_fp helper_fp = {
 	.sec_insert_backup_cookie_fp = cmdq_sec_insert_backup_cookie,
 	.sec_pkt_wait_complete_fp = cmdq_sec_pkt_wait_complete,
 	.sec_pkt_free_data_fp = cmdq_sec_pkt_free_data,
@@ -201,13 +203,28 @@ cmdq_sec_setup_tee_context_base(struct cmdq_sec_context *context)
 #endif
 }
 
+extern u32 gce_thread_nr;
+bool is_cmdq_gp_support = true;
 static inline s32
 cmdq_sec_init_context_base(struct cmdq_sec_context *context)
 {
 	s32 status = 0;
 
 #ifdef CMDQ_GP_SUPPORT
-	status = cmdq_sec_init_context(&context->tee);
+	if (gce_thread_nr == 16) { /*gce_plat_v2*/
+		struct device_node *dt_node_svp_mtee = of_find_node_by_name(NULL, "MTEE");
+		struct device_node *dt_node_svp = of_find_node_by_name(NULL, "SecureVideoPath");
+
+		cmdq_msg("[SEC] svp:%p, mtee:%p", dt_node_svp, dt_node_svp_mtee);
+
+		if (dt_node_svp && !dt_node_svp_mtee)
+			status = cmdq_sec_init_context(&context->tee);
+		else
+			is_cmdq_gp_support = false;
+	} else {
+		status = cmdq_sec_init_context(&context->tee);
+	}
+
 	if (status < 0)
 		return status;
 #endif
@@ -790,26 +807,28 @@ static s32 cmdq_sec_session_init(struct cmdq_sec_context *context)
 		context->state = IWC_CONTEXT_INITED;
 	case IWC_CONTEXT_INITED:
 #ifdef CMDQ_GP_SUPPORT
-		if (!context->iwc_msg) {
-			err = cmdq_sec_allocate_wsm(&context->tee,
-				&context->iwc_msg, CMDQ_IWC_MSG,
-				sizeof(struct iwcCmdqMessage_t));
-			if (err)
-				break;
-		}
-		if (!context->iwc_ex1) {
-			err = cmdq_sec_allocate_wsm(&context->tee,
-				&context->iwc_ex1, CMDQ_IWC_MSG1,
-				sizeof(struct iwcCmdqMessageEx_t));
-			if (err)
-				break;
-		}
-		if (!context->iwc_ex2) {
-			err = cmdq_sec_allocate_wsm(&context->tee,
-				&context->iwc_ex2, CMDQ_IWC_MSG2,
-				sizeof(struct iwcCmdqMessageEx2_t));
-			if (err)
-				break;
+		if (is_cmdq_gp_support) {
+			if (!context->iwc_msg) {
+				err = cmdq_sec_allocate_wsm(&context->tee,
+					&context->iwc_msg, CMDQ_IWC_MSG,
+					sizeof(struct iwcCmdqMessage_t));
+				if (err)
+					break;
+			}
+			if (!context->iwc_ex1) {
+				err = cmdq_sec_allocate_wsm(&context->tee,
+					&context->iwc_ex1, CMDQ_IWC_MSG1,
+					sizeof(struct iwcCmdqMessageEx_t));
+				if (err)
+					break;
+			}
+			if (!context->iwc_ex2) {
+				err = cmdq_sec_allocate_wsm(&context->tee,
+					&context->iwc_ex2, CMDQ_IWC_MSG2,
+					sizeof(struct iwcCmdqMessageEx2_t));
+				if (err)
+					break;
+			}
 		}
 #endif
 
@@ -831,9 +850,11 @@ static s32 cmdq_sec_session_init(struct cmdq_sec_context *context)
 		context->state = IWC_WSM_ALLOCATED;
 	case IWC_WSM_ALLOCATED:
 #ifdef CMDQ_GP_SUPPORT
-		err = cmdq_sec_open_session(&context->tee, context->iwc_msg);
-		if (err)
-			break;
+		if (is_cmdq_gp_support) {
+			err = cmdq_sec_open_session(&context->tee, context->iwc_msg);
+			if (err)
+				break;
+		}
 #endif
 		context->state = IWC_SES_OPENED;
 	default:
@@ -891,10 +912,7 @@ static s32 cmdq_sec_fill_iwc_msg(struct cmdq_sec_context *context,
 	iwc_msg->command.scenario = task->scenario;
 	iwc_msg->command.priority = task->pkt->priority;
 	iwc_msg->command.engineFlag = task->engineFlag;
-#ifdef CMDQ_SECURE_MTEE_SUPPORT
-	if (data->mtee)
-		iwc_msg->command.sec_id = data->sec_id;
-#endif
+	iwc_msg->command.sec_id = data->sec_id;
 	last = list_last_entry(&task->pkt->buf, typeof(*last), list_entry);
 	list_for_each_entry(buf, &task->pkt->buf, list_entry) {
 		if (buf == last)
@@ -1226,11 +1244,13 @@ cmdq_sec_task_submit(struct cmdq_sec *cmdq, struct cmdq_sec_task *task,
 		}
 
 #ifdef CMDQ_GP_SUPPORT
+#if IS_ENABLED(CONFIG_MTK_IOMMU_MISC_SECURE)
 		/* do m4u sec init */
 		if (atomic_cmpxchg(&m4u_init, 0, 1) == 0) {
 			m4u_sec_init();
 			cmdq_msg("[SEC][task] M4U_sec_init is called\n");
 		}
+#endif
 #endif
 
 		err = cmdq_sec_irq_notify_start(cmdq);
@@ -1241,6 +1261,7 @@ cmdq_sec_task_submit(struct cmdq_sec *cmdq, struct cmdq_sec_task *task,
 
 		if (iwc_cmd == CMD_CMDQ_TL_SUBMIT_TASK && pkt)
 			pkt->rec_trigger = sched_clock();
+
 		err = cmdq_sec_session_send(
 			cmdq->context, task, iwc_cmd, thrd_idx, cmdq, mtee);
 
@@ -1346,7 +1367,7 @@ void cmdq_sec_mbox_stop(struct cmdq_client *cl)
 		container_of(cl->chan->mbox, typeof(*cmdq), mbox);
 	struct cmdq_sec_thread *thread =
 		(struct cmdq_sec_thread *)cl->chan->con_priv;
-	struct cmdq_sec_task *task;
+	struct cmdq_sec_task *task = NULL;
 
 	task = list_first_entry_or_null(
 		&thread->task_list, struct cmdq_sec_task, list_entry);
@@ -1704,8 +1725,11 @@ static void cmdq_sec_reserved_mem_lookup(struct cmdq_sec_shared_mem *shared_mem)
 		return;
 
 	pa = mem->base + mem->size - PAGE_SIZE;
-	if (!va)
-		va = ioremap(pa, PAGE_SIZE);
+	va = ioremap(pa, PAGE_SIZE);
+	if (!va) {
+		cmdq_err("%s:shared memory map fail", __func__);
+		return;
+	}
 	shared_mem->va = va;
 	if (!cpr_not_support_cookie) {
 		shared_mem->pa = pa;
@@ -1729,15 +1753,17 @@ static int cmdq_sec_probe(struct platform_device *pdev)
 	struct resource *res;
 	s32 i, err;
 
-	cmdq_msg("%s", __func__);
+	cmdq_msg("[SEC] %s entry ++", __func__);
 
 	cmdq = devm_kzalloc(&pdev->dev, sizeof(*cmdq), GFP_KERNEL);
 	if (!cmdq)
 		return -ENOMEM;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	cmdq->base_pa = res->start;
-	cmdq->base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+	if (res) {
+		cmdq->base_pa = res->start;
+		cmdq->base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+	}
 	if (IS_ERR(cmdq->base)) {
 		cmdq_err("base devm_ioremap failed:%ld", PTR_ERR(cmdq->base));
 		return PTR_ERR(cmdq->base);
@@ -1809,6 +1835,8 @@ static int cmdq_sec_probe(struct platform_device *pdev)
 #ifdef CMDQ_SECURE_SUPPORT
 	cmdq_sec_helper_set_fp(&helper_fp);
 #endif
+
+	cmdq_msg("[SEC] %s leave --", __func__);
 	return 0;
 }
 
@@ -1871,6 +1899,7 @@ static s32 cmdq_sec_late_init_wsm(void *data)
 			cmdq_err("session init failed:%d", err);
 			continue;
 		}
+		cmdq_msg("[SEC] %s init sec context done!", __func__);
 	} while (++i < g_cmdq_cnt);
 	return err;
 }
@@ -1891,6 +1920,7 @@ static int __init cmdq_sec_init(void)
 {
 	s32 err;
 
+	cmdq_msg("%s entry ++", __func__);
 	err = platform_driver_register(&cmdq_sec_drv);
 	if (err)
 		cmdq_err("platform_driver_register failed:%d", err);
@@ -1899,6 +1929,7 @@ static int __init cmdq_sec_init(void)
 	cmdq_sec_late_init();
 #endif
 
+	cmdq_msg("%s leave --", __func__);
 	return err;
 }
 

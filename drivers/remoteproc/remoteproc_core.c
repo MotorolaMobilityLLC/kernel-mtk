@@ -461,6 +461,7 @@ static void rproc_rvdev_release(struct device *dev)
 	struct rproc_vdev *rvdev = container_of(dev, struct rproc_vdev, dev);
 
 	of_reserved_mem_device_release(dev);
+	dma_release_coherent_memory(dev);
 
 	kfree(rvdev);
 }
@@ -1999,7 +2000,7 @@ int rproc_set_firmware(struct rproc *rproc, const char *fw_name)
 		goto out;
 	}
 
-	kfree(rproc->firmware);
+	kfree_const(rproc->firmware);
 	rproc->firmware = p;
 
 out:

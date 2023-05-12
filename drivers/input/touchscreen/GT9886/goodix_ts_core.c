@@ -2172,12 +2172,14 @@ static int goodix_ts_probe(struct platform_device *pdev)
 		ts_info("fw_module thread failed!");
 
 	ts_info("%s OUT, r:%d", __func__, r);
-	#if IS_ENABLED(CONFIG_TOUCHSCREEN_MTK_TUI_COMMON_API)
-	if (of_find_compatible_node(NULL, NULL, "mediatek,tui_common")) {
-		ts_info("%s: %d set tui function\n", __func__, __LINE__);
+
+#if (IS_ENABLED(CONFIG_TRUSTONIC_TRUSTED_UI) && IS_ENABLED(CONFIG_TOUCHSCREEN_MTK_TUI_COMMON_API))
+	if (r >= 0) {
+		ts_info("%s set tui function, r:%d", __func__, r);
 		register_tpd_tui_request(gt9886_tpd_enter_tui, gt9886_tpd_exit_tui);
 	}
-	#endif
+#endif
+
 	return r;
 
 err:

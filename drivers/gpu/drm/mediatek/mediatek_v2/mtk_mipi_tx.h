@@ -13,6 +13,9 @@
 #define MIPITX_LANE_CON (0x000CUL)
 #define MIPITX_VOLTAGE_SEL (0x0010UL)
 #define FLD_RG_DSI_HSTX_LDO_REF_SEL (0xf << 6)
+#define FLD_RG_DSI_LNT_HS_BIAS_EN BIT(14)
+#define FLD_RG_DSI_DSI_PAD_TIE_LOW_EN BIT(1)
+
 #define MIPITX_PRESERVED (0x0014UL)
 #define MIPITX_PLL_PWR (0x0028UL)
 #define AD_DSI_PLL_SDM_PWR_ON BIT(0)
@@ -25,9 +28,15 @@
 #define RG_DSI_PLL_EN BIT(4)
 #define FLD_RG_DSI_PLL_POSDIV (0x7 << 8)
 #define FLD_RG_DSI_PLL_POSDIV_ REG_FLD_MSB_LSB(10, 8)
+/* only for mt6739 */
+#define FLD_RG_DSI_MPPLL_TXDIV0 (3 << 16)
+#define FLD_RG_DSI_MPPLL_TXDIV1 (3 << 20)
 
 #define MIPITX_PLL_CON2 (0x0034UL)
 #define RG_DSI_PLL_SDM_SSC_EN BIT(1)
+/* only for mt6739 */
+#define FLD_RG_DSI_PLL_SDM_SSC_PRD (0xffff << 16)
+#define FLD_RG_DSI_PLL_SDM_SSC_PH_INIT BIT(0)
 
 #define MIPITX_PLL_CON3 (0x0038UL)
 #define MIPITX_PLL_CON4 (0x003CUL)
@@ -41,6 +50,7 @@
 #define DSI_D1_SW_CTL_EN BIT(0)
 #define MIPITX_D3_SW_CTL_EN (0x0544UL)
 #define DSI_D3_SW_CTL_EN BIT(0)
+#define FLD_RG_DSI_PLL_RESERVED (0xffff << 16)
 
 #define MIPITX_PHY_SEL0 (0x0040UL)
 #define FLD_MIPI_TX_CPHY_EN (0x1 << 0)
@@ -88,6 +98,42 @@
 #define MIPITX_CK_CKMODE_EN (0x0328UL)
 #define MIPITX_D1_CKMODE_EN (0x0428UL)
 #define MIPITX_D3_CKMODE_EN (0x0528UL)
+
+/* only for mt6739 */
+#define MIPITX_TOP_CON (0x0018UL)
+#define FLD_RG_DSI_BG_CORE_EN BIT(29)
+#define FLD_RG_DSI_BG_CKEN BIT(28)
+#define FLD_RG_DSI_BG_FAST_CHARGE BIT(24)
+#define FLD_RG_DSI_LDOCORE_EN BIT(15)
+#define FLD_RG_DSI_CKG_LDOOUT_EN BIT(14)
+#define FLD_RG_DSI_DSICLK_FREQ_SEL BIT(5)
+#define FLD_RG_DSI_LPRXCD_SEL (0x7 << 0)
+
+#define MIPITX_CK_LDOOUT_EN (0x0300UL)
+#define FLD_DSI_CK_LDOOUT_EN BIT(0)
+
+#define MIPITX_D0_CKLANE_EN (0x0230UL)
+#define FLD_DSI_D0_CKLANE_EN BIT(0)
+#define MIPITX_D1_CKLANE_EN (0x0430UL)
+#define FLD_DSI_D1_CKLANE_EN BIT(0)
+#define MIPITX_D2_CKLANE_EN (0x0130UL)
+#define FLD_DSI_D2_CKLANE_EN BIT(0)
+#define MIPITX_D3_CKLANE_EN (0x0530UL)
+#define FLD_DSI_D3_CKLANE_EN BIT(0)
+#define MIPITX_CK_CKLANE_EN (0x0330UL)
+#define FLD_DSI_CK_CKLANE_EN BIT(0)
+
+#define MIPITX_D0_LDOOUT_EN (0x0200UL)
+#define FLD_DSI_D0_LDOOUT_EN BIT(0)
+#define MIPITX_D1_LDOOUT_EN (0x0400UL)
+#define FLD_DSI_D1_LDOOUT_EN BIT(0)
+#define MIPITX_D2_LDOOUT_EN (0x0100UL)
+#define FLD_DSI_D2_LDOOUT_EN BIT(0)
+#define MIPITX_D3_LDOOUT_EN (0x0500UL)
+#define FLD_DSI_D3_LDOOUT_EN BIT(0)
+
+#define APMIXED_PLL_CON8 (0x0020UL)
+#define FLD_PLL_MIPID26M_EN_MIPITX0 REG_FLD_MSB_LSB(16, 16)
 
 #define FLD_DSI_SW_CTL_EN BIT(0)
 #define FLD_AD_DSI_PLL_SDM_PWR_ON BIT(0)
@@ -160,6 +206,8 @@ int mtk_mipi_tx_dphy_lane_config_mt6983(struct phy *phy,
 	struct mtk_panel_ext *mtk_panel, bool is_master);
 int mtk_mipi_tx_cphy_lane_config_mt6983(struct phy *phy,
 	struct mtk_panel_ext *mtk_panel, bool is_master);
+int mtk_mipi_tx_dphy_lane_config_mt6739(struct phy *phy,
+	struct mtk_panel_ext *mtk_panel, bool is_master, int lane_num);
 int mtk_mipi_tx_ssc_en(struct phy *phy,
 	struct mtk_panel_ext *mtk_panel);
 void mtk_mipi_tx_pll_rate_set_adpt(struct phy *phy, unsigned long rate);
@@ -175,6 +223,7 @@ void mtk_mipi_tx_set_bits(struct mtk_mipi_tx *mipi_tx, u32 offset, u32 bits);
 void mtk_mipi_tx_update_bits(struct mtk_mipi_tx *mipi_tx, u32 offset,
 		u32 mask, u32 data);
 unsigned int _dsi_get_pcw(unsigned long data_rate, unsigned int pcw_ratio);
+unsigned int _dsi_get_pcw_khz(unsigned long data_rate_khz, unsigned int pcw_ratio);
 void backup_mipitx_impedance(struct mtk_mipi_tx *mipi_tx);
 void refill_mipitx_impedance(struct mtk_mipi_tx *mipi_tx);
 #endif

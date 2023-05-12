@@ -20,8 +20,6 @@
 #define CSI_EFUSE_SET
 //#define SENINF_UT_DUMP
 
-#undef CAT_MORE_STATUS
-
 struct seninf_ctx;
 
 struct seninf_mux {

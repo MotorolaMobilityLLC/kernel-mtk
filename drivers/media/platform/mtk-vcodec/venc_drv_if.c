@@ -28,6 +28,7 @@ const struct venc_common_if *get_enc_vcp_if(void);
 
 static const struct venc_common_if * get_data_path_ptr(void)
 {
+#if IS_ENABLED(CONFIG_MTK_TINYSYS_VCP_SUPPORT)
 	if (VCU_FPTR(vcu_get_plat_device)) {
 		if (mtk_vcodec_vcp & (1 << MTK_INST_ENCODER))
 			return get_enc_vcp_if();
@@ -35,6 +36,12 @@ static const struct venc_common_if * get_data_path_ptr(void)
 			return get_enc_vcu_if();
 	} else
 		return get_enc_vcp_if();
+#endif
+#if IS_ENABLED(CONFIG_VIDEO_MEDIATEK_VCU)
+	if (VCU_FPTR(vcu_get_plat_device))
+		return get_enc_vcu_if();
+#endif
+	return NULL;
 }
 
 int venc_if_init(struct mtk_vcodec_ctx *ctx, unsigned int fourcc)
@@ -84,7 +91,8 @@ int venc_if_get_param(struct mtk_vcodec_ctx *ctx, enum venc_get_param_type type,
 			__func__, ctx->drv_handle);
 	}
 
-	ret = ctx->enc_if->get_param(ctx->drv_handle, type, out);
+	if (ctx->enc_if)
+		ret = ctx->enc_if->get_param(ctx->drv_handle, type, out);
 
 	if (!drv_handle_exist) {
 		mtk_vcodec_del_ctx_list(ctx);
@@ -116,7 +124,8 @@ int venc_if_set_param(struct mtk_vcodec_ctx *ctx,
 			__func__, ctx->drv_handle);
 	}
 
-	ret = ctx->enc_if->set_param(ctx->drv_handle, type, in);
+	if (ctx->enc_if)
+		ret = ctx->enc_if->set_param(ctx->drv_handle, type, in);
 
 	if (!drv_handle_exist) {
 		mtk_vcodec_del_ctx_list(ctx);

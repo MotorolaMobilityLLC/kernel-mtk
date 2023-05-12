@@ -6,22 +6,22 @@
 #ifndef __MTKFB_DEBUG_H
 #define __MTKFB_DEBUG_H
 
-#define LOGGER_BUFFER_SIZE (16 * 1024)
 #define ERROR_BUFFER_COUNT 4
 #define FENCE_BUFFER_COUNT 22
 #define DEBUG_BUFFER_COUNT 30
 #define DUMP_BUFFER_COUNT 10
 #define STATUS_BUFFER_COUNT 1
 #define _DRM_P_H_
-#if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#if IS_ENABLED(CONFIG_MT_ENG_BUILD) || !IS_ENABLED(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#define LOGGER_BUFFER_SIZE (16 * 1024)
+#else
+#define LOGGER_BUFFER_SIZE (256)
+#endif
 #define DEBUG_BUFFER_SIZE                                                      \
 	(4096 +                                                                \
 	 (ERROR_BUFFER_COUNT + FENCE_BUFFER_COUNT + DEBUG_BUFFER_COUNT +       \
 	  DUMP_BUFFER_COUNT + STATUS_BUFFER_COUNT) *                           \
 		 LOGGER_BUFFER_SIZE)
-#else
-#define DEBUG_BUFFER_SIZE 10240
-#endif
 
 extern void disp_color_set_bypass(struct drm_crtc *crtc, int bypass);
 extern void disp_ccorr_set_bypass(struct drm_crtc *crtc, int bypass);
@@ -80,5 +80,5 @@ unsigned int mtk_dbg_get_lfr_skip_num_value(void);
 unsigned int mtk_dbg_get_lfr_dbg_value(void);
 int hrt_lp_switch_get(void);
 #endif
-
+extern void mtk_mux_set_quick_switch_chk_cb(void (*callback) (void));
 #endif

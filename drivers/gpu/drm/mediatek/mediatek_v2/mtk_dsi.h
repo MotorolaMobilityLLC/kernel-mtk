@@ -24,18 +24,14 @@
 #include "mtk-cmdq-ext.h"
 #endif
 
+enum MTK_CONNECTOR_PROP {
+	CONNECTOR_PROP_PANEL_ID,
+	CONNECTOR_PROP_MAX,
+};
+
 struct t_condition_wq {
 	wait_queue_head_t wq;
 	atomic_t condition;
-};
-
-enum DSI_N_Version {
-	VER_N12 = 0,
-	VER_N7,
-	VER_N6,
-	VER_N5,
-	VER_N4,
-	VER_N3,
 };
 
 struct mtk_dsi_driver_data {
@@ -58,7 +54,6 @@ struct mtk_dsi_driver_data {
 	u32 max_vfp;
 	unsigned int (*mmclk_by_datarate)(struct mtk_dsi *dsi,
 		struct mtk_drm_crtc *mtk_crtc, unsigned int en);
-	const enum DSI_N_Version n_verion;
 };
 
 struct mtk_dsi {
@@ -84,6 +79,7 @@ struct mtk_dsi {
 
 	u32 data_rate;
 	u32 d_rate;
+	u32 bdg_data_rate;
 
 	unsigned long mode_flags;
 	enum mipi_dsi_pixel_format format;
@@ -120,13 +116,20 @@ struct mtk_dsi {
 	unsigned int hsa_byte;
 	unsigned int hbp_byte;
 	unsigned int hfp_byte;
-
+	/* for 6382 mipi hopping */
+	bool bdg_mipi_hopping_sta;
 	bool mipi_hopping_sta;
 	bool panel_osc_hopping_sta;
 	unsigned int data_phy_cycle;
 	/* for Panel Master dcs read/write */
 	struct mipi_dsi_device *dev_for_PM;
+	/* property */
+	struct drm_property *connector_property[CONNECTOR_PROP_MAX];
+	unsigned int prop_val[CONNECTOR_PROP_MAX];
+	bool pending_switch;
 };
+
+enum dsi_porch_type;
 
 s32 mtk_dsi_poll_for_idle(struct mtk_dsi *dsi, struct cmdq_pkt *handle);
 irqreturn_t mtk_dsi_irq_status(int irq, void *dev_id);
@@ -134,4 +137,18 @@ unsigned int mtk_dsi_set_mmclk_by_datarate_V1(struct mtk_dsi *dsi,
 	struct mtk_drm_crtc *mtk_crtc, unsigned int en);
 unsigned int mtk_dsi_set_mmclk_by_datarate_V2(struct mtk_dsi *dsi,
 	struct mtk_drm_crtc *mtk_crtc, unsigned int en);
+int mtk_dsi_get_virtual_width(struct mtk_dsi *dsi,
+	struct drm_crtc *crtc);
+int mtk_dsi_get_virtual_heigh(struct mtk_dsi *dsi,
+	struct drm_crtc *crtc);
+unsigned int mtk_dsi_default_rate(struct mtk_dsi *dsi);
+struct mtk_panel_ext *mtk_dsi_get_panel_ext(struct mtk_ddp_comp *comp);
+void mtk_disp_mutex_trigger(struct mtk_disp_mutex *mutex, void *handle);
+void mtk_output_bdg_enable(struct mtk_dsi *dsi, int force_lcm_update);
+unsigned int _dsi_get_pcw(unsigned long data_rate,
+	unsigned int pcw_ratio);
+int mtk_dsi_porch_setting(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle,
+			  enum dsi_porch_type type, unsigned int value);
+void mtk_dsi_porch_config(struct mtk_dsi *dsi, struct cmdq_pkt *handle);
+
 #endif

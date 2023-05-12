@@ -22,7 +22,7 @@
 #include <linux/regmap.h>
 #include <linux/mfd/syscon.h>
 #include <linux/dma-map-ops.h>
-
+#include "mtk_spm_resource_req.h"
 #if IS_ENABLED(CONFIG_USBIF_COMPLIANCE)
 #include <linux/kthread.h>
 #include <linux/err.h>
@@ -2372,6 +2372,7 @@ int musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 	struct musb *musb;
 	struct musb_hdrc_platform_data *plat = dev->platform_data;
 	struct usb_hcd *hcd;
+	struct device_node *np = dev->parent->of_node;
 
 	/* resolve CR ALPS01823375 */
 	u8 u8_busperf3 = 0;
@@ -2392,6 +2393,11 @@ int musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 		status = -ENOMEM;
 		goto fail0;
 	}
+
+	status = of_property_read_u32(np, "usb_phy_offset", &musb->mtk_usb_phy_offset);
+	if (status)
+		musb->mtk_usb_phy_offset = 0x300;
+	DBG(0, "musb->mtk_usb_phy_offset : 0x%x\n", musb->mtk_usb_phy_offset);
 
 	mtk_musb = musb;
 	sema_init(&musb->musb_lock, 1);
@@ -2735,7 +2741,7 @@ static void musb_restore_context(struct musb *musb)
 		USB_L1INTM, musb->context.l1_int);
 }
 
-bool __attribute__ ((weak)) usb_pre_clock(bool enable)
+bool usb_pre_clock(bool enable)
 {
 	return 0;
 }
@@ -2967,9 +2973,6 @@ EXPORT_SYMBOL(register_usb_hal_disconnect_check);
 #include <mt-plat/mtk_usb2jtag.h>
 #endif
 
-#if IS_ENABLED(CONFIG_MTK_BASE_POWER)
-#include "mtk_spm_resource_req.h"
-
 static int dpidle_status = USB_DPIDLE_ALLOWED;
 module_param(dpidle_status, int, 0644);
 
@@ -3006,32 +3009,50 @@ static void issue_dpidle_timer(void)
 	add_timer(timer);
 }
 
-static void usb_6765_dpidle_request(int mode)
+static bool (*spm_resource_req_fptr)(unsigned int user, unsigned int req_mask);
+
+static void spm_resource_req_usb(unsigned int user, unsigned int req_mask)
+{
+	if (spm_resource_req_fptr) {
+		spm_resource_req_fptr(user, req_mask);
+		DBG(0, "spm_resource_req() function is ready!!!\n");
+	} else
+		DBG(0, "spm_resource_req() function not ready!!!\n");
+}
+
+void register_spm_resource_req_func(bool (*spm_resource_req_func)(unsigned int user,
+								unsigned int req_mask))
+{
+	spm_resource_req_fptr = spm_resource_req_func;
+}
+EXPORT_SYMBOL(register_spm_resource_req_func);
+
+static void usb_spm_dpidle_request(int mode)
 {
 	unsigned long flags;
+	int ret;
 
 	spin_lock_irqsave(&usb_hal_dpidle_lock, flags);
 
 	/* update dpidle_status */
 	dpidle_status = mode;
-
 	switch (mode) {
 	case USB_DPIDLE_ALLOWED:
-		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_RELEASE);
+		spm_resource_req_usb(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_RELEASE);
 		if (likely(!dpidle_debug))
 			DBG_LIMIT(1, "USB_DPIDLE_ALLOWED");
 		else
 			DBG(0, "USB_DPIDLE_ALLOWED\n");
 		break;
 	case USB_DPIDLE_FORBIDDEN:
-		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_ALL);
+		spm_resource_req_usb(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_ALL);
 		if (likely(!dpidle_debug))
 			DBG_LIMIT(1, "USB_DPIDLE_FORBIDDEN");
 		else
 			DBG(0, "USB_DPIDLE_FORBIDDEN\n");
 		break;
 	case USB_DPIDLE_SRAM:
-		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
+		spm_resource_req_usb(SPM_RESOURCE_USER_SSUSB,
 				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
 		if (likely(!dpidle_debug))
 			DBG_LIMIT(1, "USB_DPIDLE_SRAM");
@@ -3039,20 +3060,36 @@ static void usb_6765_dpidle_request(int mode)
 			DBG(0, "USB_DPIDLE_SRAM\n");
 		break;
 	case USB_DPIDLE_TIMER:
-		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
+		spm_resource_req_usb(SPM_RESOURCE_USER_SSUSB,
 				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
 		DBG(0, "USB_DPIDLE_TIMER\n");
 		issue_dpidle_timer();
 		break;
 	case USB_DPIDLE_SUSPEND:
-		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
+		spm_resource_req_usb(SPM_RESOURCE_USER_SSUSB,
 			SPM_RESOURCE_MAINPLL | SPM_RESOURCE_CK_26M |
 			SPM_RESOURCE_AXI_BUS);
+		if (of_find_compatible_node(NULL, NULL, "mediatek,mt6761-usb20")) {
+			/* workaround: keep clock on for wakeup function */
+			ret = clk_prepare_enable(glue->sys_clk);
+			if (ret)
+				DBG(0, "%s: clk_prepare_enable: sys_clk failed: %d\n",
+						__func__, ret);
+			ret = clk_prepare_enable(glue->ref_clk);
+			if (ret)
+				DBG(0, "%s: clk_prepare_enable: ref_clk failed: %d\n",
+						__func__, ret);
+		}
 		DBG(0, "DPIDLE_SUSPEND\n");
 		break;
 	case USB_DPIDLE_RESUME:
-		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
+		spm_resource_req_usb(SPM_RESOURCE_USER_SSUSB,
 			SPM_RESOURCE_RELEASE);
+		if (of_find_compatible_node(NULL, NULL, "mediatek,mt6761-usb20")) {
+			/* workaround: keep clock on for wakeup function */
+			clk_disable_unprepare(glue->sys_clk);
+			clk_disable_unprepare(glue->ref_clk);
+		}
 		DBG(0, "DPIDLE_RESUME\n");
 		break;
 	default:
@@ -3062,7 +3099,6 @@ static void usb_6765_dpidle_request(int mode)
 
 	spin_unlock_irqrestore(&usb_hal_dpidle_lock, flags);
 }
-#endif
 
 /* default value 0 */
 static int usb_rdy;
@@ -3147,6 +3183,8 @@ static u32 uwk_vers;
 enum musb_uwk_vers {
 	MUSB_UWK_V1 = 1,  /* MT6855 */
 	MUSB_UWK_V2,      /* MT6789 */
+	MUSB_UWK_V3,      /* MT6768, MT6761*/
+	MUSB_UWK_V4,      /* MT6765 */
 };
 
 /* MT6855 */
@@ -3160,6 +3198,15 @@ enum musb_uwk_vers {
 #define USB_CDDEBOUNCE(x)	(((x) & 0xf) << 28)
 #define MISC_CONFIG		0xf08
 #define USB_CD_CLR		BIT(7)
+
+/* MT6768 */
+#define USB_WAKEUP_DEC_CON1_MT6768	0x404
+#define USB1_CDDEBOUNCE(x)	(((x) & 0xf) << 1)
+
+/* MT6765 */
+#define USB_WAKEUP_DEC_CON1_MT6765	0x404
+#define USB2_CDEN		BIT(0)
+#define USB2_CDDEBOUNCE(x)	(((x) & 0xf) << 1)
 
 static void mt_usb_wakeup(struct musb *musb, bool enable)
 {
@@ -3214,6 +3261,26 @@ static void mt_usb_wakeup(struct musb *musb, bool enable)
 			tmp &= ~USB_CD_CLR;
 			regmap_write(infracg, MISC_CONFIG, tmp);
 			break;
+		case MUSB_UWK_V3:
+			if (IS_ERR_OR_NULL(pericfg)) {
+				DBG(0, "init fail");
+				return;
+			}
+
+			regmap_read(pericfg, USB_WAKEUP_DEC_CON1_MT6768, &tmp);
+			tmp |= USB1_CDDEBOUNCE(0x8) | USB1_CDEN;
+			regmap_write(pericfg, USB_WAKEUP_DEC_CON1_MT6768, tmp);
+			break;
+		case MUSB_UWK_V4:
+			if (IS_ERR_OR_NULL(pericfg)) {
+				DBG(0, "init fail");
+				return;
+			}
+
+			regmap_read(pericfg, USB_WAKEUP_DEC_CON1_MT6765, &tmp);
+			tmp |= USB2_CDDEBOUNCE(0x8) | USB2_CDEN;
+			regmap_write(pericfg, USB_WAKEUP_DEC_CON1_MT6765, tmp);
+			break;
 		default:
 			return;
 		}
@@ -3232,6 +3299,30 @@ static void mt_usb_wakeup(struct musb *musb, bool enable)
 			regmap_read(pericfg, USB_WK_CTRL, &tmp);
 			tmp &= ~(USB_CDEN | USB_CDDEBOUNCE(0x8));
 			regmap_write(pericfg, USB_WK_CTRL, tmp);
+			break;
+		case MUSB_UWK_V3:
+			if (IS_ERR_OR_NULL(pericfg))
+				return;
+			regmap_read(pericfg, USB_WAKEUP_DEC_CON1_MT6768, &tmp);
+			tmp &= ~(USB1_CDEN | USB1_CDDEBOUNCE(0xf));
+			regmap_write(pericfg, USB_WAKEUP_DEC_CON1_MT6768, tmp);
+
+			if (is_con && !musb->is_active) {
+				DBG(0, "resume with device connected\n");
+				musb->is_active = 1;
+			}
+			break;
+		case MUSB_UWK_V4:
+			if (IS_ERR_OR_NULL(pericfg))
+				return;
+			regmap_read(pericfg, USB_WAKEUP_DEC_CON1_MT6765, &tmp);
+			tmp &= ~(USB2_CDEN | USB2_CDDEBOUNCE(0xf));
+			regmap_write(pericfg, USB_WAKEUP_DEC_CON1_MT6765, tmp);
+
+			if (is_con && !musb->is_active) {
+				DBG(0, "resume with device connected\n");
+				musb->is_active = 1;
+			}
 			break;
 		default:
 			return;
@@ -3261,6 +3352,11 @@ static int mt_usb_wakeup_init(struct musb *musb)
 			uwk_vers = 1;
 		else if (of_device_is_compatible(node, "mediatek,mt6789-usb20"))
 			uwk_vers = 2;
+		else if (of_device_is_compatible(node, "mediatek,mt6768-usb20") ||
+				of_device_is_compatible(node, "mediatek,mt6761-usb20"))
+			uwk_vers = 3;
+		else if (of_device_is_compatible(node, "mediatek,mt6765-usb20"))
+			uwk_vers = 4;
 		else
 			return -EINVAL;
 		/* Add another platform with specific uwk_vers here  */
@@ -3636,6 +3732,45 @@ static void mt_usb_try_idle(struct musb *musb, unsigned long timeout)
 }
 #endif
 
+static void __iomem *infra_mbist;
+#define USB_SRAM_SET 0x093cc01b
+
+/* setup sram, only for mt6761 */
+static void usb_sram_setup(void)
+{
+	if (infra_mbist)
+		writel(USB_SRAM_SET, infra_mbist + 0x2c);
+	else
+		DBG(0, "infra_mbist not init\n");
+
+	mdelay(1);
+}
+
+static int usb_sram_init(void)
+{
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL,
+					"mediatek,infra_mbist");
+	if (!node) {
+		DBG(0, "infra_mbist map node failed\n");
+		return -1;
+	}
+
+	infra_mbist = of_iomap(node, 0);
+	if (!infra_mbist) {
+		DBG(0, "iomap infra_mbist failed\n");
+		return -1;
+	}
+
+	/* usb20_top_bist */
+	writel(USB_SRAM_SET, infra_mbist + 0x2c);
+	/* wait stable */
+	mdelay(1);
+
+	return 0;
+}
+
 static int real_enable = 0, real_disable;
 static int virt_enable = 0, virt_disable;
 static void mt_usb_enable(struct musb *musb)
@@ -3656,6 +3791,11 @@ static void mt_usb_enable(struct musb *musb)
 	mdelay(10);
 
 	flags = musb_readl(musb->mregs, USB_L1INTM);
+
+	if (of_find_compatible_node(NULL, NULL, "mediatek,mt6761-usb20")) {
+		/* only for mt6761 */
+		usb_sram_setup();
+	}
 
 	/* update musb->power & mtk_usb_power in the same time */
 	musb->power = true;
@@ -3716,6 +3856,8 @@ bool mt_usb_is_device(void)
 	return true;
 #endif
 }
+EXPORT_SYMBOL(mt_usb_is_device);
+
 static struct delayed_work disconnect_check_work;
 static bool musb_hal_is_vbus_exist(void);
 void do_disconnect_check_work(struct work_struct *data)
@@ -4207,6 +4349,9 @@ out_unreg:
 static int mt_usb_init(struct musb *musb)
 {
 	int ret;
+#if IS_ENABLED(CONFIG_USB_MTK_OTG)
+	struct device_node *node = musb->glue->dev->of_node;
+#endif
 
 	DBG(1, "%s\n", __func__);
 
@@ -4302,7 +4447,17 @@ static int mt_usb_init(struct musb *musb)
 	uwk_vers = 0;
 	mt_usb_wakeup_init(musb);
 	musb->host_suspend = true;
+	if (of_property_read_bool(node, "host-suspend-disable")) {
+		musb->host_suspend = false;
+		DBG(0, "%s not enable host suspend\n", __func__);
+	}
 #endif
+
+	if (of_find_compatible_node(NULL, NULL, "mediatek,mt6761-usb20")) {
+		/* only for mt6761 */
+		usb_sram_init();
+	}
+
 	DBG(0, "%s done\n", __func__);
 	return 0;
 
@@ -4485,7 +4640,13 @@ static int musb_probe(struct platform_device *pdev)
 	mtk_host_qmu_force_isoc_restart = 0;
 #endif
 #ifndef FPGA_PLATFORM
-	register_usb_hal_dpidle_request(usb_dpidle_request);
+	if (of_find_compatible_node(NULL, NULL, "mediatek,mt6768-usb20") ||
+		of_find_compatible_node(NULL, NULL, "mediatek,mt6765-usb20") ||
+		of_find_compatible_node(NULL, NULL, "mediatek,mt6761-usb20") ||
+		of_find_compatible_node(NULL, NULL, "mediatek,mt6739-usb20"))
+		register_usb_hal_dpidle_request(usb_spm_dpidle_request);
+	else
+		register_usb_hal_dpidle_request(usb_dpidle_request);
 #endif
 	register_usb_hal_disconnect_check(trigger_disconnect_check_work);
 
@@ -4560,10 +4721,15 @@ static int musb_probe(struct platform_device *pdev)
 
 	DBG(0, "get dr_mode: %d\n", pdata->dr_mode);
 
-
 #if IS_ENABLED(CONFIG_MTK_MUSB_DUAL_ROLE)
 	/* assign usb-role-sw */
 	otg_sx = &glue->otg_sx;
+
+	otg_sx->vbus = devm_regulator_get(&pdev->dev, "vbus");
+	if (IS_ERR(otg_sx->vbus)) {
+		dev_info(&pdev->dev, "failed to get vbus\n");
+		return PTR_ERR(otg_sx->vbus);
+	}
 
 	otg_sx->manual_drd_enabled =
 		of_property_read_bool(np, "enable-manual-drd");
@@ -4662,6 +4828,10 @@ static const struct of_device_id apusb_of_ids[] = {
 	{.compatible = "mediatek,mt6789-usb20",},
 	{.compatible = "mediatek,mt6855-usb20",},
 	{.compatible = "mediatek,mt6833-usb20",},
+	{.compatible = "mediatek,mt6768-usb20",},
+	{.compatible = "mediatek,mt6765-usb20",},
+	{.compatible = "mediatek,mt6761-usb20",},
+	{.compatible = "mediatek,mt6739-usb20",},
 	{},
 };
 MODULE_DEVICE_TABLE(of, apusb_of_ids);

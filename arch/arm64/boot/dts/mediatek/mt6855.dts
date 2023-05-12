@@ -378,6 +378,11 @@
 		#clock-cells = <1>;
 	};
 
+	mtk_ssc: mtk_ssc@1c01f000 {
+		compatible = "mediatek,ssc";
+		safe-vlogic-uv = <600000>;
+	};
+
 	camsys_main_clk: syscon@1a000000 {
 		compatible = "mediatek,mt6855-camsys_main", "syscon";
 		reg = <0 0x1a000000 0 0x1000>;
@@ -599,7 +604,7 @@
 			    8250.nr_uarts=4 \
 			    androidboot.hardware=mt6855 \
 			    initcall_debug=1 transparent_hugepage=never \
-			    vmalloc=400M swiotlb=noforce cma=64M allow_file_spec_access \
+			    vmalloc=400M swiotlb=noforce allow_file_spec_access \
 			    firmware_class.path=/vendor/firmware pelt=8 \
 			    loop.max_part=7";
 		kaslr-seed = <0 0>;
@@ -4525,7 +4530,7 @@
 			<1 0>,
 			<2 642>, /* use FHD60 worst case * 0.7: 256*458/766 * 1.5 * 4 * 0.7*/
 			<6 7>;
-			mediatek,uniq_dom = <1>;
+		mediatek,uniq_dom = <1>;
 		};
 
 		jpgenc@17030000 {
@@ -7411,7 +7416,7 @@
 
 		usb_boost: usb_boost_manager {
 			compatible = "mediatek,usb_boost";
-			interconnects = <&dvfsrc MT6873_MASTER_DBGIF &dvfsrc MT6873_SLAVE_DDR_EMI>;
+			interconnects = <&dvfsrc MT6873_MASTER_USB &dvfsrc MT6873_SLAVE_DDR_EMI>;
 			interconnect-names = "icc-bw";
 			required-opps = <&dvfsrc_freq_opp0>;
 		};

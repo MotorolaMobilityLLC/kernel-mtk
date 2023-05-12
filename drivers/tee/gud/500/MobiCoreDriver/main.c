@@ -37,6 +37,10 @@
 #include "client.h"
 #include "build_tag.h"
 
+#if IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
+	extern bool register_gp_api(void);
+#endif
+
 /* Default entry for our driver in device tree */
 #ifndef MC_DEVICE_PROPNAME
 #define MC_DEVICE_PROPNAME "trustonic,mobicore"
@@ -92,6 +96,7 @@ bool is_mobicore_ready(void)
 {
 	return mobicore_ready;
 }
+EXPORT_SYMBOL(is_mobicore_ready);
 
 int kasnprintf(struct kasnprintf_buf *buf, const char *fmt, ...)
 {
@@ -575,6 +580,13 @@ static int mobicore_probe(struct platform_device *pdev)
 #ifdef MOBICORE_COMPONENT_BUILD_TAG
 	mc_dev_info("MobiCore %s", MOBICORE_COMPONENT_BUILD_TAG);
 #endif
+
+	ret = of_property_read_u32(g_ctx.mcd->of_node,
+				   "trustonic,real-drv", &g_ctx.real_drv);
+	if (ret || !g_ctx.real_drv) {
+		mc_dev_info("MobiCore dummy driver");
+		return 0;
+	}
 	/* Hardware does not support ARM TrustZone -> Cannot continue! */
 	if (protocol_is_be() && !has_security_extensions()) {
 		ret = -ENODEV;
@@ -588,6 +600,10 @@ static int mobicore_probe(struct platform_device *pdev)
 		mc_dev_err(ret, "Running in secure MODE!");
 		return ret;
 	}
+
+#if IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
+	register_gp_api();
+#endif
 
 	/* Make sure we can create debugfs entries */
 	g_ctx.debug_dir = debugfs_create_dir("trustonic_tee", NULL);

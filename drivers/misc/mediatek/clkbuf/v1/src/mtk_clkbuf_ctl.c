@@ -162,7 +162,7 @@ static ssize_t __clk_buf_dump_bblpm_info(char *buf)
 		return len;
 
 	len += snprintf(buf + len, PAGE_SIZE - len,
-			"bblpm_state: %u ", val);
+			"bblpm_state: %u\n", val);
 
 	return len;
 }
@@ -203,6 +203,12 @@ static ssize_t __clk_buf_show_status_info(char *buf)
 
 	return len;
 }
+
+bool clk_buf_is_init_done(void)
+{
+	return clkbuf_ctl.init_done;
+}
+EXPORT_SYMBOL(clk_buf_is_init_done);
 
 int clk_buf_dump_log(void)
 {
@@ -413,16 +419,14 @@ static ssize_t clk_buf_pmif_store(struct kobject *kobj,
 		xo_cmd.cmd = CLKBUF_CMD_OFF;
 	else if (!strcmp(cmd, "INIT"))
 		xo_cmd.cmd = CLKBUF_CMD_INIT;
-
-	ret = clkbuf_dcxo_notify(i, &xo_cmd);
-	if (ret) {
-		pr_notice("clkbuf pmif cmd failed: %d\n", ret);
+	else {
+		pr_notice("unknown command: %s, target: %s\n", cmd, target);
 		goto PMIF_STORE_DONE;
 	}
-	goto PMIF_STORE_DONE;
 
-	pr_notice("unknown command: %s, target: %u\n", cmd, target);
-	ret = count;
+	ret = clkbuf_dcxo_notify(i, &xo_cmd);
+	if (ret)
+		pr_notice("clkbuf pmif cmd failed: %d\n", ret);
 
 PMIF_STORE_DONE:
 	return count;
@@ -542,7 +546,6 @@ static ssize_t clk_buf_bblpm_show(struct kobject *kobj,
 				clkbuf_dcxo_get_xo_name(i),
 				xo_stat);
 	}
-	len -= 2;
 	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
 
 	ret = clkbuf_dcxo_get_hwbblpm_sel(&hwbblpm_sel);
@@ -787,9 +790,9 @@ DEFINE_ATTR_RO(clk_buf_ctrl);
 DEFINE_ATTR_RW(clk_buf_pmic);
 DEFINE_ATTR_RW(clk_buf_pmif);
 DEFINE_ATTR_RW(clk_buf_debug);
+DEFINE_ATTR_RO(clk_buf_bblpm);
 DEFINE_ATTR_RW(clk_buf_capid);
 DEFINE_ATTR_RW(clk_buf_heater);
-DEFINE_ATTR_RO(clk_buf_bblpm);
 DEFINE_ATTR_RO(rc_cfg_ctl);
 DEFINE_ATTR_RW(rc_sta_reg);
 DEFINE_ATTR_RW(rc_trace_ctl);

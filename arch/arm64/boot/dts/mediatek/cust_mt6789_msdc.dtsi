@@ -50,10 +50,9 @@
 	sd-uhs-ddr50;
 	cd-debounce-delay-ms = <0>;
 	cd-gpios = <&pio 7 GPIO_ACTIVE_LOW>;
-	vmmc-supply = <&mt6358_vmch_reg>;
+	vmmc-supply = <&mt6358_vmch_eint_high>;
 	vqmmc-supply = <&mt6358_vmc_reg>;
 	no-mmc;
-	no-sdio;
 	dvfsrc-vcore-supply = <&dvfsrc_vcore>;
 	req-vcore = <650000>;
 };

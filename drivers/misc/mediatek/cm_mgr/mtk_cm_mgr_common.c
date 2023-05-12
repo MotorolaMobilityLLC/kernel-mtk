@@ -35,7 +35,6 @@
 #include "mtk_disp_notify.h"
 #include <linux/notifier.h>
 #include <linux/interconnect.h>
-
 #include "mtk_cm_mgr_common.h"
 
 #if IS_ENABLED(CONFIG_MTK_DVFSRC)
@@ -65,6 +64,10 @@ static int cm_mgr_cpu_to_dram_opp;
 static int cm_sspm_ready;
 int cm_ipi_ackdata;
 #endif /* CONFIG_MTK_TINYSYS_SSPM_V2 && defined(USE_CM_MGR_AT_SSPM) */
+#if IS_ENABLED(CONFIG_MTK_TINYSYS_SSPM_V1) && defined(USE_CM_MGR_AT_SSPM)
+#include <sspm_define.h>
+#include <sspm_ipi.h>
+#endif /* CONFIG_MTK_TINYSYS_SSPM_V1 && defined(USE_CM_MGR_AT_SSPM) */
 
 static struct kobject *cm_mgr_kobj;
 static struct platform_device *cm_mgr_pdev;
@@ -79,6 +82,9 @@ static struct cm_mgr_hook hk;
 
 static int cm_mgr_blank_status;
 static int cm_mgr_disable_fb = 1;
+static int cm_mgr_disp_wakeup_status;
+spinlock_t cm_mgr_disp_lock;
+
 int cm_mgr_emi_demand_check = 1;
 int cm_mgr_enable = 1;
 int cm_mgr_loading_enable;
@@ -88,6 +94,9 @@ static int cm_mgr_perf_force_enable;
 #if defined(CONFIG_MTK_TINYSYS_SSPM_V2) && defined(USE_CM_MGR_AT_SSPM)
 int cm_mgr_sspm_enable = 1;
 #endif /* CONFIG_MTK_TINYSYS_SSPM_V2 && defined(USE_CM_MGR_AT_SSPM) */
+#if IS_ENABLED(CONFIG_MTK_TINYSYS_SSPM_V1) && defined(USE_CM_MGR_AT_SSPM)
+int cm_mgr_sspm_enable = 1;
+#endif /* CONFIG_MTK_TINYSYS_SSPM_V1 && defined(USE_CM_MGR_AT_SSPM) */
 unsigned int *cpu_power_ratio_down;
 unsigned int *cpu_power_ratio_up;
 unsigned int *vcore_power_ratio_down;
@@ -103,8 +112,10 @@ static int dsu_enable = 1;
 static int dsu_opp_send = 0xff;
 static int dsu_mode;
 static int cm_aggr;
+static int cm_passive;
 unsigned int cm_hint;
 unsigned int dsu_perf;
+unsigned int cm_lmode;
 #endif
 int debounce_times_reset_adb;
 int light_load_cps = 1000;
@@ -190,6 +201,12 @@ int debounce_times_perf_down_get(void)
 	return debounce_times_perf_down;
 }
 EXPORT_SYMBOL_GPL(debounce_times_perf_down_get);
+
+void debounce_times_perf_down_set(int val)
+{
+	debounce_times_perf_down = val;
+}
+EXPORT_SYMBOL_GPL(debounce_times_perf_down_set);
 
 int debounce_times_perf_force_down_get(void)
 {
@@ -295,6 +312,39 @@ void cm_mgr_unregister_hook(struct cm_mgr_hook *hook)
 }
 EXPORT_SYMBOL_GPL(cm_mgr_unregister_hook);
 
+static void cm_mgr_notify_sspm_blank_status(void)
+{
+	cm_mgr_to_sspm_command(IPI_CM_MGR_BLANK, cm_mgr_blank_status);
+	if (cm_mgr_blank_status) {
+		cm_mgr_dram_opp_base = -1;
+		if (hk.cm_mgr_perf_platform_set_status)
+			hk.cm_mgr_perf_platform_set_status(0);
+	}
+}
+
+static void cm_mgr_set_disp_wakeup_status(int display_index, int is_wakeup)
+{
+	unsigned long spinlock_save_flag;
+
+	spin_lock_irqsave(&cm_mgr_disp_lock, spinlock_save_flag);
+
+	if (is_wakeup)
+		cm_mgr_disp_wakeup_status |= (1 << display_index);
+	else
+		cm_mgr_disp_wakeup_status &= ~(1 << display_index);
+
+	if (cm_mgr_disp_wakeup_status)
+		cm_mgr_blank_status = 0;
+	else
+		cm_mgr_blank_status = 1;
+
+	spin_unlock_irqrestore(&cm_mgr_disp_lock, spinlock_save_flag);
+
+	pr_info("%s, cm_mgr_disp_wakeup_status %d, cm_mgr_blank_status %d\n",
+			__func__, cm_mgr_disp_wakeup_status, cm_mgr_blank_status);
+	cm_mgr_notify_sspm_blank_status();
+}
+
 static int cm_mgr_fb_notifier_callback(struct notifier_block *nb,
 		unsigned long value, void *v)
 {
@@ -304,15 +354,30 @@ static int cm_mgr_fb_notifier_callback(struct notifier_block *nb,
 		pr_info("%s+\n", __func__);
 		if (*data == MTK_DISP_BLANK_UNBLANK) {
 			pr_info("#@# %s(%d) SCREEN ON\n", __func__, __LINE__);
-			cm_mgr_blank_status = 0;
-			cm_mgr_to_sspm_command(IPI_CM_MGR_BLANK, 0);
+			cm_mgr_set_disp_wakeup_status(CM_MGR_MAIN_SCREEN, 1);
 		} else if (*data == MTK_DISP_BLANK_POWERDOWN) {
 			pr_info("#@# %s(%d) SCREEN OFF\n", __func__, __LINE__);
-			cm_mgr_blank_status = 1;
-			cm_mgr_dram_opp_base = -1;
-			if (hk.cm_mgr_perf_platform_set_status)
-				hk.cm_mgr_perf_platform_set_status(0);
-			cm_mgr_to_sspm_command(IPI_CM_MGR_BLANK, 1);
+			cm_mgr_set_disp_wakeup_status(CM_MGR_MAIN_SCREEN, 0);
+		}
+		pr_info("%s-\n", __func__);
+	}
+
+	return 0;
+}
+
+static int cm_mgr_fb_sub_notifier_callback(struct notifier_block *nb,
+		unsigned long value, void *v)
+{
+	int *data = (int *)v;
+
+	if (value == MTK_DISP_EVENT_BLANK) {
+		pr_info("%s+\n", __func__);
+		if (*data == MTK_DISP_BLANK_UNBLANK) {
+			pr_info("#@# %s(%d) SCREEN ON\n", __func__, __LINE__);
+			cm_mgr_set_disp_wakeup_status(CM_MGR_SUB_SCREEN, 1);
+		} else if (*data == MTK_DISP_BLANK_POWERDOWN) {
+			pr_info("#@# %s(%d) SCREEN OFF\n", __func__, __LINE__);
+			cm_mgr_set_disp_wakeup_status(CM_MGR_SUB_SCREEN, 0);
 		}
 		pr_info("%s-\n", __func__);
 	}
@@ -322,6 +387,10 @@ static int cm_mgr_fb_notifier_callback(struct notifier_block *nb,
 
 static struct notifier_block cm_mgr_fb_notifier = {
 	.notifier_call = cm_mgr_fb_notifier_callback,
+};
+
+static struct notifier_block cm_mgr_fb_sub_notifier = {
+	.notifier_call = cm_mgr_fb_sub_notifier_callback,
 };
 
 #if !IS_ENABLED(CONFIG_MTK_CM_IPI)
@@ -385,7 +454,56 @@ int cm_mgr_to_sspm_command(u32 cmd, int val)
 
 	return ret;
 #else
+#if IS_ENABLED(CONFIG_MTK_TINYSYS_SSPM_V1) && defined(USE_CM_MGR_AT_SSPM)
+	unsigned int ret = 0;
+	struct cm_mgr_data cm_mgr_d;
+	int ack_data;
+
+	switch (cmd) {
+	case IPI_CM_MGR_INIT:
+	case IPI_CM_MGR_ENABLE:
+	case IPI_CM_MGR_OPP_ENABLE:
+	case IPI_CM_MGR_SSPM_ENABLE:
+	case IPI_CM_MGR_BLANK:
+	case IPI_CM_MGR_DISABLE_FB:
+	case IPI_CM_MGR_DRAM_TYPE:
+	case IPI_CM_MGR_CPU_POWER_RATIO_UP:
+	case IPI_CM_MGR_CPU_POWER_RATIO_DOWN:
+	case IPI_CM_MGR_VCORE_POWER_RATIO_UP:
+	case IPI_CM_MGR_VCORE_POWER_RATIO_DOWN:
+	case IPI_CM_MGR_DEBOUNCE_UP:
+	case IPI_CM_MGR_DEBOUNCE_DOWN:
+	case IPI_CM_MGR_DEBOUNCE_TIMES_RESET_ADB:
+	case IPI_CM_MGR_DRAM_LEVEL:
+	case IPI_CM_MGR_LIGHT_LOAD_CPS:
+	case IPI_CM_MGR_LOADING_ENABLE:
+	case IPI_CM_MGR_LOADING_LEVEL:
+	case IPI_CM_MGR_EMI_DEMAND_CHECK:
+	case IPI_CM_MGR_BCPU_WEIGHT_MAX_SET:
+	case IPI_CM_MGR_BCPU_WEIGHT_MIN_SET:
+		cm_mgr_d.cmd = cmd;
+		cm_mgr_d.arg = val;
+		ret = sspm_ipi_send_sync(IPI_ID_CM, IPI_OPT_POLLING,
+				&cm_mgr_d, CM_MGR_D_LEN, &ack_data, 1);
+		if (ret != 0) {
+			pr_info("#@# %s(%d) cmd(%d) error, return %d\n",
+					__func__, __LINE__, cmd, ret);
+		} else if (ack_data < 0) {
+			ret = ack_data;
+			pr_info("#@# %s(%d) cmd(%d) return %d\n",
+					__func__, __LINE__, cmd, ret);
+		}
+		break;
+	default:
+		pr_info("#@# %s(%d) wrong cmd(%d)!!!\n",
+				__func__, __LINE__, cmd);
+		break;
+	}
+
+	return ret;
+#else
 	return -1;
+#endif /* CONFIG_MTK_TINYSYS_SSPM_V1 && defined(USE_CM_MGR_AT_SSPM) */
 #endif /* CONFIG_MTK_TINYSYS_SSPM_V2 && defined(USE_CM_MGR_AT_SSPM) */
 }
 EXPORT_SYMBOL_GPL(cm_mgr_to_sspm_command);
@@ -468,6 +586,9 @@ static ssize_t dbg_cm_mgr_show(struct kobject *kobj,
 #if defined(CONFIG_MTK_TINYSYS_SSPM_V2) && defined(USE_CM_MGR_AT_SSPM)
 	len += cm_mgr_print("cm_mgr_sspm_enable %d\n", cm_mgr_sspm_enable);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_V2 && defined(USE_CM_MGR_AT_SSPM) */
+#if IS_ENABLED(CONFIG_MTK_TINYSYS_SSPM_V1) && defined(USE_CM_MGR_AT_SSPM)
+	len += cm_mgr_print("cm_mgr_sspm_enable %d\n", cm_mgr_sspm_enable);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_V1 && defined(USE_CM_MGR_AT_SSPM) */
 #endif /* CONFIG_MTK_CM_IPI */
 
 	len += cm_mgr_print("cm_mgr_perf_enable %d\n",
@@ -557,10 +678,14 @@ static ssize_t dbg_cm_mgr_show(struct kobject *kobj,
 			dsu_mode);
 	len += cm_mgr_print("cm_aggr %d\n",
 			cm_aggr);
+	len += cm_mgr_print("cm_passive %d\n",
+			cm_passive);
 	len += cm_mgr_print("cm_hint %d\n",
 			cm_hint);
 	len += cm_mgr_print("dsu_perf %d\n",
 			dsu_perf);
+	len += cm_mgr_print("cm_lmode %d\n",
+			cm_lmode);
 	len += cm_mgr_print("cm_mgr_dram_opp_ceiling %d\n",
 			    cm_mgr_dram_opp_ceiling);
 	len += cm_mgr_print("cm_mgr_dram_opp_floor %d\n",
@@ -598,6 +723,12 @@ static ssize_t dbg_cm_mgr_store(struct  kobject *kobj,
 		cm_mgr_to_sspm_command(IPI_CM_MGR_SSPM_ENABLE,
 				cm_mgr_sspm_enable);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_V2 && defined(USE_CM_MGR_AT_SSPM) */
+#if IS_ENABLED(CONFIG_MTK_TINYSYS_SSPM_V1) && defined(USE_CM_MGR_AT_SSPM)
+	} else if (!strcmp(cmd, "cm_mgr_sspm_enable")) {
+		cm_mgr_sspm_enable = val_1;
+		cm_mgr_to_sspm_command(IPI_CM_MGR_SSPM_ENABLE,
+				cm_mgr_sspm_enable);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_V1 && defined(USE_CM_MGR_AT_SSPM) */
 	} else if (!strcmp(cmd, "cm_mgr_perf_enable")) {
 		cm_mgr_perf_enable = val_1;
 	} else if (!strcmp(cmd, "cm_mgr_perf_force_enable")) {
@@ -729,10 +860,16 @@ static ssize_t dbg_cm_mgr_store(struct  kobject *kobj,
 	} else if (!strcmp(cmd, "cm_aggr")) {
 		cm_aggr = val_1;
 		cm_mgr_to_sspm_command(IPI_CM_MGR_AGGRESSIVE, val_1);
+	} else if (!strcmp(cmd, "cm_passive")) {
+		cm_passive = val_1;
+		cm_mgr_to_sspm_command(IPI_CM_MGR_PASSIVE, val_1);
 	} else if (!strcmp(cmd, "cm_hint")) {
 		cm_hint = val_1;
 	} else if (!strcmp(cmd, "dsu_perf")) {
 		dsu_perf = val_1;
+	} else if (!strcmp(cmd, "cm_lmode")) {
+		cm_lmode = val_1;
+		cm_mgr_to_sspm_command(IPI_CM_MGR_LMODE, val_1);
 	} else if (!strcmp(cmd, "cm_mgr_dram_opp_ceiling")) {
 		cm_mgr_dram_opp_ceiling = val_1;
 		cm_mgr_to_sspm_command(IPI_CM_MGR_DRAM_OPP_CEILING, val_1);
@@ -1055,6 +1192,8 @@ int cm_mgr_common_init(void)
 	int i;
 	int ret;
 
+	spin_lock_init(&cm_mgr_disp_lock);
+
 	cm_mgr_kobj = kobject_create_and_add("cm_mgr", kernel_kobj);
 	if (!cm_mgr_kobj)
 		return -ENOMEM;
@@ -1070,6 +1209,12 @@ int cm_mgr_common_init(void)
 	ret = mtk_disp_notifier_register("cm_mgr", &cm_mgr_fb_notifier);
 	if (ret) {
 		pr_info("[CM_MGR] FAILED TO REGISTER FB CLIENT (%d)\n", ret);
+		return ret;
+	}
+
+	ret = mtk_disp_sub_notifier_register("cm_mgr", &cm_mgr_fb_sub_notifier);
+	if (ret) {
+		pr_info("[CM_MGR] FAILED TO REGISTER FB SUB-CLIENT (%d)\n", ret);
 		return ret;
 	}
 
@@ -1111,7 +1256,6 @@ int cm_mgr_common_init(void)
 
 fail_reg_cpu_frequency_entry:
 
-
 	cm_mgr_to_sspm_command(IPI_CM_MGR_ENABLE,
 			cm_mgr_enable);
 
@@ -1119,6 +1263,10 @@ fail_reg_cpu_frequency_entry:
 	cm_mgr_to_sspm_command(IPI_CM_MGR_SSPM_ENABLE,
 			cm_mgr_sspm_enable);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_V2 && defined(USE_CM_MGR_AT_SSPM) */
+#if IS_ENABLED(CONFIG_MTK_TINYSYS_SSPM_V1) && defined(USE_CM_MGR_AT_SSPM)
+	cm_mgr_to_sspm_command(IPI_CM_MGR_SSPM_ENABLE,
+			cm_mgr_sspm_enable);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_V1 && defined(USE_CM_MGR_AT_SSPM) */
 
 	cm_mgr_to_sspm_command(IPI_CM_MGR_EMI_DEMAND_CHECK,
 			cm_mgr_emi_demand_check);
@@ -1168,6 +1316,10 @@ void cm_mgr_common_exit(void)
 	ret = mtk_disp_notifier_unregister(&cm_mgr_fb_notifier);
 	if (ret)
 		pr_info("[CM_MGR] FAILED TO UNREGISTER FB CLIENT (%d)\n", ret);
+
+	ret = mtk_disp_sub_notifier_unregister(&cm_mgr_fb_sub_notifier);
+	if (ret)
+		pr_info("[CM_MGR] FAILED TO UNREGISTER FB SUB-CLIENT (%d)\n", ret);
 }
 EXPORT_SYMBOL_GPL(cm_mgr_common_exit);
 MODULE_LICENSE("GPL");

@@ -108,7 +108,6 @@ int clkbuf_dcxo_dump_reg_log(char *buf);
 int clkbuf_dcxo_dump_misc_log(char *buf);
 int clkbuf_dcxo_dump_dws(char *buf);
 int clkbuf_dcxo_dump_pmrc_en(char *buf);
-bool clkbuf_dcxo_is_bblpm_support(void);
 int clkbuf_dcxo_set_capid_pre(void);
 int clkbuf_dcxo_get_capid(u32 *capid);
 int clkbuf_dcxo_set_capid(u32 capid);
@@ -119,6 +118,6 @@ int clkbuf_dcxo_set_heater(bool on);
 extern struct dcxo_hw mt6359p_dcxo;
 extern struct dcxo_hw mt6685_dcxo;
 extern struct dcxo_hw mt6366_dcxo;
-
-
+extern struct dcxo_hw mt6358_dcxo;
+extern struct dcxo_hw mt6357_dcxo;
 #endif /* CLKBUF_DCXO_H */

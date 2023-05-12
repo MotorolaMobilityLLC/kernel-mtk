@@ -58,6 +58,10 @@
 #include <irq_register.h>
 #include <../teei_fp/fp_func.h>
 
+#if IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
+	extern bool register_gp_api(void);
+#endif
+
 #if IS_ENABLED(CONFIG_MICROTRUST_TZ_DRIVER_MTK_BOOTPROF) && IS_ENABLED(CONFIG_MTPROF)
 
 #if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
@@ -1158,12 +1162,12 @@ static int teei_client_init(void)
 		if (ret || !ret_code) {
 			IMSG_INFO("MICROTRUST device is NOT enable.\n");
 			ret_code = 0;
-			goto class_device_destroy;
+			goto del_cdev;
 		}
 	} else {
 		IMSG_ERROR("teei_probe NOT get the pdev.\n");
 		ret_code = 0;
-		goto class_device_destroy;
+		goto del_cdev;
 	}
 
 	init_teei_switch_comp();
@@ -1247,6 +1251,10 @@ static int teei_client_init(void)
 
 	IMSG_DEBUG("create the sub_thread successfully!\n");
 
+#if IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
+	register_gp_api();
+#endif
+
 	ret_code = teei_vfs_init();
 	if (ret_code != 0) {
 		IMSG_ERROR("Can NOT init the teei_vfs %d!\n", ret_code);
@@ -1313,7 +1321,8 @@ teei_bdrv_destroy:
 
 teei_switch_destroy:
 	kthread_stop(teei_switch_task);
-
+del_cdev:
+	cdev_del(&teei_client_cdev);
 class_device_destroy:
 	device_destroy(driver_class, teei_client_device_no);
 class_destroy:
@@ -1347,6 +1356,8 @@ static void teei_client_exit(void)
 	kthread_stop(teei_log_task);
 	kthread_stop(teei_bdrv_task);
 	kthread_stop(teei_switch_task);
+
+	cdev_del(&teei_client_cdev);
 
 	device_destroy(driver_class, teei_client_device_no);
 	class_destroy(driver_class);

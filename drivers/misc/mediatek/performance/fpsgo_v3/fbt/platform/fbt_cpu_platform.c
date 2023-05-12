@@ -12,6 +12,10 @@
 #include "dvfsrc-exp.h"
 #include "fpsgo_base.h"
 
+#if IS_ENABLED(CONFIG_MTK_SPM_V4)
+#include <mtk_vcorefs_manager.h>
+#endif
+
 static int mask_int[FPSGO_PREFER_TOTAL];
 static struct cpumask mask[FPSGO_PREFER_TOTAL];
 static int mask_done;
@@ -21,13 +25,16 @@ static unsigned int peak_bw;
 static int plat_gcc_enable;
 static int plat_sbe_rescue_enable;
 static int plat_cpu_limit;
+static int plat_gcc_chk_avg_deq;
+static int vcore_api_enable;
+static int adj_count;
 
 void fbt_notify_CM_limit(int reach_limit)
 {
-#if IS_ENABLED(CONFIG_MTK_CM_MGR)
+#if IS_ENABLED(CONFIG_MTK_CM_MGR) || IS_ENABLED(CONFIG_MTK_CM_MGR_LEGACY)
 	cm_mgr_perf_set_status(reach_limit);
-#endif
 	fpsgo_systrace_c_fbt_debug(-100, 0, reach_limit, "notify_cm");
+#endif
 }
 
 static int generate_cpu_mask(void);
@@ -36,6 +43,8 @@ static int platform_fpsgo_probe(struct platform_device *pdev)
 {
 	int ret = 0, retval = 0;
 
+	adj_count = 10;
+	vcore_api_enable = 0;
 	node = pdev->dev.of_node;
 
 	FPSGO_LOGE("%s\n", __func__);
@@ -58,9 +67,26 @@ static int platform_fpsgo_probe(struct platform_device *pdev)
 		FPSGO_LOGE("%s unable to get plat_gcc_enable\n", __func__);
 
 	ret = of_property_read_u32(node,
+			 "gcc_chk_avg_deq", &retval);
+	if (!ret)
+		plat_gcc_chk_avg_deq = retval;
+	else
+		FPSGO_LOGE("%s unable to get plat_gcc_chk_avg_deq\n", __func__);
+
+	ret = of_property_read_u32(node,
 			 "cpu_limit", &retval);
 	if (!ret)
 		plat_cpu_limit = retval;
+
+	ret = of_property_read_u32(node,
+			 "vcore_api_enable", &retval);
+	if (!ret)
+		vcore_api_enable = retval;
+
+	ret = of_property_read_u32(node,
+			 "adj_count", &retval);
+	if (!ret)
+		adj_count = retval;
 
 	generate_cpu_mask();
 	generate_sbe_rescue_enable();
@@ -113,12 +139,20 @@ void fbt_reg_dram_request(int reg)
 
 void fbt_boost_dram(int boost)
 {
-	if (boost)
-		icc_set_bw(bw_path, 0, peak_bw);
-	else
-		icc_set_bw(bw_path, 0, 0);
-
-	fpsgo_systrace_c_fbt_debug(-100, 0, boost, "dram_boost");
+	if (!vcore_api_enable) {
+		if (boost)
+			icc_set_bw(bw_path, 0, peak_bw);
+		else
+			icc_set_bw(bw_path, 0, 0);
+	} else {
+#if IS_ENABLED(CONFIG_MTK_SPM_V4)
+		if (boost)
+			vcorefs_request_dvfs_opp(KIR_FBT, 0);
+		else
+			vcorefs_request_dvfs_opp(KIR_FBT, -1);
+#endif
+	}
+	fpsgo_systrace_c_fbt_debug(-100, 0, boost, "boost_dram");
 }
 
 void fbt_set_boost_value(unsigned int base_blc)
@@ -281,7 +315,7 @@ int fbt_get_default_adj_loading(void)
 
 int fbt_get_default_adj_count(void)
 {
-	return 10;
+	return adj_count;
 }
 
 int fbt_get_default_adj_tdiff(void)
@@ -335,5 +369,10 @@ int fbt_get_default_sbe_rescue_enable(void)
 int fbt_get_l_min_bhropp(void)
 {
 	return 0;
+}
+
+int fbt_get_default_gcc_chk_avg_deq(void)
+{
+	return plat_gcc_chk_avg_deq;
 }
 

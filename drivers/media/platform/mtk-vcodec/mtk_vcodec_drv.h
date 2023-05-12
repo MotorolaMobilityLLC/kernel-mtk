@@ -74,7 +74,8 @@ enum mtk_instance_state {
 	MTK_STATE_INIT = 1,
 	MTK_STATE_HEADER = 2,
 	MTK_STATE_FLUSH = 3,
-	MTK_STATE_ABORT = 4,
+	MTK_STATE_STOP = 4,
+	MTK_STATE_ABORT = 5,
 };
 
 enum mtk_codec_type {
@@ -364,6 +365,7 @@ struct venc_enc_param {
 	unsigned int slbc_addr;
 	char set_vcp_buf[1024];
 	char property_buf[1024];
+	char *log;
 };
 
 /*
@@ -502,6 +504,7 @@ struct mtk_vcodec_ctx {
 	enum vdec_input_driven_mode input_driven;
 
 	/* for user lock HW case release check */
+	int user_lock_hw;
 	struct mutex hw_status;
 	int hw_locked[MTK_VDEC_HW_NUM];
 	int core_locked[MTK_VENC_HW_NUM];
@@ -515,6 +518,13 @@ struct mtk_vcodec_ctx {
 
 	int init_cnt;
 	int decoded_frame_cnt;
+
+	/* for timer to check active state of decoded ctx */
+	unsigned int vcp_action_cnt;
+	unsigned int last_vcp_action_cnt;
+	bool is_vcp_active;
+	struct mutex vcp_active_mutex;
+
 	struct mutex buf_lock;
 	struct mutex worker_lock;
 	struct slbc_data sram_data;
@@ -578,6 +588,7 @@ struct mtk_vcodec_dev {
 	struct iommu_domain *io_domain;
 
 	const char *platform;
+	enum mtk_instance_type type;
 	enum mtk_vcodec_ipm vdec_hw_ipm;
 	enum mtk_vcodec_ipm venc_hw_ipm;
 
@@ -603,6 +614,11 @@ struct mtk_vcodec_dev {
 
 	struct workqueue_struct *decode_workqueue;
 	struct workqueue_struct *encode_workqueue;
+	struct workqueue_struct *check_alive_workqueue;
+	struct work_struct check_alive_work;
+	struct timer_list vdec_active_checker;
+	bool has_timer;
+
 	int int_cond;
 	int int_type;
 	struct mutex ctx_mutex;
@@ -886,5 +902,12 @@ static inline struct mtk_vcodec_ctx *ctrl_to_ctx(struct v4l2_ctrl *ctrl)
 	(V4L2_CID_MPEG_MTK_BASE+48)
 #define V4L2_CID_MPEG_MTK_VCP_PROP \
 	(V4L2_CID_MPEG_MTK_BASE+49)
+
+#define V4L2_CID_MPEG_MTK_GET_LOG \
+	(V4L2_CID_MPEG_MTK_BASE+63)
+
+#define V4L2_CID_MPEG_MTK_GET_VCP_PROP \
+	(V4L2_CID_MPEG_MTK_BASE+64)
+
 
 #endif /* _MTK_VCODEC_DRV_H_ */

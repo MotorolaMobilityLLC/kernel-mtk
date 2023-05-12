@@ -70,13 +70,13 @@ endif
 #==========================================================================
 # MTEE Multiple Chunk Devices & Geniezone Peer Driver
 #==========================================================================
+ifneq ($(filter y m,$(CONFIG_MTK_GZ_KREE)),)
 ifneq ($(filter y m,$(CONFIG_MTK_PROT_MEM_SUPPORT)\
-					$(CONFIG_MTK_MTEE_MULTI_CHUNK_SUPPORT)\
-					$(CONFIG_MTK_SECURE_MEM_SUPPORT)),)
+		    $(CONFIG_MTK_MTEE_MULTI_CHUNK_SUPPORT)\
+		    $(CONFIG_MTK_SECURE_MEM_SUPPORT)),)
 trusted_mem-y += mtee_devices.o
 ccflags-y += -DMTEE_DEVICES_SUPPORT
 endif
-ifneq ($(filter y m,$(CONFIG_MTK_GZ_KREE)),)
 trusted_mem-y += mtee_impl/mtee_ops.o
 trusted_mem-y += mtee_impl/mtee_invoke.o
 trusted_mem-y += mtee_impl/tmem_carveout_heap.o
@@ -100,6 +100,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/geniezone/public
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/gz/
 endif # !CONFIG_MTK_GZ_KREE
 
+ifneq ($(filter y m, $(CONFIG_MTK_TEE_GP_COORDINATOR)),)
+include $(srctree)/drivers/tee/gpapi/Makefile.client.include
+else
 ifneq ($(filter y m,$(CONFIG_TRUSTONIC_TEE_SUPPORT)),)
 ccflags-y += -I$(srctree)/drivers/tee/gud/$(CONFIG_TRUSTONIC_TEE_VERSION)/MobiCoreDriver/public
 ccflags-y += -I$(srctree)/drivers/tee/gud/$(CONFIG_TRUSTONIC_TEE_VERSION)/MobiCoreDriver/public/GP
@@ -112,3 +115,4 @@ endif # !CONFIG_MICROTRUST_TEE_SUPPORT
 ifneq ($(filter y m,$(CONFIG_BLOWFISH_TEE_SUPPORT)),)
 ccflags-y += -I$(srctree)/drivers/misc/tzdev
 endif # !CONFIG_BLOWFISH_TEE_SUPPORT
+endif # !CONFIG_MTK_TEE_GP_COORDINATOR

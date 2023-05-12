@@ -26,7 +26,6 @@ signed int __weak battery_get_bat_voltage(void)
 	return 0;
 }
 
-#ifdef CCCI_KMODULE_ENABLE
 int switch_sim_mode(int id, char *buf, unsigned int len)
 {
 	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
@@ -38,7 +37,6 @@ unsigned int get_sim_switch_type(void)
 	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
 	return 0;
 }
-#endif
 
 static int fsm_md_data_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 {
@@ -60,12 +58,9 @@ static int fsm_md_data_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case CCCI_IOC_GET_MD_PROTOCOL_TYPE:
-		snprintf(buffer, sizeof(buffer), "%d",
-			md_gen);
-		snprintf((void *)ap_platform, sizeof(ap_platform), "%d",
-			md_gen);
-		if (copy_to_user((void __user *)arg,
-			ap_platform, sizeof(ap_platform))) {
+		snprintf(buffer, sizeof(buffer), "%d", md_gen);
+		snprintf((void *)ap_platform, sizeof(ap_platform), "%d", md_gen);
+		if (copy_to_user((void __user *)arg, ap_platform, sizeof(ap_platform))) {
 			CCCI_ERROR_LOG(md_id, FSM,
 				"CCCI_IOC_GET_MD_PROTOCOL_TYPE: copy_from_user fail\n");
 			return -EFAULT;

@@ -3,13 +3,84 @@ obj-$(CONFIG_COMMON_CLK_MEDIATEK) += clk-common.o
 clk-common-$(CONFIG_COMMON_CLK_MEDIATEK) += clk-mtk.o clk-pll.o clk-gate.o clk-apmixed.o clk-cpumux.o reset.o clk-mux.o clkchk.o clk-fmeter.o mtk-pd-chk.o clkdbg.o
 obj-$(CONFIG_COMMON_CLK_MEDIATEK) += clk-disable-unused.o
 
+ifneq ($(wildcard $(srctree)/$(src)/clk-mt6739.c),)
+obj-$(CONFIG_COMMON_CLK_MT6739) += clk-mt6739.o
+obj-$(CONFIG_COMMON_CLK_MT6739) += mt6739_clkmgr.o
+obj-$(CONFIG_COMMON_CLK_MT6739) += clk-mt6739-pg.o
+clk-clkmgr-mt6739-$(CONFIG_COMMON_CLK_MT6739) += mt6739_clkmgr.o
+obj-$(CONFIG_COMMON_CLK_MT6739) += clk-fmeter-mt6739.o
+clk-fmeter-mt6739-$(CONFIG_COMMON_CLK_MT6739) += clk-fmeter-mt6739.o
+obj-$(CONFIG_COMMON_CLK_MT6739) += clk-fixed-factor-mt6739.o
+clk-fixed-factor-mt6739-$(CONFIG_COMMON_CLK_MT6739) += clk-fixed-factor-mt6739.o
+$(warning go this for clk CONFIG_COMMON_CLK_MT6739="$(CONFIG_COMMON_CLK_MT6739)")
+$(warning go this for clk CONFIG_MTK_HANG_DETECT="$(CONFIG_MTK_HANG_DETECT)")
+
+ifeq ($(CONFIG_DEBUG_FS), y)
+obj-$(CONFIG_COMMON_CLK_MT6739) += clkdbg_mt6739.o
+clk-dbg-mt6739-$(CONFIG_COMMON_CLK_MT6739) += clkdbg_mt6739.o
+endif
+endif
+
+ifneq ($(wildcard $(srctree)/$(src)/clk-mt6761.c),)
+obj-$(CONFIG_COMMON_CLK_MT6761) += clk-mt6761.o
+obj-$(CONFIG_COMMON_CLK_MT6761_AUDIOSYS) += clk-mt6761-audio.o
+obj-$(CONFIG_COMMON_CLK_MT6761_CAMSYS) += clk-mt6761-cam.o
+obj-$(CONFIG_COMMON_CLK_MT6761_MIPI0ASYS) += clk-mt6761-mipi0a.o
+obj-$(CONFIG_COMMON_CLK_MT6761_MMSYS) += clk-mt6761-mm.o
+obj-$(CONFIG_COMMON_CLK_MT6761_VCODECSYS) += clk-mt6761-vcodec.o
+obj-$(CONFIG_COMMON_CLK_MT6761) += clk-mt6761-pg.o
+obj-$(CONFIG_COMMON_CLK_MT6761) += clkchk-mt6761.o
+clk-chk-mt6761-$(CONFIG_COMMON_CLK_MT6761) += clkchk-mt6761.o
+obj-$(CONFIG_COMMON_CLK_MT6761) += mt6761_clkmgr.o
+clk-clkmgr-mt6761-$(CONFIG_COMMON_CLK_MT6761) += mt6761_clkmgr.o
+obj-$(CONFIG_COMMON_CLK_MT6761) += clk-fmeter-mt6761.o
+clk-fmeter-mt6761-$(CONFIG_COMMON_CLK_MT6761) += clk-fmeter-mt6761.o
+$(warning go this for clk CONFIG_COMMON_CLK_MT6761="$(CONFIG_COMMON_CLK_MT6761)")
+$(warning go this for clk CONFIG_MTK_HANG_DETECT="$(CONFIG_MTK_HANG_DETECT)")
+
+ifeq ($(CONFIG_DEBUG_FS), y)
+obj-$(CONFIG_COMMON_CLK_MT6761) += clkdbg-mt6761.o
+clk-dbg-mt6761-$(CONFIG_COMMON_CLK_MT6761) += clkdbg-mt6761.o
+endif
+endif
+
+ifneq ($(wildcard $(srctree)/$(src)/clk-mt6765.c),)
 obj-$(CONFIG_COMMON_CLK_MT6765) += clk-mt6765.o
-obj-$(CONFIG_COMMON_CLK_MT6765_AUDIOSYS) += clk-mt6765-audio.o
-obj-$(CONFIG_COMMON_CLK_MT6765_CAMSYS) += clk-mt6765-cam.o
-obj-$(CONFIG_COMMON_CLK_MT6765_IMGSYS) += clk-mt6765-img.o
-obj-$(CONFIG_COMMON_CLK_MT6765_MIPI0ASYS) += clk-mt6765-mipi0a.o
-obj-$(CONFIG_COMMON_CLK_MT6765_MMSYS) += clk-mt6765-mm.o
-obj-$(CONFIG_COMMON_CLK_MT6765_VCODECSYS) += clk-mt6765-vcodec.o
+obj-$(CONFIG_COMMON_CLK_PG_LEGACY_V1) += clk-mt6765-pg.o
+obj-$(CONFIG_COMMON_CLK_MT6765) += clkchk-mt6765.o
+clk-chk-mt6768-$(CONFIG_COMMON_CLK_MT6765) += clkchk-mt6765.o
+obj-$(CONFIG_COMMON_CLK_MT6765) += mt6765_clkmgr.o
+clk-clkmgr-mt6765-$(CONFIG_COMMON_CLK_MT6765) += mt6765_clkmgr.o
+obj-$(CONFIG_COMMON_CLK_MT6765) += clk-fmeter-mt6765.o
+clk-fmeter-mt6765-$(CONFIG_COMMON_CLK_MT6765) += clk-fmeter-mt6765.o
+$(warning go this for clk CONFIG_COMMON_CLK_MT6765="$(CONFIG_COMMON_CLK_MT6765)")
+$(warning go this for clk CONFIG_MTK_HANG_DETECT="$(CONFIG_MTK_HANG_DETECT)")
+
+ifeq ($(CONFIG_DEBUG_FS), y)
+obj-$(CONFIG_COMMON_CLK_MT6765) += clkdbg-mt6765.o
+clk-dbg-mt6765-$(CONFIG_COMMON_CLK_MT6765) += clkdbg-mt6765.o
+endif
+endif
+
+
+ifneq ($(wildcard $(srctree)/$(src)/clk-mt6768.c),)
+obj-$(CONFIG_COMMON_CLK_MT6768) += clk-mt6768.o
+obj-$(CONFIG_COMMON_CLK_MT6768) += clk-mt6768-pg.o
+obj-$(CONFIG_COMMON_CLK_MT6768) += clkchk-mt6768.o
+clk-chk-mt6768-$(CONFIG_COMMON_CLK_MT6768) += clkchk-mt6768.o
+obj-$(CONFIG_COMMON_CLK_MT6768) += mt6768_clkmgr.o
+clk-clkmgr-mt6768-$(CONFIG_COMMON_CLK_MT6768) += mt6768_clkmgr.o
+obj-$(CONFIG_COMMON_CLK_MT6768) += clk-fmeter-mt6768.o
+clk-fmeter-mt6768-$(CONFIG_COMMON_CLK_MT6768) += clk-fmeter-mt6768.o
+$(warning go this for clk CONFIG_COMMON_CLK_MT6768="$(CONFIG_COMMON_CLK_MT6768)")
+$(warning go this for clk CONFIG_MTK_HANG_DETECT="$(CONFIG_MTK_HANG_DETECT)")
+
+ifeq ($(CONFIG_DEBUG_FS), y)
+obj-$(CONFIG_COMMON_CLK_MT6768) += clkdbg-mt6768.o
+clk-dbg-mt6768-$(CONFIG_COMMON_CLK_MT6768) += clkdbg-mt6768.o
+endif
+endif
+
 obj-$(CONFIG_COMMON_CLK_MT6779) += clk-mt6779.o
 obj-$(CONFIG_COMMON_CLK_MT6779_MMSYS) += clk-mt6779-mm.o
 obj-$(CONFIG_COMMON_CLK_MT6779_IMGSYS) += clk-mt6779-img.o
@@ -233,10 +304,16 @@ obj-$(CONFIG_COMMON_CLK_MT8192_VDECSYS_SOC) += clk-mt8192-vdec_soc.o
 obj-$(CONFIG_COMMON_CLK_MT8192_VENCSYS) += clk-mt8192-venc.o
 obj-$(CONFIG_COMMON_CLK_MT8516) += clk-mt8516.o
 obj-$(CONFIG_COMMON_CLK_MT8516_AUDSYS) += clk-mt8516-aud.o
+ifeq ($(CONFIG_MEDIATEK_FHCTL_V1),m)
+obj-$(CONFIG_COMMON_CLK_MTK_FREQ_HOPPING) += fhctl_v1/
+else ifeq ($(CONFIG_MEDIATEK_FHCTL_V1),y)
+obj-$(CONFIG_COMMON_CLK_MTK_FREQ_HOPPING) += fhctl_v1/
+else
 obj-$(CONFIG_COMMON_CLK_MTK_FREQ_HOPPING) += fhctl.o
 fhctl-y += clk-fhctl.o
 fhctl-y += clk-fhctl-ap.o
 fhctl-y += clk-fhctl-pll.o
+fhctl-$(CONFIG_COMMON_CLK_MTK_FREQ_HOPPING_SSPM) += clk-fhctl-sspm.o
 ifeq ($(CONFIG_COMMON_CLK_MTK_FREQ_HOPPING_MCUPM),y)
 fhctl-y += clk-fhctl-mcupm.o
 ccflags-y += -DUSE_FHCTL_MCUPM
@@ -246,11 +323,20 @@ fhctl-y += clk-fhctl-gpueb.o
 ccflags-y += -DUSE_FHCTL_GPUEB
 endif
 fhctl-$(CONFIG_DEBUG_FS) += clk-fhctl-debug.o
+endif
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
 ccflags-y += -I$(srctree)/include/linux/soc/mediatek/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
+
+ifneq ($(strip $(CONFIG_MTK_TINYSYS_SSPM_V1)),)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/v1/
+endif
+ifneq ($(strip $(CONFIG_MTK_TINYSYS_SSPM_V0)),)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/v0/
+endif
+
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mcupm/
 ccflags-y += -I$(srctree)/drivers/gpu/mediatek/gpueb/
+ccflags-y += -I$(srctree)/drivers/clk/mediatek/
 
 ifneq ($(wildcard $(srctree)/$(src)/clk-mt6789.c),)
 obj-$(CONFIG_COMMON_CLK_MT6789) += clk-chk-mt6789.o
@@ -350,4 +436,5 @@ ifeq ($(CONFIG_DEBUG_FS), y)
 obj-$(CONFIG_COMMON_CLK_MT6855) += clk-dbg-mt6855.o
 clk-dbg-mt6855-$(CONFIG_COMMON_CLK_MT6855) += clkdbg-mt6855.o
 endif
+
 endif

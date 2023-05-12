@@ -17,14 +17,13 @@
   *
   */
 
-#if IS_ENABLED(CONFIG_TRUSTONIC_TRUSTED_UI)
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 #include "goodix_ts_core.h"
 
 atomic_t gt9896s_tui_flag = ATOMIC_INIT(0);
 EXPORT_SYMBOL_GPL(gt9896s_tui_flag);
 
-#if IS_ENABLED(CONFIG_TOUCHSCREEN_MTK_TUI_COMMON_API)
-int gt9896s_tpd_enter_tui(void)
+int tpd_enter_tui(void)
 {
 	int ret = 0;
 
@@ -42,9 +41,8 @@ int gt9896s_tpd_enter_tui(void)
 
 	return ret;
 }
-EXPORT_SYMBOL(gt9896s_tpd_enter_tui);
 
-int gt9896s_tpd_exit_tui(void)
+int tpd_exit_tui(void)
 {
 	int ret = 0;
 
@@ -60,8 +58,5 @@ int gt9896s_tpd_exit_tui(void)
 
 	return ret;
 }
-EXPORT_SYMBOL(gt9896s_tpd_exit_tui);
 #endif
-#endif
-
 

@@ -380,6 +380,7 @@ u32 calc_freq(struct vcodec_inst *inst, struct mtk_vcodec_dev *dev)
 
 			if (inst->priority < 0) {
 				inst->op_rate = 30;
+#if IS_ENABLED(CONFIG_MTK_TINYSYS_VCP_SUPPORT)
 				if (inst->codec_fmt == 808996950) {
 					/* performance class WA for VP8 */
 					inst->op_rate = 60;
@@ -388,6 +389,7 @@ u32 calc_freq(struct vcodec_inst *inst, struct mtk_vcodec_dev *dev)
 					(inst->width * inst->height <= 1920 * 1088)) {
 					inst->op_rate = 174;
 				}
+#endif
 			} else
 				inst->op_rate = dflt_op_rate;
 
@@ -469,8 +471,7 @@ void update_freq(struct mtk_vcodec_dev *dev, int codec_type)
 			freq_sum, op_rate_sum);
 
 		if (dev->vdec_dvfs_params.allow_oc == 0) { /* normal max */
-			if (freq_sum > dev->vdec_dvfs_params.normal_max_freq ||
-				no_op_rate_max_freq == 1)
+			if (freq_sum > dev->vdec_dvfs_params.normal_max_freq)
 				freq_sum = dev->vdec_dvfs_params.normal_max_freq;
 		}
 

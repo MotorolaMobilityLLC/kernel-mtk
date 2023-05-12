@@ -20,11 +20,13 @@
  * Driver provides read function for user-space debug apps getting log
  */
 
+#include <asm/arch_timer.h>
 #include <linux/platform_device.h>
 #include <gz-trusty/smcall.h>
 #include <gz-trusty/trusty.h>
 #include <linux/notifier.h>
 #include <linux/slab.h>
+#include <linux/math64.h>
 #include <linux/mm.h>
 #include <linux/module.h>
 #include <linux/log2.h>
@@ -128,30 +130,6 @@ static struct gz_log_context glctx = {
 	.flag = DYNAMIC,
 };
 
-#if IS_BUILTIN(CONFIG_MTK_GZ_LOG)
-static int __init gz_log_context_init(struct reserved_mem *rmem)
-{
-	unsigned long node;
-
-	if (!rmem) {
-		pr_info("[%s] ERROR: invalid reserved memory\n", __func__);
-		return -EFAULT;
-	}
-	glctx.paddr = rmem->base;
-	glctx.size = rmem->size;
-
-	node = rmem->fdt_node;
-	if (!of_get_flat_dt_prop(node, "no-map", NULL))
-		glctx.flag = STATIC_MAP;
-	else
-		glctx.flag = STATIC_NOMAP;
-
-	pr_info("[%s] rmem:%s base(0x%llx) size(0x%zx) flag(%u)\n",
-		__func__, rmem->name, glctx.paddr, glctx.size, glctx.flag);
-	return 0;
-}
-RESERVEDMEM_OF_DECLARE(gz_log, "mediatek,gz-log", gz_log_context_init);
-#else
 static void gz_log_find_mblock(void)
 {
 	struct device_node *mblock_root = NULL, *gz_node = NULL;
@@ -182,19 +160,20 @@ static void gz_log_find_mblock(void)
 	else
 		glctx.flag = STATIC_NOMAP;
 
+	/* Linux does not map highmem. Treat as STATIC_NOMAP if happened */
+	if (PageHighMem(phys_to_page(glctx.paddr)))
+		glctx.flag = STATIC_NOMAP;
+
 	pr_info("[%s] rmem:%s base(0x%llx) size(0x%zx) flag(%u)\n",
 		__func__, gz_node->name, glctx.paddr, glctx.size, glctx.flag);
 }
-#endif
 
 static int gz_log_page_init(void)
 {
 	if (glctx.virt)
 		return 0;
 
-#if IS_MODULE(CONFIG_MTK_GZ_LOG)
 	gz_log_find_mblock();
-#endif
 
 	if (glctx.flag >= STATIC_MAP) {
 		if (glctx.flag == STATIC_MAP)
@@ -751,7 +730,7 @@ static int trusty_gz_send_ktime(struct platform_device *pdev)
 	current_ktime = sched_clock();
 	current_cnt = __arch_counter_get_cntvct();
 
-	diff_all = current_cnt - (13 * current_ktime)/1000;
+	diff_all = current_cnt - div_u64((13 * current_ktime), 1000);
 	diff_msb = (diff_all >> 32);
 	diff_lsb = (diff_all & U32_MAX);
 
@@ -809,7 +788,7 @@ static int trusty_gz_log_probe(struct platform_device *pdev)
 	if (glctx.flag == DYNAMIC) {
 		ret = trusty_std_call32(gls->trusty_dev,
 			MTEE_SMCNR(SMCF_SC_SHARED_LOG_ADD, gls->trusty_dev),
-			(u32)(glctx.paddr), (u32)((u64)glctx.paddr >> 32),
+			(u32)(glctx.paddr), (u32)((u64)(0xFFFFFFFF00000000 & glctx.paddr) >> 32),
 			glctx.size);
 		if (ret < 0) {
 			dev_info(&pdev->dev,
@@ -932,7 +911,8 @@ error_callback_notifier:
 #endif
 	trusty_std_call32(gls->trusty_dev,
 			  MTEE_SMCNR(SMCF_SC_SHARED_LOG_RM, gls->trusty_dev),
-			  (u32)glctx.paddr, (u32)((u64)glctx.paddr >> 32), 0);
+			  (u32)glctx.paddr, (u32)((u64)(0xFFFFFFFF00000000 & glctx.paddr) >> 32),
+			  0);
 error_std_call:
 	if (glctx.flag == STATIC_NOMAP)
 		memunmap(glctx.virt);
@@ -968,7 +948,7 @@ static int trusty_gz_log_remove(struct platform_device *pdev)
 
 	ret = trusty_std_call32(gls->trusty_dev,
 			MTEE_SMCNR(SMCF_SC_SHARED_LOG_RM, gls->trusty_dev),
-			(u32)glctx.paddr, (u32)((u64)glctx.paddr >> 32), 0);
+			(u32)glctx.paddr, (u32)((u64)(0xFFFFFFFF00000000 & glctx.paddr) >> 32), 0);
 	if (ret)
 		pr_info("std call(GZ_SHARED_LOG_RM) failed: %d\n", ret);
 

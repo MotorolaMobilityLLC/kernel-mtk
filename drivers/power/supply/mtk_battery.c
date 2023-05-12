@@ -597,7 +597,7 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 
 		if (cur_chr_type == POWER_SUPPLY_TYPE_UNKNOWN) {
 			if (gm->chr_type != POWER_SUPPLY_TYPE_UNKNOWN)
-				bm_err("%s chr plug out\n");
+				bm_err("%s chr plug out\n", __func__);
 		} else {
 			if (gm->chr_type == POWER_SUPPLY_TYPE_UNKNOWN)
 				wakeup_fg_algo(gm, FG_INTR_CHARGER_IN);
@@ -923,8 +923,10 @@ int gauge_get_property(enum gauge_property gp,
 	int ret = 0;
 
 	psy = power_supply_get_by_name("mtk-gauge");
-	if (psy == NULL)
+	if (psy == NULL) {
+		bm_err("Cannot get power supply of name\n");
 		return -ENODEV;
+	}
 
 	gauge = (struct mtk_gauge *)power_supply_get_drvdata(psy);
 	gm = gauge->gm;
@@ -967,8 +969,10 @@ int gauge_set_property(enum gauge_property gp,
 	struct mtk_gauge_sysfs_field_info *attr;
 
 	psy = power_supply_get_by_name("mtk-gauge");
-	if (psy == NULL)
+	if (psy == NULL) {
+		bm_err("Cannot get power supply of name\n");
 		return -ENODEV;
+	}
 
 	gauge = (struct mtk_gauge *)power_supply_get_drvdata(psy);
 	attr = gauge->attr;
@@ -2750,8 +2754,10 @@ static int system_pm_notify(struct notifier_block *nb,
 	case PM_HIBERNATION_PREPARE:
 	case PM_RESTORE_PREPARE:
 	case PM_SUSPEND_PREPARE:
-		if (bat_psy->changed)
-			return NOTIFY_BAD;
+		if (!gm->disable_bs_psy) {
+			if (bat_psy->changed)
+				return NOTIFY_BAD;
+		}
 		if (!mutex_trylock(&gm->fg_update_lock))
 			return NOTIFY_BAD;
 		gm->in_sleep = true;
@@ -3423,16 +3429,22 @@ int battery_psy_init(struct platform_device *pdev)
 	if (IS_ERR_OR_NULL(gm->bs_data.chg_psy))
 		bm_err("[BAT_probe] %s: fail to get chg_psy !!\n", __func__);
 
-	battery_service_data_init(gm);
-	gm->bs_data.psy =
-		power_supply_register(
-			&(pdev->dev), &gm->bs_data.psd, &gm->bs_data.psy_cfg);
-	if (IS_ERR(gm->bs_data.psy)) {
-		bm_err("[BAT_probe] power_supply_register Battery Fail !!\n");
-		ret = PTR_ERR(gm->bs_data.psy);
-		return ret;
+	gm->disable_bs_psy = of_property_read_bool(
+		pdev->dev.of_node, "disable-bspsy");
+
+	if (!gm->disable_bs_psy) {
+		battery_service_data_init(gm);
+		gm->bs_data.psy =
+			power_supply_register(
+				&(pdev->dev), &gm->bs_data.psd, &gm->bs_data.psy_cfg);
+		if (IS_ERR(gm->bs_data.psy)) {
+			bm_err("[BAT_probe] power_supply_register Battery Fail !!\n");
+			ret = PTR_ERR(gm->bs_data.psy);
+			return ret;
+		}
+		bm_err("[BAT_probe] power_supply_register Battery Success !!\n");
 	}
-	bm_err("[BAT_probe] power_supply_register Battery Success !!\n");
+
 	return 0;
 }
 
@@ -3571,7 +3583,9 @@ int battery_init(struct platform_device *pdev)
 #endif /* CONFIG_PM */
 
 	fg_drv_thread_hrtimer_init(gm);
-	battery_sysfs_create_group(gm->bs_data.psy);
+
+	if (!gm->disable_bs_psy)
+		battery_sysfs_create_group(gm->bs_data.psy);
 
 	/* for gauge hal hw ocv */
 	gm->bs_data.bat_batt_temp = force_get_tbat(gm, true);

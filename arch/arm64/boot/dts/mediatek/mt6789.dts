@@ -1309,7 +1309,9 @@
 	touch: touch {
 		compatible = "mediatek,touch";
 	};
-
+	touch_panel: touch_panel {
+			compatible = "goodix,touch";
+	};
 	scpsys: power-controller@10006000 {
 		compatible = "mediatek,mt6789-scpsys", "syscon";
 		reg = <0 0x10006000 0 0x1000>;
@@ -3474,7 +3476,7 @@
 			core_nums = <1>;	/* core number */
 			twohart = <1>;		/* two hart arch */
 
-			mbox_count = <5>;
+			mbox_count = <4>;
 			/* id, mbox, send_size*/
 			send_table =
 			< 0 0  9>, /* IPI_OUT_AUDIO_VOW_1 */
@@ -3485,12 +3487,12 @@
 			<26 1  9>, /* IPI_OUT_AUDIO_ULTRA_SND_0 */
 			<29 2 16>, /* IPI_OUT_SENSOR_CTRL */
 			<31 2  7>, /* IPI_OUT_SENSOR_NOTIFY */
+			<41 2  2>, /* IPI_OUT_DEBUG_CMD */
 			<14 3  1>, /* IPI_OUT_DVFS_SET_FREQ_1 */
 			<15 3  2>, /* IPI_OUT_C_SLEEP_1 */
 			<16 3  1>, /* IPI_OUT_TEST_1 */
 			<17 3  6>, /* IPI_OUT_LOGGER_CTRL */
-			<18 3  2>, /* IPI_OUT_SCPCTL_1 */
-			<24 4  4>; /* IPI_OUT_SCP_MPOOL_1 */
+			<18 3  2>; /* IPI_OUT_SCPCTL_1 */
 
 			/* id, mbox, recv_size, recv_opt */
 			recv_table =
@@ -3510,8 +3512,7 @@
 			<21 3  6 0>, /* IPI_IN_LOGGER_CTRL */
 			<22 3  1 0>, /* IPI_IN_SCP_READY_1 */
 			<23 3  2 0>, /* IPI_IN_SCP_RAM_DUMP_1 */
-			<15 3  1 1>, /* IPI_OUT_C_SLEEP_1 */
-			<25 4  4 0>; /* IPI_IN_SCP_MPOOL_1 */
+			<15 3  1 1>; /* IPI_OUT_C_SLEEP_1 */
 
 			/* feature, frequecy, coreid */
 			scp_feature_tbl =
@@ -3541,7 +3542,7 @@
 			< 1 0x4E300 0x0>,  /* vow, 297KB (2 model size)*/
 			< 2 0x100000 0x0>, /* ensor main, 1 MB */
 			< 3 0x180000 0x0>, /* logger, 1.5 MB */
-			< 4 0x19000 0x0>,  /* audio, 100 KB */
+			< 4 0x200000 0x0>,  /* audio, 2 MB */
 			< 5 0x5A00 0x0>,   /* vow bargein, 22.5KB */
 			< 6 0x100 0x0>,    /* scp parames, 256 bytes */
 			< 7 0x19000 0x0>,   /* ultrasound */
@@ -3776,17 +3777,30 @@
 			scp_ultra_ul_memif_id = <0xe>;
 		};
 
-		sound: sound {
-			compatible = "mediatek,mt6789-mt6366-sound";
-			mediatek,platform = <&afe>;
-			mediatek,speaker-codec {
-			};
+		scp_audio_mbox: scp_audio_mbox@107ff000 {
+			compatible = "mediatek,scp_audio_mbox";
+			status = "disabled";
+			reg = <0 0x107ff000 0 0x100>, /* Re-use scp hw mbox4 */
+			      <0 0x107ff100 0 0x4>,
+			      <0 0x107ff10c 0 0x4>;
+
+			reg-names = "mbox0_base", "mbox0_set", "mbox0_clr";
+			interrupts = <GIC_SPI 472 IRQ_TYPE_LEVEL_HIGH 0>;
+			interrupt-names = "mbox0";
 		};
 
 		snd_scp_audio: snd_scp_audio {
 			compatible = "mediatek,snd_scp_audio";
 			status = "disabled";
-			scp_spk_process_enable = <0x0 0x4 0x10 0x14>;
+			scp_spk_process_enable = <0x0 0x4 0xf 0x13>;
+		};
+
+		sound: sound {
+			compatible = "mediatek,mt6789-mt6366-sound";
+			mediatek,platform = <&afe>;
+			mediatek,scp-audio = <&snd_scp_audio>;
+			mediatek,speaker-codec {
+			};
 		};
 
 		efuse: efuse@11c10000 {
@@ -4322,7 +4336,7 @@
 		smi_pd_cam_main: smi_pd_cam_main {
 			compatible = "mediatek,smi-pd";
 			mediatek,smi = <&cam_smi_3x1_sub_common1 &cam_smi_4x1_sub_common0>;
-			mediatek,comm-port-range = <0x2 0x2>;
+			mediatek,comm-port-range = <0x4 0x8>;
 			main-power;
 			power-domains = <&scpsys MT6789_POWER_DOMAIN_CAM>;
 		};
@@ -4330,7 +4344,7 @@
 		smi_pd_cam_rawa: smi_pd_cam_rawa {
 			compatible = "mediatek,smi-pd";
 			mediatek,smi = <&cam_smi_3x1_sub_common1>;
-			mediatek,comm-port-range = <0x2>;
+			mediatek,comm-port-range = <0x4>;
 			power-domains = <&scpsys MT6789_POWER_DOMAIN_CAM_RAWA>;
 			power-reset = <0x1a04f00c 0>;
 		};
@@ -4338,7 +4352,7 @@
 		smi_pd_cam_rawb: smi_pd_cam_rawb {
 			compatible = "mediatek,smi-pd";
 			mediatek,smi = <&cam_smi_4x1_sub_common0>;
-			mediatek,comm-port-range = <0x2>;
+			mediatek,comm-port-range = <0x8>;
 			power-domains = <&scpsys MT6789_POWER_DOMAIN_CAM_RAWB>;
 			power-reset = <0x1a06f00c 0>;
 		};
@@ -5352,6 +5366,11 @@
 			mediatek,larb = <&smi_larb20>;
 		};
 
+		mtk_iommu_fake_aie@0 {
+			compatible = "mediatek,mtk_iommu_fake_aie";
+			iommus = <&disp_iommu M4U_PORT_L1_DISP_FAKE1>;
+		};
+
 		fe@1b002000 {
 			compatible = "mediatek,fe";
 			reg = <0 0x1b002000 0 0x1000>;
@@ -6070,7 +6089,7 @@
 
 		usb_boost: usb_boost_manager {
 			compatible = "mediatek,usb_boost", "mediatek,mt6789-usb_boost";
-			interconnects = <&dvfsrc MT6873_MASTER_DBGIF &dvfsrc MT6873_SLAVE_DDR_EMI>;
+			interconnects = <&dvfsrc MT6873_MASTER_USB &dvfsrc MT6873_SLAVE_DDR_EMI>;
 			interconnect-names = "icc-bw";
 			required-opps = <&dvfsrc_freq_opp0>;
 			small-core = <1300000>;
@@ -6522,6 +6541,7 @@
 
 	mtk_ssc: mtk_ssc {
 		compatible = "mediatek,ssc";
+		safe-vlogic-uv = <600000>;
 		ssc_disable = <0x1>;
 	};
 

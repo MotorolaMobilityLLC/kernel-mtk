@@ -103,6 +103,11 @@ enum MTK_PANEL_OUTPUT_PORT_MODE {
 	MTK_PANEL_DUAL_PORT,
 };
 
+enum MTK_PANEL_ROTATION {
+	MTK_PANEL_ROTATE_0 = 0,
+	MTK_PANEL_ROTATE_180,
+};
+
 enum MTK_PANEL_SPR_OUTPUT_MODE {
 	MTK_PANEL_SPR_OUTPUT_MODE_NOT_DEFINED = 0,
 	MTK_PANEL_PACKED_SPR_8_BITS = 1,
@@ -215,19 +220,26 @@ struct mtk_panel_spr_params {
 	struct spr_color_params spr_color_params[SPR_COLOR_PARAMS_TYPE_NUM];
 
 };
-
-struct mtk_panel_dsc_pps {
-	unsigned int dsc_pps_idx;
-	unsigned int dsc_pps_para;
-};
-
-struct mtk_panel_dsc_pps_params {
-	unsigned int count;
-	struct mtk_panel_dsc_pps dsc_pps_params[20];
+struct dsc_rc_range_parameters {
+	/**
+	 * @range_min_qp: Min Quantization Parameters allowed for this range
+	 */
+	u8 range_min_qp;
+	/**
+	 * @range_max_qp: Max Quantization Parameters allowed for this range
+	 */
+	u8 range_max_qp;
+	/**
+	 * @range_bpg_offset:
+	 * Bits/group offset to apply to target for this group
+	 */
+	u8 range_bpg_offset;
 };
 
 struct mtk_panel_dsc_params {
 	unsigned int enable;
+	unsigned int dual_dsc_enable;
+	unsigned int bdg_dsc_enable;
 	unsigned int ver; /* [7:4] major [3:0] minor */
 	unsigned int slice_mode;
 	unsigned int rgb_swap;
@@ -260,7 +272,8 @@ struct mtk_panel_dsc_params {
 	unsigned int rc_quant_incr_limit1;
 	unsigned int rc_tgt_offset_hi;
 	unsigned int rc_tgt_offset_lo;
-	struct mtk_panel_dsc_pps_params pps_list;
+	unsigned int rc_buf_thresh[14];
+	struct dsc_rc_range_parameters rc_range_parameters[15];
 };
 struct mtk_dsi_phy_timcon {
 	unsigned int hs_trail;
@@ -387,15 +400,20 @@ struct mtk_panel_params {
 	unsigned int change_fps_by_vfp_send_cmd;
 	unsigned int pll_clk;
 	unsigned int data_rate;
+	//either pll_clk or data_rate must be set, event if data_rate_khz is set
+	unsigned int data_rate_khz; //only used in exact value for fps
+	unsigned int vdo_per_frame_lp_enable; /* Enable video mode per frame lp */
 	struct mtk_dsi_phy_timcon phy_timcon;
 	unsigned int vfp_low_power;
 	struct dynamic_mipi_params dyn;
 	struct dynamic_fps_params dyn_fps;
+	bool skip_unnecessary_switch;
 	struct mtk_ddic_dsi_cmd send_cmd_to_ddic;
 	unsigned int cust_esd_check;
 	unsigned int esd_check_enable;
 	struct esd_check_item lcm_esd_check_table[ESD_CHECK_NUM];
 	unsigned int ssc_enable;
+	unsigned int bdg_ssc_enable;
 	unsigned int ssc_range;
 	int lcm_color_mode;
 	unsigned int min_luminance;
@@ -428,6 +446,7 @@ struct mtk_panel_params {
 	unsigned int lp_perline_en; //0: lp perframe 1: lp perline
 	unsigned int cmd_null_pkt_en;
 	unsigned int cmd_null_pkt_len;
+	unsigned int set_area_before_trigger;
 
 //Settings for LFR Function:
 	unsigned int lfr_enable;
@@ -439,12 +458,13 @@ struct mtk_panel_params {
 
 	struct mtk_panel_cm_params cm_params;
 	struct mtk_panel_spr_params spr_params;
-	unsigned int te_delay;
+	enum MTK_PANEL_ROTATION rotate;
 };
 
 struct mtk_panel_ext {
 	struct mtk_panel_funcs *funcs;
 	struct mtk_panel_params *params;
+	int is_connected;
 };
 
 struct mtk_panel_ctx {
@@ -468,8 +488,6 @@ struct mtk_panel_funcs {
 	int (*set_backlight_grp_cmdq)(void *dsi_drv, dcs_grp_write_gce cb,
 		void *handle, unsigned int level);
 	int (*reset)(struct drm_panel *panel, int on);
-	int (*init_power)(struct drm_panel *panel);
-	int (*power_down)(struct drm_panel *panel);
 	int (*ata_check)(struct drm_panel *panel);
 	int (*ext_param_set)(struct drm_panel *panel,
 		struct drm_connector *connector, unsigned int mode);
@@ -491,6 +509,7 @@ struct mtk_panel_funcs {
 			void *handle, unsigned int flag);
 	int (*get_virtual_heigh)(void);
 	int (*get_virtual_width)(void);
+	int (*ext_cmd_set)(void *dsi, dcs_write_gce cb, void *handle);
 	/**
 	 * @doze_enable_start:
 	 *

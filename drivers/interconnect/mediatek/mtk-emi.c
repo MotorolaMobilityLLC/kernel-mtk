@@ -13,15 +13,19 @@
 #include <dt-bindings/interconnect/mtk,mt8183-emi.h>
 #include <dt-bindings/interconnect/mtk,mt6873-emi.h>
 
-#if IS_ENABLED(CONFIG_MTK_DVFSRC_HELPER)
-#define CREATE_TRACE_POINTS
+#if IS_ENABLED(CONFIG_MTK_DVFSRC)
 #include "../internal.h"
-#include "mtk-dvfsrc-icc-trace.h"
+#include <trace/events/mtk_qos_trace.h>
 #endif
 
 enum mtk_icc_name {
 	SLAVE_DDR_EMI,
 	MASTER_MCUSYS,
+	MASTER_MCU_PORT_0,
+	MASTER_MCU_PORT_1,
+	MASTER_MCU_PORT_2,
+	MASTER_MCU_PORT_3,
+	MASTER_MCU_PORT_4,
 	MASTER_GPUSYS,
 	MASTER_MMSYS,
 	MASTER_MM_VPU,
@@ -94,6 +98,11 @@ struct mtk_icc_desc {
 
 DEFINE_MNODE(ddr_emi, SLAVE_DDR_EMI, 1);
 DEFINE_MNODE(mcusys, MASTER_MCUSYS, 0, SLAVE_DDR_EMI);
+DEFINE_MNODE(mcu_port_0, MASTER_MCU_PORT_0, 0, SLAVE_DDR_EMI);
+DEFINE_MNODE(mcu_port_1, MASTER_MCU_PORT_1, 0, SLAVE_DDR_EMI);
+DEFINE_MNODE(mcu_port_2, MASTER_MCU_PORT_2, 0, SLAVE_DDR_EMI);
+DEFINE_MNODE(mcu_port_3, MASTER_MCU_PORT_3, 0, SLAVE_DDR_EMI);
+DEFINE_MNODE(mcu_port_4, MASTER_MCU_PORT_4, 0, SLAVE_DDR_EMI);
 DEFINE_MNODE(gpu, MASTER_GPUSYS, 0, SLAVE_DDR_EMI);
 DEFINE_MNODE(mmsys, MASTER_MMSYS, 0, SLAVE_DDR_EMI);
 DEFINE_MNODE(mm_vpu, MASTER_MM_VPU, 0, MASTER_MMSYS);
@@ -148,6 +157,11 @@ static struct mtk_icc_desc mt8183_icc = {
 static struct mtk_icc_node *mt6873_icc_nodes[] = {
 	[MT6873_SLAVE_DDR_EMI] = &ddr_emi,
 	[MT6873_MASTER_MCUSYS] = &mcusys,
+	[MT6873_MASTER_MCU_0] = &mcu_port_0,
+	[MT6873_MASTER_MCU_1] = &mcu_port_1,
+	[MT6873_MASTER_MCU_2] = &mcu_port_2,
+	[MT6873_MASTER_MCU_3] = &mcu_port_3,
+	[MT6873_MASTER_MCU_4] = &mcu_port_4,
 	[MT6873_MASTER_GPUSYS] = &gpu,
 	[MT6873_MASTER_MMSYS] = &mmsys,
 	[MT6873_MASTER_MM_VPU] = &mm_vpu,
@@ -199,11 +213,14 @@ static const struct of_device_id emi_icc_of_match[] = {
 	{ .compatible = "mediatek,mt6895-dvfsrc", .data = &mt6873_icc },
 	{ .compatible = "mediatek,mt6879-dvfsrc", .data = &mt6873_icc },
 	{ .compatible = "mediatek,mt6855-dvfsrc", .data = &mt6873_icc },
+	{ .compatible = "mediatek,mt6768-dvfsrc", .data = &mt6873_icc },
+	{ .compatible = "mediatek,mt6765-dvfsrc", .data = &mt6873_icc },
+	{ .compatible = "mediatek,mt6761-dvfsrc", .data = &mt6873_icc },
 	{ },
 };
 MODULE_DEVICE_TABLE(of, emi_icc_of_match);
 
-#if IS_ENABLED(CONFIG_MTK_DVFSRC_HELPER)
+#if IS_ENABLED(CONFIG_MTK_DVFSRC)
 static void emi_icc_trace_bw_consumers(struct icc_node *n, bool is_hrt)
 {
 	struct icc_req *r;
@@ -251,7 +268,7 @@ static int emi_icc_set(struct icc_node *src, struct icc_node *dst)
 		mtk_dvfsrc_send_request(src->provider->dev,
 					MTK_DVFSRC_CMD_BW_REQUEST,
 					node->sum_avg);
-#if IS_ENABLED(CONFIG_MTK_DVFSRC_HELPER)
+#if IS_ENABLED(CONFIG_MTK_DVFSRC)
 		trace_mtk_pm_qos_update_request(30, src->avg_bw / 1000, src->name);
 		trace_mtk_pm_qos_update_request(40, src->peak_bw / 1000, src->name);
 		if (strcmp(src->name, "dbgif") == 0)
@@ -261,7 +278,7 @@ static int emi_icc_set(struct icc_node *src, struct icc_node *dst)
 		mtk_dvfsrc_send_request(src->provider->dev,
 					MTK_DVFSRC_CMD_HRTBW_REQUEST,
 					node->sum_avg);
-#if IS_ENABLED(CONFIG_MTK_DVFSRC_HELPER)
+#if IS_ENABLED(CONFIG_MTK_DVFSRC)
 		trace_mtk_pm_qos_update_request(50, src->avg_bw / 1000, src->name);
 		if (strcmp(src->name, "hrt_dbgif") == 0)
 			emi_icc_trace_bw_consumers(dst, true);

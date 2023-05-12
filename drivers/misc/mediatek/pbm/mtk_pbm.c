@@ -528,6 +528,7 @@ void kicker_pbm_by_gpu(bool status, unsigned int loading, int voltage)
 
 	mtk_power_budget_manager(KR_GPU, &mrpmgr);
 }
+EXPORT_SYMBOL(kicker_pbm_by_gpu);
 
 void kicker_pbm_by_flash(bool status)
 {
@@ -674,7 +675,7 @@ static void lookup_tracepoints(struct tracepoint *tp, void *ignore)
 	}
 }
 
-void tracepoint_cleanup(void)
+void pbm_tracepoint_cleanup(void)
 {
 	int i;
 
@@ -944,7 +945,7 @@ static int pbm_probe(struct platform_device *pdev)
 	FOR_EACH_INTEREST(i) {
 		if (pbm_tracepoints[i].tp == NULL) {
 			pr_info("pbm Error, %s not found\n", pbm_tracepoints[i].name);
-			tracepoint_cleanup();
+			pbm_tracepoint_cleanup();
 			return -1;
 		}
 	}

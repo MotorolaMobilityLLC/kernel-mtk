@@ -23,6 +23,10 @@
 #include <dvfsrc-exp.h>
 #endif
 
+#if IS_ENABLED(CONFIG_MEDIATEK_CPU_DVFS)
+#include <mtk_cpufreq_api.h>
+#endif
+
 #include <perf_tracker.h>
 #include <perf_tracker_internal.h>
 
@@ -57,8 +61,12 @@ static unsigned int cpudvfs_get_cur_freq(int cluster_id, bool is_mcupm)
 	u32 idx = 0;
 	struct ppm_data *p = &cluster_ppm_info[cluster_id];
 
-	if (IS_ERR_OR_NULL((void *)csram_base))
+	if (IS_ERR_OR_NULL((void *)csram_base)) {
+#if IS_ENABLED(CONFIG_MEDIATEK_CPU_DVFS)
+	return mt_cpufreq_get_cur_freq(cluster_id);
+#endif
 		return 0;
+	}
 
 	if (is_mcupm)
 		idx = __raw_readl(csram_base +
@@ -117,8 +125,11 @@ void perf_tracker(u64 wallclock,
 	long mm_available = 0, mm_free = 0;
 	int dram_rate = 0;
 	struct mtk_btag_mictx_iostat_struct *iostat_ptr = &iostat;
-	int bw_c = 0, bw_g = 0, bw_mm = 0, bw_total = 0, bw_idx = 0xFFFF;
+	int bw_c = 0, bw_g = 0, bw_mm = 0, bw_total = 0;
+#if IS_ENABLED(CONFIG_MTK_QOS_FRAMEWORK)
+	int bw_idx = 0xFFFF;
 	u32 bw_record = 0;
+#endif
 	u32 sbin_data[bw_record_nums+dsu_record_nums] = {0};
 	u32 dsu_v = 0, dsu_f = 0;
 	int vcore_uv = 0;

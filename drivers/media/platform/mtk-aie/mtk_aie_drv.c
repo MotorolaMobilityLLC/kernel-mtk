@@ -419,9 +419,9 @@ struct dma_buf *aie_imem_sec_alloc(struct mtk_aie_dev *fd, u32 size, bool IsSecu
 
 	my_dma_buf = dma_heap_buffer_alloc(dma_heap, size, O_RDWR |
 		O_CLOEXEC, DMA_HEAP_VALID_HEAP_FLAGS);
+	dma_heap_put(dma_heap);
 	if (IS_ERR(my_dma_buf)) {
 		dev_info(fd->dev, "buffer alloc fail\n");
-		dma_heap_put(dma_heap);
 		return NULL;
 	}
 	if (my_dma_buf == NULL)
@@ -3617,9 +3617,8 @@ static int aie_config_network(struct mtk_aie_dev *fd,
 		if (i == rpn0_loop_num) {
 			fd_cur_cfg[FD_IMAGE_COORD] =
 				(fd_cur_cfg[FD_IMAGE_COORD] & 0xF) |
-				(((src_crop_w * 100 /
-				   (int)fd->base_para->pyramid_width * 512 /
-				   100)
+				(((src_crop_w * 512 /
+				   (int)fd->base_para->pyramid_width)
 				  << 4) &
 				 0x7FFF0);
 			fd_cur_cfg[FD_IMAGE_COORD_XY_OFST] = 0;
@@ -3631,9 +3630,8 @@ static int aie_config_network(struct mtk_aie_dev *fd,
 		} else if (i == rpn1_loop_num) {
 			fd_cur_cfg[FD_IMAGE_COORD] =
 				(fd_cur_cfg[FD_IMAGE_COORD] & 0xF) |
-				(((src_crop_w * 100 /
-				   (int)fd->base_para->pyramid_width * 2 * 512 /
-				   100)
+				(((src_crop_w * 512 /
+				   (int)fd->base_para->pyramid_width * 2)
 				  << 4) &
 				 0x7FFF0);
 			fd_cur_cfg[FD_IMAGE_COORD_XY_OFST] = 0;
@@ -3645,9 +3643,8 @@ static int aie_config_network(struct mtk_aie_dev *fd,
 		} else if (i == rpn2_loop_num) {
 			fd_cur_cfg[FD_IMAGE_COORD] =
 				(fd_cur_cfg[FD_IMAGE_COORD] & 0xF) |
-				(((src_crop_w * 100 /
-				   (int)fd->base_para->pyramid_width * 4 * 512 /
-				   100)
+				(((src_crop_w * 512/
+				   (int)fd->base_para->pyramid_width * 4)
 				  << 4) &
 				 0x7FFF0);
 			fd_cur_cfg[FD_IMAGE_COORD_XY_OFST] = 0;

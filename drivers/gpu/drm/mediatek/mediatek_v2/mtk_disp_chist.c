@@ -190,6 +190,13 @@ int mtk_drm_ioctl_set_chist_config(struct drm_device *dev, void *data,
 	struct drm_crtc *crtc = private->crtc[0];
 	int i = 0;
 
+	if (config->config_channel_count == 0 ||
+			config->config_channel_count > DISP_CHIST_CHANNEL_COUNT) {
+		DDPPR_ERR("%s, invalid config channel count:%u\n",
+				__func__, config->config_channel_count);
+		return -EINVAL;
+	}
+
 	if (comp_to_chist(comp)->data->module_count > 1
 		&& config->caller == MTK_DRM_CHIST_CALLER_PQ
 		&& (config->device_id & 0xffff))
@@ -246,6 +253,12 @@ static int disp_chist_copy_hist_to_user(struct drm_device *dev,
 		comp = private->ddp_comp[DDP_COMPONENT_CHIST1];
 
 	index = index_of_chist(comp->id);
+	if (present_fence[index] == 0) {
+		hist->present_fence = 0;
+		DDPPR_ERR("%s, invalid present_fence:%d\n", __func__,
+				present_fence[index]);
+		return ret;
+	}
 	/* We assume only one thread will call this function */
 	spin_lock_irqsave(&g_chist_global_lock, flags);
 
@@ -359,8 +372,10 @@ int mtk_drm_ioctl_get_chist(struct drm_device *dev, void *data,
 	DDPINFO("%s chist id:%d, get count:%d\n", __func__,
 		hist->device_id, hist->get_channel_count);
 
-	if (hist->get_channel_count == 0) {
-		DDPPR_ERR("%s get channel count is 0\n", __func__);
+	if (hist->get_channel_count == 0 ||
+			hist->get_channel_count > DISP_CHIST_CHANNEL_COUNT) {
+		DDPPR_ERR("%s invalid get channel count is %u\n",
+				__func__, hist->get_channel_count);
 		return -EFAULT;
 	}
 
@@ -773,6 +788,9 @@ static void mtk_chist_config(struct mtk_ddp_comp *comp,
 				   comp->regs_pa + DISP_CHIST_SHADOW_CTRL,
 				   0x1, ~0);
 
+	if (comp->id != DDP_COMPONENT_CHIST0 &&
+		comp->id != DDP_COMPONENT_CHIST1)
+		return;
 	// default by pass chist
 	mtk_chist_bypass(comp, 1, handle);
 	if (comp->id == DDP_COMPONENT_CHIST0
@@ -897,6 +915,7 @@ static void mtk_get_chist(struct mtk_ddp_comp *comp)
 	unsigned long flags;
 	int max_bins = 0;
 	unsigned int i = 0, index = 0;
+	unsigned int cur_present_fence;
 
 	if (mtk_crtc == NULL)
 		return;
@@ -905,9 +924,11 @@ static void mtk_get_chist(struct mtk_ddp_comp *comp)
 	priv = crtc->dev->dev_private;
 	index = index_of_chist(comp->id);
 
-	if (index >= CHIST_NUM)
+	spin_lock_irqsave(&g_chist_clock_lock, flags);
+	if (atomic_read(&(g_chist_is_clock_on[index_of_chist(comp->id)])) == 0) {
+		spin_unlock_irqrestore(&g_chist_clock_lock, flags);
 		return;
-
+	}
 	spin_lock_irqsave(&g_chist_global_lock, flags);
 	for (; i < DISP_CHIST_CHANNEL_COUNT; i++) {
 		if (g_chist_config[index][i].enabled) {
@@ -935,8 +956,16 @@ static void mtk_get_chist(struct mtk_ddp_comp *comp)
 		}
 	}
 	spin_unlock_irqrestore(&g_chist_global_lock, flags);
-	present_fence[index] = *(unsigned int *)(mtk_get_gce_backup_slot_va(mtk_crtc,
-				DISP_SLOT_PRESENT_FENCE(0))) - 1;
+	spin_unlock_irqrestore(&g_chist_clock_lock, flags);
+
+	cur_present_fence = *(unsigned int *)(mtk_get_gce_backup_slot_va(mtk_crtc,
+				DISP_SLOT_PRESENT_FENCE(0)));
+	if (cur_present_fence != 0) {
+		if (present_fence[index] == cur_present_fence - 1)
+			present_fence[index] = cur_present_fence;
+		else
+			present_fence[index] = cur_present_fence - 1;
+	}
 }
 
 static int mtk_chist_read_kthread(void *data)
@@ -967,9 +996,24 @@ static int mtk_chist_read_kthread(void *data)
 static irqreturn_t mtk_disp_chist_irq_handler(int irq, void *dev_id)
 {
 	irqreturn_t ret = IRQ_NONE;
-	unsigned int intsta;
+	unsigned int intsta = 0;
+	unsigned long flags;
 	struct mtk_disp_chist *priv = dev_id;
-	struct mtk_ddp_comp *comp = &priv->ddp_comp;
+	struct mtk_ddp_comp *comp = NULL;
+
+	if (IS_ERR_OR_NULL(priv))
+		return ret;
+
+	comp = &priv->ddp_comp;
+	if (IS_ERR_OR_NULL(comp))
+		return ret;
+
+	spin_lock_irqsave(&g_chist_clock_lock, flags);
+	if (atomic_read(&g_chist_is_clock_on[index_of_chist(comp->id)]) != 1) {
+		DDPINFO("%s, chist clk is off\n", __func__);
+		spin_unlock_irqrestore(&g_chist_clock_lock, flags);
+		return ret;
+	}
 
 	intsta = readl(comp->regs + DISP_CHIST_INSTA);
 	if (intsta & 0x2) {
@@ -978,6 +1022,7 @@ static irqreturn_t mtk_disp_chist_irq_handler(int irq, void *dev_id)
 		atomic_set(&(g_chist_get_irq[index_of_chist(comp->id)]), 1);
 		wake_up_interruptible(&g_chist_get_irq_wq);
 	}
+	spin_unlock_irqrestore(&g_chist_clock_lock, flags);
 	ret = IRQ_HANDLED;
 	return ret;
 }

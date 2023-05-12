@@ -73,10 +73,11 @@ static inline long gup_local(struct mm_struct *mm, uintptr_t start,
 {
 	unsigned int gup_flags = 0;
 
+	gup_flags |= FOLL_LONGTERM;
 	if (write)
 		gup_flags |= FOLL_WRITE;
 
-	return get_user_pages(start, nr_pages, gup_flags, pages, NULL);
+	return pin_user_pages(start, nr_pages, gup_flags, pages, NULL);
 }
 
 static inline long gup_local_repeat(struct mm_struct *mm, uintptr_t start,
@@ -173,7 +174,11 @@ static void tee_mmu_delete(struct tee_mmu *mmu)
 			int i;
 
 			for (i = 0; i < nr_pages; i++, page++)
+#if KERNEL_VERSION(5, 10, 0) > LINUX_VERSION_CODE
 				put_page(*page);
+#else
+				unpin_user_page(*page);
+#endif
 
 			mmu->pages_locked -= nr_pages;
 		} else if (mmu->user) {
@@ -199,7 +204,11 @@ static void tee_mmu_delete(struct tee_mmu *mmu)
 #endif
 
 				/* pte_page() cannot return NULL */
+#if KERNEL_VERSION(5, 10, 0) > LINUX_VERSION_CODE
 				put_page(pte_page(pte));
+#else
+				unpin_user_page(pte_page(pte));
+#endif
 			}
 
 			mmu->pages_locked -= nr_pages;
@@ -214,10 +223,13 @@ static void tee_mmu_delete(struct tee_mmu *mmu)
 		mmu->pages_created--;
 	}
 
-	if (mmu->pages_created || mmu->pages_locked)
+	if (mmu->pages_created || mmu->pages_locked) {
 		mc_dev_err(-EUCLEAN,
 			   "leak detected: still in use %d, still locked %d",
 			   mmu->pages_created, mmu->pages_locked);
+		/* Do not free the mmu, so the error can be spotted */
+		return;
+	}
 
 	if (mmu->deleter)
 		mmu->deleter->delete(mmu->deleter->object);
@@ -232,22 +244,24 @@ static struct tee_mmu *tee_mmu_create_common(const struct mcp_buffer_map *b_map)
 {
 	struct tee_mmu *mmu;
 	int ret = -ENOMEM;
+	unsigned long nr_pages =
+		PAGE_ALIGN(b_map->offset + b_map->length) / PAGE_SIZE;
 
-	if (b_map->nr_pages > (PMD_ENTRIES_MAX * PTE_ENTRIES_MAX)) {
+	/* Allow Registered Shared mem with valid pointer and zero size.  */
+	if (!nr_pages)
+		nr_pages = 1;
+
+	if (nr_pages > (PMD_ENTRIES_MAX * PTE_ENTRIES_MAX)) {
 		ret = -EINVAL;
 		mc_dev_err(ret, "data mapping exceeds %d pages: %lu",
-			   PMD_ENTRIES_MAX * PTE_ENTRIES_MAX, b_map->nr_pages);
+			   PMD_ENTRIES_MAX * PTE_ENTRIES_MAX, nr_pages);
 		return ERR_PTR(ret);
 	}
 
 	/* Allocate the struct */
-	mmu = kzalloc(sizeof(*mmu), GFP_KERNEL);
-	if (!mmu)
-		return ERR_PTR(-ENOMEM);
-
-	/* Increment debug counter */
-	atomic_inc(&g_ctx.c_mmus);
-	kref_init(&mmu->kref);
+	mmu = tee_mmu_create_and_init();
+	if (IS_ERR(mmu))
+		return mmu;
 
 	/* The Xen front-end does not use PTEs */
 	if (protocol_fe_uses_pages_and_vas())
@@ -259,7 +273,7 @@ static struct tee_mmu *tee_mmu_create_common(const struct mcp_buffer_map *b_map)
 	mmu->flags = b_map->flags;
 
 	/* Pages info */
-	mmu->nr_pages = b_map->nr_pages;
+	mmu->nr_pages = nr_pages;
 	mmu->nr_pmd_entries = (mmu->nr_pages + PTE_ENTRIES_MAX - 1) /
 			    PTE_ENTRIES_MAX;
 	mc_dev_devel("mmu->nr_pages %lu num_ptes_pages %zu",
@@ -428,7 +442,11 @@ struct tee_mmu *tee_mmu_create(struct mm_struct *mm,
 			long gup_ret;
 
 			/* Buffer was allocated in user space */
+#if KERNEL_VERSION(5, 7, 19) < LINUX_VERSION_CODE
 			down_read(&mm->mmap_lock);
+#else
+			down_read(&mm->mmap_sem);
+#endif
 			/*
 			 * Always try to map read/write from a Linux PoV, so
 			 * Linux creates (page faults) the underlying pages if
@@ -446,7 +464,11 @@ struct tee_mmu *tee_mmu_create(struct mm_struct *mm,
 							   (uintptr_t)reader,
 							   nr_pages, 0, pages);
 			}
+#if KERNEL_VERSION(5, 7, 19) < LINUX_VERSION_CODE
 			up_read(&mm->mmap_lock);
+#else
+			up_read(&mm->mmap_sem);
+#endif
 			if (gup_ret < 0) {
 				ret = gup_ret;
 				mc_dev_err(ret, "failed to get user pages @%p",
@@ -643,4 +665,20 @@ int tee_mmu_debug_structs(struct kasnprintf_buf *buf, const struct tee_mmu *mmu)
 			  "\t\t\tmmu %pK: %s len %u off %u table %pK\n",
 			  mmu, mmu->user ? "user" : "kernel", mmu->length,
 			  mmu->offset, (void *)mmu->pmd_table.page);
+}
+
+struct tee_mmu *tee_mmu_create_and_init(void)
+{
+	struct tee_mmu *mmu;
+
+	/* Allocate the mmu */
+	mmu = kzalloc(sizeof(*mmu), GFP_KERNEL);
+	if (!mmu)
+		return ERR_PTR(-ENOMEM);
+
+	/* Increment debug counter */
+	atomic_inc(&g_ctx.c_mmus);
+	kref_init(&mmu->kref);
+
+	return mmu;
 }

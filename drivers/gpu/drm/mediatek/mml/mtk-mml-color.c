@@ -288,8 +288,7 @@ static s32 color_config_frame(struct mml_comp *comp, struct mml_task *task,
 	struct mml_pq_comp_config_result *result = NULL;
 	struct mml_task_reuse *reuse = &task->reuse[ccfg->pipe];
 	struct mml_pipe_cache *cache = &cfg->cache[ccfg->pipe];
-	s32 ret = 0, i = 0;
-	struct mml_pq_reg *regs = NULL;
+	s32 ret = 0;
 
 	if (!dest->pq_config.en_color) {
 		cmdq_pkt_write(pkt, NULL, base_pa + COLOR_START, 0x3, U32_MAX);
@@ -298,44 +297,33 @@ static s32 color_config_frame(struct mml_comp *comp, struct mml_task *task,
 
 	cmdq_pkt_write(pkt, NULL, base_pa + COLOR_START, 0x1, U32_MAX);
 
-	ret = mml_pq_get_comp_config_result(task, CONFIG_FRAME_WAIT_TIME_MS);
+	ret = mml_pq_get_comp_config_result(task, COLOR_WAIT_TIMEOUT_MS);
+	if (!ret) {
+		result = get_color_comp_config_result(task);
+		if (result) {
+			s32 i;
+			struct mml_pq_reg *regs = result->color_regs;
 
-	if (ret) {
+			/* TODO: use different regs */
+			mml_pq_msg("%s:config color regs, count: %d", __func__,
+				result->color_reg_cnt);
+			color_frm->config_success = true;
+			for (i = 0; i < result->color_reg_cnt; i++) {
+				mml_write(pkt, base_pa + regs[i].offset, regs[i].value,
+					regs[i].mask, reuse, cache,
+					&color_frm->labels[i]);
+				mml_pq_msg("[color][config][%x] = %#x mask(%#x)",
+					regs[i].offset, regs[i].value, regs[i].mask);
+			}
+		} else {
+			mml_pq_err("%s: not get result from user lib", __func__);
+		}
+	} else {
 		mml_pq_comp_config_clear(task);
-		mml_pq_err("%s get color param timeout: %d in %dms",
-			__func__, ret, CONFIG_FRAME_WAIT_TIME_MS);
-		ret = -ETIMEDOUT;
-	}
-
-	result = get_color_comp_config_result(task);
-	if (!result) {
-		mml_pq_err("%s: not get result from user lib", __func__);
 		color_frm->config_success = false;
-		ret = -EBUSY;
-		goto exit;
+		mml_pq_err("get color param timeout: %d in %dms",
+			ret, COLOR_WAIT_TIMEOUT_MS);
 	}
-
-	if (!result->color_reg_cnt) {
-		mml_pq_err("%s: not get correct reg count", __func__);
-		color_frm->config_success = false;
-		ret = -EBUSY;
-		goto exit;
-	}
-
-	regs = result->color_regs;
-	color_frm->config_success = true;
-
-	mml_pq_msg("%s:config color regs, count: %d", __func__,
-		result->color_reg_cnt);
-	for (i = 0; i < result->color_reg_cnt; i++) {
-		mml_write(pkt, base_pa + regs[i].offset, regs[i].value,
-			regs[i].mask, reuse, cache,
-			&color_frm->labels[i]);
-		mml_pq_msg("[color][config][%x] = %#x mask(%#x)",
-			regs[i].offset, regs[i].value, regs[i].mask);
-	}
-
-exit:
 	return ret;
 }
 
@@ -381,29 +369,27 @@ static s32 color_reconfig_frame(struct mml_comp *comp, struct mml_task *task,
 		return ret;
 
 	ret = mml_pq_get_comp_config_result(task, COLOR_WAIT_TIMEOUT_MS);
-	if (ret) {
-		mml_pq_comp_config_clear(task);
+	if (!ret) {
+		result = get_color_comp_config_result(task);
+		if (result && color_frm->config_success) {
+			s32 i;
+			struct mml_pq_reg *regs = result->color_regs;
+
+			/* TODO: use different regs */
+			mml_pq_msg("%s:config color regs, count: %d", __func__,
+				result->color_reg_cnt);
+			for (i = 0; i < result->color_reg_cnt; i++) {
+				mml_update(reuse, color_frm->labels[i], regs[i].value);
+				mml_pq_msg("[color][config][%x] = %#x mask(%#x)",
+					regs[i].offset, regs[i].value, regs[i].mask);
+			}
+		} else {
+			mml_pq_err("%s: not get result from user lib", __func__);
+		}
+	} else {
 		mml_pq_err("get color param timeout: %d in %dms",
 			ret, COLOR_WAIT_TIMEOUT_MS);
 	}
-
-	result = get_color_comp_config_result(task);
-	if (result && color_frm->config_success) {
-		s32 i;
-		struct mml_pq_reg *regs = result->color_regs;
-
-		/* TODO: use different regs */
-		mml_pq_msg("%s:config color regs, count: %d", __func__,
-			result->color_reg_cnt);
-		for (i = 0; i < result->color_reg_cnt; i++) {
-			mml_update(reuse, color_frm->labels[i], regs[i].value);
-			mml_pq_msg("[color][config][%x] = %#x mask(%#x)",
-				regs[i].offset, regs[i].value, regs[i].mask);
-		}
-	} else {
-		mml_pq_err("%s: not get result from user lib", __func__);
-	}
-
 	return ret;
 }
 
@@ -416,7 +402,6 @@ static const struct mml_comp_config_ops color_cfg_ops = {
 	.tile = color_config_tile,
 	.post = color_config_post,
 	.reframe = color_reconfig_frame,
-	.repost = color_config_post,
 };
 
 static void color_debug_dump(struct mml_comp *comp)

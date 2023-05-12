@@ -30,41 +30,10 @@
 #include <mtk_gpufreq.h>
 #endif
 #include "thermal_interface.h"
-#if IS_ENABLED(CONFIG_LEDS_MTK_MODULE)
-#define CONFIG_LEDS_BRIGHTNESS_CHANGED
-#include <net/genetlink.h>
-#include <linux/netlink.h>
-#include <linux/socket.h>
-#include <linux/leds-mtk.h>
-#endif
 
 #define MAX_HEADROOM		(100)
 #define CSRAM_INIT_VAL		(0x27bc86aa)
 #define is_opp_limited(opp)	(opp > 0 && opp != CSRAM_INIT_VAL)
-
-#ifdef CONFIG_LEDS_BRIGHTNESS_CHANGED
-#define SCRN_PROC_NAME_LEN 16
-static int scrn_nl_id = 24;		// netlink id for notifying while screen on/off
-static char scrn_netlink_check[SCRN_PROC_NAME_LEN] = "screen_status";
-
-struct _SCRN_THRM_PACKAGE {
-	__s32 main_scrn_status;				// 0: scrn off; 1: scrn on
-	__s32 sub_scrn_status;				// 0: scrn off; 1: scrn on
-	char proc_name[SCRN_PROC_NAME_LEN];	// check to avoid hacking
-};
-
-struct _SCRN_THRM_ENABLE {
-	__s32 enable;
-	__s32 pid;
-};
-
-static DEFINE_MUTEX(scrn_nl_enable_lock);
-static DEFINE_MUTEX(scrn_changed_lock);
-static struct sock *scrn_nl_sk;
-static struct _SCRN_THRM_PACKAGE SCRN_Status;
-static struct _SCRN_THRM_ENABLE SCRN_nl_enable;
-static int scrn_status_changed;
-#endif
 
 struct therm_intf_info {
 	int sw_ready;
@@ -76,13 +45,6 @@ struct therm_intf_info {
 };
 
 static struct therm_intf_info tm_data;
-
-static struct user_vsensor_info u_vsensor0;
-static struct user_vsensor_info u_vsensor1;
-static struct user_vsensor_info u_vsensor2;
-static struct user_vsensor_info u_vsensor3;
-static struct user_vsensor_info u_vsensor4;
-
 void __iomem *thermal_csram_base;
 EXPORT_SYMBOL(thermal_csram_base);
 void __iomem *thermal_apu_mbox_base;
@@ -91,159 +53,6 @@ struct frs_info frs_data;
 EXPORT_SYMBOL(frs_data);
 
 static struct md_info md_info_data;
-static struct pid_info pid_info_data;
-
-#ifdef CONFIG_LEDS_BRIGHTNESS_CHANGED
-int scrn_nl_send_to_user(void *buf, int size)
-{
-	struct sk_buff *skb;
-	struct nlmsghdr *nlh;
-
-	int len = NLMSG_SPACE(size);
-	void *data;
-	int ret;
-
-	mutex_lock(&scrn_nl_enable_lock);
-	if (!SCRN_nl_enable.enable) {
-		mutex_unlock(&scrn_nl_enable_lock);
-		return -1;
-	}
-	mutex_unlock(&scrn_nl_enable_lock);
-
-	if (scrn_nl_sk == NULL)
-		return -1;
-
-	skb = alloc_skb(len, GFP_ATOMIC);
-	if (!skb)
-		return -1;
-
-	nlh = nlmsg_put(skb, 0, 0, NLMSG_DONE, size+1, 0);
-	data = NLMSG_DATA(nlh);
-	memcpy(data, buf, size);
-	NETLINK_CB(skb).portid = 0; /* from kernel */
-	NETLINK_CB(skb).dst_group = 0; /* unicast */
-
-	pr_info("SCRN Netlink_unicast size=%d\n", size);
-
-	ret = netlink_unicast(scrn_nl_sk, skb, SCRN_nl_enable.pid, MSG_DONTWAIT);
-	if (ret < 0) {
-		pr_info("SCRN Send to pid %d failed %d\n", SCRN_nl_enable.pid, ret);
-		return -1;
-	}
-
-	pr_info("SCRN Netlink_unicast ret=%d\n", ret);
-
-	return 0;
-}
-
-static void scrn_nl_data_handler(struct sk_buff *skb)
-{
-	u32 pid;
-	kuid_t uid;
-	int seq;
-	struct nlmsghdr *nlh;
-	void *data;
-	struct _SCRN_THRM_ENABLE *enable_msg;
-	int ret = 0;
-
-	nlh = (struct nlmsghdr *)skb->data;
-	pid = NETLINK_CREDS(skb)->pid;
-	uid = NETLINK_CREDS(skb)->uid;
-	seq = nlh->nlmsg_seq;
-
-	data = NLMSG_DATA(nlh);
-	enable_msg = (struct _SCRN_THRM_ENABLE *) NLMSG_DATA(nlh);
-
-	mutex_lock(&scrn_nl_enable_lock);
-	SCRN_nl_enable.enable = enable_msg->enable;
-	SCRN_nl_enable.pid = enable_msg->pid;
-	mutex_unlock(&scrn_nl_enable_lock);
-
-	mutex_lock(&scrn_changed_lock);
-	if (!scrn_status_changed) {
-		mutex_unlock(&scrn_changed_lock);
-		return;
-	}
-
-	ret = scrn_nl_send_to_user((void *)&SCRN_Status, sizeof(struct _SCRN_THRM_PACKAGE));
-
-	if (ret)
-		pr_info("Failed to send screen status\n");
-	else
-		scrn_status_changed = 0;
-	mutex_unlock(&scrn_changed_lock);
-}
-
-int scrn_netlink_init(void)
-{
-	/*get tid of thermal_core for the userspace to kernelspace*/
-	struct netlink_kernel_cfg cfg = {
-		.input  = scrn_nl_data_handler,
-	};
-
-	scrn_nl_sk = NULL;
-	scrn_nl_sk = netlink_kernel_create(&init_net, scrn_nl_id, &cfg);
-
-	pr_info("SCRN netlink_kernel_create protol= %d\n", scrn_nl_id);
-
-	if (scrn_nl_sk == NULL) {
-		pr_info("SCRN netlink_kernel_create fail\n");
-		return -1;
-	}
-
-	memcpy(SCRN_Status.proc_name, scrn_netlink_check, strlen(scrn_netlink_check)+1);
-	return 0;
-}
-
-int _backlight_changed_event(struct notifier_block *nb, unsigned long event,
-	void *v)
-{
-	struct led_conf_info *led_conf;
-	int ret = 0;
-
-	led_conf = (struct led_conf_info *)v;
-
-	switch (event) {
-	case LED_BRIGHTNESS_CHANGED:
-		if (led_conf->cdev.brightness > 0) {
-			if (SCRN_Status.main_scrn_status == 0) {
-				pr_info("Receive notification: screen on\n");
-				SCRN_Status.main_scrn_status = 1;
-				scrn_status_changed = 1;
-			}
-		} else {
-			if (SCRN_Status.main_scrn_status == 1) {
-				pr_info("Receive notification: screen off\n");
-				SCRN_Status.main_scrn_status = 0;
-				scrn_status_changed = 1;
-			}
-		}
-		break;
-
-	default:
-		break;
-	}
-
-	mutex_lock(&scrn_changed_lock);
-	if (!scrn_status_changed) {
-		mutex_unlock(&scrn_changed_lock);
-		return NOTIFY_DONE;
-	}
-
-	ret = scrn_nl_send_to_user((void *)&SCRN_Status, sizeof(struct _SCRN_THRM_PACKAGE));
-	if (ret)
-		pr_info("Failed to send screen status\n");
-	else
-		scrn_status_changed = 0;
-	mutex_unlock(&scrn_changed_lock);
-
-	return NOTIFY_DONE;
-}
-
-static struct notifier_block leds_init_notifier = {
-	.notifier_call = _backlight_changed_event,
-};
-#endif
 
 static int therm_intf_read_csram_s32(int offset)
 {
@@ -440,31 +249,6 @@ int get_catm_ttj(void)
 	return min_ttj;
 }
 EXPORT_SYMBOL(get_catm_ttj);
-
-struct user_vsensor_info *get_u_vsensor0_info(void)
-{
-	return &u_vsensor0;
-}
-EXPORT_SYMBOL(get_u_vsensor0_info);
-
-struct user_vsensor_info *get_u_vsensor1_info(void)
-{
-	return &u_vsensor1;
-}
-EXPORT_SYMBOL(get_u_vsensor1_info);
-
-struct user_vsensor_info *get_u_vsensor2_info(void)
-{
-	return &u_vsensor2;
-}
-EXPORT_SYMBOL(get_u_vsensor2_info);
-
-struct user_vsensor_info *get_u_vsensor3_info(void)
-{
-	return &u_vsensor3;
-}
-EXPORT_SYMBOL(get_u_vsensor3_info);
-
 
 
 static ssize_t ttj_show(struct kobject *kobj,
@@ -1070,266 +854,6 @@ static ssize_t sports_mode_store(struct kobject *kobj,
 	return count;
 }
 
-static ssize_t pid_info_show(struct kobject *kobj,
-	struct kobj_attribute *attr, char *buf)
-{
-	int len = 0, i;
-	struct pid_term_info *pid_data;
-
-	if (pid_info_data.pid_num <= 0) {
-		len += snprintf(buf + len, PAGE_SIZE - len, "\n");
-		return len;
-	}
-
-	pid_data = pid_info_data.pid_term_data;
-	for (i = 0; i < pid_info_data.pid_num; i++) {
-		if (i > 0)
-			len += snprintf(buf + len, PAGE_SIZE - len, ",");
-
-		len += snprintf(buf + len, PAGE_SIZE - len, "%d,%d,%d,%d",
-			pid_data[i].limit_state,
-			pid_data[i].p,
-			pid_data[i].i,
-			pid_data[i].d);
-	}
-
-	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
-
-	return len;
-}
-
-static ssize_t pid_info_store(struct kobject *kobj,
-	struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	char cmd[4];
-	int num = 0, len = 0, i, state, p_term, i_term, d_term;
-	struct pid_term_info *pid_data;
-
-	if (sscanf(buf, "%d %3s%n", &num, cmd, &len) != 2) {
-		pr_info("%s: wrong scan info type and num %s\n", __func__, buf);
-		return -EINVAL;
-	}
-
-	if (strncmp(cmd, "PID", 3) != 0) {
-		pr_info("%s: wrong info type=%s\n", __func__, cmd);
-		return -EINVAL;
-	}
-
-	pid_data = pid_info_data.pid_term_data;
-	if (pid_info_data.pid_num != num && pid_data != NULL) {
-		devm_kfree(tm_data.dev, pid_data);
-		pid_data = NULL;
-	}
-
-	if (!pid_data) {
-		pid_data = devm_kcalloc(tm_data.dev, num,
-			sizeof(struct pid_term_info), GFP_KERNEL);
-		if (!pid_data)
-			return -ENOMEM;
-
-		pid_info_data.pid_term_data = pid_data;
-		pid_info_data.pid_num = num;
-	}
-
-	buf += len;
-
-	pid_data = pid_info_data.pid_term_data;
-	for (i = 0; i < pid_info_data.pid_num; i++) {
-		if (sscanf(buf, " %d %d %d %d%n", &state, &p_term, &i_term, &d_term, &len) == 4) {
-			buf += len;
-			pid_data[i].limit_state = state;
-			pid_data[i].p = p_term;
-			pid_data[i].i = i_term;
-			pid_data[i].d = d_term;
-		} else {
-			pr_info("%s: wrong scan info type and num %s\n", __func__, buf);
-			return -EINVAL;
-		}
-	}
-
-	return count;
-}
-
-static ssize_t user_vsensor0_show(struct kobject *kobj,
-	struct kobj_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	len += snprintf(buf + len, PAGE_SIZE - len, "%d, %s",
-		u_vsensor0.temp,
-		u_vsensor0.user_vsensor_name);
-
-	return len;
-}
-
-static ssize_t user_vsensor0_store(struct kobject *kobj,
-	struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	char cmd[10];
-	int temp = THERMAL_TEMP_INVALID;
-	int name[32];
-	int len;
-
-	if (sscanf(buf, "%9s %d %s", cmd, &temp, name)
-		== 3) {
-		if (strncmp(cmd, "U_VSENSOR", 9) == 0) {
-			u_vsensor0.temp = temp;
-			len = snprintf(u_vsensor0.user_vsensor_name, USER_VSENSOR_NAME, "%s", name);
-			if (len != USER_VSENSOR_NAME)
-				pr_info("user_vsensor_name write fail, %d\n", len);
-			return count;
-		}
-	}
-
-	pr_info("%s: invalid input\n", __func__);
-
-	return -EINVAL;
-}
-
-static ssize_t user_vsensor1_show(struct kobject *kobj,
-	struct kobj_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	len += snprintf(buf + len, PAGE_SIZE - len, "%d, %s",
-		u_vsensor1.temp,
-		u_vsensor1.user_vsensor_name);
-
-	return len;
-}
-
-static ssize_t user_vsensor1_store(struct kobject *kobj,
-	struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	char cmd[10];
-	int temp = THERMAL_TEMP_INVALID;
-	int name[32];
-	int len;
-
-	if (sscanf(buf, "%9s %d %s", cmd, &temp, name)
-		== 3) {
-		if (strncmp(cmd, "U_VSENSOR", 9) == 0) {
-			u_vsensor1.temp = temp;
-			len = snprintf(u_vsensor1.user_vsensor_name, USER_VSENSOR_NAME, "%s", name);
-			if (len != USER_VSENSOR_NAME)
-				pr_info("user_vsensor_name write fail, %d\n", len);
-			return count;
-		}
-	}
-
-	pr_info("%s: invalid input\n", __func__);
-
-	return -EINVAL;
-}
-
-static ssize_t user_vsensor2_show(struct kobject *kobj,
-	struct kobj_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	len += snprintf(buf + len, PAGE_SIZE - len, "%d, %s",
-		u_vsensor2.temp,
-		u_vsensor2.user_vsensor_name);
-
-	return len;
-}
-
-static ssize_t user_vsensor2_store(struct kobject *kobj,
-	struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	char cmd[10];
-	int temp = THERMAL_TEMP_INVALID;
-	int name[32];
-	int len;
-
-	if (sscanf(buf, "%9s %d %s", cmd, &temp, name)
-		== 3) {
-		if (strncmp(cmd, "U_VSENSOR", 9) == 0) {
-			u_vsensor2.temp = temp;
-			len = snprintf(u_vsensor2.user_vsensor_name, USER_VSENSOR_NAME, "%s", name);
-			if (len != USER_VSENSOR_NAME)
-				pr_info("user_vsensor_name write fail, %d\n", len);
-			return count;
-		}
-	}
-
-	pr_info("%s: invalid input\n", __func__);
-
-	return -EINVAL;
-}
-
-static ssize_t user_vsensor3_show(struct kobject *kobj,
-	struct kobj_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	len += snprintf(buf + len, PAGE_SIZE - len, "%d, %s",
-		u_vsensor3.temp,
-		u_vsensor3.user_vsensor_name);
-
-	return len;
-}
-
-static ssize_t user_vsensor3_store(struct kobject *kobj,
-	struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	char cmd[10];
-	int temp = THERMAL_TEMP_INVALID;
-	int name[32];
-	int len;
-
-	if (sscanf(buf, "%9s %d %s", cmd, &temp, name)
-		== 3) {
-		if (strncmp(cmd, "U_VSENSOR", 9) == 0) {
-			u_vsensor3.temp = temp;
-			len = snprintf(u_vsensor3.user_vsensor_name, USER_VSENSOR_NAME, "%s", name);
-			if (len != USER_VSENSOR_NAME)
-				pr_info("user_vsensor_name write fail, %d\n", len);
-			return count;
-		}
-	}
-
-	pr_info("%s: invalid input\n", __func__);
-
-	return -EINVAL;
-}
-
-static ssize_t user_vsensor4_show(struct kobject *kobj,
-	struct kobj_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	len += snprintf(buf + len, PAGE_SIZE - len, "%d, %s",
-		u_vsensor4.temp,
-		u_vsensor4.user_vsensor_name);
-
-	return len;
-}
-
-static ssize_t user_vsensor4_store(struct kobject *kobj,
-	struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	char cmd[10];
-	int temp = THERMAL_TEMP_INVALID;
-	int name[32];
-	int len;
-
-	if (sscanf(buf, "%9s %d %s", cmd, &temp, name)
-		== 3) {
-		if (strncmp(cmd, "U_VSENSOR", 9) == 0) {
-			u_vsensor4.temp = temp;
-			len = snprintf(u_vsensor4.user_vsensor_name, USER_VSENSOR_NAME, "%s", name);
-			if (len != USER_VSENSOR_NAME)
-				pr_info("user_vsensor_name write fail, %d\n", len);
-			return count;
-		}
-	}
-
-	pr_info("%s: invalid input\n", __func__);
-
-	return -EINVAL;
-}
-
 static struct kobj_attribute ttj_attr = __ATTR_RW(ttj);
 static struct kobj_attribute power_budget_attr = __ATTR_RW(power_budget);
 static struct kobj_attribute cpu_info_attr = __ATTR_RO(cpu_info);
@@ -1352,12 +876,7 @@ static struct kobj_attribute min_ttj_attr = __ATTR_RW(min_ttj);
 static struct kobj_attribute min_throttle_freq_attr =
 	__ATTR_RW(min_throttle_freq);
 static struct kobj_attribute sports_mode_attr = __ATTR_RW(sports_mode);
-static struct kobj_attribute pid_info_attr = __ATTR_RW(pid_info);
-static struct kobj_attribute user_vsensor0_attr = __ATTR_RW(user_vsensor0);
-static struct kobj_attribute user_vsensor1_attr = __ATTR_RW(user_vsensor1);
-static struct kobj_attribute user_vsensor2_attr = __ATTR_RW(user_vsensor2);
-static struct kobj_attribute user_vsensor3_attr = __ATTR_RW(user_vsensor3);
-static struct kobj_attribute user_vsensor4_attr = __ATTR_RW(user_vsensor4);
+
 
 static struct attribute *thermal_attrs[] = {
 	&ttj_attr.attr,
@@ -1381,12 +900,6 @@ static struct attribute *thermal_attrs[] = {
 	&utc_count_attr.attr,
 	&min_throttle_freq_attr.attr,
 	&sports_mode_attr.attr,
-	&pid_info_attr.attr,
-	&user_vsensor0_attr.attr,
-	&user_vsensor1_attr.attr,
-	&user_vsensor2_attr.attr,
-	&user_vsensor3_attr.attr,
-	&user_vsensor4_attr.attr,
 	NULL
 };
 static struct attribute_group thermal_attr_group = {
@@ -1489,6 +1002,62 @@ static void therm_intf_debugfs_init(void) {}
 static void therm_intf_debugfs_exit(void) {}
 #endif
 
+static int therm_intf_suspend_noirq(struct device *dev)
+{
+	int  apu_emul_temp, apu_ttj, apu_power_budget, apu_max_temp;
+	int apu_limit_opp, apu_current_opp;
+
+	apu_emul_temp = therm_intf_read_apu_mbox_s32(APU_MBOX_EMUL_TEMP_OFFSET);
+	therm_intf_write_csram(apu_emul_temp, EMUL_TEMP_OFFSET + 8);
+
+	apu_ttj = therm_intf_read_apu_mbox_s32(APU_MBOX_TTJ_OFFSET);
+	therm_intf_write_csram(apu_ttj, TTJ_OFFSET + 8);
+
+	apu_power_budget = therm_intf_read_apu_mbox_s32(APU_MBOX_PB_OFFSET);
+	therm_intf_write_csram(apu_power_budget, POWER_BUDGET_OFFSET + 8);
+
+	apu_max_temp = therm_intf_read_apu_mbox_s32(APU_MBOX_TEMP_OFFSET);
+	therm_intf_write_csram(apu_max_temp, APU_TEMP_OFFSET);
+
+	apu_limit_opp = therm_intf_read_apu_mbox_s32(APU_MBOX_LIMIT_OPP_OFFSET);
+	therm_intf_write_csram(apu_limit_opp, APU_LIMIT_OPP_OFFSET);
+
+	apu_current_opp = therm_intf_read_apu_mbox_s32(APU_MBOX_CUR_OPP_OFFSET);
+	therm_intf_write_csram(apu_current_opp, APU_CUR_OPP_OFFSET);
+
+	return 0;
+}
+
+static int therm_intf_resume_noirq(struct device *dev)
+{
+	int  apu_emul_temp, apu_ttj, apu_power_budget, apu_max_temp;
+	int apu_limit_opp, apu_current_opp;
+
+	apu_emul_temp = therm_intf_read_csram_s32(EMUL_TEMP_OFFSET + 8);
+	therm_intf_write_apu_mbox(apu_emul_temp, APU_MBOX_EMUL_TEMP_OFFSET);
+
+	apu_ttj = therm_intf_read_csram_s32(TTJ_OFFSET + 8);
+	therm_intf_write_apu_mbox(apu_ttj, APU_MBOX_TTJ_OFFSET);
+
+	apu_power_budget = therm_intf_read_csram_s32(POWER_BUDGET_OFFSET + 8);
+	therm_intf_write_apu_mbox(apu_power_budget, APU_MBOX_PB_OFFSET);
+
+	apu_max_temp = therm_intf_read_csram_s32(APU_TEMP_OFFSET);
+	therm_intf_write_apu_mbox(apu_max_temp, APU_MBOX_TEMP_OFFSET);
+
+	apu_limit_opp = therm_intf_read_csram_s32(APU_LIMIT_OPP_OFFSET);
+	therm_intf_write_apu_mbox(apu_limit_opp, APU_MBOX_LIMIT_OPP_OFFSET);
+
+	apu_current_opp = therm_intf_read_csram_s32(APU_CUR_OPP_OFFSET);
+	therm_intf_write_apu_mbox(apu_current_opp, APU_MBOX_CUR_OPP_OFFSET);
+
+	return 0;
+}
+
+static const struct dev_pm_ops therm_intf_pm_ops = {
+	.suspend_noirq = therm_intf_suspend_noirq,
+	.resume_noirq = therm_intf_resume_noirq,
+};
 
 static const struct of_device_id therm_intf_of_match[] = {
 	{ .compatible = "mediatek,therm_intf", },
@@ -1571,16 +1140,6 @@ static int therm_intf_probe(struct platform_device *pdev)
 	tm_data.tj_info.apu_max_ttj = 95000;
 	tm_data.tj_info.min_ttj = 63000;
 
-#ifdef CONFIG_LEDS_BRIGHTNESS_CHANGED
-	ret = scrn_netlink_init();
-	if (ret) {
-		dev_info(&pdev->dev, "Failed to initialize netlink\n");
-		return -ENODEV;
-	}
-
-	mtk_leds_register_notifier(&leds_init_notifier);
-#endif
-
 	return 0;
 }
 
@@ -1588,10 +1147,6 @@ static int therm_intf_remove(struct platform_device *pdev)
 {
 	therm_intf_debugfs_exit();
 	sysfs_remove_group(kernel_kobj, &thermal_attr_group);
-
-#ifdef CONFIG_LEDS_BRIGHTNESS_CHANGED
-	mtk_leds_unregister_notifier(&leds_init_notifier);
-#endif
 
 	return 0;
 }
@@ -1602,6 +1157,7 @@ static struct platform_driver therm_intf_driver = {
 	.driver = {
 		.name = "mtk-thermal-interface",
 		.of_match_table = therm_intf_of_match,
+		.pm = &therm_intf_pm_ops,
 	},
 };
 

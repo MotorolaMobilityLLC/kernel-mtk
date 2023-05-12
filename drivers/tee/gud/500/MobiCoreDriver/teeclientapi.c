@@ -185,6 +185,9 @@ u32 teec_initialize_context(const char *name, struct teec_context *context)
 
 	mc_dev_devel("== %s() ==============", __func__);
 
+	if (!g_ctx.real_drv)
+		return TEEC_ERROR_NOT_IMPLEMENTED;
+
 	if (!context) {
 		mc_dev_devel("context is NULL");
 		return TEEC_ERROR_BAD_PARAMETERS;
@@ -207,7 +210,9 @@ u32 teec_initialize_context(const char *name, struct teec_context *context)
 
 	return TEEC_SUCCESS;
 }
+#if !IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
 EXPORT_SYMBOL(teec_initialize_context);
+#endif
 
 /*
  * The implementation of this function MUST NOT be able to fail: after this
@@ -217,6 +222,9 @@ EXPORT_SYMBOL(teec_initialize_context);
 void teec_finalize_context(struct teec_context *context)
 {
 	mc_dev_devel("== %s() ==============", __func__);
+
+	if (!g_ctx.real_drv)
+		return;
 
 	/* The parameter context MUST point to an initialized TEE Context */
 	if (!context) {
@@ -231,7 +239,9 @@ void teec_finalize_context(struct teec_context *context)
 	client_close(context->imp.client);
 	context->imp.client = NULL;
 }
+#if !IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
 EXPORT_SYMBOL(teec_finalize_context);
+#endif
 
 /*
  * If the return_origin is different from TEEC_ORIGIN_TRUSTED_APP, an error code
@@ -255,6 +265,10 @@ u32 teec_open_session(struct teec_context *context,
 	int ret = 0, timeout;
 
 	mc_dev_devel("== %s() ==============", __func__);
+
+	if (!g_ctx.real_drv)
+		return TEEC_ERROR_NOT_IMPLEMENTED;
+
 	gp_ret.value = TEEC_SUCCESS;
 	if (return_origin)
 		*return_origin = TEEC_ORIGIN_API;
@@ -323,7 +337,9 @@ u32 teec_open_session(struct teec_context *context,
 	mc_dev_devel(" %s() = 0x%x", __func__, gp_ret.value);
 	return gp_ret.value;
 }
+#if !IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
 EXPORT_SYMBOL(teec_open_session);
+#endif
 
 u32 teec_invoke_command(struct teec_session *session,
 			u32 command_id,
@@ -336,6 +352,9 @@ u32 teec_invoke_command(struct teec_session *session,
 	int ret = 0;
 
 	mc_dev_devel("== %s() ==============", __func__);
+
+	if (!g_ctx.real_drv)
+		return TEEC_ERROR_NOT_IMPLEMENTED;
 
 	gp_ret.value = TEEC_SUCCESS;
 	if (return_origin)
@@ -378,7 +397,9 @@ u32 teec_invoke_command(struct teec_session *session,
 	mc_dev_devel(" %s() = 0x%x", __func__, gp_ret.value);
 	return gp_ret.value;
 }
+#if !IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
 EXPORT_SYMBOL(teec_invoke_command);
+#endif
 
 void teec_close_session(struct teec_session *session)
 {
@@ -386,6 +407,9 @@ void teec_close_session(struct teec_session *session)
 	struct tee_client *client = NULL;
 
 	mc_dev_devel("== %s() ==============", __func__);
+
+	if (!g_ctx.real_drv)
+		return;
 
 	/* The implementation MUST do nothing if session is NULL */
 	if (!session) {
@@ -406,7 +430,9 @@ void teec_close_session(struct teec_session *session)
 
 	mc_dev_devel(" %s() = 0x%x", __func__, ret);
 }
+#if !IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
 EXPORT_SYMBOL(teec_close_session);
+#endif
 
 /*
  * Implementation note. We handle internally 2 kind of pointers : kernel memory
@@ -423,6 +449,9 @@ u32 teec_register_shared_memory(struct teec_context *context,
 	int ret = 0;
 
 	mc_dev_devel("== %s() ==============", __func__);
+
+	if (!g_ctx.real_drv)
+		return TEEC_ERROR_NOT_IMPLEMENTED;
 
 	/* The parameter context MUST point to an initialized TEE Context */
 	if (!context) {
@@ -468,7 +497,9 @@ u32 teec_register_shared_memory(struct teec_context *context,
 
 	return TEEC_SUCCESS;
 }
+#if !IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
 EXPORT_SYMBOL(teec_register_shared_memory);
+#endif
 
 u32 teec_allocate_shared_memory(struct teec_context *context,
 				struct teec_shared_memory *shared_mem)
@@ -479,6 +510,9 @@ u32 teec_allocate_shared_memory(struct teec_context *context,
 
 	/* No connection to "context"? */
 	mc_dev_devel("== %s() ==============", __func__);
+
+	if (!g_ctx.real_drv)
+		return TEEC_ERROR_NOT_IMPLEMENTED;
 
 	/* The parameter context MUST point to an initialized TEE Context */
 	if (!context) {
@@ -524,7 +558,9 @@ u32 teec_allocate_shared_memory(struct teec_context *context,
 
 	return TEEC_SUCCESS;
 }
+#if !IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
 EXPORT_SYMBOL(teec_allocate_shared_memory);
+#endif
 
 void teec_release_shared_memory(struct teec_shared_memory *shared_mem)
 {
@@ -532,6 +568,9 @@ void teec_release_shared_memory(struct teec_shared_memory *shared_mem)
 
 	/* No connection to "context"? */
 	mc_dev_devel("== %s() ==============", __func__);
+
+	if (!g_ctx.real_drv)
+		return;
 
 	/* The implementation MUST do nothing if shared_mem is NULL */
 	if (!shared_mem) {
@@ -556,7 +595,9 @@ void teec_release_shared_memory(struct teec_shared_memory *shared_mem)
 		}
 	}
 }
+#if !IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
 EXPORT_SYMBOL(teec_release_shared_memory);
+#endif
 
 void teec_request_cancellation(struct teec_operation *operation)
 {
@@ -564,6 +605,9 @@ void teec_request_cancellation(struct teec_operation *operation)
 	int ret;
 
 	mc_dev_devel("== %s() ==============", __func__);
+
+	if (!g_ctx.real_drv)
+		return;
 
 	ret = wait_event_interruptible(operations_wq, operation->started);
 	if (ret == -ERESTARTSYS) {
@@ -596,4 +640,36 @@ void teec_request_cancellation(struct teec_operation *operation)
 	if (ret)
 		mc_dev_devel("Notify failed: %d", ret);
 }
+#if !IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
 EXPORT_SYMBOL(teec_request_cancellation);
+#endif
+
+#if IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
+#include "tee_impl_api.h"
+static const struct gp_api_impl_info trustonic_gp_api_export_info = {
+	.name = "trustonic 500",
+	.size = {
+		.sharedmemory_max = TEEC_CONFIG_SHAREDMEM_MAX_SIZE,
+		.context          = sizeof(struct TEEC_Context),
+		.session          = sizeof(struct TEEC_Session),
+		.sharedmemory     = sizeof(struct TEEC_SharedMemory),
+		.operation        = sizeof(struct TEEC_Operation),
+	},
+	.ops = {
+		.initializecontext    = &TEEC_InitializeContext,
+		.finalizecontext      = &TEEC_FinalizeContext,
+		.registersharedmemory = &TEEC_RegisterSharedMemory,
+		.allocatesharedmemory = &TEEC_AllocateSharedMemory,
+		.releasesharedmemory  = &TEEC_ReleaseSharedMemory,
+		.opensession          = &TEEC_OpenSession,
+		.closesession         = &TEEC_CloseSession,
+		.invokecommand        = &TEEC_InvokeCommand,
+		.requestcancellation  = &TEEC_RequestCancellation,
+	},
+};
+
+bool register_gp_api(void)
+{
+	return gp_api_impl_add(&trustonic_gp_api_export_info);
+}
+#endif

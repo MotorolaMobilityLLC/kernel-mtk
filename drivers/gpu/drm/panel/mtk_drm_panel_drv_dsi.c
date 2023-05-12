@@ -133,8 +133,10 @@ int mtk_panel_register_dsi_customization_callback(
 	}
 
 	target_cust = &ctx_dsi->panel_resource->cust;
-	if (IS_ERR_OR_NULL(target_cust))
+	if (IS_ERR_OR_NULL(target_cust)) {
 		DDPPR_ERR("%s: panel resource cust is null\n", __func__);
+		return -EINVAL;
+	}
 
 	if (atomic_read(&target_cust->cust_enabled) != 0) {
 		DDPPR_ERR("%s %d: cust callback has already been registered\n",
@@ -230,10 +232,8 @@ static int mtk_drm_panel_do_prepare(struct mtk_panel_context *ctx_dsi)
 
 	/*deallocate input data*/
 	mtk_lcm_destroy_input(input.data);
-	input.data = NULL;
 fail1:
 	mtk_lcm_destroy_input(input.condition);
-	input.condition = NULL;
 fail2:
 	mtk_lcm_destroy_input_packet(&input);
 	return ret;
