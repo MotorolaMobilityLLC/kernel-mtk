@@ -1095,11 +1095,17 @@ static kal_uint32 set_test_pattern_mode(struct subdrv_ctx *ctx, kal_bool enable)
 {
 	LOG_INF("Test_Pattern enable: %d\n", enable);
 	if (enable) {
+		write_cmos_sensor_8(ctx,0x3208,0x01);
 		write_cmos_sensor_8(ctx,0x50c1,0x01);
 		write_cmos_sensor_8(ctx,0x50c2,0xff);
+		write_cmos_sensor_8(ctx,0x3208,0x11);
+		write_cmos_sensor_8(ctx,0x3208,0xa1);
 	} else {
+		write_cmos_sensor_8(ctx,0x3208,0x01);
 		write_cmos_sensor_8(ctx,0x50c1,0x00);
 		write_cmos_sensor_8(ctx,0x50c2,0x00);
+		write_cmos_sensor_8(ctx,0x3208,0x11);
+		write_cmos_sensor_8(ctx,0x3208,0xa1);
 	}
 	ctx->test_pattern = enable;
 	return ERROR_NONE;
