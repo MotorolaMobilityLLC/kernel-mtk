@@ -33,6 +33,7 @@ static const struct mtk_gate_regs audio1_cg_regs = {
 		.regs = &audio0_cg_regs,		\
 		.shift = _shift,			\
 		.ops = &mtk_clk_gate_ops_no_setclr,	\
+		.flags = CLK_IGNORE_UNUSED,		\
 	}
 
 #define GATE_AUDIO1(_id, _name, _parent, _shift) {	\
@@ -42,6 +43,7 @@ static const struct mtk_gate_regs audio1_cg_regs = {
 		.regs = &audio1_cg_regs,		\
 		.shift = _shift,			\
 		.ops = &mtk_clk_gate_ops_no_setclr,	\
+		.flags = CLK_IGNORE_UNUSED,		\
 	}
 
 static const struct mtk_gate audio_clks[] __initconst = {
