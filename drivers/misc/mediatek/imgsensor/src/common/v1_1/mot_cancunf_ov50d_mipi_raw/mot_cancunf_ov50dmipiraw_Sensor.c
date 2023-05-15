@@ -67,7 +67,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define OV50D_BASEGAIN 128
 
 #define OV50D_MAX_GAIN_BINNINGSIZE_PLATFORM 7936    /*62*128, 128 GAINBASE*/
-#define OV50D_MAX_GAIN_60FPS_PLATFORM 1984           /*15.5*128, 128 GAINBASE*/
+#define OV50D_MAX_GAIN_60FPS_PLATFORM 7936           /*62*128, 128 GAINBASE*/
 #define OV50D_MAX_GAIN_120FPS_PLATFORM 1984          /*15.5*128, 128 GAINBASE*/
 
 #define FPT_PDAF_SUPPORT 1
@@ -157,7 +157,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.min_shutter = 20,				/* min shutter */
 	.min_gain = BASEGAIN, /*1x gain*/
 	.max_gain = 3968, 				/*62 * 64*/
-	.max_gain_60fps = 992,			/*15.5 * 64*/
+	.max_gain_60fps = 3968,			/*62 * 64*/
 	.max_gain_120fps = 992,			/*15.5 * 64*/
 	.min_gain_iso = 100,
 	.exp_step = 1,
