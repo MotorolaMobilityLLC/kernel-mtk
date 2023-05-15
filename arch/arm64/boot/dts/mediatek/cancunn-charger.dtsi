@@ -1,0 +1,328 @@
+/*
+ * Copyright (c) 2021 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&charger {
+	/* common */
+	battery_cv = <4480000>;
+	max_charger_voltage = <11000000>;
+	min_charger_voltage = <4600000>;
+
+	/* sw jeita */
+	enable_vbat_mon = <0>;
+	disable_aicl;
+
+	/*pe4 && pdc && pe2*/
+	fast_charging_indicator = <0x06>;
+
+	/* charging current */
+	usb_charger_current_suspend = <0>;
+	usb_charger_current_unconfigured = <70000>;
+	usb_charger_current_configured = <500000>;
+	usb_charger_current = <500000>;
+	ac_charger_current = <2050000>;
+	ac_charger_input_current = <2000000>;
+	non_std_ac_charger_current = <1000000>;
+	charging_host_charger_current = <1500000>;
+	apple_1_0a_charger_current = <650000>;
+	apple_2_1a_charger_current = <800000>;
+	ta_ac_charger_current = <2000000>;
+	typec_limit_aicr = <3000000>;
+
+	/*mmi config*/
+	mmi,iterm-ma = <243>;
+	mmi,mmi-temp-zones = <0 4200 1000 0>,
+			<10 4250 3000 1000>,
+			<15 0 3000 3000>,
+			<45 0 4000 4000>,
+			<60 4200 4000 0>;
+	mmi,enable-charging-limit;
+	mmi,upper-limit-capacity = <65>;
+	mmi,lower-limit-capacity = <60>;
+	mmi,mmi-cycle-cv-steps =<100 20>,
+			<200 40>;
+};
+
+&mt6375_typec {
+	pd-data {
+		/* 5V, 900ma */
+		pd,source-pdo-data = <0x0001905a>;
+
+		/* 9V, 2A */
+		pd,sink-pdo-size = <2>;
+		pd,sink-pdo-data = <0x0002D0C8 0x0002D0C8> ;
+	};
+};
+
+&extcon_usb {
+	vbus-current = <1100000>;
+};
+
+&pdc {
+	pd_vbus_low_bound = <5000000>;
+	pd_vbus_upper_bound = <9000000>;
+
+	/* single charger */
+	sc_input_current = <2000000>;
+	sc_charger_current = <4000000>;
+};
+
+&pe4 {
+	pe40_max_vbus = <6000>;
+	pe40_max_ibus = <3000>;
+};
+
+&mtk_gauge {
+
+	DIFFERENCE_FULLOCV_ITH = <350>;  /*gauge cut-off current, should overtop ieoc 50ma*/
+	EMBEDDED_SEL = <(1)>;  /*embedded battery,don't remove the battery for user*/
+	VIR_OLDOCV_DIFF_EMB = <3000>; /*0.1mv*/
+	VIR_OLDOCV_DIFF_EMB_LT = <3000>; /*0.1mv*/
+        CAR_TUNE_VALUE = <(100)>;
+        CURR_MEASURE_20A = <(0)>;
+        UNIT_MULTIPLE = <(1)>;
+	SHUTDOWN_1_TIME = <(10)>;
+	/* If ui_soc shows 1% more than X minites, system will shutdown */
+
+	CHARGER_IEOC = <(243)>;
+	/* battery prop */
+	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
+	g_FG_PSEUDO100 = <99 99 100 100
+		99 99 100 100
+		99 99 100 100
+		99 99 100 100
+		99 99 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100>;
+
+	g_Q_MAX = <4945 4782 2490 1965
+		4995 4873 2468 1984
+		4998 4870 2310 1946
+		4927 4882 1858 1873
+		4835 4883 1843 1851
+		2211 1652 1533 1541
+		2201 1642 1523 1531
+		2191 1632 1513 1521
+		2181 1622 1503 1511
+		2171 1612 1493 1501>;
+
+	g_Q_MAX_H_CURRENT = <4945 4782 2190 1665
+		4995 4873 2168 1684
+		4998 4870 2010 1646
+		4927 4882 1558 1573
+		4835 4883 1543 1551
+		2210 1650 1533 1541
+		2200 1640 1523 1531
+		2190 1630 1513 1521
+		2180 1620 1503 1511
+		2170 1610 1493 1501>;
+
+	/*vboot voltage for gauge 0%*/
+	g_PMIC_MIN_VOL_row = <4>;
+	g_PMIC_MIN_VOL_col = <10>;
+	g_PMIC_MIN_VOL = <32000  32000  33500  33500
+		32000  32000  33000  33000
+		33000  33000  33000  33000
+		32200  32200  32200  32200
+		31360  31360  31360  31360
+		31000  31000  31000  31000
+		31000  31000  31000  31000
+		31000  31000  31000  31000
+		31000  31000  31000  31000
+		31000  31000  31000  31200>;
+
+	/*Pseudo1 hide percentage*/
+	g_QMAX_SYS_VOL_row = <4>;
+	g_QMAX_SYS_VOL_col = <10>;
+	g_QMAX_SYS_VOL = <32500  32500  34950  34950
+		32500  32500  34950  34950
+		34250  34250  34250  34250
+		34250  34250  34250  34250
+		34250  34250  34250  34250
+		34250  34250  34250  34250
+		32800  32800  32800  32800
+		32800  32800  32800  32800
+		32800  32800  32800  32800
+		32800  32800  32800  32800>;
+
+	TEMPERATURE_T4 = <(-10)>;
+	ACTIVE_TABLE = <(5)>;
+	R_FG_VALUE = <(5)>;
+	NO_BAT_TEMP_COMPENSATE = <(1)>;
+
+	df-serialnum = "SB18D57454";
+	#include "bat_setting/mt6855_battery_pd50_sunw_5000mah.dtsi"
+        #include "bat_setting/mt6855_battery_pd50_scud_5000mah.dtsi"
+};
+
+&charge_leds {
+	compatible = "gpio-leds";
+
+	charging {
+		label = "charging";
+		gpios = <&pio 23 0x0>;
+		default-state = "off";
+	};
+};
+
+&soc {
+	charge_led {
+		label = "red";
+		led_mode = <2>;
+		gpio_config = <23>;
+	};
+};
+
+&moto_chg_tcmd {
+	compatible = "mmi,moto-chg-tcmd";
+	status = "okay";
+
+	mmi,ntc_table = <1>;
+	mmi,ntc_v_ref = <1800000>;
+	mmi,ntc_r_pull = <100000>;
+
+	mmi,batid_v_ref = <1800000>;
+	mmi,batid_r_pull = <100000>;
+
+	mmi,adc-channel-cpu = <0>;
+	mmi,adc-channel-charger = <2>;
+	mmi,adc-channel-pa = <1>;
+	mmi,adc-channel-batid = <3>;
+	mmi,adc-channel-vbat = <100>;
+};
+
+&lk_charger {
+	/*boot voltage*/
+	boot_battery_voltage = <3560000>;
+	/*boot voltage when using AC charger*/
+	ac_charger_boot_battery_voltage = <3400000>;
+
+	/* LCD brightness*/
+	led_brightness = <1023>;
+
+	/* charging current */
+	usb_charger_current = <500000>;
+	ac_charger_input_current = <1500000>;
+	charging_host_input_current = <1500000>;
+
+	ac_charger_current = <1000000>;
+	non_std_ac_charger_current = <1000000>;
+	charging_host_charger_current = <1000000>;
+};
+
+&mt6375_chg {
+	cv = <4480>;
+	ircmp_r = <0>;
+	ircmp_v = <0>;
+};
+
+&ap_ntc {
+	polling-delay = <5000>; /* milliseconds */
+	polling-delay-passive = <3000>; /* milliseconds */
+	thermal-sensors = <&tboard_thermistor1>;
+
+	trips {
+		charge_trip0: charge-trip0 {
+			temperature = <40000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip1: charge-trip1 {
+			temperature = <41000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip2: charge-trip2 {
+			temperature = <42000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip3: charge-trip3 {
+			temperature = <43000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip4: charge-trip4 {
+			temperature = <44000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip5: charge-trip5 {
+			temperature = <45000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip6: charge-trip6 {
+			temperature = <46000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip7: charge-trip7 {
+			temperature = <47000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip8: charge-trip8 {
+			temperature = <48000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+	};
+
+	cooling-maps {
+		charge-cdev0 {
+			trip = <&charge_trip0>;
+			cooling-device = <&charger_cooler 1 1>;
+		};
+		charge-cdev1 {
+			trip = <&charge_trip1>;
+			cooling-device = <&charger_cooler 2 2>;
+		};
+		charge-cdev2 {
+			trip = <&charge_trip2>;
+			cooling-device = <&charger_cooler 3 3>;
+		};
+		charge-cdev3 {
+			trip = <&charge_trip3>;
+			cooling-device = <&charger_cooler 4 4>;
+		};
+		charge-cdev4 {
+			trip = <&charge_trip4>;
+			cooling-device = <&charger_cooler 5 5>;
+		};
+		charge-cdev5 {
+			trip = <&charge_trip5>;
+			cooling-device = <&charger_cooler 6 6>;
+		};
+		charge-cdev6 {
+			trip = <&charge_trip6>;
+			cooling-device = <&charger_cooler 7 7>;
+		};
+		charge-cdev7 {
+			trip = <&charge_trip7>;
+			cooling-device = <&charger_cooler 8 8>;
+		};
+		charge-cdev8 {
+			trip = <&charge_trip8>;
+			cooling-device = <&charger_cooler 9 9>;
+		};
+	};
+};
+
+&charger_cooler {
+	bootmode = <&chosen>;
+	mmi,thermal-mitigation = <(-1) 2700000 2200000 2000000 1800000
+				1600000 1200000 900000 600000 300000>;
+};
