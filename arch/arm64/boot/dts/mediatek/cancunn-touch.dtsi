@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2020 MediaTek Inc.
+ */
+
+/* TOUCH start */
+
+&spi3 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	touch@0{
+		compatible = "novatek,NVT-ts-spi","focaltech,fts", "tchip,ilitek";
+		reg = <0>; //Same as CS ID
+		status = "ok";
+
+		spi-max-frequency = <9600000>;	//4800000,9600000,15000000,19200000
+		novatek,reset-gpio = <&pio 3 0x00>;
+		novatek,irq-gpio = <&pio 22 0x2001>;
+		novatek,usb_charger;
+		novatek,report_gesture_key;
+		novatek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
+		novatek,psy-name = "battery";
+
+		// 525
+		//novatek,swrst-n8-addr = <0x01F01A>;
+
+		// 672A, 525B, 675, 526, 672C, 523
+		novatek,swrst-n8-addr = <0x03F0FE>;
+		novatek,spi-rd-fast-addr = <0x03F310>;
+
+		//FTS
+		focaltech,reset-gpio = <&pio 3 0x0>;
+		focaltech,irq-gpio = <&pio 22 0x0>;
+		focaltech,max-touch-number = <10>;
+		focaltech,display-coords = <0 0 1080 2400>;
+		focaltech,report_gesture_key = <59>;
+		focaltech,panel-supplier = "csot_ft8725","csot_ft8726";
+
+		//ilitek
+		touch,reset-gpio = <&pio 3 0x0>;
+		touch,irq-gpio = <&pio 22 0x0>;
+		touch,psy-name = "battery";
+		ilitek,report_gesture_key;
+		ilitek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
+	};
+};
+
+/* TOUCH end */
