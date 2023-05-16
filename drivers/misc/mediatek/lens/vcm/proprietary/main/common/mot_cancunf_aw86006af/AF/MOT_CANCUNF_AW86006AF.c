@@ -52,7 +52,8 @@ static unsigned long g_u4CurrPosition = 512;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4AF_INF;
 
-extern int gyro_offset_cali_run(void);
+extern int gyro_offset_cali_run(struct motOISGOffsetResult *param);
+extern int gyro_offset_cali_set(struct motOISGOffsetResult *param);
 extern int aw86006_set_ois_mode(uint8_t flag);
 extern int run_aw86006ois_drawcircle(motOISHeaParam *param);
 /*******************************************************************************
@@ -272,7 +273,11 @@ long MOT_CANCUNF_AW86006AF_Ioctl(struct file *a_pstFile, uint32_t a_u4Command,
 		ret = AW86006AF_SetInf(a_u4Param);
 		break;
 	case OISIOC_G_GYRO_OFFSET_CALI:
-		ret = gyro_offset_cali_run();
+		ret = gyro_offset_cali_run((struct motOISGOffsetResult *) a_u4Param);
+		break;
+	case OISIOC_G_GYRO_OFFSET_SET:
+		copy_from_user(pBuff, (void *)a_u4Param, _IOC_SIZE(a_u4Command));
+		ret = gyro_offset_cali_set((struct motOISGOffsetResult *) pBuff);
 		break;
 	case OISIOC_G_HEA:
 		copy_from_user(pBuff, (void *)a_u4Param, _IOC_SIZE(a_u4Command));
