@@ -1245,6 +1245,11 @@ static inline int pe50_start(struct pe50_algo_info *info)
 		PE50_ERR("set cv fail(%d)\n", ret);
 		goto start;
 	}
+	ret = pe50_hal_set_mivr(info->alg, CHG1, data->min_charger_voltage);
+	if (ret < 0) {
+		PE50_ERR("set aicr fail(%d)\n", ret);
+		goto start;
+	}
 	ret = pe50_hal_set_aicr(info->alg, CHG1, 3000);
 	if (ret < 0) {
 		PE50_ERR("set aicr fail(%d)\n", ret);
@@ -4281,6 +4286,14 @@ static int pe50_parse_dt(struct pe50_algo_info *info)
 		pr_notice("mmi_max_hrst_cnt using default:%d\n",
 			MMI_MAX_HRST_CNT);
 		data->mmi_hardreset_max_cnt = MMI_MAX_HRST_CNT;
+	}
+
+	if (of_property_read_u32(np, "min_charger_voltage", &val) >= 0)
+		data->min_charger_voltage = val;
+	else {
+		pr_notice("min_charger_voltage using default:%d\n",
+			MMI_MIN_CHARGER_VOLTAGE);
+		data->min_charger_voltage = MMI_MIN_CHARGER_VOLTAGE;
 	}
 
 	return 0;
