@@ -20,6 +20,7 @@
 #define MMI_THERMAL_STEP	3
 #define MMI_MAX_IBAT	6000
 #define MMI_MAX_HRST_CNT 100
+#define MMI_MIN_CHARGER_VOLTAGE 4600000
 
 extern int pe50_get_log_level(void);
 #define PE50_DBG(fmt, ...) \
@@ -191,6 +192,7 @@ struct pe50_algo_data {
 	int mmi_max_ibat;
 	int mmi_hardreset_cnt;
 	int mmi_hardreset_max_cnt;
+	int min_charger_voltage;
 };
 
 /* Setting from dtsi */
@@ -332,6 +334,8 @@ extern int pe50_hal_set_cv(struct chg_alg_device *alg, enum chg_idx chgidx,
 				u32 uv);
 extern int pe50_hal_set_aicr(struct chg_alg_device *alg, enum chg_idx chgidx,
 			     u32 mA);
+extern int pe50_hal_set_mivr(struct chg_alg_device *alg, enum chg_idx chgidx,
+			     u32 uv);
 extern int pe50_hal_get_ichg(struct chg_alg_device *alg, enum chg_idx chgidx,
 			     u32 *mA);
 extern int pe50_hal_get_aicr(struct chg_alg_device *alg, enum chg_idx chgidx,
