@@ -656,6 +656,16 @@ int pe50_hal_set_aicr(struct chg_alg_device *alg, enum chg_idx chgidx, u32 mA)
 					     milli_to_micro(mA));
 }
 
+int pe50_hal_set_mivr(struct chg_alg_device *alg, enum chg_idx chgidx, u32 uv)
+{
+	int chgtyp = to_chgtyp(chgidx);
+	struct pe50_hal *hal = chg_alg_dev_get_drv_hal_data(alg);
+
+	if (chgtyp < 0)
+		return chgtyp;
+	return charger_dev_set_mivr(hal->chgdevs[chgtyp], uv);
+}
+
 int pe50_hal_get_ichg(struct chg_alg_device *alg, enum chg_idx chgidx, u32 *mA)
 {
 	int chgtyp = to_chgtyp(chgidx);
