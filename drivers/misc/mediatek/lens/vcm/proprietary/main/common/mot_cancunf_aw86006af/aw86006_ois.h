@@ -300,6 +300,7 @@ struct cam_ois_ctrl_t {
 #define OISIOC_T_OISMODE _IOW(OIS_MAGIC, 1, u32)
 #define OISIOC_G_HEA  _IOWR(OIS_MAGIC, 3, motOISHeaParam)
 #define OISIOC_G_GYRO_OFFSET_CALI _IOR(OIS_MAGIC, 4, int)
+#define OISIOC_G_GYRO_OFFSET_SET _IOW(OIS_MAGIC, 5, struct motOISGOffsetResult)
 typedef struct {
 	uint16_t radius;
 	uint16_t accuracy;
@@ -309,6 +310,12 @@ typedef struct {
 	uint16_t wait2;
 	uint16_t ref_stroke;
 } motOISHeaParam;
+
+struct motOISGOffsetResult{
+	int16_t is_success;
+	int16_t x_offset;
+	int16_t y_offset;
+};
 
 struct stcode_gain {
 	int r_um;

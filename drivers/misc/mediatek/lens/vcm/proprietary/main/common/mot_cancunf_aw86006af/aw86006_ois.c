@@ -2053,50 +2053,50 @@ static int aw86006_accelgyro_dift_raw_data_check(struct cam_ois_ctrl_t *o_ctrl)
 }
 
 static int aw86006_get_accelgyro_dift(struct cam_ois_ctrl_t *o_ctrl,
-						struct accelgyro_dift ag_dift)
+						struct accelgyro_dift *ag_dift)
 {
 	uint8_t dift_val[12] = { 0 };
 
 	aw86006_i2c_reads(o_ctrl, 0xf84c, AW_SIZE_BYTE_2, dift_val,
 							AW_SIZE_BYTE_12);
 
-	ag_dift.gyro_dift[AXIS_X] = (int16_t)(dift_val[1] << 8) | dift_val[0];
-	ag_dift.gyro_dift[AXIS_Y] = (int16_t)(dift_val[3] << 8) | dift_val[2];
-	ag_dift.gyro_dift[AXIS_Z] = (int16_t)(dift_val[5] << 8) | dift_val[4];
+	ag_dift->gyro_dift[AXIS_X] = (int16_t)(dift_val[1] << 8) | dift_val[0];
+	ag_dift->gyro_dift[AXIS_Y] = (int16_t)(dift_val[3] << 8) | dift_val[2];
+	ag_dift->gyro_dift[AXIS_Z] = (int16_t)(dift_val[5] << 8) | dift_val[4];
 
-	ag_dift.accel_dift[AXIS_X] = (int16_t)(dift_val[7] << 8) | dift_val[6];
-	ag_dift.accel_dift[AXIS_Y] = (int16_t)(dift_val[9] << 8) | dift_val[8];
-	ag_dift.accel_dift[AXIS_Z] =
+	ag_dift->accel_dift[AXIS_X] = (int16_t)(dift_val[7] << 8) | dift_val[6];
+	ag_dift->accel_dift[AXIS_Y] = (int16_t)(dift_val[9] << 8) | dift_val[8];
+	ag_dift->accel_dift[AXIS_Z] =
 				(int16_t)(dift_val[11] << 8) | dift_val[10];
 
 	AW_LOGI("gyro_dift: 0x%hx(%d) 0x%hx(%d) 0x%hx(%d)",
-			ag_dift.gyro_dift[AXIS_X], ag_dift.gyro_dift[AXIS_X],
-			ag_dift.gyro_dift[AXIS_Y], ag_dift.gyro_dift[AXIS_Y],
-			ag_dift.gyro_dift[AXIS_Z], ag_dift.gyro_dift[AXIS_Z]);
+			ag_dift->gyro_dift[AXIS_X], ag_dift->gyro_dift[AXIS_X],
+			ag_dift->gyro_dift[AXIS_Y], ag_dift->gyro_dift[AXIS_Y],
+			ag_dift->gyro_dift[AXIS_Z], ag_dift->gyro_dift[AXIS_Z]);
 
 	AW_LOGI("accel_dift: 0x%hx(%d) 0x%hx(%d) 0x%hx(%d)",
-			ag_dift.accel_dift[AXIS_X], ag_dift.accel_dift[AXIS_X],
-			ag_dift.accel_dift[AXIS_Y], ag_dift.accel_dift[AXIS_Y],
-			ag_dift.accel_dift[AXIS_Z], ag_dift.accel_dift[AXIS_Z]);
+			ag_dift->accel_dift[AXIS_X], ag_dift->accel_dift[AXIS_X],
+			ag_dift->accel_dift[AXIS_Y], ag_dift->accel_dift[AXIS_Y],
+			ag_dift->accel_dift[AXIS_Z], ag_dift->accel_dift[AXIS_Z]);
 
 	/* check gyro x/y dift */
-	if (CHECK_DIFF(ag_dift.gyro_dift[AXIS_X],
+	if (CHECK_DIFF(ag_dift->gyro_dift[AXIS_X],
 						AW_GYROACCEL_DIFT_LIMIT) > 0) {
 		AW_LOGE("gyro_dift_x error!!");
 		return OIS_ERROR;
 	}
-	if (CHECK_DIFF(ag_dift.gyro_dift[AXIS_Y],
+	if (CHECK_DIFF(ag_dift->gyro_dift[AXIS_Y],
 						AW_GYROACCEL_DIFT_LIMIT) > 0) {
 		AW_LOGE("gyro_dift_x error!!");
 		return OIS_ERROR;
 	}
 	/* check accel x/y dift */
-	if (CHECK_DIFF(ag_dift.accel_dift[AXIS_X],
+	if (CHECK_DIFF(ag_dift->accel_dift[AXIS_X],
 						AW_GYROACCEL_DIFT_LIMIT) > 0) {
 		AW_LOGE("gyro_dift_x error!!");
 		return OIS_ERROR;
 	}
-	if (CHECK_DIFF(ag_dift.accel_dift[AXIS_Y],
+	if (CHECK_DIFF(ag_dift->accel_dift[AXIS_Y],
 						AW_GYROACCEL_DIFT_LIMIT) > 0) {
 		AW_LOGE("gyro_dift_x error!!");
 		return OIS_ERROR;
@@ -2139,7 +2139,7 @@ static int aw86006_set_normal_mode(struct cam_ois_ctrl_t *o_ctrl)
 	return OIS_SUCCESS;
 }
 
-int gyro_offset_cali_run(void)
+int gyro_offset_cali_run(struct motOISGOffsetResult *pmotOISGOffsetResult)
 {
 	struct cam_ois_ctrl_t *o_ctrl = g_o_ctrl;
 	struct accelgyro_dift ag_dift = {0};
@@ -2151,6 +2151,7 @@ int gyro_offset_cali_run(void)
 	uint8_t trigger_cmd[4] = { 0x01, 0x02, 0x01, 0x01 };
 	uint8_t exit_cmd[4] = { 0x00, 0x00, 0x00, 0x02 };
 	uint8_t check_val = 0;
+	struct motOISGOffsetResult aw86006GyroOffsetResult;
 
 	AW_LOGI("start!");
 
@@ -2277,16 +2278,102 @@ int gyro_offset_cali_run(void)
 	/* Read the zero drift value of the three-axis angular velocity and
 	 * acceleration of the gyroscope
 	 */
-	ret = aw86006_get_accelgyro_dift(o_ctrl, ag_dift);
+	ret = aw86006_get_accelgyro_dift(o_ctrl, &ag_dift);
 	if (ret < 0) {
 		//*result = OIS_ERROR;
 		AW_LOGE("aw86006 gyro offset cali error!");
 		return OIS_ERROR;
 	} else {
+		aw86006GyroOffsetResult.is_success = 0;
+		aw86006GyroOffsetResult.x_offset = ag_dift.gyro_dift[AXIS_X];
+		aw86006GyroOffsetResult.y_offset = ag_dift.gyro_dift[AXIS_Y];
+		ret = copy_to_user(pmotOISGOffsetResult, &aw86006GyroOffsetResult, sizeof(struct motOISGOffsetResult));
 		AW_LOGI("aw86006 gyro offset cali ok! ,ret = %d", ret);
 	}
 	return OIS_SUCCESS;
 }
+
+
+int gyro_offset_cali_set(struct motOISGOffsetResult *pmotOISGOffsetResult)
+{
+	struct cam_ois_ctrl_t *o_ctrl = g_o_ctrl;
+	uint8_t gyro_offset[4] = {0};
+	int16_t gyro_offset_x = 0;
+	int16_t gyro_offset_y = 0;
+	uint8_t check_val = 0;
+	uint8_t unlock_val = 0xac;
+	uint8_t lock_val = 0xdc;
+	uint8_t exit_cmd = 0x02;
+	uint8_t ois_mode = 0;
+	int i = 0;
+	int ret = 0;
+	int need_update = 0;
+
+	do {
+		aw86006_i2c_writes(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2, &ois_mode, AW_SIZE_BYTE_1);
+		aw86006_i2c_reads(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2, &check_val, AW_SIZE_BYTE_1);
+	} while ((check_val != 0x00) && (i++ < AW_ERROR_LOOP));
+	if (check_val != 0x00) {
+		AW_LOGE("reg[0001]:0x%x != 0x00, i: %d", check_val, i);
+		return OIS_ERROR;
+	}
+	/* enter normal mode */
+	ret = aw86006_set_normal_mode(o_ctrl);
+	if (ret < 0)
+		return OIS_ERROR;
+
+	if (pmotOISGOffsetResult->is_success == 0) {
+		aw86006_i2c_reads(o_ctrl, 0xf84c, AW_SIZE_BYTE_2, gyro_offset, AW_SIZE_BYTE_4);
+		gyro_offset_x = (int16_t)(gyro_offset[1] << 8) | gyro_offset[0];
+		gyro_offset_y = (int16_t)(gyro_offset[3] << 8) | gyro_offset[2];
+		AW_LOGI("check gyro offset before write: %d, %d, hal data: %d, %d", gyro_offset_x, gyro_offset_y,
+			pmotOISGOffsetResult->x_offset, pmotOISGOffsetResult->y_offset);
+
+		if((gyro_offset_x == pmotOISGOffsetResult->x_offset) && (gyro_offset_y == pmotOISGOffsetResult->y_offset)) {
+			need_update = 0;
+		} else if (gyro_offset_x == 0 || gyro_offset_y == 0 ||
+				pmotOISGOffsetResult->x_offset == 0 || pmotOISGOffsetResult->y_offset == 0){
+			need_update = 1;
+		} else if(abs((pmotOISGOffsetResult->x_offset - gyro_offset_x) *100 / pmotOISGOffsetResult->x_offset) > 10 ||
+				abs((pmotOISGOffsetResult->y_offset - gyro_offset_y) *100 / pmotOISGOffsetResult->y_offset) > 10){
+			need_update = 1;
+		} else {
+			need_update = 0;
+		}
+		if(need_update) {
+			gyro_offset[0] = (uint8_t)(pmotOISGOffsetResult->x_offset & 0x00ff);
+			gyro_offset[1] = (uint8_t)((pmotOISGOffsetResult->x_offset & 0xff00) >> 8);
+			gyro_offset[2] = (uint8_t)(pmotOISGOffsetResult->y_offset & 0x00ff);
+			gyro_offset[3] = (uint8_t)((pmotOISGOffsetResult->y_offset & 0xff00) >> 8);
+			/* unlock register */
+			do {
+				aw86006_i2c_writes(o_ctrl, 0xf8ff, AW_SIZE_BYTE_2, &unlock_val, AW_SIZE_BYTE_1);
+				aw86006_i2c_reads(o_ctrl, 0xf8ff, AW_SIZE_BYTE_2, &check_val, AW_SIZE_BYTE_1);
+			} while ((check_val != 0x01) && (i++ < AW_ERROR_LOOP));
+			if (check_val != 0x01) {
+				AW_LOGE("reg[f8ff]:0x%x != 0x01, i: %d", check_val, i);
+				return OIS_ERROR;
+			}
+
+			aw86006_i2c_writes(o_ctrl, 0xf84c, AW_SIZE_BYTE_2, gyro_offset, AW_SIZE_BYTE_4);
+			msleep(2);
+			/* Data update to flash */
+			aw86006_i2c_writes(o_ctrl, 0xf8e4, AW_SIZE_BYTE_2, &exit_cmd, AW_SIZE_BYTE_1);
+			msleep(20 * 2); /* 2: two sector */
+			aw86006_i2c_writes(o_ctrl, 0xf8ff, AW_SIZE_BYTE_2, &lock_val, AW_SIZE_BYTE_1);
+			aw86006_i2c_reads(o_ctrl, 0xf84c, AW_SIZE_BYTE_2, gyro_offset, AW_SIZE_BYTE_4);
+
+			AW_LOGI("update gyro_offset success. check gyro offset after write: %d, %d",
+				(int16_t)(gyro_offset[1] << 8) | gyro_offset[0], (int16_t)(gyro_offset[3] << 8) | gyro_offset[2]);
+		} else {
+			AW_LOGI("no need update gyro_offset");
+		}
+	} else {
+		return OIS_ERROR;
+	}
+	return OIS_SUCCESS;
+}
+
 static ssize_t gyro_offset_cali_show(struct class *class,
 					struct class_attribute *attr, char *buf)
 {
@@ -2294,7 +2381,7 @@ static ssize_t gyro_offset_cali_show(struct class *class,
 	struct cam_ois_ctrl_t *o_ctrl = g_o_ctrl;
 	struct accelgyro_dift ag_dift = {0};
 
-	aw86006_get_accelgyro_dift(o_ctrl, ag_dift);
+	aw86006_get_accelgyro_dift(o_ctrl, &ag_dift);
 
 	len += snprintf(buf + len, PAGE_SIZE - len,
 					"gyro_dift: 0x%hx 0x%hx 0x%hx\n",
@@ -2457,7 +2544,7 @@ static ssize_t gyro_offset_cali_store(struct class *class,
 	/* Read the zero drift value of the three-axis angular velocity and
 	 * acceleration of the gyroscope
 	 */
-	ret = aw86006_get_accelgyro_dift(o_ctrl, ag_dift);
+	ret = aw86006_get_accelgyro_dift(o_ctrl, &ag_dift);
 	if (ret < 0) {
 		AW_LOGE("aw86006 gyro offset cali error!");
 		return 0;
@@ -2776,7 +2863,7 @@ int aw86006_ois_drawcircle_test(int r_um, int step, int cycles, int accuracy_um,
 	aw86006_i2c_writes(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2, &ois_mode,
 								AW_SIZE_BYTE_1);
 	for (j = 0; j < cycles; j++) {
-		for (i = 0; i < 120; i++) {
+		for (i = 0; i < 360/step; i++) {
 			int32_target[AXIS_X] = r_code[AXIS_X] * tab_sin[i*step]/100;
 			int32_target[AXIS_Y] = r_code[AXIS_Y] * tab_cos[i*step]/100;
 
