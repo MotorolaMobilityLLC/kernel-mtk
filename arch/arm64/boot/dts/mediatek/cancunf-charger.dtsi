@@ -25,7 +25,7 @@
 
 &charger {
 	/* common */
-        boot_battery_voltage = <3600000>;
+        boot_battery_voltage = <3560000>;
 	battery_cv = <4500000>;
 	max_charger_voltage = <11000000>;
 	min_charger_voltage = <4600000>;
