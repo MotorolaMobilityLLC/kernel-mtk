@@ -346,6 +346,14 @@ static int kbase_kcpu_jit_allocate_prepare(
 
 	lockdep_assert_held(&kctx->csf.kcpu_queues.lock);
 
+	if (!kbase_mem_allow_alloc(kctx)) {
+		dev_dbg(kctx->kbdev->dev,
+			"Invalid attempt to allocate JIT memory by %s/%d for ctx %d_%d",
+			current->comm, current->pid, kctx->tgid, kctx->id);
+		ret = -EINVAL;
+		goto out;
+	}
+
 	if (!data || count > kcpu_queue->kctx->jit_max_allocations ||
 			count > ARRAY_SIZE(kctx->jit_alloc)) {
 		ret = -EINVAL;
@@ -629,12 +637,15 @@ static int kbase_csf_queue_group_suspend_prepare(
 							sus_buf->pages);
 		kbase_gpu_vm_lock(kctx);
 
-		if (pinned_pages < 0) {
-			ret = pinned_pages;
-			goto out_clean_pages;
-		}
 		if (pinned_pages != nr_pages) {
-			ret = -EINVAL;
+			int i;
+
+			/* Unpin those partially pinned pages */
+			for (i = 0; i < pinned_pages; i++)
+				kbase_unpin_user_buf_page(sus_buf->pages[i]);
+
+			/* Set the error return value */
+			ret = (pinned_pages < 0) ? pinned_pages : -EINVAL;
 			goto out_clean_pages;
 		}
 	} else {
