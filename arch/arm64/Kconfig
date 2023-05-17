@@ -2117,3 +2117,9 @@ config FSA4480_SENS_TO_GND
 	default n
 	help
 	Enable it only for fsa4480 sens connect to gnd.
+
+config AW_MTK_RCV_SUPPORT
+	bool "two smart pa but use mtk receiver path"
+	default n
+	help
+	Enable it only for two smart pa but use mtk receiver path.
