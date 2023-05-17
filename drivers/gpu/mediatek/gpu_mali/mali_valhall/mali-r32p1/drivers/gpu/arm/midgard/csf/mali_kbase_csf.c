@@ -901,6 +901,7 @@ static void unbind_stopped_queue(struct kbase_context *kctx,
 		kbase_csf_scheduler_spin_unlock(kctx->kbdev, flags);
 
 		put_user_pages_mmap_handle(kctx, queue);
+		WARN_ON_ONCE(queue->doorbell_nr != KBASEP_USER_DB_NR_INVALID);
 		queue->bind_state = KBASE_CSF_QUEUE_UNBOUND;
 	}
 }
