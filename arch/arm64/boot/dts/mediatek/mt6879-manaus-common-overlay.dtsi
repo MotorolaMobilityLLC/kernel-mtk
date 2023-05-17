@@ -38,6 +38,7 @@
         #sound-dai-cells = <0>;
         reg = <0x35>;
         irq-gpio = <&pio 62 0x0>;
+        rcv-gpio = <&pio 162 0x0>;
         sound-channel = <0>;
         vcalb_half = "true";
         status = "okay";
