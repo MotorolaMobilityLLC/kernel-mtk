@@ -49,6 +49,7 @@
 #define AW_IC_STANDBY			(1)
 #define AW_FLASH_WRITE_CONNECT
 #define AW_SOC_FLASH_READ_FLAG
+#define AW_ISP_FLASH_READ_FLAG
 
 /* Loop */
 #define AW_STAY_ON_MOVE_LOOP		(20)
@@ -174,8 +175,10 @@ enum isp_enum {
 	ISP_FLASH_JUMP_DELAY = 2000, /* us */
 	ISP_FLASH_HANK_DELAY = 2000, /* us */
 	ISP_FLASH_WRITE_DELAY = 600, /* us */
+	ISP_FLASH_READ_DELAY = 1000, /* us */
 	ISP_ERASE_BLOCK_DELAY = 8,
 	ISP_FLASH_WRITE_HEAD_LEN = 8,
+	ISP_READ_LEN = 7,
 	ISP_JUMP_ACK_LEN = 1,
 	ISP_HANK_ACK_LEN = 5,
 	ISP_ERASE_ACK_LEN = 1,
@@ -217,14 +220,19 @@ enum isp_boot_module {
 };
 
 enum awrw_flag {
-	AW_SEQ_WRITE	= 0,
-	AW_SEQ_READ	= 1,
+	AW_SEQ_WRITE = 0,
+	AW_SEQ_READ = 1,
 };
 
 enum axis_info {
 	AXIS_X,
 	AXIS_Y,
 	AXIS_Z,
+};
+
+enum update_type {
+	ALL_DATA = 1,
+	APP_DATA = 2,
 };
 
 struct accelgyro_dift {
