@@ -1189,6 +1189,59 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy,
 	return 0;
 }
 
+static int mtk_cpufreq_get_cpu_power(unsigned long *power, unsigned long *KHz, int cpu)
+{
+	int j;
+	int ret;
+	int new_opp_idx=-1;
+	enum mt_cpu_dvfs_id cluster;
+	unsigned int lv;
+	u32 cap;
+	u64 tmp, MHz;
+	unsigned long mV;
+	struct opp_tbl_info *opp_tbl_info;
+	struct device_node *np;
+	struct device *cpu_dev;
+
+	cpu_dev = get_cpu_device(cpu);
+	if (!cpu_dev)
+		return -ENODEV;
+
+	np = of_node_get(cpu_dev->of_node);
+	if (!np)
+		return -EINVAL;
+
+	ret = of_property_read_u32(np, "dynamic-power-coefficient", &cap);
+	of_node_put(np);
+	if (ret)
+		return -EINVAL;
+
+	lv = _mt_cpufreq_get_cpu_level();
+
+	cluster = _get_cpu_dvfs_id(cpu);
+	opp_tbl_info = &opp_tbls[cluster][lv];
+
+	for (j = (opp_tbl_info->size-1); j >= 0; j--) {
+		if (opp_tbl_info->opp_tbl[j].cpufreq_khz > *KHz) {
+			new_opp_idx = j;
+			break;
+		}
+	}
+	*KHz = opp_tbl_info->opp_tbl[new_opp_idx].cpufreq_khz;
+	mV = (opp_tbl_info->opp_tbl[new_opp_idx].cpufreq_volt) / 100;
+
+	if (!mV)
+		return -EINVAL;
+
+	MHz = *KHz;
+	do_div(MHz , 1000);
+	tmp = (u64)cap * mV * mV * MHz;
+	do_div(tmp, 1000000000);
+	*power = (unsigned long)tmp;
+	tag_pr_info("Voltage in mV=%u, Frequency in KHz =%u, Power=%u\n", mV, *KHz, *power);
+	return 0;
+}
+
 #ifndef ONE_CLUSTER
 int cci_is_inited;
 #endif
@@ -1199,7 +1252,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 	int pd_ret = -EINVAL;
 	unsigned long flags;
 	struct device *cpu_dev;
-	struct em_data_callback em_cb = EM_DATA_CB(of_dev_pm_opp_get_cpu_power);
+	struct em_data_callback em_cb = EM_DATA_CB(mtk_cpufreq_get_cpu_power);
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
