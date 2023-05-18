@@ -13,7 +13,6 @@
 #include <linux/platform_device.h>
 #include <linux/pm_wakeup.h>
 #include <linux/regmap.h>
-#include <linux/timer.h>
 #include <linux/mfd/mt6323/registers.h>
 #include <linux/mfd/mt6359p/registers.h>
 #include <linux/mfd/mt6363/registers.h>
@@ -292,14 +291,6 @@ static void mtk_pmic_keys_lp_reset_setup(struct mtk_pmic_keys *keys,
 	}
 }
 
-/* MMI_STOPSHIP <BOOTLOADER>: bury debug point for long pressing power key */
-static void power_long_press_5s_handler(struct timer_list *timer)
-{
-	pr_err("Sharp: Power key long press over 5s");
-}
-
-DEFINE_TIMER(power_key_timer, power_long_press_5s_handler);
-
 static irqreturn_t mtk_pmic_keys_release_irq_handler_thread(
 				int irq, void *data)
 {
@@ -307,15 +298,10 @@ static irqreturn_t mtk_pmic_keys_release_irq_handler_thread(
 
 	input_report_key(info->keys->input_dev, info->keycode, 0);
 	input_sync(info->keys->input_dev);
-
-	del_timer(&power_key_timer);
-	pr_err("Sharp: del_timer2");
-
 	if (info->suspend_lock)
 		__pm_relax(info->suspend_lock);
 	dev_info(info->keys->dev, "release key =%d using PMIC\n",
 			info->keycode);
-
 	return IRQ_HANDLED;
 }
 
@@ -334,17 +320,6 @@ static irqreturn_t mtk_pmic_keys_irq_handler_thread(int irq, void *data)
 
 	input_report_key(info->keys->input_dev, info->keycode, pressed);
 	input_sync(info->keys->input_dev);
-
-	if(pressed)
-	{
-		mod_timer(&power_key_timer, jiffies + 5*HZ);
-		pr_err("Sharp: mod_timer");
-	}
-	else
-	{
-		del_timer(&power_key_timer);
-		pr_err("Sharp: del_timer");
-	}
 
 	if (pressed && info->suspend_lock)
 		__pm_stay_awake(info->suspend_lock);
