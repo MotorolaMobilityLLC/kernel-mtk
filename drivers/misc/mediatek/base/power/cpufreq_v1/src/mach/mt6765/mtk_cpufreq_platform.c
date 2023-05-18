@@ -567,6 +567,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	unsigned int *efuse_ly_buf;
 	int val = 0;
 	int val_ly = 0;
+	unsigned int fabinfo2;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6765-dvfsp");
 
@@ -604,6 +605,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	nvmem_cell_put(efuse_cell);
 	efuse_ly = *efuse_ly_buf;
 	val_ly = (efuse_ly >> 1) & 0x1;
+	fabinfo2 = (efuse_ly >> 3) & 0x1;
 	kfree(efuse_ly_buf);
 
 	if ((val == 0x2) || (val == 0x5))
@@ -626,7 +628,22 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 			lv = CPU_LEVEL_8;
 		else
 			lv = CPU_LEVEL_5;
+	}
 
+	/* for MT6765X */
+	if (val == 0x24) {
+		lv = CPU_LEVEL_10;
+		tag_pr_info("%s CPU DVFS level: %d for 65X\n",
+				__func__,lv);
+	}
+
+	/* for improve yield MT6765OD */
+	if ((val == 0x3) || (val == 0x4) || (val == 0x12)) {
+		if (fabinfo2 == 1) {
+			lv = CPU_LEVEL_9;
+			tag_pr_info("%s CPU DVFS fabinfo2 is true for 65OD, lv=%d\n",
+				__func__, lv);
+		}
 	}
 
 	turbo_flag = 0;
