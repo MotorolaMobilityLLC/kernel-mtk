@@ -903,6 +903,72 @@ static int aw86006_isp_flash_erase_check(struct cam_ois_ctrl_t *o_ctrl,
 
 	return OIS_SUCCESS;
 }
+
+/* isp flash read */
+static int aw86006_isp_flash_read_check(struct cam_ois_ctrl_t *o_ctrl,
+				uint32_t addr, uint8_t *bin_buf, uint32_t len)
+{
+	uint8_t checksum = 0;
+	uint8_t protocol_buf[80] = { 0 };
+	uint16_t check_len = 0;
+	int i = 0;
+	int loop = 0;
+	int ret = OIS_ERROR;
+
+	do {
+		protocol_buf[0] = ISP_BOOT_FLASH | ISP_FLASH_READ;
+		protocol_buf[1] = (uint8_t) (addr >> 0);
+		protocol_buf[2] = (uint8_t) (addr >> 8);
+		protocol_buf[3] = (uint8_t) (addr >> 16);
+		protocol_buf[4] = (uint8_t) (addr >> 24);
+		protocol_buf[5] = (uint8_t) (len >> 0);
+		protocol_buf[6] = (uint8_t) (len >> 8);
+
+		ret = aw86006_i2c_writes(o_ctrl, AW_SIZE_BYTE_0, AW_SIZE_BYTE_0,
+					 protocol_buf, ISP_READ_LEN);
+		if (ret < 0) {
+			AW_LOGE("write isp read cmd error, loop: %d", loop);
+			continue;
+		}
+
+		usleep_range(ISP_FLASH_READ_DELAY, ISP_FLASH_READ_DELAY + 50);
+
+		protocol_buf[0] = ISP_BOOT_FLASH | ISP_FLASH_READ_ACK;
+		ret = aw86006_i2c_reads(o_ctrl, protocol_buf[0], AW_SIZE_BYTE_1,
+					&protocol_buf[1], 4 + len);
+		if (ret < 0) {
+			AW_LOGE("read isp read ack error, loop: %d", loop);
+			continue;
+		}
+
+		if (protocol_buf[1] != ISP_EVENT_OK) {
+			AW_LOGE("event flag error: %d, loop: %d", protocol_buf[1], loop);
+			continue;
+		}
+
+		check_len = (protocol_buf[3] << 8) | protocol_buf[2];
+		if (check_len != len) {
+			AW_LOGE("event len error: %d, loop: %d", check_len, loop);
+			continue;
+		}
+
+		checksum = 0;
+		for (i = 0; i < len; i++)
+			checksum += protocol_buf[5+i];
+		if (checksum != protocol_buf[4]) {
+			AW_LOGE("data checksum error: 0x%02x != 0x%02x, loop: %d",
+							checksum, protocol_buf[4], loop);
+			continue;
+		}
+		memcpy(bin_buf, &protocol_buf[5], len);
+		break;
+	} while ((++loop) < AW_FLASH_READ_ERROR_LOOP);
+	if (loop >= AW_FLASH_READ_ERROR_LOOP)
+		return OIS_ERROR;
+
+	return OIS_SUCCESS;
+}
+
 /* isp flash write */
 static int aw86006_isp_flash_write_check(struct cam_ois_ctrl_t *o_ctrl,
 					uint32_t addr, uint32_t block_num,
@@ -936,9 +1002,8 @@ static int aw86006_isp_flash_write_check(struct cam_ois_ctrl_t *o_ctrl,
 	usleep_range(ISP_FLASH_WRITE_DELAY, ISP_FLASH_WRITE_DELAY + 50);
 
 	protocol_buf[0] = ISP_BOOT_FLASH | ISP_FLASH_WRITE_ACK;
-	ois_block_read_addr8_data8(o_ctrl, protocol_buf[0],
-					CAMERA_SENSOR_I2C_TYPE_BYTE,
-					&protocol_buf[1], ISP_WRITE_ACK_LEN);
+	aw86006_i2c_reads(o_ctrl, protocol_buf[0], AW_SIZE_BYTE_1,
+					  &protocol_buf[1], ISP_WRITE_ACK_LEN);
 	if (protocol_buf[1] != ISP_EVENT_OK)
 		return -ISP_FLASH_ERROR;
 #endif
@@ -1232,6 +1297,7 @@ static int aw86006_mem_download(struct cam_ois_ctrl_t *o_ctrl,
 	uint8_t *all_buf_ptr = (uint8_t *) fw->data;
 	uint8_t *app_buf_ptr = (uint8_t *) fw->data + AW_FLASH_MOVE_LENGTH;
 	uint8_t standby_flag = 0;
+	uint8_t update_type = 0;
 
 	AW_LOGI("enter");
 
@@ -1240,93 +1306,93 @@ static int aw86006_mem_download(struct cam_ois_ctrl_t *o_ctrl,
 		return OIS_ERROR;
 	}
 
-	/* enter boot mode */
-	ret = aw86006_jump_boot_check(o_ctrl);
+	/* enter flash boot mode */
+	ret = aw86006_jump_move_check(o_ctrl);
 	if (ret != OIS_SUCCESS) {
-		AW_LOGE("jump boot failed!");
-		return OIS_ERROR;
-	}
-
-#ifdef AW_SOC_FLASH_READ_FLAG
-	/* get check_info data */
-	ret = aw86006_soc_flash_read_check(o_ctrl, AW_FLASH_APP_ADDR,
-			&g_aw86006_info.checkinfo_rd[0], AW_FLASH_READ_LEN);
-	if (ret != OIS_SUCCESS)
-		AW_LOGE("read checkinfo error!");
-#endif
-
-	g_aw86006_info.fw.update_flag =
-			g_aw86006_info.checkinfo_rd[AW_ARRAY_SHIFT_UPDATE_FLAG];
-
-	if (g_aw86006_info.fw.update_flag != 0x01) {
-		AW_LOGI("update_flag not match, update all!");
-		ret = aw86006_soc_flash_update(o_ctrl, AW_FLASH_BASE_ADDR,
-						all_buf_ptr, all_buf_size);
+		AW_LOGE("jump move failed! update all");
+		ret = aw86006_soc_flash_update(o_ctrl,AW_FLASH_BASE_ADDR, all_buf_ptr,
+									   all_buf_size);
 		if (ret != OIS_SUCCESS) {
 			AW_LOGE("update all failed!");
 			return OIS_ERROR;
 		}
+		update_type = ALL_DATA;
 	} else {
-		AW_LOGI("update_flag match!");
-		ret = memcmp(g_aw86006_info.checkinfo_rd,
-				g_aw86006_info.checkinfo_fw, AW_FW_INFO_LENGTH);
-		if (ret != 0) {
-			ret = aw86006_checkinfo_analyse(o_ctrl,
-					g_aw86006_info.checkinfo_rd, &info_rd);
-			if ((ret != OIS_SUCCESS) || (info_rd.move_version !=
-					g_aw86006_info.fw.move_version)) {
-				AW_LOGI("checkinfo/move not match, update all");
-				ret = aw86006_soc_flash_update(o_ctrl,
-						AW_FLASH_BASE_ADDR, all_buf_ptr,
-						all_buf_size);
-				if (ret != OIS_SUCCESS) {
-					AW_LOGE("update all failed!");
-					return OIS_ERROR;
-				}
-			} else if ((info_rd.app_version !=
-					g_aw86006_info.fw.app_version) ||
-					(info_rd.app_id !=
-						g_aw86006_info.fw.app_id)) {
-				AW_LOGI("app not match, update app!");
-				ret = aw86006_isp_flash_update(o_ctrl,
-						AW_FLASH_APP_ADDR, app_buf_ptr,
-						app_buf_size);
-				if (ret != OIS_SUCCESS) {
-					AW_LOGE("update app failed!");
-					return OIS_ERROR;
-				}
-			} else {
-				AW_LOGI("other error, update all!");
-				ret = aw86006_soc_flash_update(o_ctrl,
-						AW_FLASH_BASE_ADDR, all_buf_ptr,
-						all_buf_size);
-				if (ret != OIS_SUCCESS) {
-					AW_LOGE("update all failed!");
-					return OIS_ERROR;
-				}
-			}
-		} else {
-			ret = aw86006_jump_move_check(o_ctrl);
+#ifdef AW_ISP_FLASH_READ_FLAG
+		/* get check_info data */
+		ret = aw86006_isp_flash_read_check(o_ctrl, AW_FLASH_APP_ADDR,
+				&g_aw86006_info.checkinfo_rd[0], AW_FLASH_READ_LEN);
+		if (ret != OIS_SUCCESS)
+			AW_LOGE("read checkinfo error!");
+#endif
+
+		g_aw86006_info.fw.update_flag =
+				g_aw86006_info.checkinfo_rd[AW_ARRAY_SHIFT_UPDATE_FLAG];
+
+		if (g_aw86006_info.fw.update_flag != 0x01) {
+			AW_LOGI("update_flag not match, update app!");
+			ret = aw86006_isp_flash_update(o_ctrl, AW_FLASH_APP_ADDR,
+							app_buf_ptr, app_buf_size);
 			if (ret != OIS_SUCCESS) {
-				AW_LOGI("jump_move_check fail, update all!");
-				ret = aw86006_soc_flash_update(o_ctrl,
-						AW_FLASH_BASE_ADDR, all_buf_ptr,
-						all_buf_size);
-				if (ret != OIS_SUCCESS) {
-					AW_LOGE("update all failed!");
-					return OIS_ERROR;
+				AW_LOGE("update app failed!");
+				return OIS_ERROR;
+			}
+			update_type = APP_DATA;
+		} else {
+			AW_LOGI("update_flag match!");
+			ret = memcmp(g_aw86006_info.checkinfo_rd,
+					g_aw86006_info.checkinfo_fw, AW_FW_INFO_LENGTH);
+			if (ret != 0) {
+				ret = aw86006_checkinfo_analyse(o_ctrl,
+						g_aw86006_info.checkinfo_rd, &info_rd);
+				if ((ret != OIS_SUCCESS) || (info_rd.move_version !=
+						g_aw86006_info.fw.move_version)) {
+					AW_LOGI("checkinfo/move not match, update all");
+					ret = aw86006_soc_flash_update(o_ctrl,
+							AW_FLASH_BASE_ADDR, all_buf_ptr,
+							all_buf_size);
+					if (ret != OIS_SUCCESS) {
+						AW_LOGE("update all failed!");
+						return OIS_ERROR;
+					}
+					update_type = ALL_DATA;
+				} else if ((info_rd.app_version !=
+						g_aw86006_info.fw.app_version) ||
+						(info_rd.app_id !=
+							g_aw86006_info.fw.app_id)) {
+					AW_LOGI("app not match, update app!");
+					ret = aw86006_isp_flash_update(o_ctrl,
+							AW_FLASH_APP_ADDR, app_buf_ptr,
+							app_buf_size);
+					if (ret != OIS_SUCCESS) {
+						AW_LOGE("update app failed!");
+						return OIS_ERROR;
+					}
+					update_type = APP_DATA;
+				} else {
+					AW_LOGI("other error, update all!");
+					ret = aw86006_soc_flash_update(o_ctrl,
+							AW_FLASH_BASE_ADDR, all_buf_ptr,
+							all_buf_size);
+					if (ret != OIS_SUCCESS) {
+						AW_LOGE("update all failed!");
+						return OIS_ERROR;
+					}
+					update_type = ALL_DATA;
 				}
-			} else {
+			} else { //memcmp checkinfo ok
 				ret = aw86006_reset(o_ctrl);
 				if (ret != OIS_SUCCESS) {
 					AW_LOGE("reset failed!");
 					return OIS_ERROR;
 				}
 				msleep(AW_RESET_DELAY);
+				update_type = APP_DATA;
 			}
 		}
 	}
 
+	/* runtime check */
 	for (i = 0; i <= AW_ERROR_LOOP; i++) {
 		/* Get standby flag */
 		for (j = 0; j < AW_ERROR_LOOP; j++) {
@@ -1348,12 +1414,25 @@ static int aw86006_mem_download(struct cam_ois_ctrl_t *o_ctrl,
 		if (i == AW_ERROR_LOOP)
 			break;
 
-		ret = aw86006_isp_flash_update(o_ctrl,
-						AW_FLASH_APP_ADDR, app_buf_ptr,
-						app_buf_size);
-		if (ret != OIS_SUCCESS) {
-			AW_LOGE("update app failed!");
-			break;
+		if (update_type == APP_DATA) {
+			AW_LOGI("update APP again! loop: %d", i);
+			ret = aw86006_isp_flash_update(o_ctrl,AW_FLASH_APP_ADDR,
+						       app_buf_ptr, app_buf_size);
+			if (ret != OIS_SUCCESS) {
+				AW_LOGE("update app failed!");
+				break;
+			}
+		} else if (update_type == ALL_DATA) {
+			AW_LOGI("update ALL again! loop: %d", i);
+			ret = aw86006_soc_flash_update(o_ctrl, AW_FLASH_BASE_ADDR,
+						       all_buf_ptr, all_buf_size);
+			if (ret != OIS_SUCCESS) {
+				AW_LOGE("update all failed!");
+				break;
+			}
+		} else {
+			AW_LOGE("invalid update type!");
+			return OIS_ERROR;
 		}
 	}
 
