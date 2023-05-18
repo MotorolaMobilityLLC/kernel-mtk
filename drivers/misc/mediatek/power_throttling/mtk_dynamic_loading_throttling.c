@@ -593,8 +593,7 @@ static void dlpt_parse_dt(struct platform_device *pdev)
 			uvlo_level = POWER_UVLO_VOLT_LEVEL;
 		pmic_uvlo_init(uvlo_level);
 
-		//MMI_STOPSHIP <PMIC>: for debug POFFSTS0 0x8800 shutdown issue
-		/* get uvlo-level */
+		/* get vbb-uvlo-level */
 		ret = of_property_read_u32(np, "vbb-uvlo-level", &vbb_uvlo_level);
 		if (ret == 0) {
 			pmic_vbb_uvlo_init(vbb_uvlo_level);
