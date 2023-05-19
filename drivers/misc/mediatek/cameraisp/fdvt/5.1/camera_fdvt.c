@@ -2328,154 +2328,6 @@ static void fdvt_enable_clock(bool En)
 /*****************************************************************************
  *
  *****************************************************************************/
-static signed int fdvt_read_reg(FDVT_REG_IO_STRUCT *pRegIo)
-{
-	unsigned int i;
-	signed int ret = 0;
-	/*  */
-	FDVT_REG_STRUCT reg;
-	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
-	FDVT_REG_STRUCT *pData = (FDVT_REG_STRUCT *)pRegIo->pData;
-
-	if (!pRegIo->pData ||
-	    pRegIo->count == 0 ||
-	    pRegIo->count > (FDVT_REG_RANGE >> 2)) {
-		log_err("%s pRegIo->pData is NULL, count:%d!!",
-			__func__, pRegIo->count);
-		ret = -EFAULT;
-		goto EXIT;
-	}
-
-	for (i = 0; i < pRegIo->count; i++) {
-		if (get_user(reg.addr, (unsigned int *)&pData->addr) != 0) {
-			log_err("get_user failed");
-			ret = -EFAULT;
-			goto EXIT;
-		}
-		/* pData++; */
-		/*  */
-		if (ISP_FDVT_BASE + reg.addr >= ISP_FDVT_BASE
-			&& reg.addr < FDVT_REG_RANGE
-			&& (reg.addr & 0x3) == 0) {
-			reg.val = FDVT_RD32(ISP_FDVT_BASE + reg.addr);
-		} else {
-			log_err("Wrong address(0x%p), FDVT_BASE(0x%p), addr(0x%lx)",
-				(ISP_FDVT_BASE + reg.addr),
-				ISP_FDVT_BASE,
-				(unsigned long)reg.addr);
-			reg.val = 0;
-		}
-		/*  */
-
-		if (put_user(reg.val, (unsigned int *)&pData->val) != 0) {
-			log_err("put_user failed");
-			ret = -EFAULT;
-			goto EXIT;
-		}
-		pData++;
-		/*  */
-	}
-	/*  */
-EXIT:
-	return ret;
-}
-
-/*****************************************************************************
- *
- *****************************************************************************/
-/* Can write sensor's test model only,
- * if need write to other modules, need modify current code flow
- */
-static signed int fdvt_write_reg_to_hw(FDVT_REG_STRUCT *pReg,
-				       unsigned int count)
-{
-	signed int ret = 0;
-	unsigned int i;
-	bool dbgWriteReg;
-
-	/* Use local variable to store fdvt_info.debug_mask &
-	 * FDVT_DBG_WRITE_REG for saving lock time
-	 */
-	spin_lock(&fdvt_info.spinlock_fdvt);
-	dbgWriteReg = fdvt_info.debug_mask & FDVT_DBG_WRITE_REG;
-	spin_unlock(&fdvt_info.spinlock_fdvt);
-
-	/*  */
-	if (dbgWriteReg)
-		log_dbg("- E.\n");
-
-	/*  */
-	for (i = 0; i < count; i++) {
-		if (dbgWriteReg) {
-			log_dbg("addr(0x%lx), val(0x%x)\n",
-				(unsigned long)(ISP_FDVT_BASE + pReg[i].addr),
-				(unsigned int)(pReg[i].val));
-		}
-
-		if (pReg[i].addr < FDVT_REG_RANGE &&
-		    ((pReg[i].addr & 0x3) == 0)) {
-			FDVT_WR32(ISP_FDVT_BASE + pReg[i].addr, pReg[i].val);
-		} else {
-			log_err("wrong address(0x%p), FDVT_BASE(0x%p), addr(0x%lx)\n",
-				(ISP_FDVT_BASE + pReg[i].addr),
-				ISP_FDVT_BASE,
-				(unsigned long)pReg[i].addr);
-		}
-	}
-
-	/*  */
-	return ret;
-}
-
-/*****************************************************************************
- *
- *****************************************************************************/
-static signed int fdvt_write_reg(FDVT_REG_IO_STRUCT *pRegIo)
-{
-	signed int ret = 0;
-	/* unsigned char* pData = NULL; */
-	FDVT_REG_STRUCT *pData = NULL;
-	/* */
-	if (fdvt_info.debug_mask & FDVT_DBG_WRITE_REG)
-		log_dbg(
-		"Data(0x%p), count(%d)\n",
-		(pRegIo->pData),
-		(pRegIo->count));
-
-	if (!pRegIo->pData || pRegIo->count == 0 ||
-	    pRegIo->count > (FDVT_REG_RANGE >> 2)) {
-		log_err("ERROR: pRegIo->pData is NULL or count:%d\n",
-			pRegIo->count);
-		ret = -EFAULT;
-		goto EXIT;
-	}
-	/* pData = (unsigned char*)kmalloc(
-	 * (pRegIo->count)*sizeof(FDVT_REG_STRUCT), GFP_ATOMIC);
-	 */
-	pData = kmalloc((pRegIo->count) * sizeof(FDVT_REG_STRUCT), GFP_KERNEL);
-	if (!pData) {
-		ret = -ENOMEM;
-		goto EXIT;
-	}
-
-	if (copy_from_user
-		(pData, (void __user *)pRegIo->pData,
-		pRegIo->count * sizeof(FDVT_REG_STRUCT)) != 0) {
-		log_err("copy_from_user failed\n");
-		ret = -EFAULT;
-		goto EXIT;
-	}
-	/*  */
-	ret = fdvt_write_reg_to_hw(pData, pRegIo->count);
-	/*  */
-EXIT:
-	kfree(pData);
-	return ret;
-}
-
-/*****************************************************************************
- *
- *****************************************************************************/
 static signed int fdvt_wait_irq(FDVT_WAIT_IRQ_STRUCT *wait_irq)
 {
 	signed int ret = 0;
@@ -2698,7 +2550,6 @@ static long FDVT_ioctl(struct file *pFile,
 	signed int ret = 0;
 
 	/*unsigned int pid = 0;*/
-	FDVT_REG_IO_STRUCT RegIo;
 	FDVT_WAIT_IRQ_STRUCT irq_info;
 	FDVT_CLEAR_IRQ_STRUCT ClearIrq;
 	struct fdvt_config fdvt_FdvtConfig;
@@ -2754,45 +2605,12 @@ static long FDVT_ioctl(struct file *pFile,
 				_LOG_ERR);
 		break;
 	}
-	case FDVT_READ_REGISTER:
-	{
-		if (copy_from_user(&RegIo, (void *)Param,
-		    sizeof(FDVT_REG_IO_STRUCT)) == 0) {
-			/* 2nd layer behavoir
-			 * of copy from user
-			 * is implemented in
-			 * fdvt_read_reg(...)
-			 */
-			ret = fdvt_read_reg(&RegIo);
-		} else {
-			log_err("FDVT_READ_REGISTER copy_from_user failed");
-			ret = -EFAULT;
-		}
-		break;
-	}
-	case FDVT_WRITE_REGISTER:
-	{
-		if (copy_from_user(&RegIo, (void *)Param,
-		    sizeof(FDVT_REG_IO_STRUCT)) == 0) {
-			/* 2nd layer behavoir
-			 * of copy from user
-			 * is implemented in
-			 * fdvt_write_reg(...)
-			 */
-			ret = fdvt_write_reg(&RegIo);
-		} else {
-			log_err("FDVT_WRITE_REGISTER copy_from_user failed");
-			ret = -EFAULT;
-		}
-		break;
-	}
 	case FDVT_WAIT_IRQ:
 	{
 		if (copy_from_user(&irq_info, (void *)Param,
 		    sizeof(FDVT_WAIT_IRQ_STRUCT)) == 0) {
 			/*  */
-			if (irq_info.type >= FDVT_IRQ_TYPE_AMOUNT ||
-			    irq_info.type < 0) {
+			if (irq_info.type >= FDVT_IRQ_TYPE_AMOUNT) {
 				ret = -EFAULT;
 				log_err("invalid type(%d)", irq_info.type);
 				goto EXIT;
@@ -2832,8 +2650,7 @@ static long FDVT_ioctl(struct file *pFile,
 		    sizeof(FDVT_CLEAR_IRQ_STRUCT)) == 0) {
 			log_dbg("FDVT_CLEAR_IRQ type(%d)", ClearIrq.type);
 
-			if (ClearIrq.type >= FDVT_IRQ_TYPE_AMOUNT ||
-			    ClearIrq.type < 0) {
+			if (ClearIrq.type >= FDVT_IRQ_TYPE_AMOUNT) {
 				ret = -EFAULT;
 				log_err("invalid type(%d)", ClearIrq.type);
 				goto EXIT;
@@ -2872,9 +2689,9 @@ static long FDVT_ioctl(struct file *pFile,
 			if (FDVT_REQUEST_STATE_EMPTY ==
 				request->state) {
 				if (enqueNum >
-					MAX_FDVT_FRAME_REQUEST) {
+					MAX_FDVT_FRAME_REQUEST || enqueNum < 0) {
 					log_err(
-					"FDVT Enque Num is bigger than enqueNum:%d\n",
+					"FDVT Enque Num is bigger than enqueNum or negtive:%d\n",
 					enqueNum);
 					break;
 				}
