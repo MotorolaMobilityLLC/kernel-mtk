@@ -3149,14 +3149,22 @@ static bool mmi_has_current_tapered(struct mtk_charger *info,
 }
 
 #define WEAK_CHRG_THRSH 450
+#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#define TURBO_CHRG_THRSH 3000
+#else
 #define TURBO_CHRG_THRSH 2500
+#endif
 void mmi_charge_rate_check(struct mtk_charger *info)
 {
 	int icl = 0;
 	int rc = 0;
 	int rp_level = 0;
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	struct chg_alg_device *alg = NULL;
+	int i = 0;
 	int ibus = get_ibus(info); /* mA */
+        int aicl_lmt = info->chg_data[CHG1_SETTING].input_current_limit_by_aicl; /* uA */
+
 #endif
 	union power_supply_propval val;
 
@@ -3206,14 +3214,45 @@ void mmi_charge_rate_check(struct mtk_charger *info)
  	}
 
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
-	if ((icl >= TURBO_CHRG_THRSH) && (ibus >= TURBO_CHRG_THRSH))
-#else
-	if (icl >= TURBO_CHRG_THRSH)
+	if(get_uisoc(info) == 100)
+		goto end_rate_check;
+	// Check if fast charge is running
+        for (i = 0; i < MAX_ALG_NO; i++) {
+                alg = info->alg[i];
+                if (alg == NULL)
+                        continue;
+
+                if (chg_alg_is_algo_running(alg)) {
+		        pr_err("[%s] fast charge %s is running!\n", __func__, dev_name(&(alg->dev)));
+                        info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+                        goto end_rate_check;
+                }
+        }
 #endif
+
+	if (icl >= TURBO_CHRG_THRSH)
+#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	{
+		if(info->mmi.charge_rate != POWER_SUPPLY_CHARGE_RATE_TURBO){
+	              if ((ibus > 2300) || ((get_uisoc(info) > 85) && (ibus > 2100)))
+		         info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		      else
+		         info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
+		}
+	}
+#else
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+#endif
 	else if (icl < WEAK_CHRG_THRSH)
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
+#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	else if ((info->mmi.charge_rate != POWER_SUPPLY_CHARGE_RATE_TURBO) &&
+		 ((ibus > 2300) || ((get_uisoc(info) > 85) && (ibus > 2100))))
+		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+	else if (info->mmi.charge_rate != POWER_SUPPLY_CHARGE_RATE_TURBO)
+#else
 	else
+#endif
 		info->mmi.charge_rate =  POWER_SUPPLY_CHARGE_RATE_NORMAL;
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && ((defined(CONFIG_MOTO_CHARGER_SGM415XX) && defined(CONFIG_FORCE_QC3_ICL)) || defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT))
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
@@ -3230,8 +3269,8 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 
 end_rate_check:
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
-	pr_info("%s ICL:%d, ibus: %d, Rp:%d, PD:%d, chg_type: %d, Charger Detected: %s\n",
-		__func__, icl, ibus, rp_level, info->pd_type, m_chg_type, charge_rate[info->mmi.charge_rate]);
+	pr_info("%s ICL:%d, aicl_lmt:%d, ibus: %d, Rp:%d, PD:%d, chg_type: %d, Charger Detected: %s\n",
+		__func__, icl, aicl_lmt, ibus, rp_level, info->pd_type, m_chg_type, charge_rate[info->mmi.charge_rate]);
 #else
 	pr_info("%s ICL:%d, Rp:%d, PD:%d, Charger Detected: %s\n",
 		__func__, icl, rp_level, info->pd_type, charge_rate[info->mmi.charge_rate]);
@@ -3489,7 +3528,57 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 		power_watt = mmi_get_pdc_power(info, force) / 1000;
 
 	} else {
+#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	    if(info->mmi.charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO){
+		power_watt = 5 * 3;
+	    }
+	    else {
+		struct chg_alg_device *alg = NULL;
+		bool is_fast_charging = false;
+		int i = 0;
+                int ibus = get_ibus(info); /* mA */
+                int aicl_lmt = info->chg_data[CHG1_SETTING].input_current_limit_by_aicl; /* uA */
+
+		if(get_uisoc(info) == 100){
+			power_watt = 5 * 2;
+		        return power_watt;
+		}
+                // Check if fast charge is running
+                for (i = 0; i < MAX_ALG_NO; i++) {
+                    alg = info->alg[i];
+                    if (alg == NULL)
+                        continue;
+
+                    if (chg_alg_is_algo_running(alg)) {
+                        pr_err("[%s] fast charge %s is running!\n", __func__, dev_name(&(alg->dev)));
+                        power_watt = 5 * icl /1000;
+                        is_fast_charging = true;
+                    }
+                }
+
+		if(!is_fast_charging && (get_uisoc(info) < 100)){
+	            pr_info("[%s] icl = %d, aicl_lmt = %d, chg_type = %d, ibus = %d, power_type = %d, pd = %d\n", __func__, icl, aicl_lmt, m_chg_type, ibus, info->mmi.charge_rate, info->pd_type);
+		    if(icl >= 3000) {
+                        // QC2, QC3 and Qc3+ all support max power more than 15w, should show trubo power
+                        if ((m_chg_type == 0x05) || (m_chg_type == 0x06) ||
+                            (m_chg_type == 0x08) || (m_chg_type == 0x09) ||
+                            ((ibus > 2300) || ((get_uisoc(info) > 85) && (ibus > 2100)))) {
+                            power_watt = 5 * icl /1000;
+                        }
+		        else {
+			    // for 10w chargers, charging current can't exceed 2.3A,
+			    // report normal charger
+			    power_watt = 5 * 2;
+		        }
+		    }
+		    else {
+		        power_watt = 5 * icl /1000;
+		    }
+		}
+	    }
+#else
 		power_watt = 5 * icl /1000;
+#endif
 	}
 
 	power_watt = MAX(power_watt, 1);
