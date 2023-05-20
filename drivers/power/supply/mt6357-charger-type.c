@@ -639,7 +639,7 @@ static int psy_chr_type_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-		if (info->type == POWER_SUPPLY_USB_TYPE_UNKNOWN)
+		if (info->type == POWER_SUPPLY_USB_TYPE_UNKNOWN || !info->bc12_active)
 			val->intval = 0;
 		else
 			val->intval = 1;
