@@ -46,10 +46,11 @@
 #define CANCUNF_PWM_PERIOD               1000
 
 /* define current, level */
-#define FLASH_FIRE_HIGH_MAXCURRENT      1400
-#define FLASH_FIRE_LOW_MAXCURRENT       260
+#define FLASH_FIRE_HIGH_MAXCURRENT      1385
+#define FLASH_FIRE_LOW_MAXCURRENT       200
 #define CANCUNF_LEVEL_NUM                26
 #define CANCUNF_LEVEL_TORCH              7
+#define CANCUNF_HW_TIMEOUT              640
 
 enum cancunf_flash_opcode {
     CANCUNF_FLASH_OP_NULL,
@@ -394,6 +395,18 @@ static int cancunf_ioctl(unsigned int cmd, unsigned long arg)
     channel = fl_arg->channel;
 
     switch (cmd) {
+    case FLASH_IOC_GET_DUTY_NUMBER:
+        pr_debug("FLASH_IOC_GET_DUTY_NUMBER\n");
+        fl_arg->arg = CANCUNF_LEVEL_NUM;
+        break;
+    case FLASH_IOC_GET_MAX_TORCH_DUTY:
+        pr_debug("FLASH_IOC_GET_MAX_TORCH_DUTY(%d)\n", channel);
+        fl_arg->arg = CANCUNF_LEVEL_TORCH - 1;
+        break;
+    case FLASH_IOC_GET_HW_TIMEOUT:
+        pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
+        fl_arg->arg = CANCUNF_HW_TIMEOUT;
+        break;
     case FLASH_IOC_SET_TIME_OUT_TIME_MS:
         pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
                 channel, (int)fl_arg->arg);
