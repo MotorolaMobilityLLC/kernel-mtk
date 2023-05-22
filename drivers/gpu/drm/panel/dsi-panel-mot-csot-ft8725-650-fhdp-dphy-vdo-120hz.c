@@ -40,6 +40,8 @@ extern int __attribute__ ((weak)) sm5109_BiasPower_enable(u32 avdd, u32 avee,u32
 #define BIAS_TMP_V0
 #endif
 
+static int tp_gesture_flag = 0;
+
 struct csot {
 	struct device *dev;
 	struct drm_panel panel;
@@ -262,6 +264,17 @@ static int csot_disable(struct drm_panel *panel)
 	return 0;
 }
 
+static int panel_set_gesture_flag(int state)
+{
+	if(state == 1)
+		tp_gesture_flag = 1;
+	else
+		tp_gesture_flag = 0;
+
+	pr_info("%s:disp:set tp_gesture_flag:%d\n", __func__, tp_gesture_flag);
+	return 0;
+}
+
 static int csot_unprepare(struct drm_panel *panel)
 {
 	struct csot *ctx = panel_to_csot(panel);
@@ -280,7 +293,9 @@ static int csot_unprepare(struct drm_panel *panel)
 	ctx->prepared = false;
 
 #ifdef BIAS_SM5109
-	sm5109_BiasPower_disable(5);
+	if(!tp_gesture_flag) {
+		sm5109_BiasPower_disable(5);
+	}
 #endif
 
 #ifdef BIAS_TMP_V0
@@ -840,6 +855,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ext_param_set = mtk_panel_ext_param_set,
 //	.ata_check = panel_ata_check,
 	.get_lcm_version = mtk_panel_get_lcm_version,
+	.set_gesture_flag = panel_set_gesture_flag,
 	.panel_feature_set = panel_feature_set,
 };
 #endif
