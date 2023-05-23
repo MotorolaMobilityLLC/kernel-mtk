@@ -405,6 +405,13 @@ done:
 	return err;
 }
 
+#ifdef CONFIG_COMPAT
+static long compat_rtc_dev_ioctl(struct file *file,unsigned int cmd, unsigned long arg)
+{
+	return rtc_dev_ioctl(file,cmd,arg);
+}
+#endif
+
 static int rtc_dev_fasync(int fd, struct file *file, int on)
 {
 	struct rtc_device *rtc = file->private_data;
@@ -439,6 +446,9 @@ static const struct file_operations rtc_dev_fops = {
 	.read		= rtc_dev_read,
 	.poll		= rtc_dev_poll,
 	.unlocked_ioctl	= rtc_dev_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl= compat_rtc_dev_ioctl,
+#endif
 	.open		= rtc_dev_open,
 	.release	= rtc_dev_release,
 	.fasync		= rtc_dev_fasync,
