@@ -1126,7 +1126,7 @@ static void custom6_setting(struct subdrv_ctx *ctx)
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
 	full_remosaic_mode =0;
-	crop_remosaic_mode =1;
+	crop_remosaic_mode =0;
 	_length = sizeof(addr_data_pair_custom6) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
