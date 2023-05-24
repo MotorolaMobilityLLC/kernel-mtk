@@ -197,11 +197,11 @@ static void tianma_panel_init(struct tianma *ctx)
 	}
 	else {
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(10);
+		msleep(3);
 		gpiod_set_value(ctx->reset_gpio, 0);
-		msleep(5);
+		msleep(3);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(60);
+		msleep(10);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -244,7 +244,7 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx,0xC1,0x89,0x28,0x00,0x08,0x00,0xAA,0x02,0x0E,0x00,0x2B,0x00,0x07,0x0D,0xB7,0x0C,0xB7);
 	tianma_dcs_write_seq_static(ctx,0XC2,0X1B,0XA0);
 	tianma_dcs_write_seq_static(ctx, 0x11, 0x00);
-	msleep(120);
+	msleep(100);
 	tianma_dcs_write_seq_static(ctx, 0x29, 0x00);
 	msleep(20);
 	pr_info("disp:init code %s-\n", __func__);
@@ -293,13 +293,13 @@ static int tianma_unprepare(struct drm_panel *panel)
 
 	tianma_dcs_write_seq_static(ctx, 0x28);
 	tianma_dcs_write_seq_static(ctx, 0x10);
-	msleep(120);
+	msleep(70);
 
 	ctx->prepared = false;
 
 	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
 	if(!tp_gesture_flag) {
-		sm5109_BiasPower_disable(5);
+		sm5109_BiasPower_disable(15);
 	}
 
 #if 0 //#ifdef BIAS_TMP_V0
