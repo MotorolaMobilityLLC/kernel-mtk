@@ -114,6 +114,7 @@
 		status = "okay";
 		mmi,sync_boardtemp_to_fg;
 		mmi,ui_full_soc = <97>;
+		mmi,shutdown_vol_threshold = <3400>;
 };
 
 &pio {
