@@ -76,6 +76,7 @@
 		pinctrl-2 = <&ctp_gpio_release>;
 		mmi,status = "/chosen","mmi,panel_name","contains","csot_vtdr6115";
 		focaltech,edge-ctrl;
+		focaltech,sample-ctrl;
 		focaltech,interpolation-ctrl;
 		mmi,enable-gestures;
 		mmi,supported_gesture_type = <0x07>;
