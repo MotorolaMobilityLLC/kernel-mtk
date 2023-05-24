@@ -113,6 +113,7 @@
 		compatible = "mmi,smart-battery";
 		status = "okay";
 		mmi,sync_boardtemp_to_fg;
+		mmi,ui_full_soc = <97>;
 };
 
 &pio {
