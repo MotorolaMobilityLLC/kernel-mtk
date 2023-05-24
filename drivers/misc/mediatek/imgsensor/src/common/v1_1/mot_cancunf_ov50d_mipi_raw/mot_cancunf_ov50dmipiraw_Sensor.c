@@ -601,6 +601,43 @@ static kal_uint32 streaming_control(kal_bool enable)
 }
 
 #define I2C_BUFFER_LEN 765
+kal_uint16 mot_cancunf_ov50d_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
+{
+	char puSendCmd[I2C_BUFFER_LEN];
+	kal_uint32 tosend, IDX;
+	kal_uint16 addr = 0, data;
+	tosend = 0;
+	IDX = 0;
+
+	addr = para[IDX];
+	puSendCmd[tosend++] = (char)(addr >> 8);
+	puSendCmd[tosend++] = (char)(addr & 0xFF);
+	while (len > IDX) {
+		{
+			data = para[IDX + 1];
+			puSendCmd[tosend++] = (char)(data & 0xFF);
+			IDX += 2;
+		}
+		if ((I2C_BUFFER_LEN - tosend) < 3 || IDX == len) {
+			imgsensor_i2c_write(
+				get_i2c_cfg(),
+				puSendCmd,
+				tosend,
+				tosend,
+				imgsensor.i2c_write_id,
+				imgsensor_info.i2c_speed);
+			tosend = 0;
+			if(IDX < len) {
+				addr = para[IDX];
+				puSendCmd[tosend++] = (char)(addr >> 8);
+				puSendCmd[tosend++] = (char)(addr & 0xFF);
+			}
+
+		}
+ 	}
+	return 0;
+}
+
 kal_uint16 mot_cancunf_ov50d_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
@@ -643,8 +680,20 @@ static void sensor_init(void)
 	}
 	else */
 	{
-		mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunf_ov50d,
-			sizeof(addr_data_pair_init_mot_cancunf_ov50d)/sizeof(kal_uint16));
+		mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunf_ov50d_part1,
+			sizeof(addr_data_pair_init_mot_cancunf_ov50d_part1)/sizeof(kal_uint16));
+		mot_cancunf_ov50d_burst_write_cmos_sensor(addr_data_pair_init_mot_cancunf_ov50d_part2,
+			sizeof(addr_data_pair_init_mot_cancunf_ov50d_part2)/sizeof(kal_uint16));
+		mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunf_ov50d_part3,
+			sizeof(addr_data_pair_init_mot_cancunf_ov50d_part3)/sizeof(kal_uint16));
+		mot_cancunf_ov50d_burst_write_cmos_sensor(addr_data_pair_init_mot_cancunf_ov50d_part4,
+			sizeof(addr_data_pair_init_mot_cancunf_ov50d_part4)/sizeof(kal_uint16));
+		mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunf_ov50d_part5,
+			sizeof(addr_data_pair_init_mot_cancunf_ov50d_part5)/sizeof(kal_uint16));
+		mot_cancunf_ov50d_burst_write_cmos_sensor(addr_data_pair_init_mot_cancunf_ov50d_part6,
+			sizeof(addr_data_pair_init_mot_cancunf_ov50d_part6)/sizeof(kal_uint16));
+		mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunf_ov50d_part7,
+			sizeof(addr_data_pair_init_mot_cancunf_ov50d_part7)/sizeof(kal_uint16));
 	}
 	pr_debug("MOT CANCUNF OV50D end\n");
 
