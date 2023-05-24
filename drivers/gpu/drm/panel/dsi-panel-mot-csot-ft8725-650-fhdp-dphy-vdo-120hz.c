@@ -173,7 +173,7 @@ static void csot_panel_init(struct csot *ctx)
 		gpiod_set_value(ctx->reset_gpio, 0);
 		msleep(5);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(60);
+		msleep(10);
 
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
@@ -236,9 +236,9 @@ static void csot_panel_init(struct csot *ctx)
 
 	csot_dcs_write_seq_static(ctx,0x11,0x00);
 	csot_dcs_write_seq_static(ctx, 0x11, 0x00);
-	usleep_range(150000,150001);
+	usleep_range(900000,900001);
 	csot_dcs_write_seq_static(ctx, 0x29, 0x00);
-	usleep_range(30000,30001);
+	usleep_range(20000,20001);
 
 
 }
@@ -273,9 +273,9 @@ static int csot_unprepare(struct drm_panel *panel)
 	pr_info("%s\n", __func__);
 
 	csot_dcs_write_seq_static(ctx, 0x28);
-	msleep(20);
+	msleep(10);
 	csot_dcs_write_seq_static(ctx, 0x10);
-	msleep(120);
+	msleep(80);
 
 	ctx->prepared = false;
 
