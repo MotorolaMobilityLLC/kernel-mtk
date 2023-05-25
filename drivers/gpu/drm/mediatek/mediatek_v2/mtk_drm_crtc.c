@@ -904,9 +904,11 @@ static bool panel_set_hbm_backlight(struct drm_crtc *crtc, unsigned int *bl_lvl)
 	} else {
 		bl_lvl_during_hbm = bl_level;
 
-		if ((panel_ext->check_panel_feature) && (panel_is_hbm_on(crtc))) {
-			pr_info("HBM is on.. ignore setting backlight. bl_vl=%d\n", bl_lvl_during_hbm);
-			return true;
+		if (panel_ext->check_panel_feature) {
+			if (panel_is_hbm_on(crtc) && bl_level) {
+				pr_info("HBM is on.. ignore setting backlight. bl_vl=%d\n", bl_lvl_during_hbm);
+				return true;
+			}
 		} else {
 			if (bl_level == 0) {
 				hbm_mode = false;
@@ -1334,8 +1336,9 @@ int mtk_drm_crtc_get_panel_feature(struct drm_crtc *crtc, paramId_t param_id, ui
 	int ret = 0;
 
 	param_info.param_idx = param_id;
-
+	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
 	ret = comp->funcs->io_cmd(comp, NULL, DSI_PANEL_FEATURE_GET, &param_info);
+	DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 	*param_value = param_info.value;
 	return ret;
 }
