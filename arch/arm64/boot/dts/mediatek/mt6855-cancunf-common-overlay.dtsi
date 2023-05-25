@@ -190,9 +190,30 @@
 };
 
 &mmc1 {
+	pinctrl-0 = <&mmc1_pins_default>;
+	pinctrl-1 = <&mmc1_pins_uhs>;
 	cd-gpios = <&pio 14 GPIO_ACTIVE_HIGH>;
 	vmmc-supply = <&mt6369_vmch_eint_low>;
 };
+
+&pio {
+
+        mmc1_pins_default: mmc1default {
+		pins_clk {
+			pinmux = <PINMUX_GPIO82__FUNC_MSDC1_CLK>;
+			drive-strength = <7>;
+			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
+		};
+	};
+	mmc1_pins_uhs: mmc1@0{
+		pins_clk {
+			pinmux = <PINMUX_GPIO82__FUNC_MSDC1_CLK>;
+			drive-strength = <7>;
+			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
+		};
+	};
+};
+
 #include "cancunf-touch.dtsi"
 
 //for alsps sensor tmd2755x
