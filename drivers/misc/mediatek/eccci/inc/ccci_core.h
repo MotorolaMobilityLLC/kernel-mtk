@@ -268,12 +268,14 @@ extern void mtk_ccci_ccb_info_peek(void);
 
 #define CCCI_IOC_CCB_CTRL_INFO			\
 	_IOWR(CCCI_IOC_MAGIC, 71, struct ccb_ctrl_info)
+/* for cancel ccb poll */
+#define CCCI_IOC_SMEM_POLL_EXIT	\
+	_IO(CCCI_IOC_MAGIC, 76)
 
 #define CCCI_IOC_SET_HEADER			\
 	_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER			\
 	_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */
-
 /* mdlogger */
 #define CCCI_IOC_DL_TRAFFIC_CONTROL		\
 	_IOW(CCCI_IOC_MAGIC, 119, unsigned int)
