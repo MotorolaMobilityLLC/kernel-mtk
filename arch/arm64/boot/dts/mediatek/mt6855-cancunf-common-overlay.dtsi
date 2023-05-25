@@ -25,13 +25,6 @@
 	bootargs_ext = "initcall_debug=0";
 };
 
-&pmic_adc {
-	vin4_100k {
-		channel = <AUXADC_VIN4>;
-		pures = <ADC_PURES_100K>;
-	};
-};
-
 &clock_buffer_ctrl {
         mediatek,xo-bbck4 = <1>;
 };
