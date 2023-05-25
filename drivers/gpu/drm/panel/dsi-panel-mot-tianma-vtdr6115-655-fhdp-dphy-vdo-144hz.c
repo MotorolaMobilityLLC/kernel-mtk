@@ -780,6 +780,9 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
 	ctx->current_bl = level;
+
+	if (!level) ctx->hbm_mode = 0;
+
 	return 0;
 }
 
