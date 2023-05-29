@@ -742,9 +742,16 @@
       <elf-symbol name='__traceiter_android_vh_wq_lockup_pool' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x62c05483'/>
       <elf-symbol name='__traceiter_binder_transaction_received' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x361264a8'/>
       <elf-symbol name='__traceiter_binder_txn_latency_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x15bb2b8'/>
+      <elf-symbol name='__traceiter_block_bio_complete' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x10874e26'/>
+      <elf-symbol name='__traceiter_block_bio_queue' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x648cd13e'/>
       <elf-symbol name='__traceiter_block_bio_remap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd3e2a7cc'/>
+      <elf-symbol name='__traceiter_block_getrq' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9faf6b3e'/>
       <elf-symbol name='__traceiter_block_rq_complete' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x85dafa97'/>
       <elf-symbol name='__traceiter_block_rq_insert' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x77d5ed52'/>
+      <elf-symbol name='__traceiter_block_rq_issue' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x24134cd6'/>
+      <elf-symbol name='__traceiter_block_rq_merge' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5f02e91d'/>
+      <elf-symbol name='__traceiter_block_rq_requeue' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdaff7426'/>
+      <elf-symbol name='__traceiter_block_split' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe6611e00'/>
       <elf-symbol name='__traceiter_clock_set_rate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa45eb358'/>
       <elf-symbol name='__traceiter_cpu_frequency' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xead3e41b'/>
       <elf-symbol name='__traceiter_cpu_frequency_limits' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbf14b724'/>
@@ -7309,9 +7316,16 @@
       <elf-symbol name='__tracepoint_android_vh_wq_lockup_pool' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4fd35a54'/>
       <elf-symbol name='__tracepoint_binder_transaction_received' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xab619a41'/>
       <elf-symbol name='__tracepoint_binder_txn_latency_free' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf052295c'/>
+      <elf-symbol name='__tracepoint_block_bio_complete' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa65f3c8c'/>
+      <elf-symbol name='__tracepoint_block_bio_queue' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa13ed1a6'/>
       <elf-symbol name='__tracepoint_block_bio_remap' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xae64f1dd'/>
+      <elf-symbol name='__tracepoint_block_getrq' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfc12d508'/>
       <elf-symbol name='__tracepoint_block_rq_complete' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbb319d4d'/>
       <elf-symbol name='__tracepoint_block_rq_insert' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf4a00349'/>
+      <elf-symbol name='__tracepoint_block_rq_issue' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x960f8928'/>
+      <elf-symbol name='__tracepoint_block_rq_merge' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4520b967'/>
+      <elf-symbol name='__tracepoint_block_rq_requeue' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa964672d'/>
+      <elf-symbol name='__tracepoint_block_split' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x34fc4ad3'/>
       <elf-symbol name='__tracepoint_clock_set_rate' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x19552c17'/>
       <elf-symbol name='__tracepoint_cpu_frequency' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf9093f5b'/>
       <elf-symbol name='__tracepoint_cpu_frequency_limits' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe279d62c'/>
@@ -100539,7 +100553,7 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='4e13c9d9' size-in-bits='64' id='d064f511'/>
-      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/power/../base.h' line='88' column='1' id='d066d157'>
+      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/base.h' line='88' column='1' id='d066d157'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='klist_children' type-id='6160a6ce' visibility='default' filepath='drivers/base/base.h' line='89' column='1'/>
         </data-member>
@@ -130528,11 +130542,27 @@
         <parameter type-id='95e97e5e' name='to_thread' filepath='drivers/android/./binder_trace.h' line='122' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_block_bio_complete' mangled-name='__traceiter_block_bio_complete' filepath='include/trace/events/block.h' line='233' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_block_bio_complete'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/events/block.h' line='233' column='1'/>
+        <parameter type-id='e7d2a5fc' name='q' filepath='include/trace/events/block.h' line='233' column='1'/>
+        <parameter type-id='fb55efa1' name='bio' filepath='include/trace/events/block.h' line='233' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_block_bio_queue' mangled-name='__traceiter_block_bio_queue' filepath='include/trace/events/block.h' line='332' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_block_bio_queue'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/events/block.h' line='332' column='1'/>
+        <parameter type-id='fb55efa1' name='bio' filepath='include/trace/events/block.h' line='332' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_block_bio_remap' mangled-name='__traceiter_block_bio_remap' filepath='include/trace/events/block.h' line='456' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_block_bio_remap'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/events/block.h' line='456' column='1'/>
         <parameter type-id='fb55efa1' name='bio' filepath='include/trace/events/block.h' line='456' column='1'/>
         <parameter type-id='8504f260' name='dev' filepath='include/trace/events/block.h' line='456' column='1'/>
         <parameter type-id='a42536cd' name='from' filepath='include/trace/events/block.h' line='456' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_block_getrq' mangled-name='__traceiter_block_getrq' filepath='include/trace/events/block.h' line='343' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_block_getrq'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/events/block.h' line='343' column='1'/>
+        <parameter type-id='fb55efa1' name='bio' filepath='include/trace/events/block.h' line='343' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_block_rq_complete' mangled-name='__traceiter_block_rq_complete' filepath='include/trace/events/block.h' line='115' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_block_rq_complete'>
@@ -130545,6 +130575,27 @@
       <function-decl name='__traceiter_block_rq_insert' mangled-name='__traceiter_block_rq_insert' filepath='include/trace/events/block.h' line='190' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_block_rq_insert'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/events/block.h' line='190' column='1'/>
         <parameter type-id='3dad1a48' name='rq' filepath='include/trace/events/block.h' line='190' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_block_rq_issue' mangled-name='__traceiter_block_rq_issue' filepath='include/trace/events/block.h' line='204' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_block_rq_issue'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/events/block.h' line='204' column='1'/>
+        <parameter type-id='3dad1a48' name='rq' filepath='include/trace/events/block.h' line='204' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_block_rq_merge' mangled-name='__traceiter_block_rq_merge' filepath='include/trace/events/block.h' line='218' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_block_rq_merge'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/events/block.h' line='218' column='1'/>
+        <parameter type-id='3dad1a48' name='rq' filepath='include/trace/events/block.h' line='218' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_block_rq_requeue' mangled-name='__traceiter_block_rq_requeue' filepath='include/trace/events/block.h' line='73' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_block_rq_requeue'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/events/block.h' line='73' column='1'/>
+        <parameter type-id='3dad1a48' name='rq' filepath='include/trace/events/block.h' line='73' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_block_split' mangled-name='__traceiter_block_split' filepath='include/trace/events/block.h' line='418' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_block_split'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/events/block.h' line='418' column='1'/>
+        <parameter type-id='fb55efa1' name='bio' filepath='include/trace/events/block.h' line='418' column='1'/>
+        <parameter type-id='f0981eeb' name='new_sector' filepath='include/trace/events/block.h' line='418' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_clock_set_rate' mangled-name='__traceiter_clock_set_rate' filepath='include/trace/events/power.h' line='322' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_clock_set_rate'>
@@ -131306,9 +131357,16 @@
       <var-decl name='__tracepoint_android_vh_wq_lockup_pool' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_wq_lockup_pool' visibility='default' filepath='include/trace/hooks/wqlockup.h' line='13' column='1' elf-symbol-id='__tracepoint_android_vh_wq_lockup_pool'/>
       <var-decl name='__tracepoint_binder_transaction_received' type-id='4ca0c298' mangled-name='__tracepoint_binder_transaction_received' visibility='default' filepath='drivers/android/./binder_trace.h' line='179' column='1' elf-symbol-id='__tracepoint_binder_transaction_received'/>
       <var-decl name='__tracepoint_binder_txn_latency_free' type-id='4ca0c298' mangled-name='__tracepoint_binder_txn_latency_free' visibility='default' filepath='drivers/android/./binder_trace.h' line='122' column='1' elf-symbol-id='__tracepoint_binder_txn_latency_free'/>
+      <var-decl name='__tracepoint_block_bio_complete' type-id='4ca0c298' mangled-name='__tracepoint_block_bio_complete' visibility='default' filepath='include/trace/events/block.h' line='233' column='1' elf-symbol-id='__tracepoint_block_bio_complete'/>
+      <var-decl name='__tracepoint_block_bio_queue' type-id='4ca0c298' mangled-name='__tracepoint_block_bio_queue' visibility='default' filepath='include/trace/events/block.h' line='332' column='1' elf-symbol-id='__tracepoint_block_bio_queue'/>
       <var-decl name='__tracepoint_block_bio_remap' type-id='4ca0c298' mangled-name='__tracepoint_block_bio_remap' visibility='default' filepath='include/trace/events/block.h' line='456' column='1' elf-symbol-id='__tracepoint_block_bio_remap'/>
+      <var-decl name='__tracepoint_block_getrq' type-id='4ca0c298' mangled-name='__tracepoint_block_getrq' visibility='default' filepath='include/trace/events/block.h' line='343' column='1' elf-symbol-id='__tracepoint_block_getrq'/>
       <var-decl name='__tracepoint_block_rq_complete' type-id='4ca0c298' mangled-name='__tracepoint_block_rq_complete' visibility='default' filepath='include/trace/events/block.h' line='115' column='1' elf-symbol-id='__tracepoint_block_rq_complete'/>
       <var-decl name='__tracepoint_block_rq_insert' type-id='4ca0c298' mangled-name='__tracepoint_block_rq_insert' visibility='default' filepath='include/trace/events/block.h' line='190' column='1' elf-symbol-id='__tracepoint_block_rq_insert'/>
+      <var-decl name='__tracepoint_block_rq_issue' type-id='4ca0c298' mangled-name='__tracepoint_block_rq_issue' visibility='default' filepath='include/trace/events/block.h' line='204' column='1' elf-symbol-id='__tracepoint_block_rq_issue'/>
+      <var-decl name='__tracepoint_block_rq_merge' type-id='4ca0c298' mangled-name='__tracepoint_block_rq_merge' visibility='default' filepath='include/trace/events/block.h' line='218' column='1' elf-symbol-id='__tracepoint_block_rq_merge'/>
+      <var-decl name='__tracepoint_block_rq_requeue' type-id='4ca0c298' mangled-name='__tracepoint_block_rq_requeue' visibility='default' filepath='include/trace/events/block.h' line='73' column='1' elf-symbol-id='__tracepoint_block_rq_requeue'/>
+      <var-decl name='__tracepoint_block_split' type-id='4ca0c298' mangled-name='__tracepoint_block_split' visibility='default' filepath='include/trace/events/block.h' line='418' column='1' elf-symbol-id='__tracepoint_block_split'/>
       <var-decl name='__tracepoint_clock_set_rate' type-id='4ca0c298' mangled-name='__tracepoint_clock_set_rate' visibility='default' filepath='include/trace/events/power.h' line='322' column='1' elf-symbol-id='__tracepoint_clock_set_rate'/>
       <var-decl name='__tracepoint_cpu_frequency' type-id='4ca0c298' mangled-name='__tracepoint_cpu_frequency' visibility='default' filepath='include/trace/events/power.h' line='145' column='1' elf-symbol-id='__tracepoint_cpu_frequency'/>
       <var-decl name='__tracepoint_cpu_frequency_limits' type-id='4ca0c298' mangled-name='__tracepoint_cpu_frequency_limits' visibility='default' filepath='include/trace/events/power.h' line='152' column='1' elf-symbol-id='__tracepoint_cpu_frequency_limits'/>
@@ -132468,10 +132526,10 @@
         <parameter type-id='3eb7c31c' name='gfp_mask' filepath='block/blk-crypto.c' line='83' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='bio_end_io_acct_remapped' mangled-name='bio_end_io_acct_remapped' filepath='block/blk-core.c' line='1354' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='bio_end_io_acct_remapped'>
-        <parameter type-id='fb55efa1' name='bio' filepath='block/blk-core.c' line='1354' column='1'/>
-        <parameter type-id='7359adad' name='start_time' filepath='block/blk-core.c' line='1354' column='1'/>
-        <parameter type-id='b88dd945' name='orig_bdev' filepath='block/blk-core.c' line='1355' column='1'/>
+      <function-decl name='bio_end_io_acct_remapped' mangled-name='bio_end_io_acct_remapped' filepath='block/blk-core.c' line='1359' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='bio_end_io_acct_remapped'>
+        <parameter type-id='fb55efa1' name='bio' filepath='block/blk-core.c' line='1359' column='1'/>
+        <parameter type-id='7359adad' name='start_time' filepath='block/blk-core.c' line='1359' column='1'/>
+        <parameter type-id='b88dd945' name='orig_bdev' filepath='block/blk-core.c' line='1360' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='bio_endio' mangled-name='bio_endio' filepath='block/bio.c' line='1447' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='bio_endio'>
@@ -132495,8 +132553,8 @@
         <parameter type-id='38b1e3a0' name='bs' filepath='block/bio.c' line='1498' column='1'/>
         <return type-id='fb55efa1'/>
       </function-decl>
-      <function-decl name='bio_start_io_acct' mangled-name='bio_start_io_acct' filepath='block/blk-core.c' line='1326' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='bio_start_io_acct'>
-        <parameter type-id='fb55efa1' name='bio' filepath='block/blk-core.c' line='1326' column='1'/>
+      <function-decl name='bio_start_io_acct' mangled-name='bio_start_io_acct' filepath='block/blk-core.c' line='1331' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='bio_start_io_acct'>
+        <parameter type-id='fb55efa1' name='bio' filepath='block/blk-core.c' line='1331' column='1'/>
         <return type-id='7359adad'/>
       </function-decl>
       <function-decl name='bioset_exit' mangled-name='bioset_exit' filepath='block/bio.c' line='1571' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='bioset_exit'>
@@ -132609,8 +132667,8 @@
         <parameter type-id='33c599da' name='disk' filepath='block/genhd.c' line='1377' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='blk_cleanup_queue' mangled-name='blk_cleanup_queue' filepath='block/blk-core.c' line='366' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_cleanup_queue'>
-        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='366' column='1'/>
+      <function-decl name='blk_cleanup_queue' mangled-name='blk_cleanup_queue' filepath='block/blk-core.c' line='371' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_cleanup_queue'>
+        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='371' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='blk_execute_rq' mangled-name='blk_execute_rq' filepath='block/blk-exec.c' line='90' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_execute_rq'>
@@ -132626,22 +132684,22 @@
         <parameter type-id='5afdaa66' name='done' filepath='block/blk-exec.c' line='48' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='blk_finish_plug' mangled-name='blk_finish_plug' filepath='block/blk-core.c' line='1756' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_finish_plug'>
-        <parameter type-id='39944481' name='plug' filepath='block/blk-core.c' line='1756' column='1'/>
+      <function-decl name='blk_finish_plug' mangled-name='blk_finish_plug' filepath='block/blk-core.c' line='1761' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_finish_plug'>
+        <parameter type-id='39944481' name='plug' filepath='block/blk-core.c' line='1761' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='blk_freeze_queue_start' mangled-name='blk_freeze_queue_start' filepath='block/blk-mq.c' line='137' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_freeze_queue_start'>
         <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-mq.c' line='137' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='blk_get_queue' mangled-name='blk_get_queue' filepath='block/blk-core.c' line='617' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_get_queue'>
-        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='617' column='1'/>
+      <function-decl name='blk_get_queue' mangled-name='blk_get_queue' filepath='block/blk-core.c' line='622' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_get_queue'>
+        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='622' column='1'/>
         <return type-id='b50a4934'/>
       </function-decl>
-      <function-decl name='blk_get_request' mangled-name='blk_get_request' filepath='block/blk-core.c' line='634' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_get_request'>
-        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='634' column='1'/>
-        <parameter type-id='f0981eeb' name='op' filepath='block/blk-core.c' line='634' column='1'/>
-        <parameter type-id='346d62be' name='flags' filepath='block/blk-core.c' line='635' column='1'/>
+      <function-decl name='blk_get_request' mangled-name='blk_get_request' filepath='block/blk-core.c' line='639' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_get_request'>
+        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='639' column='1'/>
+        <parameter type-id='f0981eeb' name='op' filepath='block/blk-core.c' line='639' column='1'/>
+        <parameter type-id='346d62be' name='flags' filepath='block/blk-core.c' line='640' column='1'/>
         <return type-id='3dad1a48'/>
       </function-decl>
       <function-decl name='blk_ksm_get_slot_idx' mangled-name='blk_ksm_get_slot_idx' filepath='block/keyslot-manager.c' line='211' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_ksm_get_slot_idx'>
@@ -132839,8 +132897,8 @@
         <parameter type-id='95e97e5e' name='first_vec' filepath='block/blk-mq-virtio.c' line='25' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='blk_op_str' mangled-name='blk_op_str' filepath='block/blk-core.c' line='159' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_op_str'>
-        <parameter type-id='f0981eeb' name='op' filepath='block/blk-core.c' line='159' column='1'/>
+      <function-decl name='blk_op_str' mangled-name='blk_op_str' filepath='block/blk-core.c' line='164' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_op_str'>
+        <parameter type-id='f0981eeb' name='op' filepath='block/blk-core.c' line='164' column='1'/>
         <return type-id='80f4b756'/>
       </function-decl>
       <function-decl name='blk_pm_runtime_init' mangled-name='blk_pm_runtime_init' filepath='block/blk-pm.c' line='31' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_pm_runtime_init'>
@@ -132848,12 +132906,12 @@
         <parameter type-id='fa0b179b' name='dev' filepath='block/blk-pm.c' line='31' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='blk_put_queue' mangled-name='blk_put_queue' filepath='block/blk-core.c' line='337' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_put_queue'>
-        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='337' column='1'/>
+      <function-decl name='blk_put_queue' mangled-name='blk_put_queue' filepath='block/blk-core.c' line='342' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_put_queue'>
+        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='342' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='blk_put_request' mangled-name='blk_put_request' filepath='block/blk-core.c' line='650' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_put_request'>
-        <parameter type-id='3dad1a48' name='req' filepath='block/blk-core.c' line='650' column='1'/>
+      <function-decl name='blk_put_request' mangled-name='blk_put_request' filepath='block/blk-core.c' line='655' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_put_request'>
+        <parameter type-id='3dad1a48' name='req' filepath='block/blk-core.c' line='655' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='blk_queue_alignment_offset' mangled-name='blk_queue_alignment_offset' filepath='block/blk-settings.c' line='378' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_queue_alignment_offset'>
@@ -132876,19 +132934,19 @@
         <parameter type-id='95e97e5e' name='mask' filepath='block/blk-settings.c' line='742' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='blk_queue_flag_clear' mangled-name='blk_queue_flag_clear' filepath='block/blk-core.c' line='94' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_queue_flag_clear'>
-        <parameter type-id='f0981eeb' name='flag' filepath='block/blk-core.c' line='94' column='1'/>
-        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='94' column='1'/>
+      <function-decl name='blk_queue_flag_clear' mangled-name='blk_queue_flag_clear' filepath='block/blk-core.c' line='99' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_queue_flag_clear'>
+        <parameter type-id='f0981eeb' name='flag' filepath='block/blk-core.c' line='99' column='1'/>
+        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='99' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='blk_queue_flag_set' mangled-name='blk_queue_flag_set' filepath='block/blk-core.c' line='83' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_queue_flag_set'>
-        <parameter type-id='f0981eeb' name='flag' filepath='block/blk-core.c' line='83' column='1'/>
-        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='83' column='1'/>
+      <function-decl name='blk_queue_flag_set' mangled-name='blk_queue_flag_set' filepath='block/blk-core.c' line='88' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_queue_flag_set'>
+        <parameter type-id='f0981eeb' name='flag' filepath='block/blk-core.c' line='88' column='1'/>
+        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='88' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='blk_queue_flag_test_and_set' mangled-name='blk_queue_flag_test_and_set' filepath='block/blk-core.c' line='108' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_queue_flag_test_and_set'>
-        <parameter type-id='f0981eeb' name='flag' filepath='block/blk-core.c' line='108' column='1'/>
-        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='108' column='1'/>
+      <function-decl name='blk_queue_flag_test_and_set' mangled-name='blk_queue_flag_test_and_set' filepath='block/blk-core.c' line='113' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_queue_flag_test_and_set'>
+        <parameter type-id='f0981eeb' name='flag' filepath='block/blk-core.c' line='113' column='1'/>
+        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='113' column='1'/>
         <return type-id='b50a4934'/>
       </function-decl>
       <function-decl name='blk_queue_io_min' mangled-name='blk_queue_io_min' filepath='block/blk-settings.c' line='437' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_queue_io_min'>
@@ -133009,26 +133067,26 @@
         <parameter type-id='7604ff1d' name='lim' filepath='block/blk-settings.c' line='71' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='blk_start_plug' mangled-name='blk_start_plug' filepath='block/blk-core.c' line='1672' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_start_plug'>
-        <parameter type-id='39944481' name='plug' filepath='block/blk-core.c' line='1672' column='1'/>
+      <function-decl name='blk_start_plug' mangled-name='blk_start_plug' filepath='block/blk-core.c' line='1677' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_start_plug'>
+        <parameter type-id='39944481' name='plug' filepath='block/blk-core.c' line='1677' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='blk_stat_enable_accounting' mangled-name='blk_stat_enable_accounting' filepath='block/blk-stat.c' line='187' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_stat_enable_accounting'>
         <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-stat.c' line='187' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='blk_status_to_errno' mangled-name='blk_status_to_errno' filepath='block/blk-core.c' line='211' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_status_to_errno'>
-        <parameter type-id='f4e2facd' name='status' filepath='block/blk-core.c' line='211' column='1'/>
+      <function-decl name='blk_status_to_errno' mangled-name='blk_status_to_errno' filepath='block/blk-core.c' line='216' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_status_to_errno'>
+        <parameter type-id='f4e2facd' name='status' filepath='block/blk-core.c' line='216' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='blk_sync_queue' mangled-name='blk_sync_queue' filepath='block/blk-core.c' line='299' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_sync_queue'>
-        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='299' column='1'/>
+      <function-decl name='blk_sync_queue' mangled-name='blk_sync_queue' filepath='block/blk-core.c' line='304' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_sync_queue'>
+        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-core.c' line='304' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='blk_update_request' mangled-name='blk_update_request' filepath='block/blk-core.c' line='1411' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_update_request'>
-        <parameter type-id='3dad1a48' name='req' filepath='block/blk-core.c' line='1411' column='1'/>
-        <parameter type-id='f4e2facd' name='error' filepath='block/blk-core.c' line='1411' column='1'/>
-        <parameter type-id='f0981eeb' name='nr_bytes' filepath='block/blk-core.c' line='1412' column='1'/>
+      <function-decl name='blk_update_request' mangled-name='blk_update_request' filepath='block/blk-core.c' line='1416' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_update_request'>
+        <parameter type-id='3dad1a48' name='req' filepath='block/blk-core.c' line='1416' column='1'/>
+        <parameter type-id='f4e2facd' name='error' filepath='block/blk-core.c' line='1416' column='1'/>
+        <parameter type-id='f0981eeb' name='nr_bytes' filepath='block/blk-core.c' line='1417' column='1'/>
         <return type-id='b50a4934'/>
       </function-decl>
       <function-decl name='blkcg_activate_policy' mangled-name='blkcg_activate_policy' filepath='block/blk-cgroup.c' line='1300' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blkcg_activate_policy'>
@@ -137543,10 +137601,10 @@
         <parameter type-id='7e666abe' name='inode' filepath='fs/inode.c' line='1013' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='disk_end_io_acct' mangled-name='disk_end_io_acct' filepath='block/blk-core.c' line='1361' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='disk_end_io_acct'>
-        <parameter type-id='33c599da' name='disk' filepath='block/blk-core.c' line='1361' column='1'/>
-        <parameter type-id='f0981eeb' name='op' filepath='block/blk-core.c' line='1361' column='1'/>
-        <parameter type-id='7359adad' name='start_time' filepath='block/blk-core.c' line='1362' column='1'/>
+      <function-decl name='disk_end_io_acct' mangled-name='disk_end_io_acct' filepath='block/blk-core.c' line='1366' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='disk_end_io_acct'>
+        <parameter type-id='33c599da' name='disk' filepath='block/blk-core.c' line='1366' column='1'/>
+        <parameter type-id='f0981eeb' name='op' filepath='block/blk-core.c' line='1366' column='1'/>
+        <parameter type-id='7359adad' name='start_time' filepath='block/blk-core.c' line='1367' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='disk_stack_limits' mangled-name='disk_stack_limits' filepath='block/blk-settings.c' line='664' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='disk_stack_limits'>
@@ -137555,10 +137613,10 @@
         <parameter type-id='a42536cd' name='offset' filepath='block/blk-settings.c' line='665' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='disk_start_io_acct' mangled-name='disk_start_io_acct' filepath='block/blk-core.c' line='1333' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='disk_start_io_acct'>
-        <parameter type-id='33c599da' name='disk' filepath='block/blk-core.c' line='1333' column='1'/>
-        <parameter type-id='f0981eeb' name='sectors' filepath='block/blk-core.c' line='1333' column='1'/>
-        <parameter type-id='f0981eeb' name='op' filepath='block/blk-core.c' line='1334' column='1'/>
+      <function-decl name='disk_start_io_acct' mangled-name='disk_start_io_acct' filepath='block/blk-core.c' line='1338' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='disk_start_io_acct'>
+        <parameter type-id='33c599da' name='disk' filepath='block/blk-core.c' line='1338' column='1'/>
+        <parameter type-id='f0981eeb' name='sectors' filepath='block/blk-core.c' line='1338' column='1'/>
+        <parameter type-id='f0981eeb' name='op' filepath='block/blk-core.c' line='1339' column='1'/>
         <return type-id='7359adad'/>
       </function-decl>
       <function-decl name='display_timings_release' mangled-name='display_timings_release' filepath='drivers/video/display_timing.c' line='12' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='display_timings_release'>
@@ -153841,8 +153899,8 @@
         <return type-id='4bdecfd7'/>
       </function-decl>
       <var-decl name='rps_needed' type-id='237c0d27' mangled-name='rps_needed' visibility='default' filepath='net/core/dev.c' line='4369' column='1' elf-symbol-id='rps_needed'/>
-      <function-decl name='rq_flush_dcache_pages' mangled-name='rq_flush_dcache_pages' filepath='block/blk-core.c' line='1510' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rq_flush_dcache_pages'>
-        <parameter type-id='3dad1a48' name='rq' filepath='block/blk-core.c' line='1510' column='1'/>
+      <function-decl name='rq_flush_dcache_pages' mangled-name='rq_flush_dcache_pages' filepath='block/blk-core.c' line='1515' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rq_flush_dcache_pages'>
+        <parameter type-id='3dad1a48' name='rq' filepath='block/blk-core.c' line='1515' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='rt6_lookup' mangled-name='rt6_lookup' filepath='net/ipv6/route.c' line='1262' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rt6_lookup'>
@@ -157605,12 +157663,12 @@
         <parameter type-id='c485c22c' name='bh' filepath='fs/buffer.c' line='3060' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='submit_bio' mangled-name='submit_bio' filepath='block/blk-core.c' line='1054' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='submit_bio'>
-        <parameter type-id='fb55efa1' name='bio' filepath='block/blk-core.c' line='1054' column='1'/>
+      <function-decl name='submit_bio' mangled-name='submit_bio' filepath='block/blk-core.c' line='1059' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='submit_bio'>
+        <parameter type-id='fb55efa1' name='bio' filepath='block/blk-core.c' line='1059' column='1'/>
         <return type-id='041bc907'/>
       </function-decl>
-      <function-decl name='submit_bio_noacct' mangled-name='submit_bio_noacct' filepath='block/blk-core.c' line='1022' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='submit_bio_noacct'>
-        <parameter type-id='fb55efa1' name='bio' filepath='block/blk-core.c' line='1022' column='1'/>
+      <function-decl name='submit_bio_noacct' mangled-name='submit_bio_noacct' filepath='block/blk-core.c' line='1027' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='submit_bio_noacct'>
+        <parameter type-id='fb55efa1' name='bio' filepath='block/blk-core.c' line='1027' column='1'/>
         <return type-id='041bc907'/>
       </function-decl>
       <function-decl name='submit_bio_wait' mangled-name='submit_bio_wait' filepath='block/bio.c' line='1223' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='submit_bio_wait'>
