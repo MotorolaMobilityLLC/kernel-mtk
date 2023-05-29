@@ -118,7 +118,7 @@ config MTK_THERMAL_JATM
 
 config CANCUNF_SURFACE_NTC_SUPPORT
 	bool "cancunF use the surface_ntc to dtsi"
-	default y
+	default n
 	help
 	  set iio name for cancunF
 
