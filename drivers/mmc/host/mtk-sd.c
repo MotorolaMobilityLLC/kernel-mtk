@@ -3151,6 +3151,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (IS_ERR(host->pins_pull_down)) {
 		ret = PTR_ERR(host->pins_pull_down);
 		dev_info(&pdev->dev, "Cannot find pinctrl pull_down!\n");
+		host->pins_pull_down = NULL;
 	}
 
 	msdc_of_property_parse(pdev, host);
