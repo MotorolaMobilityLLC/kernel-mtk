@@ -33,6 +33,7 @@ struct moto_chg_tcmd_client {
 
 	int (*get_usb_voltage)(void *input, int* val);//unit uV
 	int (*get_charger_type)(void *input, int* val);
+	int (*get_charger_watt)(void *input, int* val);
 
 	int (*get_bat_temp)(void *input, int* val);//unit C
 	int (*get_bat_voltage)(void *input, int* val);//unit uV
