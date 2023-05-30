@@ -2626,6 +2626,7 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 
 	memset(&info->mmi.apdo_cap, 0, sizeof(struct adapter_auth_data));
 	info->mmi.pd_cap_max_watt = 0;
+	info->mmi.charger_watt = 0;
 
 	power_supply_changed(info->psy1);
 	return 0;
@@ -3583,6 +3584,7 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 
 	power_watt = MAX(power_watt, 1);
 
+	info->mmi.charger_watt = power_watt;
 	pr_info("[%s] power_watt = %dW\n", __func__, power_watt);
 	return power_watt;
 }
@@ -6051,6 +6053,16 @@ static int  mtk_charger_tcmd_get_charger_type(void *input, int* val)
 	return ret;
 }
 
+static int  mtk_charger_tcmd_get_charger_watt(void *input, int* val)
+{
+	struct mtk_charger *cm = (struct mtk_charger *)input;
+	int ret = 0;
+
+	*val = cm->mmi.charger_watt;
+
+	return ret;
+}
+
 static int  mtk_charger_tcmd_register(struct mtk_charger *cm)
 {
 	int ret;
@@ -6068,6 +6080,8 @@ static int  mtk_charger_tcmd_register(struct mtk_charger *cm)
 	cm->chg_tcmd_client.get_usb_voltage = mtk_charger_tcmd_get_usb_voltage;
 
 	cm->chg_tcmd_client.get_charger_type = mtk_charger_tcmd_get_charger_type;
+
+	cm->chg_tcmd_client.get_charger_watt = mtk_charger_tcmd_get_charger_watt;
 
 	ret = moto_chg_tcmd_register(&cm->chg_tcmd_client);
 
