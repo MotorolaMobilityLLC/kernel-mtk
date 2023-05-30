@@ -13,6 +13,12 @@
 
 #define HOST_MAX_NUM            (2)
 
+#define TUNE_NONE          (0)        /* No need tune */
+#define TUNE_CMD_CRC       (0x1 << 0) /* transfer cmd crc */
+#define TUNE_DATA_WRITE    (0x1 << 1) /* transfer data crc */
+#define TUNE_DATA_READ     (0x1 << 2) /* transfer data crc */
+#define TUNE_CMD_TMO       (0x1 << 3) /* transfer cmd tmo */
+#define TUNE_AUTOK_PASS    (0x1 << 4) /* autok pass flag */
 
 enum {
 	MODE_PIO = 0,
@@ -192,6 +198,7 @@ struct msdc_host {
 	struct pinctrl *pinctrl;
 	struct pinctrl_state *pins_default;
 	struct pinctrl_state *pins_uhs;
+	struct pinctrl_state *pins_pull_down;
 	struct delayed_work req_timeout;
 	int irq;		/* host interrupt */
 
@@ -230,6 +237,16 @@ struct msdc_host {
 	bool hs400_tuning;  /* hs400 mode online tuning */
 
 	bool cqhci;	/* support eMMC hw cmdq */
+
+	bool is_autok_done;
+	bool internal_cd;	/* Use internal card-detect logic */
+	bool block_bad_card;
+	u8 card_inserted;  /* the status of card inserted */
+	int retune_times;
+	u32 need_tune;
+	int power_cycle_cnt;
+	u32 data_timeout_cont; /* data continuous timeout */
+
 	struct msdc_save_para save_para; /* used when gate HCLK */
 	struct msdc_tune_para def_tune_para; /* default tune setting */
 	struct msdc_tune_para saved_tune_para; /* tune result of CMD21/CMD19 */

@@ -1039,8 +1039,23 @@ static int mmc_blk_reset(struct mmc_blk_data *md, struct mmc_host *host,
 
 	md->reset_done |= type;
 	err = mmc_hw_reset(host);
+#ifdef CONFIG_MMC_MTK
+	if (err && err != -EOPNOTSUPP) {
+		/* We failed to reset so we need to abort the request */
+		pr_notice("%s: %s: failed to reset %d\n", mmc_hostname(host),
+					__func__, err);
+		if (host->card && mmc_card_sd(host->card)) {
+			pr_notice("%s: %s removing bad card.\n",
+				mmc_hostname(host), __func__);
+			host->ops->remove_bad_sdcard(host);
+		}
+		return -ENODEV;
+	}
 	/* Ensure we switch back to the correct partition */
+	if (host->card) {
+#else
 	if (err != -EOPNOTSUPP) {
+#endif
 		struct mmc_blk_data *main_md =
 			dev_get_drvdata(&host->card->dev);
 		int part_err;
@@ -1927,6 +1942,13 @@ static void mmc_blk_mq_rw_recovery(struct mmc_queue *mq, struct request *req)
 	    err && mmc_blk_reset(md, card->host, type)) {
 		pr_err("%s: recovery failed!\n", req->rq_disk->disk_name);
 		mqrq->retries = MMC_NO_RETRIES;
+
+		if (card && mmc_card_sd(card)) {
+			pr_notice("%s: %s removing bad card.\n",
+				mmc_hostname(card->host), __func__);
+			card->host->ops->remove_bad_sdcard(card->host);
+		}
+
 		return;
 	}
 
