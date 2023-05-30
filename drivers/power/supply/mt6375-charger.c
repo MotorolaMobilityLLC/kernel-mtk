@@ -2055,6 +2055,8 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 	bool need_retry = false;
 	int early_chg_type = 0;
 	int count = 0;
+	int ret;
+	union power_supply_propval val;
 
 	if (!is_already_probe_ok) {
 		pr_err("6670f is not exit \n");
@@ -2072,7 +2074,8 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 		return ;
 	}
 
-	pr_err(" start 6670 bc12 \n");
+	wt6670f_reset_chg_type();
+	pr_err(" start 6670 bc12_ \n");
 	wt6670f_is_detect = true;
 
 	mt6375_chg_field_set(ddata, F_IAICR, 500);
@@ -2087,6 +2090,11 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 			early_chg_type = 0;
 			wt6670f_start_detection();
 			while((!m_chg_ready)&&(count<100)) {
+				ret = power_supply_get_property(ddata->psy, POWER_SUPPLY_PROP_ONLINE, &val);
+				if (val.intval <= 0) {
+				      pr_err("[%s] ONLINE: %d, skip detecting0\n",__func__, val.intval);
+				      break;
+				}
 				msleep(30);
 				count++;
 				m_chg_ready = wt6670f_is_charger_ready();
@@ -2108,7 +2116,14 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 			} else {
 				need_retry = false;
 			}
-			power_supply_changed(ddata->psy);
+			ret = power_supply_get_property(ddata->psy, POWER_SUPPLY_PROP_ONLINE, &val);
+			if (val.intval) {
+				power_supply_changed(ddata->psy);
+			}
+			else {
+				pr_err("[%s] ONLINE: %d, skip detecting1\n",__func__, val.intval);
+				break;
+			}
 			pr_err("[%s]   WT6670F charge type is  0x%x\n",__func__, m_chg_type);
 		}while(need_retry);
 	}//wt6670f
