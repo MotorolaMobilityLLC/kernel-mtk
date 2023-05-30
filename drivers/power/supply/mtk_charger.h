@@ -405,6 +405,7 @@ struct mmi_params {
 	int			pd_cap_max_watt;
 	int			vbus_h;
 	int			vbus_l;
+	int			charger_watt;
 };
 /*moto mmi Functionality end*/
 

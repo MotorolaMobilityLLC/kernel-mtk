@@ -76,6 +76,7 @@ struct moto_chg_tcmd_data {
 	int pre_chg_current;
 	int chg_current;
 	int chg_type;
+	int chg_watt;
 
 	int usb_voltage;
 
@@ -783,6 +784,41 @@ static ssize_t chg_type_store(struct device *dev, struct device_attribute *attr,
 static DEVICE_ATTR(chg_type, S_IWUSR | S_IRUGO,
 	chg_type_show, chg_type_store);
 
+static ssize_t chg_watt_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	int watt;
+	int ret;
+
+	if (!chg_client) {
+		pr_err("%s bat client  is null\n", __func__);
+		goto end;
+	}
+
+	ret = chg_client->get_charger_watt(chg_client->data,
+					&watt);
+	if (ret) {
+		pr_err("%s get chg type fail %d\n", __func__, ret);
+		watt = ret;
+		goto end;
+	}
+	data->chg_watt = watt;
+
+end:
+
+	return snprintf(buf, PAGE_SIZE, "%02d\n", data->chg_watt);
+}
+
+static ssize_t chg_watt_store(struct device *dev, struct device_attribute *attr,
+									const char *buf, size_t count)
+{
+	pr_info("%s un-supported\n", __func__);
+	return count;
+}
+static DEVICE_ATTR(chg_watt, S_IWUSR | S_IRUGO,
+	chg_watt_show, chg_watt_store);
+
 static ssize_t bat_id_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -1134,6 +1170,7 @@ static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_bat_cycle.attr,
 	&dev_attr_factory_kill_disable.attr,
 	&dev_attr_chg_type.attr,
+	&dev_attr_chg_watt.attr,
 	&dev_attr_adc.attr,
 	&dev_attr_cpu_temp.attr,
 	&dev_attr_charger_temp.attr,
