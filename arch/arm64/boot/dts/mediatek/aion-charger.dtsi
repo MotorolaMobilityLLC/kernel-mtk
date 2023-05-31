@@ -190,8 +190,8 @@
 		uirbat_pull_up_r_full = <24000>;/*24k*/
 
 		latest_fw_version = [01 02 08 52 32];
-		df_serialnum = "SB18D74000";
-		latest_batt_param_version = <0x0001>;
+		batt_serialnums = "SB18D74000";
+		batt_versions = /bits/ 16 <01>;
 
 	};
 
