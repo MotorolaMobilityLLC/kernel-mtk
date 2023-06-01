@@ -1044,7 +1044,7 @@ static int mmc_blk_reset(struct mmc_blk_data *md, struct mmc_host *host,
 		/* We failed to reset so we need to abort the request */
 		pr_notice("%s: %s: failed to reset %d\n", mmc_hostname(host),
 					__func__, err);
-		if (host->card && mmc_card_sd(host->card)) {
+		if (host->card && mmc_card_sd(host->card) && (host->ops->remove_bad_sdcard)) {
 			pr_notice("%s: %s removing bad card.\n",
 				mmc_hostname(host), __func__);
 			host->ops->remove_bad_sdcard(host);
@@ -1943,7 +1943,7 @@ static void mmc_blk_mq_rw_recovery(struct mmc_queue *mq, struct request *req)
 		pr_err("%s: recovery failed!\n", req->rq_disk->disk_name);
 		mqrq->retries = MMC_NO_RETRIES;
 
-		if (card && mmc_card_sd(card)) {
+		if (card && mmc_card_sd(card) && (card->host->ops->remove_bad_sdcard)) {
 			pr_notice("%s: %s removing bad card.\n",
 				mmc_hostname(card->host), __func__);
 			card->host->ops->remove_bad_sdcard(card->host);
