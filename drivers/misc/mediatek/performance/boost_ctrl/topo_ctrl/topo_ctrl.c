@@ -38,7 +38,7 @@ EXPORT_SYMBOL(topo_ctrl_get_nr_clusters);
 
 int topo_ctrl_get_cluster_cpu_id(int id)
 {
-	if (id < 0)
+	if (id < 0 || id >= topo_cluster_num)
 		return -1;
 
 	return topo_cluster_info[id].cpu_id;
