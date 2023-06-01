@@ -34,6 +34,15 @@ struct t_condition_wq {
 	atomic_t condition;
 };
 
+enum DSI_N_Version {
+	VER_N12 = 0,
+	VER_N7,
+	VER_N6,
+	VER_N5,
+	VER_N4,
+	VER_N3,
+};
+
 struct mtk_dsi_driver_data {
 	const u32 reg_cmdq0_ofs;
 	const u32 reg_cmdq1_ofs;
@@ -54,6 +63,7 @@ struct mtk_dsi_driver_data {
 	u32 max_vfp;
 	unsigned int (*mmclk_by_datarate)(struct mtk_dsi *dsi,
 		struct mtk_drm_crtc *mtk_crtc, unsigned int en);
+	const enum DSI_N_Version n_verion;
 };
 
 struct mtk_dsi {

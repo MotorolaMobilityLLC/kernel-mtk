@@ -1163,8 +1163,12 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 	/* It's an abnormal status */
 	pr_info(PFX "WARNING: Abnormal Status\n");
 	print_vio_mask_sta(false);
-	BUG_ON(1);
-
+	if ((perm == 0 || perm > 3) && (!strcmp(vio_master, "MCU_AP_M"))
+		&& (slave_type == 2) && (vio_idx == 0x18)) {
+		pr_info("MCU_AP_M access msdc voilation when clk is not enable");
+	} else {
+		BUG_ON(1);
+	}
 	spin_unlock_irqrestore(&devapc_lock, flags);
 	return IRQ_HANDLED;
 }
