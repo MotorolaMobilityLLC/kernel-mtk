@@ -765,6 +765,14 @@ config PROCESS_RECLAIM
 
 	 Any other value is ignored.
 
+config MMAP_READAROUND_LIMIT
+	int "Limit mmap readaround upperbond"
+	default 0
+	help
+		Inappropriate mmap readaround size can hurt device performance
+		during the sluggish situation. Add the hard upper-limit for
+		mmap readaround
+
 config ARCH_HAS_PTE_SPECIAL
 	bool
 config FRAME_VECTOR
