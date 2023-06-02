@@ -2835,25 +2835,39 @@ static int aw86006_get_gyro_gain(struct cam_ois_ctrl_t *o_ctrl, int *gyro_gain)
 {
 	uint8_t data[8] = { 0 };
 	int ret = 0;
+	int i = 0;
+	int loop = 0;
+	msleep(10);
+	do {
+		/* Read gyro gain raw data */
+		aw86006_i2c_reads(o_ctrl, 0xf86c, AW_SIZE_BYTE_2, data, 8);
+		for(i = 0; i < 8; i ++) {
+			AW_LOGI("get gyro data: 0x%x", data[i]);
+		}
+		/* data check */
+		ret = aw86006_raw_data_check(data, sizeof(data)/sizeof(data[0]));
+		if (ret < 0) {
+			AW_LOGE("gyro gain raw data is all 0xff");
+			return OIS_ERROR;
+		}
+		/* transfer data to gyro gain, real_gain * 1000000 */
+		gyro_gain[0] = aw86006_register_to_int(&data[0]);
+		gyro_gain[1] = aw86006_register_to_int(&data[4]);
 
-	/* Read gyro gain raw data */
-	aw86006_i2c_reads(o_ctrl, 0xf86c, AW_SIZE_BYTE_2, data, 8);
+		if ((gyro_gain[0]== 0) || (gyro_gain[1] == 0)) {
+			AW_LOGE("gyro gain x or y is 0: retry: %d", loop);
+			msleep(200);
+		} else {
+			AW_LOGI("get gyro data: normal");
+			break;
+		}
+	}while(loop++ < AW_ERROR_LOOP_1);
 
-	/* data check */
-	ret = aw86006_raw_data_check(data, sizeof(data)/sizeof(data[0]));
-	if (ret < 0) {
-		AW_LOGE("gyro gain raw data is all 0xff");
+	//gyro gain data is zero
+	if(loop > AW_ERROR_LOOP_1){
+		AW_LOGE("gyro gain x or y is 0 finally, return error");
 		return OIS_ERROR;
 	}
-	/* transfer data to gyro gain, real_gain * 1000000 */
-	gyro_gain[0] = aw86006_register_to_int(&data[0]);
-	gyro_gain[1] = aw86006_register_to_int(&data[4]);
-
-	if ((gyro_gain[0]== 0) || (gyro_gain[1] == 0)) {
-		AW_LOGE("gyro gain x or y is 0: %d %d", gyro_gain[0], gyro_gain[1]);
-		return OIS_ERROR;
-	}
-
 	AW_LOGI("gyro_gain:%d %d",gyro_gain[0], gyro_gain[1]);
 
 	return 0;
