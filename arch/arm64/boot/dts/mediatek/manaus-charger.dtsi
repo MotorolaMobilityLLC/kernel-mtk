@@ -149,7 +149,7 @@
 		latest_fw_version = [01 02 08 52 34];
 		batt_serialnums = "SB18D87942", "SB18D87943";
 		batt_versions = /bits/ 16 <05>,
-				/bits/ 16 <02>;
+				/bits/ 16 <03>;
 
 	};
 
