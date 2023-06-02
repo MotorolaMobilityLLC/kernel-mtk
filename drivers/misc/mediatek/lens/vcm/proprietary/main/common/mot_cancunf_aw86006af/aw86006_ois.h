@@ -55,6 +55,7 @@
 #define AW_STAY_ON_MOVE_LOOP		(20)
 #define AW_STAY_ON_BOOT_LOOP		(20)
 #define AW_ERROR_LOOP			(5)
+#define AW_ERROR_LOOP_1			(10)
 #define AW_FLASH_WRITE_ERROR_LOOP	(2)
 #define AW_FLASH_READ_ERROR_LOOP	(2)
 #define AW_FLASH_ERASE_ERROR_LOOP	(2)
