@@ -25,23 +25,20 @@ int allocate_vow_bargein_mem(struct snd_pcm_substream *substream,
 			     snd_pcm_format_t format,
 			     struct mtk_base_afe *afe)
 {
-	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 	struct mtk_base_afe_memif *memif;
 	int id;
 	int ret = 0;
+	unsigned char *area;	/* virtual pointer */
+	dma_addr_t addr;	/* physical address */
+	size_t bytes = size;
 
 	id = get_scp_vow_memif_id();
 	memif = &afe->memif[id];
 
-	dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
-	dma_buf->dev.dev = substream->pcm->card->dev;
-	dma_buf->private_data = NULL;
-	dma_buf->bytes = size;
-
 	if (mtk_audio_sram_allocate(afe->sram,
-				    &dma_buf->addr,
-				    &dma_buf->area,
-				    dma_buf->bytes,
+				    &addr,
+				    &area,
+				    bytes,
 				    substream,
 				    format, false) == 0) {
 		/* Using SRAM */
@@ -51,9 +48,9 @@ int allocate_vow_bargein_mem(struct snd_pcm_substream *substream,
 		/* Using DRAM */
 		dev_info(afe->dev, "%s(), use DRAM\n", __func__);
 #if IS_ENABLED(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
-		dma_buf->addr = scp_get_reserve_mem_phys(VOW_BARGEIN_MEM_ID);
-		dma_buf->area =
-		    (uint8_t *)scp_get_reserve_mem_virt(VOW_BARGEIN_MEM_ID);
+		addr = scp_get_reserve_mem_phys(VOW_BARGEIN_MEM_ID);
+		area =
+			(uint8_t *)scp_get_reserve_mem_virt(VOW_BARGEIN_MEM_ID);
 		memif->using_sram = 0;
 #else
 		dev_info(afe->dev, "%s(), scp not supported, scp_get_reserve_mem failed.\n",
@@ -63,11 +60,8 @@ int allocate_vow_bargein_mem(struct snd_pcm_substream *substream,
 
 	}
 
-	memset_io(dma_buf->area, 0, dma_buf->bytes);
-	ret = mtk_memif_set_addr(afe, id,
-				 dma_buf->area,
-				 dma_buf->addr,
-				 dma_buf->bytes);
+	memset_io(area, 0, bytes);
+	ret = mtk_memif_set_addr(afe, id, area, addr, bytes);
 	if (ret) {
 		dev_info(afe->dev, "%s(), error, set addr, ret %d\n",
 			 __func__, ret);
@@ -75,14 +69,13 @@ int allocate_vow_bargein_mem(struct snd_pcm_substream *substream,
 	}
 
 	dev_info(afe->dev, "%s(), addr = %pad, area = %p, bytes = %zu\n",
-		 __func__, &dma_buf->addr, dma_buf->area,
-		 dma_buf->bytes);
+		 __func__, &addr, area, bytes);
 
 	if ((memif->using_sram == 0) && (afe->request_dram_resource))
 		afe->request_dram_resource(afe->dev);
 
-	*phys_addr = dma_buf->addr;
-	*virt_addr = dma_buf->area;
+	*phys_addr = addr;
+	*virt_addr = area;
 	return ret;
 }
 
