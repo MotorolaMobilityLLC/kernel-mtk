@@ -334,20 +334,22 @@
                 compatible = "awinic,aw883xx_smartpa";
                 #sound-dai-cells = <0>;
                 reg = <0x34>;
-                reset-gpio = <&pio 162 0>;
-                sound-channel = <1>;
+                reset-gpio = <&pio 37 0>;
+                irq-gpio = <&pio 1 0>;
+                sound-channel = <0>;
                 re-min = <1000>;
                 re-max = <40000>;
 		rename-flag=<1>;
 		fade-enable = <1>;
                 status = "okay";
         };
-        aw883xx_smartpa_1: aw883xx@36 {
+        aw883xx_smartpa_1: aw883xx@37 {
                 compatible = "awinic,aw883xx_smartpa";
                 #sound-dai-cells = <0>;
-                reg = <0x36>;
-                reset-gpio = <&pio 182 0>;
-                sound-channel = <0>;
+                reg = <0x37>;
+                reset-gpio = <&pio 79 0>;
+                irq-gpio = <&pio 46 0>;
+                sound-channel = <1>;
                 re-min = <1000>;
                 re-max = <40000>;
 		rename-flag=<1>;
