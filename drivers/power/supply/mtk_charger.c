@@ -828,7 +828,7 @@ static void mmi_charger_ffc_init(struct mtk_charger *info)
 	mmi->ffc_ibat_windowsize = 6;
 	mmi->ffc_iavg = 0;
 	mmi->ffc_iavg_update_timestamp = 0;
-	mmi->ffc_uisoc_threshold = 75;
+	mmi->ffc_uisoc_threshold = 70;
 
 	info->ffc_discharging = false;
 	info->ffc_max_fv_mv_backup = 4530;
