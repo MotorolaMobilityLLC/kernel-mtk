@@ -41,6 +41,7 @@ enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_CUSTOM4,
 	IMGSENSOR_MODE_CUSTOM5,
 	IMGSENSOR_MODE_CUSTOM6,
+	IMGSENSOR_MODE_CUSTOM7,
 };
 
 struct imgsensor_mode_struct {
@@ -108,6 +109,7 @@ struct imgsensor_info_struct {
 	struct imgsensor_mode_struct custom4; //custom4 scenario information
 	struct imgsensor_mode_struct custom5; //custom5 scenario information
 	struct imgsensor_mode_struct custom6; //custom6 scenario information
+	struct imgsensor_mode_struct custom7; //custom7 scenario information
 	kal_uint8  ae_shut_delay_frame;	//shutter delay frame for AE cycle
 	//sensor gain delay frame for AE cycle
 	kal_uint8  ae_sensor_gain_delay_frame;
@@ -127,6 +129,7 @@ struct imgsensor_info_struct {
 	kal_uint8  custom4_delay_frame;     //enter custom4 delay frame num
 	kal_uint8  custom5_delay_frame;     //enter custom5 delay frame num
 	kal_uint8  custom6_delay_frame;     //enter custom6 delay frame num
+	kal_uint8  custom7_delay_frame;     //enter custom7 delay frame num
 	kal_uint8  frame_time_delay_frame;
 
 	kal_uint8  margin; //sensor framelength & shutter margin
