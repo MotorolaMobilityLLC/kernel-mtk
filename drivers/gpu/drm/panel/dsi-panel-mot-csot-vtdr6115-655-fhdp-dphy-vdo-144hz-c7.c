@@ -29,7 +29,7 @@
 #include "../mediatek/mediatek_v2/mtk_drm_graphics_base.h"
 #endif
 
-#include "dsi-panel-mot-csot-vtdr6115-655-fhdp-dphy-vdo-144hz-lhbm-alpha-c7.h"
+#include "dsi-panel-mot-csot-vtdr6115-655-fhdp-dphy-vdo-144hz-c7-lhbm-alpha.h"
 #include "manaus-hbm-brightness-mapping-to-1200nits.h"
 
 #define SUPPORT_144HZ_REFRESH_RATE
@@ -143,10 +143,10 @@ static void lcm_dcs_write(struct lcm *ctx, const void *data, size_t len)
 static void lcm_panel_init(struct lcm *ctx)
 {
 	lcm_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x10);
-	if (ctx->version == PANEL_V1)
-		lcm_dcs_write_seq_static(ctx, 0xD0, 0x84,0x15,0x50,0x14,0x20,0x00,0x39,0x0D,0x13,0x19,0x16,0x00,0x0D,0x16,0x19,0x00,0x00,0x1b,0x05,0x05,0x13,0x13);//swire pulse:ELVSS 30pulse-normal 24pulse-HBM
-	else
-		lcm_dcs_write_seq_static(ctx, 0xD0, 0x84,0x15,0x50,0x14,0x20,0x00,0x39,0x0D,0x17,0x19,0x00,0x00,0x0D,0x17,0x19,0x00,0x00,0x1b,0x05,0x05,0x17,0x17);//swire pulse:ELVSS 30pulse-normal 24pulse-HBM
+	lcm_dcs_write_seq_static(ctx, 0xD0, 0x84,0x15,0x50,0x14,0x20,0x00,0x39,0x0D,0x17,0x19,0x00,0x00,0x0D,0x17,0x19,0x00,0x00,0x1b,0x05,0x05,0x17,0x17);//swire pulse:ELVSS 30pulse-normal 24pulse-HBM
+
+	lcm_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x13);
+	lcm_dcs_write_seq_static(ctx, 0xC5, 0x02, 0xC0, 0x02, 0x95, 0x03, 0x44);
 
 	lcm_dcs_write_seq_static(ctx, 0x03, 0x01);
 	lcm_dcs_write_seq_static(ctx, 0x53, 0x20);
@@ -767,9 +767,9 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 	unsigned int hbm_bl_index = 0;
 
 	if (bl_level >= 3515) {
-		hbm_bl_index -= 3515;
-		if (hbm_bl_index >= sizeof(hbm_bl_mapping))
-			hbm_bl_index = sizeof(hbm_bl_mapping) -1;
+		hbm_bl_index= bl_level-3515;
+		if (hbm_bl_index >= ARRAY_SIZE(hbm_bl_mapping))
+			hbm_bl_index = ARRAY_SIZE(hbm_bl_mapping) -1;
 		bl_level = hbm_bl_mapping[hbm_bl_index];
 	}
 
@@ -935,7 +935,7 @@ static struct mtk_panel_para_table panel_lhbm_dark_on[] = {
 	{3, {0xf0, 0xaa, 0x13}},
 	{2, {0xc6, 0x01}},
 	{3, {0x63, 0x03, 0xff}},
-	{3, {0x51, 0x06, 0x8f}},
+	{3, {0x51, 0x05, 0x2A}},
 	{2, {0x62, 0x03}},
 };
 
@@ -961,8 +961,6 @@ static void set_lhbm_alpha(unsigned int bl_level)
 
 	if (bl_level == 0)
 		lhbm_alpha_index = 0;
-	else if (bl_level > sizeof(lhbm_alpha))
-		lhbm_alpha_index = sizeof(lhbm_alpha)-1;
 
 	alpha = lhbm_alpha[lhbm_alpha_index];
 
