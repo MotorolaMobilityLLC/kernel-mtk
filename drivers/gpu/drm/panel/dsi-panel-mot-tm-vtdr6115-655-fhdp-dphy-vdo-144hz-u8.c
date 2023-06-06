@@ -30,6 +30,7 @@
 #endif
 
 #include "dsi-panel-mot-tianma-vtdr6115-655-fhdp-dphy-vdo-144hz-lhbm-alpha.h"
+#include "manaus-hbm-brightness-mapping-to-1200nits.h"
 
 #define SUPPORT_144HZ_REFRESH_RATE
 #define DSC_10BIT
@@ -759,27 +760,36 @@ static int panel_ata_check(struct drm_panel *panel)
 static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 				 unsigned int level)
 {
-	char bl_tb0[] = { 0x51, 0x0f, 0xff};
+	char bl_tb0[] = { 0x51, 0x0f, 0x59};
 	struct lcm *ctx = g_ctx;
+	unsigned int bl_level = level;
+	unsigned int hbm_bl_index = 0;
 
-	if ((ctx->hbm_mode) && level) {
-		pr_info("hbm_mode = %d, skip backlight(%d)\n", ctx->hbm_mode, level);
+	if (bl_level >= 3515) {
+		hbm_bl_index -= 3515;
+		if (hbm_bl_index >= sizeof(hbm_bl_mapping))
+			hbm_bl_index = sizeof(hbm_bl_mapping) -1;
+		bl_level = hbm_bl_mapping[hbm_bl_index];
+	}
+
+	if ((ctx->hbm_mode) && bl_level) {
+		pr_info("hbm_mode = %d, skip backlight(%d)\n", ctx->hbm_mode, bl_level);
 		return 0;
 	}
 
-	if (!(ctx->current_bl && level)) pr_info("backlight changed from %u to %u\n", ctx->current_bl, level);
-	else pr_debug("backlight changed from %u to %u\n", ctx->current_bl, level);
+	if (!(ctx->current_bl && bl_level)) pr_info("backlight changed from %u to %u\n", ctx->current_bl, bl_level);
+	else pr_debug("backlight changed from %u to %u\n", ctx->current_bl, bl_level);
 
-	bl_tb0[1] = (u8)((level>>8)&0xF);
-	bl_tb0[2] = (u8)(level&0xFF);
+	bl_tb0[1] = (u8)((bl_level>>8)&0xF);
+	bl_tb0[2] = (u8)(bl_level&0xFF);
 
 	if (!cb)
 		return -1;
 
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
-	ctx->current_bl = level;
+	ctx->current_bl = bl_level;
 
-	if (!level) ctx->hbm_mode = 0;
+	if (!bl_level) ctx->hbm_mode = 0;
 
 	return 0;
 }
@@ -937,7 +947,7 @@ static struct mtk_panel_para_table panel_lhbm_dark_off[] = {
 
 static struct mtk_panel_para_table panel_lhbm_off_hbm_on[] = {
 	{2, {0x62, 0x00}},
-	{3, {0x51, 0x0f, 0xff}},
+	{3, {0x51, 0x0f, 0x59}},
 	{3, {0xf0, 0xaa, 0x13}},
 	{2, {0xc6, 0x00}},
 };
@@ -998,7 +1008,7 @@ static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, ui
 
 static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
-	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0x0F, 0xFF}};
+	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0x0F, 0x59}};
 
 	if (hbm_state > 2) return -1;
 	switch (hbm_state)
