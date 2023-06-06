@@ -74,6 +74,8 @@ struct board_ntc_info {
 	struct iio_channel *chan_charger_ntc;
 	struct iio_channel *chan_flash_ntc;
 	struct iio_channel *chan_wlc_ntc;
+	struct iio_channel *chan_quiet_ntc;
+	struct iio_channel *chan_tspk_ntc;
 };
 
 unsigned int tia2_rc_sel_to_value(unsigned int sel)
@@ -233,7 +235,6 @@ static int board_ntc_get_temp(void *data, int *temp)
 	if (adc_data->is_print_tia_cg == true)
 		print_tia_reg(ntc_info->dev);
 
-	//+EKDEVONN-16, madongyu.wt, add, 20220620, read the ADC value from io-channel if channel-name is matched
 	if (!PTR_ERR_OR_ZERO(ntc_info->chan_md_ntc)){
 		iio_read_channel_raw(ntc_info->chan_md_ntc, &val);
 		r_type = 0;
@@ -246,7 +247,12 @@ static int board_ntc_get_temp(void *data, int *temp)
 	} else if(!PTR_ERR_OR_ZERO(ntc_info->chan_wlc_ntc)){
 		iio_read_channel_raw(ntc_info->chan_wlc_ntc, &val);
 		r_type = 0;
-	//-EKDEVONN-16, madongyu.wt, add, 20220620, read the ADC value from io-channel if channel-name is matched
+	} else if(!PTR_ERR_OR_ZERO(ntc_info->chan_quiet_ntc)){
+		iio_read_channel_raw(ntc_info->chan_quiet_ntc, &val);
+		r_type = 0;
+	} else if(!PTR_ERR_OR_ZERO(ntc_info->chan_tspk_ntc)){
+		iio_read_channel_raw(ntc_info->chan_tspk_ntc, &val);
+		r_type = 0;
 	} else {
 		val = readl(ntc_info->data_reg);
 		//pr_info("%s:%d: ntc_info->data_reg=0x%x val=0x%x\n", __func__, __LINE__, ntc_info->data_reg, val);
@@ -258,7 +264,8 @@ static int board_ntc_get_temp(void *data, int *temp)
 //		return -EINVAL;
 
 		r_type = get_tia_rc_sel(val, tia_param->rc_offset, tia_param->rc_mask);
-		
+
+
 		if (r_type >= adc_data->num_of_pullup_r_type) {
 			dev_err(ntc_info->dev, "Invalid r_type = %d\n", r_type);
 			return -EINVAL;
@@ -435,6 +442,8 @@ static int board_ntc_probe(struct platform_device *pdev)
 	ntc_info->chan_wlc_ntc = devm_iio_channel_get(&pdev->dev, "WLC_NTC");
 #endif //CONFIG_CANCUNF_SURFACE_NTC_SUPPORT
 	//+EKDEVONN-16, madongyu.wt, add, 20220620, match the io-channel wiht io-channel-name
+	ntc_info->chan_quiet_ntc =  devm_iio_channel_get(&pdev->dev, "QUIET_NTC");
+	ntc_info->chan_tspk_ntc =  devm_iio_channel_get(&pdev->dev, "TSPK_NTC");
 
 	platform_set_drvdata(pdev, ntc_info);
 
