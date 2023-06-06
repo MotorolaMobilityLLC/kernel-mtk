@@ -534,6 +534,7 @@ static struct mtk_panel_params ext_params_48hz = {
 
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
+	.lp_perline_en=1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
@@ -607,6 +608,7 @@ static struct mtk_panel_params ext_params_60hz = {
 
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
+	.lp_perline_en=1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
@@ -679,6 +681,7 @@ static struct mtk_panel_params ext_params_90hz = {
 
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
+	.lp_perline_en=1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
@@ -751,6 +754,7 @@ static struct mtk_panel_params ext_params_120hz = {
 
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
+	.lp_perline_en=1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
@@ -824,6 +828,7 @@ static struct mtk_panel_params ext_params_144hz = {
 
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
+	.lp_perline_en=1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
