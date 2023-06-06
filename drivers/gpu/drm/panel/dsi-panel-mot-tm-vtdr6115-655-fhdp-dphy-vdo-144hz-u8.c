@@ -29,7 +29,7 @@
 #include "../mediatek/mediatek_v2/mtk_drm_graphics_base.h"
 #endif
 
-#include "dsi-panel-mot-tianma-vtdr6115-655-fhdp-dphy-vdo-144hz-lhbm-alpha.h"
+#include "dsi-panel-mot-tm-vtdr6115-655-fhdp-dphy-vdo-144hz-u8-lhbm-alpha.h"
 #include "manaus-hbm-brightness-mapping-to-1200nits.h"
 
 #define SUPPORT_144HZ_REFRESH_RATE
@@ -766,9 +766,9 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 	unsigned int hbm_bl_index = 0;
 
 	if (bl_level >= 3515) {
-		hbm_bl_index -= 3515;
-		if (hbm_bl_index >= sizeof(hbm_bl_mapping))
-			hbm_bl_index = sizeof(hbm_bl_mapping) -1;
+		hbm_bl_index= bl_level-3515;
+		if (hbm_bl_index >= ARRAY_SIZE(hbm_bl_mapping))
+			hbm_bl_index = ARRAY_SIZE(hbm_bl_mapping) -1;
 		bl_level = hbm_bl_mapping[hbm_bl_index];
 	}
 
@@ -960,8 +960,6 @@ static void set_lhbm_alpha(unsigned int bl_level)
 
 	if (bl_level == 0)
 		lhbm_alpha_index = 0;
-	else if (bl_level > sizeof(lhbm_alpha))
-		lhbm_alpha_index = sizeof(lhbm_alpha)-1;
 
 	alpha = lhbm_alpha[lhbm_alpha_index];
 
