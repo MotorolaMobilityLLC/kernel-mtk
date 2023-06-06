@@ -27,53 +27,58 @@ kal_uint16 addr_data_pair_xtalk_mot_ov50a2q[] = {
 };
 
 kal_uint16 addr_data_pair_init_mot_ov50a2q[] = {
-#include "setting/OV50A40_Initial_CPHY_3Trio_1924Msps_20230307_remove_xtalk_data.h"
+#include "setting/OV50A40_Initial_CPHY_3Trio_1924Msps_20230605_remove_xtalk_data.h"
 };
 
 kal_uint16 addr_data_pair_init_mot_ov50a_20230307[] = {
-#include "setting/OV50A40_Initial_CPHY_3Trio_1924Msps_20230307.h"
+#include "setting/OV50A40_Initial_CPHY_3Trio_1924Msps_20230605.h"
 };
 
 kal_uint16 addr_data_pair_preview_mot_ov50a2q[] = {
-#include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_4096x768_1924Msps_20230202.h"
+#include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_4096x768_1924Msps_20230531.h"
 };
 
 kal_uint16 addr_data_pair_capture_mot_ov50a2q[] = {
-#include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_4096x768_1924Msps_20230202.h"
+#include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_4096x768_1924Msps_20230531.h"
 };
 
 kal_uint16 addr_data_pair_video_mot_ov50a2q[] = {
-#include"setting/OV50A40_4096x2304_4C2SCG_10bit_30fps_AG255_PDVC1_4096x576_1924Msps_20230210.h"
+#include"setting/OV50A40_4096x2304_4C2SCG_10bit_30fps_AG255_PDVC1_4096x576_1924Msps_20230531.h"
 };
 
 kal_uint16 addr_data_pair_hs_video_mot_ov50a2q[] = {
-#include"setting/OV50A40_2048x1152_4C1SCG_10bit_120fps_AG255_1924Msps_20230202.h"
+#include"setting/OV50A40_2048x1152_4C1SCG_10bit_120fps_AG255_1924Msps_20230531.h"
 };
 
 kal_uint16 addr_data_pair_slim_video_mot_ov50a2q[] = {
-#include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_4096x768_1924Msps_20230202.h"
+#include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_4096x768_1924Msps_20230531.h"
 };
 
 kal_uint16 addr_data_pair_custom1[] = {
-#include"setting/OV50A40_8192x6144_10bit_30fps_AG16_2600Msps_20230202.h"
+#include"setting/OV50A40_8192x6144_10bit_30fps_AG16_2600Msps_20230531.h"
 };
 
 kal_uint16 addr_data_pair_custom2[] = {
-#include"setting/OV50A40_2048x1152_4C2SCG_10bit_60fps_AG255_PDVC1_2048x576_1924Msps_20230202.h"
+#include"setting/OV50A40_2048x1152_4C2SCG_10bit_60fps_AG255_PDVC1_2048x576_1924Msps_20230531.h"
 };
 kal_uint16 addr_data_pair_custom3[] = {
-#include"setting/OV50A40_1920x1080_4C1SCG_10bit_240fps_AG64_1924Msps_20230202.h"
+#include"setting/OV50A40_1920x1080_4C1SCG_10bit_240fps_AG64_1924Msps_20230531.h"
 };
 kal_uint16 addr_data_pair_custom4[] = {
-#include"setting/OV50A40_4096x2304_4C2SCG_STG2_10bit_30fps_AG64_PDVC2_4096x576_1924Msps_20230202.h"
+#include"setting/OV50A40_4096x2304_4C2SCG_STG2_10bit_30fps_AG64_PDVC2_4096x576_1924Msps_20230531.h"
 }; //sHDR
 kal_uint16 addr_data_pair_custom5[] = {
-#include"setting/OV50A40_4096x3072_Cropping_10bit_30fps_AG64_PDVC1_2048x768LR_1924Msps_20230202.h"
+#include"setting/OV50A40_4096x3072_Cropping_10bit_30fps_AG64_PDVC1_2048x768LR_1924Msps_20230531.h"
 };
 
 kal_uint16 addr_data_pair_custom6[] = {
-#include"setting/OV50A40_2048x1536_4C2SCG_10bit_30fps_AG255_PDVC1_2048x768_1924Msps_20230506.h"
-}; //3rd video
+#include"setting/OV50A40_2048x1536_4C2SCG_10bit_30fps_AG255_PDVC1_2048x768_1924Msps_20230531.h"
+}; //3rd video call
+
+
+kal_uint16 addr_data_pair_custom7[] = {
+#include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_4096x768_1924Msps_20230531_DPCoff.h"
+}; //disbale dpc
 
 #ifdef SEAMLESS_SWITCH_V2
 kal_uint16 addr_data_pair_seamless_switch_step1_mot_ov50a2q[] = {
