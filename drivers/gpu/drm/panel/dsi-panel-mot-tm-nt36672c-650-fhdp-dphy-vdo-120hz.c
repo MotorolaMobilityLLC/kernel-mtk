@@ -197,11 +197,15 @@ static void tianma_panel_init(struct tianma *ctx)
 	}
 	else {
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(3);
+		usleep_range(1000,1001);
 		gpiod_set_value(ctx->reset_gpio, 0);
-		msleep(3);
+                usleep_range(1000,1001);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(10);
+		usleep_range(1000,1001);
+		gpiod_set_value(ctx->reset_gpio, 0);
+		usleep_range(1000,1001);
+		gpiod_set_value(ctx->reset_gpio, 1);
+		usleep_range(10000,10001);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -245,9 +249,9 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx,0xC1,0x89,0x28,0x00,0x08,0x00,0xAA,0x02,0x0E,0x00,0x2B,0x00,0x07,0x0D,0xB7,0x0C,0xB7);
 	tianma_dcs_write_seq_static(ctx,0XC2,0X1B,0XA0);
 	tianma_dcs_write_seq_static(ctx, 0x11, 0x00);
-	msleep(100);
+	usleep_range(80000,80001);
 	tianma_dcs_write_seq_static(ctx, 0x29, 0x00);
-	msleep(20);
+	usleep_range(5000,5001);
 	pr_info("disp:init code %s-\n", __func__);
 }
 
@@ -294,7 +298,7 @@ static int tianma_unprepare(struct drm_panel *panel)
 
 	tianma_dcs_write_seq_static(ctx, 0x28);
 	tianma_dcs_write_seq_static(ctx, 0x10);
-	msleep(70);
+	usleep_range(70000,70001);
 
 	ctx->prepared = false;
 
