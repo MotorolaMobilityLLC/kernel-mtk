@@ -5216,6 +5216,11 @@
 					<&ipesys_clk CLK_IPE_LARB20>;
 			clock-names = "apb", "smi";
 		};
+
+                irq_nfc: irq_nfc {
+		     compatible = "mediatek,irq_nfc-eint";
+	        };
+
 		mmqos_wrapper {
 			compatible = "mediatek,mt6855-mmqos-wrapper";
 		};
