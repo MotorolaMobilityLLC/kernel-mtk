@@ -5810,6 +5810,8 @@ void mtk_dsi_set_mmclk_by_datarate(struct mtk_dsi *dsi,
 	}
 
 	compress_rate = mtk_dsi_get_dsc_compress_rate(dsi);
+	if (ext && ext->params && ext->params->dsc_params.enable)
+		bpp = ext->params->dsc_params.bit_per_channel * 3;
 
 	if (!data_rate) {
 		DDPPR_ERR("DSI data_rate is NULL\n");
@@ -5871,6 +5873,10 @@ unsigned long long mtk_dsi_get_frame_hrt_bw_base_by_datarate(
 	unsigned int compress_rate = mtk_dsi_get_dsc_compress_rate(dsi);
 	unsigned int data_rate = mtk_dsi_default_rate(dsi);
 	u32 bpp = mipi_dsi_pixel_format_to_bpp(dsi->format);
+
+	dsi->ext = find_panel_ext(dsi->panel);
+	if (dsi->ext && dsi->ext->params && dsi->ext->params->dsc_params.enable)
+		bpp = dsi->ext->params->dsc_params.bit_per_channel * 3;
 
 #ifdef CONFIG_MTK_MT6382_BDG
 	data_rate = data_rate * bdg_rxtx_ratio / 100;
