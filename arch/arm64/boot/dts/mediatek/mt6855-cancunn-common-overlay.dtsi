@@ -222,6 +222,38 @@
 	status = "disabled";
 };
 
+
+&clock_buffer_ctrl {
+	mediatek,xo-bbck4 = <1>;
+};
+
+&soc {
+      nfc {
+        compatible = "mediatek,nfc-gpio-v2";
+        gpio-rst = <161>;
+        gpio-rst-std = <&pio 161 0x0>;
+        gpio-irq = <2>;
+        gpio-irq-std = <&pio 2 0x0>;
+        status = "okay";
+      };
+};
+
+
+&i2c0 {
+        status = "okay";
+        clock-frequency = <400000>;
+	st21nfc: st21nfc@08 {
+		compatible = "mediatek,nfc";
+		reg = <0x08>;
+		//interrupt-parent = <&pio>;
+		//interrupts = <2 0>;
+		//reset-gpio = <&pio 161 0x00>;
+		//irq-gpio = <&pio 2 0x00>;
+		//clkreq-gpios = <&pio 160 0x00>;
+		status = "ok";
+	};
+};
+
 &i2c3 {
 	clock-frequency = <400000>;
 	haptic_nv@5A{
