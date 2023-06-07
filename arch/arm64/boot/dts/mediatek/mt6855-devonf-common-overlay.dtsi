@@ -17,6 +17,7 @@
 #include "mediatek/mt6855_devonf_camera_overlay.dtsi"
 #include "mediatek/devonf-sar.dtsi"
 #include "mediatek/devonf-audio.dtsi"
+#include "mediatek/devonf-memory.dtsi"
 
 #include <dt-bindings/iio/mt635x-auxadc.h>
 
