@@ -6773,7 +6773,7 @@ static int ISP_release(struct inode *pInode, struct file *pFile)
 {
 	struct ISP_USER_INFO_STRUCT *pUserInfo;
 	unsigned int Reg;
-	unsigned int i = 0;
+	unsigned int i = 0, module = 0;
 
 	mutex_lock(&open_isp_mutex);
 	LOG_DBG("- E. UserCount: %d.\n", IspInfo.UserCount);
@@ -6920,6 +6920,12 @@ static int ISP_release(struct inode *pInode, struct file *pFile)
 	spin_lock(&(IspInfo.SpinLockClock));
 	i = G_u4EnableClockCount;
 	spin_unlock(&(IspInfo.SpinLockClock));
+
+	if (i == 1) { /* if G_u4EnableClockCount==1, do blocking wait for workqueue to finish */
+		for (module = ISP_IRQ_TYPE_INT_CAM_A_ST; module < ISP_IRQ_TYPE_AMOUNT; module++)
+			cancel_work_sync(&isp_workque[module].isp_bh_work);
+	}
+
 	while (i > 0) {
 		ISP_EnableClock(MFALSE);
 		i--;
