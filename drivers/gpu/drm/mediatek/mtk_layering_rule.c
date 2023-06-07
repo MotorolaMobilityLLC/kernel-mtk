@@ -32,7 +32,7 @@
 static struct layering_rule_ops l_rule_ops;
 static struct layering_rule_info_t l_rule_info;
 
-static DEFINE_SPINLOCK(hrt_table_lock);
+static DEFINE_MUTEX(hrt_table_lock);
 
 /* To backup for primary display drm_mtk_layer_config */
 static struct drm_mtk_layer_config *g_input_config;
@@ -335,7 +335,6 @@ static int layering_get_valid_hrt(struct drm_crtc *crtc,
 static void copy_hrt_bound_table(struct drm_mtk_layering_info *disp_info,
 			int is_larb, int *hrt_table, struct drm_device *dev)
 {
-	unsigned long flags = 0;
 	int valid_num, ovl_bound, i;
 	struct drm_crtc *crtc;
 	struct drm_display_mode *mode;
@@ -353,7 +352,7 @@ static void copy_hrt_bound_table(struct drm_mtk_layering_info *disp_info,
 		disp_info->disp_mode_idx[0]);
 
 	/* update table if hrt bw is enabled */
-	spin_lock_irqsave(&hrt_table_lock, flags);
+	mutex_lock(&hrt_table_lock);
 	valid_num = layering_get_valid_hrt(crtc, mode);
 	ovl_bound = mtk_get_phy_layer_limit(
 		get_mapping_table(dev, 0, DISP_HW_LAYER_TB, MAX_PHY_OVL_CNT));
@@ -361,7 +360,7 @@ static void copy_hrt_bound_table(struct drm_mtk_layering_info *disp_info,
 
 	for (i = 0; i < HRT_LEVEL_NUM; i++)
 		emi_bound_table[l_rule_info.bound_tb_idx][i] = valid_num;
-	spin_unlock_irqrestore(&hrt_table_lock, flags);
+	mutex_unlock(&hrt_table_lock);
 
 	for (i = 0; i < HRT_LEVEL_NUM; i++)
 		hrt_table[i] = emi_bound_table[l_rule_info.bound_tb_idx][i];
@@ -647,9 +646,8 @@ static void calc_clip_y(struct drm_mtk_layer_config *cfg)
 static void backup_input_config(struct drm_mtk_layering_info *disp_info)
 {
 	unsigned int size = 0;
-	unsigned long flags = 0;
 
-	spin_lock_irqsave(&hrt_table_lock, flags);
+	mutex_lock(&hrt_table_lock);
 	/* free before use */
 	if (g_input_config != 0) {
 		kfree(g_input_config);
@@ -658,7 +656,7 @@ static void backup_input_config(struct drm_mtk_layering_info *disp_info)
 
 	if (disp_info->layer_num[HRT_PRIMARY] <= 0 ||
 	    disp_info->input_config[HRT_PRIMARY] == NULL) {
-		spin_unlock_irqrestore(&hrt_table_lock, flags);
+		mutex_unlock(&hrt_table_lock);
 		return;
 	}
 
@@ -669,13 +667,13 @@ static void backup_input_config(struct drm_mtk_layering_info *disp_info)
 
 	if (g_input_config == 0) {
 		DDPPR_ERR("%s: allocate memory fail\n", __func__);
-		spin_unlock_irqrestore(&hrt_table_lock, flags);
+		mutex_unlock(&hrt_table_lock);
 		return;
 	}
 
 	/* memory copy */
 	memcpy(g_input_config, disp_info->input_config[HRT_PRIMARY], size);
-	spin_unlock_irqrestore(&hrt_table_lock, flags);
+	mutex_unlock(&hrt_table_lock);
 }
 
 static void fbdc_pre_calculate(struct drm_mtk_layering_info *disp_info)
