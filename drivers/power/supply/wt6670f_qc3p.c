@@ -1382,13 +1382,18 @@ probe_out:
 
 static void wt6670f_shutdown(struct i2c_client *client)
 {
-	int ret;
+	int ret = 0;
 	u16 data = 0x01;
 	u16 data_r = 0x00;
 
 	if(QC3P_WT6670F == g_qc3p_id){
+#ifdef CONFIG_MOTO_WT6670F_SHUTDOWN_ONLY_DO_SW_RESET
+		ret = mmi_wt6670f_write_word(_wt, 0xB3, data); //software reset
+		pr_info("[%s] wt6670f do sw reset\n", __func__);
+#else
 		ret = mmi_wt6670f_write_word(_wt, 0xB6, data);
 		pr_info("%s set voltage ok wt6670\n", __func__);
+#endif
 	}else if(QC3P_Z350 == g_qc3p_id){
 		ret = mmi_wt6670f_write_word(_wt, 0x02, data);
 		pr_info("%s set voltage ok z350\n", __func__);
@@ -1396,10 +1401,16 @@ static void wt6670f_shutdown(struct i2c_client *client)
 		ret = mmi_wt6670f_write_word(_wt, 0xB6, data);
 		pr_info("%s set voltage ok wt6670\n", __func__);
 	}
+#ifndef CONFIG_MOTO_WT6670F_SHUTDOWN_ONLY_DO_SW_RESET
 	wt6670f_do_reset();
+#endif
 	if (ret < 0)
 	{
+#ifdef CONFIG_MOTO_WT6670F_SHUTDOWN_ONLY_DO_SW_RESET
+		pr_err("%s wt6670f do sw reset fail, ret = %d\n", __func__, ret);
+#else
 		pr_info("%s set voltage fail\n",__func__);
+#endif
 	}
 	if(QC3P_Z350 == g_qc3p_id) {
 		ret = mmi_wt6670f_write_word(_wt, 0x06, data_r);
