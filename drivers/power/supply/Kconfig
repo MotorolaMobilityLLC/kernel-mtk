@@ -797,6 +797,12 @@ config MOTO_CHARGER_MT6375_SUPPORT
         help
           This is to enable MOTO supports of MT6375 control.
 
+config MOTO_WT6670F_SHUTDOWN_ONLY_DO_SW_RESET
+        bool "WT6670F shutdown only do software reset"
+        default n
+        help
+          This is to enable shutdown Wt6670F only do software reset.
+
 config MOTO_CHARGE_PUMP_OVP_CONTROL_SUPPORT
         bool "CHARGER PUMP ovp control support"
         default n
