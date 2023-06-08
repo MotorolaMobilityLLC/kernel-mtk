@@ -231,6 +231,12 @@
 	mediatek,xo-bbck4 = <1>;
 };
 
+&mt6363keys {
+        home {
+                linux,keycodes = <115>;
+        };
+};
+
 &soc {
       nfc {
         compatible = "mediatek,nfc-gpio-v2";
