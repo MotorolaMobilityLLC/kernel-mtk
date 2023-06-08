@@ -28,29 +28,11 @@
 	};
 
 	aw99703_backlight: sprd_backlight@36{
-		compatible = "awinic,aw99703-bl", "sm-sm5350";
+		compatible = "awinic,aw99703-bl","ktd,ktd3136";
 		reg = <0x36>;
 		id = <6>;
 		lk_hwen-gpio = <8>;
 		status = "okay";
-
-		//sm5350
-		pwm-cfg = <0x0F>;
-		hwen-gpio = <&pio 8 1>;
-		boost-ctl = <0x02>;
-		ctl-bank-en = <0x02>;
-		full-scale-current = <0x19>; //25 mA
-		map-mode = <0>; //0x16 : 0 exponential, 1 linear
-		current-align-type = <0x01>;
-		sm5350,default-brightness = <1810>;
-		sm5350,init-seq-enable = <1>;
-		sm5350,init-seq = <0x1A 0x02>,
-				<0x1C 0x0F>,
-				<0x10 0x07>,
-				<0x16 0x00>,
-				<0x18 0x19>,
-				<0x23 0xFF>,
-				<0x24 0x02>;
 
 		aw99703,hwen-gpio = <&pio 8 1>;
 		aw99703,bl-map = <3>; /* brightness map level 1:256,2:1024,3:2048 */
@@ -73,7 +55,7 @@
 		aw99703,current-align-type = <0x01>;
 		aw99703,work-mode = <1>; /* backlight */
 		aw99703,default-brightness = <1810>;
-		aw99703,reinit-brightness = <15>;
+		//aw99703,reinit-brightness = <15>;
 		aw99703,init-seq-enable = <1>;
 		aw99703,init-seq = <0x02 0x00>,
 				<0x03 0xCF>,
@@ -86,6 +68,21 @@
 				<0x23 0x61>,
 				<0x02 0x05>;
 
+                ktd,hwen-gpio = <&pio 8 1>;
+                ktd,using-lsb;
+                ktd,pwm-frequency = <1>; /* 1MHZ */
+                ktd,bl-fscal-led = <0xC1>; /* 24.2mA */
+                ktd,turn-on-ramp = <0x00>;
+                ktd,turn-off-ramp = <0x04>;
+                ktd,pwm-trans-dim = <0>;
+                ktd,i2c-trans-dim = <128>;
+                ktd,skip-first-trans;
+                ktd,reset-trans-delay;
+                ktd,bl-channel = <3>;
+                ktd,ovp-level = <32>;  /*25.9v or 32v */
+                ktd,ocp-level = <2600>;
+                ktd,switching-frequency = <1>;
+                ktd,inductor-current = <1>;
 	};
 };
 
@@ -172,8 +169,9 @@
 	};
 
 	panel2@0 {
-		compatible = "tm,nt36672c,vdo,120hz";
+		compatible = "tm,il77600a,672,vdo,120hz";
 		reg = <1>;
+		1p8-supply = <&mt6369_vtp>;
 		reset-gpios = <&pio 95 0>;
 		bias_n-gpios = <&pio 134 0>;
 		bias_p-gpios = <&pio 182 0>;
@@ -187,8 +185,9 @@
 	};
 
 	panel3@0 {
-                compatible = "txd,ili7807s,vdo,120hz";
+                compatible = "djn,ft8725,672,vdo,120hz";
                 reg = <2>;
+		1p8-supply = <&mt6369_vtp>;
                 reset-gpios = <&pio 95 0>;
                 bias_n-gpios = <&pio 134 0>;
                 bias_p-gpios = <&pio 182 0>;
@@ -201,35 +200,22 @@
 
         };
 
+/*
 	panel4@0 {
-                compatible = "csot_ft8725,vid,120hz";
-                reg = <3>;
-                reset-gpios = <&pio 95 0>;
-                bias_n-gpios = <&pio 134 0>;
-                bias_p-gpios = <&pio 182 0>;
-                pinctrl-names = "default";
-                port {
-                        panel_in4: endpoint {
-                                remote-endpoint = <&dsi_out>;
-                        };
-                };
+		compatible = "txd,ili7807s,649,vdo,v0";
+		reg = <4>;
+		reset-gpios = <&pio 95 0>;
+		bias_n-gpios = <&pio 134 0>;
+		bias_p-gpios = <&pio 182 0>;
+		pinctrl-names = "default";
+		port {
+			panel_in4: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
 
         };
-
-	panel5@0 {
-                compatible = "csot_ft8726,vid,120hz";
-                reg = <4>;
-                reset-gpios = <&pio 95 0>;
-                bias_n-gpios = <&pio 134 0>;
-                bias_p-gpios = <&pio 182 0>;
-                pinctrl-names = "default";
-                port {
-                        panel_in5: endpoint {
-                                remote-endpoint = <&dsi_out>;
-                        };
-                };
-
-        };
+*/
 
 	ports {
 		port {
