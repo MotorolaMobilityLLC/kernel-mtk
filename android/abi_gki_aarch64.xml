@@ -259,6 +259,7 @@
       <elf-symbol name='__page_file_mapping' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x21e0e39d'/>
       <elf-symbol name='__page_frag_cache_drain' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1faa9680'/>
       <elf-symbol name='__page_mapcount' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdcafe4e4'/>
+      <elf-symbol name='__page_pinner_failure_detect' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9a5ac793'/>
       <elf-symbol name='__pagevec_release' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x524adb03'/>
       <elf-symbol name='__pci_register_driver' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7bfe59a4'/>
       <elf-symbol name='__percpu_counter_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x20cbb30a'/>
@@ -5190,6 +5191,7 @@
       <elf-symbol name='schedule_hrtimeout' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6a460dc5'/>
       <elf-symbol name='schedule_timeout' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8ddd8aad'/>
       <elf-symbol name='schedule_timeout_interruptible' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x54496b4'/>
+      <elf-symbol name='schedule_timeout_killable' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf09cc34'/>
       <elf-symbol name='schedule_timeout_uninterruptible' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x151f4898'/>
       <elf-symbol name='scmi_driver_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2eb8a6e9'/>
       <elf-symbol name='scmi_driver_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x319cd7ee'/>
@@ -127547,6 +127549,10 @@
         <parameter type-id='02f11ed4' name='page' filepath='mm/util.c' line='822' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__page_pinner_failure_detect' mangled-name='__page_pinner_failure_detect' filepath='mm/page_pinner.c' line='253' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__page_pinner_failure_detect'>
+        <parameter type-id='02f11ed4' name='page' filepath='mm/page_pinner.c' line='253' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='__pagevec_release' mangled-name='__pagevec_release' filepath='mm/swap.c' line='1023' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__pagevec_release'>
         <parameter type-id='f7d3421a' name='pvec' filepath='mm/swap.c' line='1023' column='1'/>
         <return type-id='48b5725f'/>
@@ -154205,6 +154211,10 @@
       </function-decl>
       <function-decl name='schedule_timeout_interruptible' mangled-name='schedule_timeout_interruptible' filepath='kernel/time/timer.c' line='1907' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='schedule_timeout_interruptible'>
         <parameter type-id='bd54fe1a' name='timeout' filepath='kernel/time/timer.c' line='1907' column='1'/>
+        <return type-id='bd54fe1a'/>
+      </function-decl>
+      <function-decl name='schedule_timeout_killable' mangled-name='schedule_timeout_killable' filepath='kernel/time/timer.c' line='1914' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='schedule_timeout_killable'>
+        <parameter type-id='bd54fe1a' name='timeout' filepath='kernel/time/timer.c' line='1914' column='1'/>
         <return type-id='bd54fe1a'/>
       </function-decl>
       <function-decl name='schedule_timeout_uninterruptible' mangled-name='schedule_timeout_uninterruptible' filepath='kernel/time/timer.c' line='1921' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='schedule_timeout_uninterruptible'>
