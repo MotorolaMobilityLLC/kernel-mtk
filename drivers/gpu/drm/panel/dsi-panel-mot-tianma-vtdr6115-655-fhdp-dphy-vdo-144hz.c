@@ -952,8 +952,6 @@ static void set_lhbm_alpha(unsigned int bl_level)
 
 	if (bl_level == 0)
 		lhbm_alpha_index = 0;
-	else if (bl_level > sizeof(lhbm_alpha))
-		lhbm_alpha_index = sizeof(lhbm_alpha)-1;
 
 	alpha = lhbm_alpha[lhbm_alpha_index];
 
