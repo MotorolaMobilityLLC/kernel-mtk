@@ -380,13 +380,13 @@ static int csot_enable(struct drm_panel *panel)
 static const struct drm_display_mode default_mode = {
 	.clock = 328814,
 	.hdisplay = FRAME_WIDTH,
-	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
-	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
-	.htotal = FRAME_WIDTH + MODE_60_HFP + HSA + HBP,
+	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_120_HFP + HSA + HBP,
 	.vdisplay = FRAME_HEIGHT,
-	.vsync_start = FRAME_HEIGHT + MODE_60_VFP,
-	.vsync_end = FRAME_HEIGHT + MODE_60_VFP + VSA,
-	.vtotal = FRAME_HEIGHT + MODE_60_VFP + VSA + VBP,
+	.vsync_start = FRAME_HEIGHT + MODE_120_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_120_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_120_VFP + VSA + VBP,
 };
 static const struct drm_display_mode performance_mode_30hz = {
 	.clock = 328814,
@@ -400,8 +400,20 @@ static const struct drm_display_mode performance_mode_30hz = {
 	.vtotal = FRAME_HEIGHT + MODE_30_VFP + VSA + VBP,
 };
 
-static const struct drm_display_mode performance_mode_90hz = {
+static const struct drm_display_mode performance_mode_60hz = {
 	.clock = 328814,
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_60_HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_60_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_60_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_60_VFP + VSA + VBP,
+};
+
+static const struct drm_display_mode performance_mode_90hz = {
+	.clock		= 328814,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -410,18 +422,6 @@ static const struct drm_display_mode performance_mode_90hz = {
 	.vsync_start = FRAME_HEIGHT + MODE_90_VFP,
 	.vsync_end = FRAME_HEIGHT + MODE_90_VFP + VSA,
 	.vtotal = FRAME_HEIGHT + MODE_90_VFP + VSA + VBP,
-};
-
-static const struct drm_display_mode performance_mode_120hz = {
-	.clock		= 328814,
-	.hdisplay = FRAME_WIDTH,
-	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
-	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
-	.htotal = FRAME_WIDTH + MODE_120_HFP + HSA + HBP,
-	.vdisplay = FRAME_HEIGHT,
-	.vsync_start = FRAME_HEIGHT + MODE_120_VFP,
-	.vsync_end = FRAME_HEIGHT + MODE_120_VFP + VSA,
-	.vtotal = FRAME_HEIGHT + MODE_120_VFP + VSA + VBP,
 };
 
 #if defined(CONFIG_MTK_PANEL_EXT)
@@ -891,24 +891,24 @@ static int csot_get_modes(struct drm_panel *panel,
 	drm_mode_probed_add(connector, mode_1);
 
 
-	mode_2 = drm_mode_duplicate(connector->dev, &performance_mode_90hz);
+	mode_2 = drm_mode_duplicate(connector->dev, &performance_mode_60hz);
 	if (!mode_2) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
-			performance_mode_90hz.hdisplay,
-			performance_mode_90hz.vdisplay,
-			drm_mode_vrefresh(&performance_mode_90hz));
+			performance_mode_60hz.hdisplay,
+			performance_mode_60hz.vdisplay,
+			drm_mode_vrefresh(&performance_mode_60hz));
 		return -ENOMEM;
 	}
 	drm_mode_set_name(mode_2);
 	mode_2->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(connector, mode_2);
 
-	mode_3 = drm_mode_duplicate(connector->dev, &performance_mode_120hz);
+	mode_3 = drm_mode_duplicate(connector->dev, &performance_mode_90hz);
 	if (!mode_3) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
-			performance_mode_120hz.hdisplay,
-			performance_mode_120hz.vdisplay,
-			drm_mode_vrefresh(&performance_mode_120hz));
+			performance_mode_90hz.hdisplay,
+			performance_mode_90hz.vdisplay,
+			drm_mode_vrefresh(&performance_mode_90hz));
 		return -ENOMEM;
 	}
 	drm_mode_set_name(mode_3);
