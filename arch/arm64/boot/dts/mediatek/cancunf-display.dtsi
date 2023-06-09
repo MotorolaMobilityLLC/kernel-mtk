@@ -73,7 +73,6 @@
 		aw99703,current-align-type = <0x01>;
 		aw99703,work-mode = <1>; /* backlight */
 		aw99703,default-brightness = <1810>;
-		aw99703,reinit-brightness = <15>;
 		aw99703,init-seq-enable = <1>;
 		aw99703,init-seq = <0x02 0x00>,
 				<0x03 0xCF>,
