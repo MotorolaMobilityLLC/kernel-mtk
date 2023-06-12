@@ -16,6 +16,7 @@
 #include "mediatek/cancunn-charger.dtsi"
 #include "mediatek/mt6855_cancunn_camera_overlay.dtsi"
 #include "mediatek/cancunn-sar.dtsi"
+#include "mediatek/mt6855-moto-memory.dtsi"
 
 //#include "mediatek/mt6363.dtsi"
 #include <dt-bindings/iio/mt635x-auxadc.h>
