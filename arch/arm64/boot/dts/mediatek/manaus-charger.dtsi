@@ -238,12 +238,15 @@
 	ta_stop_battery_soc = <85>;
 	min_charger_voltage = <4600000>;
 
+	/*PE 2.0 vbus, default is 5.5V.remember check ovp (max_charger_voltage > charger_voltage)*/
+	charger_voltage = <9000000>;
+
 	/* cable measurement impedance */
 	cable_imp_threshold = <699>;
 	vbat_cable_imp_threshold = <3900000>; /* uV */
 
 	/* single charger */
-	sc_input_current = <3000000>;
+	sc_input_current = <1600000>;
 	sc_charger_current = <3000000>;
 
 	/* dual charger in series*/
