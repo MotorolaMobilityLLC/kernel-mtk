@@ -13,6 +13,7 @@
 #define TA_START_BATTERY_SOC	0
 #define TA_STOP_BATTERY_SOC	85
 #define PE20_V_CHARGER_MIN 4600000 /* 4.6 V */
+#define PE20_V_CHARGER_DEFAULT 5500000 /* 5.5 V */
 
 /* single chager */
 #define SC_INPUT_CURRENT		3200000
@@ -106,6 +107,7 @@ struct mtk_pe20 {
 	int ta_start_battery_soc;
 	int ta_stop_battery_soc;
 	int min_charger_voltage;
+	int charger_voltage;
 
 	/* single charger dtsi setting*/
 	int sc_input_current;
