@@ -42,7 +42,7 @@
 		full-scale-current = <0x19>; //25 mA
 		map-mode = <0>; //0x16 : 0 exponential, 1 linear
 		current-align-type = <0x01>;
-		sm5350,default-brightness = <1810>;
+		sm5350,default-brightness = <1023>;
 		sm5350,init-seq-enable = <1>;
 		sm5350,init-seq = <0x1A 0x02>,
 				<0x1C 0x0F>,
@@ -72,7 +72,7 @@
 		aw99703,map-type = <0>; /* 0 exponential, 4 linear */
 		aw99703,current-align-type = <0x01>;
 		aw99703,work-mode = <1>; /* backlight */
-		aw99703,default-brightness = <1810>;
+		aw99703,default-brightness = <1023>;
 		aw99703,init-seq-enable = <1>;
 		aw99703,init-seq = <0x02 0x00>,
 				<0x03 0xCF>,
