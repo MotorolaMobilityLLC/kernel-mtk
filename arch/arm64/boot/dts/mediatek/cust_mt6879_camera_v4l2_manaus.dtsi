@@ -109,6 +109,7 @@
 		seninf_csi_port_1: seninf_csi_port_1 {
 			compatible = "mediatek,seninf";
 			csi-port = "1";
+			hs_trail_parameter = <0x42>;
 			nvmem-cells = <&csi_efuse1>;
 			nvmem-cell-names = "rg_csi";
 			port {
