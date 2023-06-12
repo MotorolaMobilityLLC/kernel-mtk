@@ -17,6 +17,7 @@
 #include "mediatek/cancunf-sar.dtsi"
 #include "mediatek/cancunf-audio.dtsi"
 #include "mediatek/mt6855-moto-cancunf-fps.dtsi"
+#include "mediatek/mt6855-moto-memory.dtsi"
 
 #include <dt-bindings/iio/mt635x-auxadc.h>
 #include <dt-bindings/spmi/spmi.h>
