@@ -5126,6 +5126,7 @@
       <elf-symbol name='rproc_put' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6c23696b'/>
       <elf-symbol name='rproc_remove_subdev' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x48a4fc89'/>
       <elf-symbol name='rproc_report_crash' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6db814e3'/>
+      <elf-symbol name='rproc_set_firmware' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6b33e337'/>
       <elf-symbol name='rproc_shutdown' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1231e951'/>
       <elf-symbol name='rproc_vq_interrupt' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8a4dce61'/>
       <elf-symbol name='rq_flush_dcache_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1898a707'/>
@@ -27281,7 +27282,7 @@
           <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/linux/gpio/driver.h' line='281' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='mnt_pcp' size-in-bits='64' is-struct='yes' visibility='default' filepath='fs/mount.h' line='27' column='1' id='3106563e'>
+      <class-decl name='mnt_pcp' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/../fs/mount.h' line='27' column='1' id='3106563e'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='mnt_count' type-id='95e97e5e' visibility='default' filepath='fs/mount.h' line='28' column='1'/>
         </data-member>
@@ -93785,7 +93786,7 @@
         <parameter type-id='af051c69'/>
         <return type-id='80f4b756'/>
       </function-type>
-      <class-decl name='mountpoint' size-in-bits='320' is-struct='yes' visibility='default' filepath='fs/mount.h' line='32' column='1' id='c1501314'>
+      <class-decl name='mountpoint' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/../fs/mount.h' line='32' column='1' id='c1501314'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='m_hash' type-id='03a4a074' visibility='default' filepath='fs/mount.h' line='33' column='1'/>
         </data-member>
@@ -107367,7 +107368,7 @@
       </array-type-def>
       <pointer-type-def type-id='364c344e' size-in-bits='64' id='ddf6796c'/>
       <pointer-type-def type-id='f1828bdc' size-in-bits='64' id='ddfb71fa'/>
-      <class-decl name='mnt_namespace' size-in-bits='960' is-struct='yes' visibility='default' filepath='include/../fs/mount.h' line='8' column='1' id='de031042'>
+      <class-decl name='mnt_namespace' size-in-bits='960' is-struct='yes' visibility='default' filepath='fs/mount.h' line='8' column='1' id='de031042'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='ns' type-id='99f367f2' visibility='default' filepath='fs/mount.h' line='9' column='1'/>
         </data-member>
@@ -153894,6 +153895,11 @@
         <parameter type-id='25751b8f' name='type' filepath='drivers/remoteproc/remoteproc_core.c' line='2786' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='rproc_set_firmware' mangled-name='rproc_set_firmware' filepath='drivers/remoteproc/remoteproc_core.c' line='2276' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rproc_set_firmware'>
+        <parameter type-id='5771c601' name='rproc' filepath='drivers/remoteproc/remoteproc_core.c' line='2276' column='1'/>
+        <parameter type-id='80f4b756' name='fw_name' filepath='drivers/remoteproc/remoteproc_core.c' line='2276' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='rproc_shutdown' mangled-name='rproc_shutdown' filepath='drivers/remoteproc/remoteproc_core.c' line='2109' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rproc_shutdown'>
         <parameter type-id='5771c601' name='rproc' filepath='drivers/remoteproc/remoteproc_core.c' line='2109' column='1'/>
         <return type-id='48b5725f'/>
@@ -156928,21 +156934,21 @@
         <parameter type-id='d86551c2' name='chip' filepath='sound/usb/card.c' line='1031' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='snd_usb_endpoint_close' mangled-name='snd_usb_endpoint_close' filepath='sound/usb/endpoint.c' line='886' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_usb_endpoint_close'>
-        <parameter type-id='d86551c2' name='chip' filepath='sound/usb/endpoint.c' line='886' column='1'/>
-        <parameter type-id='d59ce2e7' name='ep' filepath='sound/usb/endpoint.c' line='887' column='1'/>
+      <function-decl name='snd_usb_endpoint_close' mangled-name='snd_usb_endpoint_close' filepath='sound/usb/endpoint.c' line='887' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_usb_endpoint_close'>
+        <parameter type-id='d86551c2' name='chip' filepath='sound/usb/endpoint.c' line='887' column='1'/>
+        <parameter type-id='d59ce2e7' name='ep' filepath='sound/usb/endpoint.c' line='888' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='snd_usb_endpoint_configure' mangled-name='snd_usb_endpoint_configure' filepath='sound/usb/endpoint.c' line='1333' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_usb_endpoint_configure'>
-        <parameter type-id='d86551c2' name='chip' filepath='sound/usb/endpoint.c' line='1333' column='1'/>
-        <parameter type-id='d59ce2e7' name='ep' filepath='sound/usb/endpoint.c' line='1334' column='1'/>
+      <function-decl name='snd_usb_endpoint_configure' mangled-name='snd_usb_endpoint_configure' filepath='sound/usb/endpoint.c' line='1335' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_usb_endpoint_configure'>
+        <parameter type-id='d86551c2' name='chip' filepath='sound/usb/endpoint.c' line='1335' column='1'/>
+        <parameter type-id='d59ce2e7' name='ep' filepath='sound/usb/endpoint.c' line='1336' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='snd_usb_endpoint_open' mangled-name='snd_usb_endpoint_open' filepath='sound/usb/endpoint.c' line='740' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_usb_endpoint_open'>
-        <parameter type-id='d86551c2' name='chip' filepath='sound/usb/endpoint.c' line='740' column='1'/>
-        <parameter type-id='836adb0d' name='fp' filepath='sound/usb/endpoint.c' line='741' column='1'/>
-        <parameter type-id='9b87bc37' name='params' filepath='sound/usb/endpoint.c' line='742' column='1'/>
-        <parameter type-id='b50a4934' name='is_sync_ep' filepath='sound/usb/endpoint.c' line='743' column='1'/>
+      <function-decl name='snd_usb_endpoint_open' mangled-name='snd_usb_endpoint_open' filepath='sound/usb/endpoint.c' line='741' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_usb_endpoint_open'>
+        <parameter type-id='d86551c2' name='chip' filepath='sound/usb/endpoint.c' line='741' column='1'/>
+        <parameter type-id='836adb0d' name='fp' filepath='sound/usb/endpoint.c' line='742' column='1'/>
+        <parameter type-id='9b87bc37' name='params' filepath='sound/usb/endpoint.c' line='743' column='1'/>
+        <parameter type-id='b50a4934' name='is_sync_ep' filepath='sound/usb/endpoint.c' line='744' column='1'/>
         <return type-id='d59ce2e7'/>
       </function-decl>
       <function-decl name='snprintf' mangled-name='snprintf' filepath='include/linux/kernel.h' line='204' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snprintf'>
@@ -163235,6 +163241,7 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
+
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
