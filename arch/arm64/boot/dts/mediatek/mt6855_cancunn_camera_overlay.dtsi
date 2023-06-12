@@ -404,7 +404,16 @@
 	status = "okay";
 };
 /* CAMERA GPIO end */
-
+/*flashlight*/
+&i2c0 {
+	status = "okay";
+	clock-frequency = <400000>;
+	aw36518: aw36518@63{
+		compatible = "awinic,aw36518";
+		reg = <0x63>;
+		status = "okay";
+	};
+};
 
 /* CAMERA EEPROM */
 &i2c2 {

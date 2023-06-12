@@ -6523,6 +6523,10 @@
 			};
 		};
 
+		flashlights_aw36518: flashlights_aw36518 {
+			compatible = "awinic,aw36518";
+		};
+
 		mtk_composite_v4l2_1: mtk_composite_v4l2_1 {
 			compatible = "mediatek,mtk_composite_v4l2_1";
 		};
