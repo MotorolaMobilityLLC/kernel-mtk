@@ -528,7 +528,7 @@ static int __pe2_check_charger(struct chg_alg_device *alg)
 	pe2_dbg("%s: OK, state = %d\n",
 		__func__, pe2->state);
 
-	ret = pe20_set_ta_vchr(alg, 5500000);
+	ret = pe20_set_ta_vchr(alg, pe2->charger_voltage);
 	if (ret == 0)
 		pe2_hal_set_mivr(alg, CHG1, pe2->min_charger_voltage);
 	else {
@@ -1249,6 +1249,13 @@ static void mtk_pe2_parse_dt(struct mtk_pe20 *pe2,
 	else {
 		pr_notice("use default V_CHARGER_MIN:%d\n", PE20_V_CHARGER_MIN);
 		pe2->min_charger_voltage = PE20_V_CHARGER_MIN;
+	}
+
+	if (of_property_read_u32(np, "charger_voltage", &val) >= 0)
+		pe2->charger_voltage = val;
+	else {
+		pr_notice("use default PE20_V_CHARGER_DEFAULT:%d\n", PE20_V_CHARGER_DEFAULT);
+		pe2->charger_voltage = PE20_V_CHARGER_DEFAULT;
 	}
 
 	/* cable measurement impedance */
