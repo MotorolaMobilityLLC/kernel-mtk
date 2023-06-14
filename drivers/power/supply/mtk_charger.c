@@ -3149,6 +3149,7 @@ static bool mmi_has_current_tapered(struct mtk_charger *info,
 	return change_state;
 }
 
+#define TURBO_POWER_THRSH 12000000 /*12W*/
 #define WEAK_CHRG_THRSH 450
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 #define TURBO_CHRG_THRSH 3000
@@ -3160,6 +3161,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 	int icl = 0;
 	int rc = 0;
 	int rp_level = 0;
+	int vbus = 0;
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	struct chg_alg_device *alg = NULL;
 	int i = 0;
@@ -3213,6 +3215,12 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 		goto end_rate_check;
  	}
+
+	vbus = get_vbus(info);
+	if (icl * vbus >= TURBO_POWER_THRSH) {
+		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		goto end_rate_check;
+	}
 
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	if(get_uisoc(info) == 100)
