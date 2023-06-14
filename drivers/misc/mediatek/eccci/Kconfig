@@ -98,6 +98,15 @@ config MOTO_AION_SWTP_CUST
 	  it is disabled.
 	  The option default disabled.
 
+config MOTO_MANAUS_SWTP_CUST
+	bool "ECCCI manaus swtp customization"
+	depends on MTK_ECCCI_DRIVER
+	help
+	  This option enables manaus swtp customization, if yes,
+	  then it is supported, if no,
+	  it is disabled.
+	  The option default disabled.
+
 config MOTO_CANCUNF_SWTP_CUST
 	bool "ECCCI cancunf swtp customization"
 	depends on MTK_ECCCI_DRIVER
