@@ -401,7 +401,7 @@ static struct mtk_panel_params ext_params_60hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
-	.lcm_index = 0,
+	.lcm_index = 2,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -491,7 +491,7 @@ static struct mtk_panel_params ext_params_90hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
-	.lcm_index = 0,
+	.lcm_index = 2,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -581,7 +581,7 @@ static struct mtk_panel_params ext_params_120hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
-	.lcm_index = 0,
+	.lcm_index = 2,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -672,7 +672,7 @@ static struct mtk_panel_params ext_params_144hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
-	.lcm_index = 0,
+	.lcm_index = 2,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
