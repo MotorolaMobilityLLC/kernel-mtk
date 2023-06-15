@@ -200,10 +200,10 @@
 
         };
 
-/*
 	panel4@0 {
-		compatible = "txd,ili7807s,649,vdo,v0";
-		reg = <4>;
+		compatible = "csot,icnl9922c,672,vdo,120hz";
+		reg = <3>;
+		1p8-supply = <&mt6369_vtp>;
 		reset-gpios = <&pio 95 0>;
 		bias_n-gpios = <&pio 134 0>;
 		bias_p-gpios = <&pio 182 0>;
@@ -215,7 +215,6 @@
 		};
 
         };
-*/
 
 	ports {
 		port {
