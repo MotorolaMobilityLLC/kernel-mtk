@@ -1,6 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0
-//
-// Copyright (c) 2022 Mediatek Inc.
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * WL2864C, Multi-Output Regulators
+ * Copyright (C) 2019  Motorola Mobility LLC,
+ *
+ * Author: ChengLong, Motorola Mobility LLC,
+ */
 
 #include <linux/err.h>
 #include <linux/gpio/consumer.h>
@@ -15,42 +19,9 @@
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/of_regulator.h>
+#include "wl2864c-regulator.h"
 
-#define WL2864C_REG_NUM (WL2864C_SEQ_STATUS-WL2864C_CHIP_REV+1)
-
-#define WL2864C_CHIP_REV 0x00
-#define WL2864C_CURRENT_LIMITSEL 0x01
-#define WL2864C_DISCHARGE_RESISTORS 0x02
-#define WL2864C_LDO1_VOUT 0x03
-#define WL2864C_LDO2_VOUT 0x04
-#define WL2864C_LDO3_VOUT 0x05
-#define WL2864C_LDO4_VOUT 0x06
-#define WL2864C_LDO5_VOUT 0x07
-#define WL2864C_LDO6_VOUT 0x08
-#define WL2864C_LDO7_VOUT 0x09
-#define WL2864C_LDO1_LDO2_SEQ 0x0a
-#define WL2864C_LDO3_LDO4_SEQ 0x0b
-#define WL2864C_LDO5_LDO6_SEQ 0x0c
-#define WL2864C_LDO7_SEQ 0x0d
-#define WL2864C_LDO_EN 0x0e
-#define WL2864C_SEQ_STATUS 0x0f
-
-
-/* WL2864C_LDO1_VSEL ~ WL2864C_LDO7_VSEL =
- * 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09
- */
-#define  WL2864C_LDO1_VSEL                      WL2864C_LDO1_VOUT
-#define  WL2864C_LDO2_VSEL                      WL2864C_LDO2_VOUT
-#define  WL2864C_LDO3_VSEL                      WL2864C_LDO3_VOUT
-#define  WL2864C_LDO4_VSEL                      WL2864C_LDO4_VOUT
-#define  WL2864C_LDO5_VSEL                      WL2864C_LDO5_VOUT
-#define  WL2864C_LDO6_VSEL                      WL2864C_LDO6_VOUT
-#define  WL2864C_LDO7_VSEL                      WL2864C_LDO7_VOUT
-
-#define  WL2864C_VSEL_SHIFT                     0
-#define  WL2864C_VSEL_MASK                      (0xff << 0)
-
-enum WL2864C_regulators {
+enum slg51000_regulators {
 	WL2864C_REGULATOR_LDO1 = 0,
 	WL2864C_REGULATOR_LDO2,
 	WL2864C_REGULATOR_LDO3,
@@ -119,19 +90,19 @@ static int wl2864c_get_current_limit(struct regulator_dev *rdev)
 	uint8_t reg_idx;
 	unsigned int val = 0;
 
-	dev_info(chip->dev, "************ start dump wl2864c register ************\n");
-	dev_info(chip->dev, "regulator name = %s\n", rdev->desc->name);
-	dev_info(chip->dev, "register 0x00:      chip version\n");
-	dev_info(chip->dev, "register 0x01:      LDO CL\n");
-	dev_info(chip->dev, "register 0x03~0x09: LDO1~LDO7 OUT Voltage\n");
-	dev_info(chip->dev, "register 0x0e:      Bit[6:0] LDO7~LDO1 EN\n");
+	dev_err(chip->dev, "************ start dump wl2864c register ************\n");
+	dev_err(chip->dev, "regulator name = %s \n", rdev->desc->name);
+	dev_err(chip->dev, "register 0x00:      chip version\n");
+	dev_err(chip->dev, "register 0x01:      LDO CL\n");
+	dev_err(chip->dev, "register 0x03~0x09: LDO1~LDO7 OUT Voltage\n");
+	dev_err(chip->dev, "register 0x0e:      Bit[6:0] LDO7~LDO1 EN\n");
 
 	for (reg_idx = 0; reg_idx < WL2864C_REG_NUM; reg_idx++) {
 		regmap_read(chip->regmap, reg_idx, &val);
 		reg_dump[reg_idx] = val;
-		dev_info(chip->dev, "Reg[0x%02x] = 0x%x", reg_idx, reg_dump[reg_idx]);
+		dev_err(chip->dev, "Reg[0x%02x] = 0x%x", reg_idx, reg_dump[reg_idx]);
 	}
-	dev_info(chip->dev, "************ end dump wl2864c register ************\n");
+	dev_err(chip->dev, "************ end dump wl2864c register ************\n");
 
 	return 0;
 }
@@ -144,7 +115,7 @@ static int wl2864c_get_status(struct regulator_dev *rdev)
 
 	ret = regulator_is_enabled_regmap(rdev);
 	if (ret < 0) {
-		dev_info(chip->dev, "Failed to read enable register(%d)\n",
+		dev_err(chip->dev, "Failed to read enable register(%d)\n",
 			ret);
 		return ret;
 	}
@@ -156,15 +127,16 @@ static int wl2864c_get_status(struct regulator_dev *rdev)
 
 	ret = regmap_read(chip->regmap, wl2864c_status_reg.sreg, &status);
 	if (ret < 0) {
-		dev_info(chip->dev, "Failed to read status register(%d)\n",
+		dev_err(chip->dev, "Failed to read status register(%d)\n",
 			ret);
 		return ret;
 	}
 
-	if (status & (0x01ul << id))
+	if (status & (0x01ul << id)) {
 		return REGULATOR_STATUS_ON;
-	else
+	} else {
 		return REGULATOR_STATUS_OFF;
+	}
 }
 
 static const struct regulator_ops wl2864c_regl_ops = {
@@ -214,8 +186,8 @@ static int wl2864c_of_parse_cb(struct device_node *np,
 	}
 
 static struct regulator_desc wl2864c_regls_desc[WL2864C_MAX_REGULATORS] = {
-	WL2864C_REGL_DESC(LDO1, camldo1, "vin3", 600000,  12500),
-	WL2864C_REGL_DESC(LDO2, camldo2, "vin3", 600000,  12500),
+	WL2864C_REGL_DESC(LDO1, ldo1, "vin1", 600000,  12500),
+	WL2864C_REGL_DESC(LDO2, ldo2, "vin1", 600000,  12500),
 	WL2864C_REGL_DESC(LDO3, ldo3, "bob_buck", 1200000, 12500),
 	WL2864C_REGL_DESC(LDO4, ldo4, "bob_buck", 1200000, 12500),
 	WL2864C_REGL_DESC(LDO5, ldo5, "bob_buck", 1200000,  12500),
@@ -240,8 +212,8 @@ static int wl2864c_regulator_init(struct wl2864c *chip)
 	};
 
 	const unsigned int initial_voltage[WL2864C_MAX_REGULATORS] = {
-		0x24,//LDO1 1.05V
-		0x30,//LDO2 1.2V
+		0x28,//LDO1 1.1V
+		0x28,//LDO2 1.1V
 		0x80,//LDO3 2.8V
 		0x80,//LDO4 2.8V
 		0x80,//LDO5 2.8V
@@ -252,7 +224,7 @@ static int wl2864c_regulator_init(struct wl2864c *chip)
 	/*Disable all ldo output by default*/
 	ret = regmap_write(chip->regmap, WL2864C_LDO_EN, 0);
 	if (ret < 0) {
-		dev_info(chip->dev,
+		dev_err(chip->dev,
 			"Disable all LDO output failed!!!\n");
 		return ret;
 	}
@@ -266,27 +238,26 @@ static int wl2864c_regulator_init(struct wl2864c *chip)
 
 		ret = regmap_bulk_read(chip->regmap, ldo_regs[id],
 				       vsel_range, 1);
-
+		pr_err("wl2864c_regulator_init: LDO%d, default value:0x%x", (id+1), vsel_range[0]);
 		if (ret < 0) {
-			dev_info(chip->dev,
+			dev_err(chip->dev,
 				"Failed to read the ldo register\n");
 			return ret;
 		}
 
 		ret = regmap_write(chip->regmap, ldo_regs[id], initial_voltage[id]);
 		if (ret < 0) {
-			dev_info(chip->dev,
-				"Failed to write initial voltage register\n");
+			dev_err(chip->dev,
+				"Failed to write inital voltage register\n");
 			return ret;
 		}
-		dev_info(chip->dev, "%s: LDO%d, initial value:0x%x",
-			__func__, (id+1), initial_voltage[id]);
+		pr_err("wl2864c_regulator_init: LDO%d, initial value:0x%x", (id+1), initial_voltage[id]);
 
 		chip->rdev[id] = devm_regulator_register(chip->dev, rdesc,
 							 &config);
 		if (IS_ERR(chip->rdev[id])) {
 			ret = PTR_ERR(chip->rdev[id]);
-			dev_info(chip->dev,
+			dev_err(chip->dev,
 				"Failed to register regulator(%s):%d\n",
 				chip->rdesc[id]->name, ret);
 			return ret;
@@ -301,37 +272,38 @@ static int wl2864c_i2c_probe(struct i2c_client *client,
 {
 	struct device *dev = &client->dev;
 	struct wl2864c *chip;
-	int error, vin1_enable_gpio, cs_gpio, ret, i;
+	int error, vin1_enable_gpio,cs_gpio, ret, i;
 
-	/*
-	 * Set all register to initial value when probe driver to avoid register value was modified.
-	 */
+	/* Set all register to initial value when probe driver to avoid register value was modified.
+	*/
 	const unsigned int initial_register[7][2] = {
-		{WL2864C_CURRENT_LIMITSEL,		0x40},
-		{WL2864C_DISCHARGE_RESISTORS,	0x00},
-		{WL2864C_LDO1_LDO2_SEQ,			0x00},
-		{WL2864C_LDO3_LDO4_SEQ,			0x00},
-		{WL2864C_LDO5_LDO6_SEQ,			0x00},
-		{WL2864C_LDO7_SEQ,				0x00},
-		{WL2864C_SEQ_STATUS,			0x00},
+		{WL2864C_CURRENT_LIMITSEL, 	0x40},
+		{WL2864C_DISCHARGE_RESISTORS, 	0x00},
+		{WL2864C_LDO1_LDO2_SEQ, 	0x00},
+		{WL2864C_LDO3_LDO4_SEQ, 	0x00},
+		{WL2864C_LDO5_LDO6_SEQ, 	0x00},
+		{WL2864C_LDO7_SEQ, 		0x00},
+		{WL2864C_SEQ_STATUS, 		0x00},
 	};
 	chip = devm_kzalloc(dev, sizeof(struct wl2864c), GFP_KERNEL);
-	if (!chip)
+	if (!chip) {
+		dev_err(chip->dev, "wl2864c_i2c_probe Memory error...\n");
 		return -ENOMEM;
+	}
 
-	dev_info(chip->dev, "%s Enter...\n", __func__);
+	dev_info(chip->dev, "wl2864c_i2c_probe Enter...\n");
 
 	cs_gpio = of_get_named_gpio(dev->of_node, "semi,cs-gpios", 0);
 	if (cs_gpio > 0) {
 		if (!gpio_is_valid(cs_gpio)) {
-			dev_info(dev, "Invalid chip select pin\n");
+			dev_err(dev, "Invalid chip select pin\n");
 			return -EPERM;
 		}
 
 		ret = devm_gpio_request_one(dev, cs_gpio, GPIOF_OUT_INIT_LOW,
 					    "wl2864c_cs_pin");
 		if (ret) {
-			dev_info(dev, "GPIO(%d) request failed(%d)\n",
+			dev_err(dev, "GPIO(%d) request failed(%d)\n",
 				cs_gpio, ret);
 			return ret;
 		}
@@ -339,17 +311,17 @@ static int wl2864c_i2c_probe(struct i2c_client *client,
 		chip->chip_cs_pin = cs_gpio;
 	}
 
-	vin1_enable_gpio = of_get_named_gpio(dev->of_node, "vin1-supply", 0);
+	vin1_enable_gpio = of_get_named_gpio(dev->of_node, "enable_gpio", 0);
 	if (vin1_enable_gpio > 0) {
 		if (!gpio_is_valid(vin1_enable_gpio)) {
-			dev_info(dev, "Invalid chip select pin\n");
+			dev_err(dev, "Invalid chip select pin\n");
 			return -EPERM;
 		}
 
 		ret = devm_gpio_request_one(dev, vin1_enable_gpio, GPIOF_OUT_INIT_HIGH,
 					    "vin1_enable_gpio");
 		if (ret) {
-			dev_info(dev, "GPIO(%d) request failed(%d)\n",
+			dev_err(dev, "GPIO(%d) request failed(%d)\n",
 				vin1_enable_gpio, ret);
 			return ret;
 		}
@@ -357,7 +329,7 @@ static int wl2864c_i2c_probe(struct i2c_client *client,
 		chip->vin1_enable_gpio = vin1_enable_gpio;
 	}
 
-	dev_info(chip->dev, "%s vin1_enable_gpio:%d...\n", __func__, vin1_enable_gpio);
+	dev_info(chip->dev, "wl2864c_i2c_probe vin1_enable_gpio:%d...\n", vin1_enable_gpio);
 
 	mdelay(10);
 
@@ -366,7 +338,7 @@ static int wl2864c_i2c_probe(struct i2c_client *client,
 	chip->regmap = devm_regmap_init_i2c(client, &wl2864c_regmap_config);
 	if (IS_ERR(chip->regmap)) {
 		error = PTR_ERR(chip->regmap);
-		dev_info(dev, "Failed to allocate register map: %d\n",
+		dev_err(dev, "Failed to allocate register map: %d\n",
 			error);
 		return error;
 	}
@@ -374,24 +346,34 @@ static int wl2864c_i2c_probe(struct i2c_client *client,
 	for (i = 0; i < 7; i++) {
 		ret = regmap_write(chip->regmap, initial_register[i][0], initial_register[i][1]);
 		if (ret < 0) {
-			dev_info(chip->dev, "Failed to write register: 0x%x, value: 0x%x\n",
+			dev_err(chip->dev,"Failed to write register: 0x%x, value: 0x%x \n",
 				initial_register[i][0], initial_register[i][1]);
 		}
 
-		dev_info(chip->dev, "Success to write register: 0x%x, value: 0x%x\n",
+		dev_err(chip->dev,"Success to write register: 0x%x, value: 0x%x \n",
 			initial_register[i][0], initial_register[i][1]);
 	}
 
 	ret = wl2864c_regulator_init(chip);
 	if (ret < 0) {
-		dev_info(chip->dev, "Failed to init regulator(%d)\n", ret);
+		dev_err(chip->dev, "Failed to init regulator(%d)\n", ret);
 		return ret;
 	}
 
 	wl2864c_get_current_limit(chip->rdev[0]);
 
-	dev_info(chip->dev, "%s Exit...\n", __func__);
+	dev_info(chip->dev, "wl2864c_i2c_probe Exit...\n");
 	return ret;
+}
+static void wl2864c_i2c_shutdown(struct i2c_client *client)
+{
+	struct wl2864c *chip = i2c_get_clientdata(client);
+
+	if (chip) {
+		/* Disable all regulator to avoid current leak */
+		regmap_write(chip->regmap, WL2864C_LDO_EN, 0x00);
+		dev_err(chip->dev, "wl2864c_i2c_shutdown");
+	}
 }
 
 static int wl2864c_i2c_remove(struct i2c_client *client)
@@ -399,7 +381,6 @@ static int wl2864c_i2c_remove(struct i2c_client *client)
 	struct wl2864c *chip = i2c_get_clientdata(client);
 	struct gpio_desc *desc;
 	int ret = 0;
-
 	if (chip->vin1_enable_gpio > 0) {
 		desc = gpio_to_desc(chip->vin1_enable_gpio);
 		ret = gpiod_direction_output_raw(desc, GPIOF_INIT_LOW);
@@ -423,11 +404,12 @@ static struct i2c_driver wl2864c_regulator_driver = {
 	},
 	.probe = wl2864c_i2c_probe,
 	.remove = wl2864c_i2c_remove,
+	.shutdown = wl2864c_i2c_shutdown,
 	.id_table = wl2864c_i2c_id,
 };
 
 module_i2c_driver(wl2864c_regulator_driver);
 
-MODULE_AUTHOR("Lu Tang <Lu Tang@mediatek.com>");
+MODULE_AUTHOR("ChengLong <chengl1@motorola.com>");
 MODULE_DESCRIPTION("WL2864C regulator driver");
 MODULE_LICENSE("GPL");
