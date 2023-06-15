@@ -205,9 +205,17 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
 	tongxingda_dcs_write_seq_static(ctx, 0x35, 0x00);
 
 	tongxingda_dcs_write_seq_static(ctx, 0x11, 0x00);
+	tongxingda_dcs_write_seq_static(ctx, 0xFF, 0x78,0x07,0x06);
+        tongxingda_dcs_write_seq_static(ctx, 0x80, 0x00);
+	tongxingda_dcs_write_seq_static(ctx, 0xC7, 0x05);//max:0x07 0xFF
+        tongxingda_dcs_write_seq_static(ctx, 0x48, 0x09);
+        tongxingda_dcs_write_seq_static(ctx, 0x26, 0x42);
+
+	tongxingda_dcs_write_seq_static(ctx, 0xFF,0x78,0x07,0x00);
 	msleep(80);
 	tongxingda_dcs_write_seq_static(ctx, 0x29, 0x00);
 	msleep(10);
+	tongxingda_dcs_write_seq_static(ctx, 0xFF,0x78,0x07,0x00);
 
 	pr_info("disp:init code %s-\n", __func__);
 }
@@ -254,8 +262,9 @@ static int tongxingda_unprepare(struct drm_panel *panel)
 	printk("[%d  %s]hxl_check_dsi !!\n",__LINE__, __FUNCTION__);
 
 	tongxingda_dcs_write_seq_static(ctx, 0x28);
+	msleep(20);
 	tongxingda_dcs_write_seq_static(ctx, 0x10);
-	msleep(90);
+	msleep(80);
 
 	ctx->prepared = false;
 
