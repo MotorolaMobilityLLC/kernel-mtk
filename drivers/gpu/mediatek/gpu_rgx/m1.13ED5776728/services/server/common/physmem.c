@@ -276,14 +276,14 @@ static inline PVRSRV_ERROR _ValidateParams(IMG_UINT32 ui32NumPhysChunks,
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
-	/* Range check of the alloc size */
+	/* Range check of the alloc size PMRs can be a max of 1GB*/
 	if (!PMRValidateSize(uiSize))
 	{
 		PVR_DPF((PVR_DBG_ERROR,
 				 "PMR size exceeds limit #Chunks: %u ChunkSz %"IMG_UINT64_FMTSPECX"",
-				 ui32NumVirtChunks,
-				 (IMG_UINT64) 1ULL << uiLog2AllocPageSize));
-		return PVRSRV_ERROR_PMR_TOO_LARGE;
+					ui32NumVirtChunks,
+					(IMG_UINT64) 1ULL << uiLog2AllocPageSize));
+		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
 	/* Fail if requesting coherency on one side but uncached on the other */
