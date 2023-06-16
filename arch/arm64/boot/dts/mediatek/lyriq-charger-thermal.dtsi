@@ -393,9 +393,6 @@
 		pinctrl-0 = <&wls_cps4035_int_default>;
 		//interrupt-names = "cps_wls_int";
 		#cooling-cells = <2>;
-		enable_rx_offset_detect = <1>;
-		/*stop rx offset detect battery soc*/
-		rod_stop_battery_soc = <90>;
         	status = "okay";
 	};
 };
