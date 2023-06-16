@@ -300,6 +300,7 @@ static int mtk_extcon_tcpc_notifier(struct notifier_block *nb,
 			mtk_usb_extcon_set_role(extcon, USB_ROLE_DEVICE);
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SRC ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
+			noti->typec_state.old_state == TYPEC_ATTACHED_AUDIO ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_DBGACC_SNK) &&
