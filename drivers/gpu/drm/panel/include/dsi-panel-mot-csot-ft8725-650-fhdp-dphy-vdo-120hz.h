@@ -53,7 +53,7 @@
 
 #define MODE_30_DATA_RATE            822
 /*Parameter setting for mode 3 End*/
-#define LFR_EN                      0
+#define LFR_EN                      1
 /* DSC RELATED */
 
 
