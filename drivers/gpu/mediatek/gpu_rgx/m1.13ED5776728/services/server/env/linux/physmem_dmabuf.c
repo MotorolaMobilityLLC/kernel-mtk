@@ -529,7 +529,7 @@ PhysmemCreateNewDmaBufBackedPMR(PVRSRV_DEVICE_NODE *psDevNode,
 		eError = PVRSRV_ERROR_INVALID_PARAMS;
 		goto errReturn;
 	}
-	if (!PMRValidateSize((IMG_UINT64) ui32NumVirtChunks * uiChunkSize))
+	if (!PMRValidateSize((IMG_UINT64) ui32NumVirtChunks << uiChunkSize))
 	{
 		eError = PVRSRV_ERROR_PMR_TOO_LARGE;
 		PVR_LOG_ERROR(eError,"PMRValidateSize");

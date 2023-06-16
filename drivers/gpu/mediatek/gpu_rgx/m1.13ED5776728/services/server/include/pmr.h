@@ -74,8 +74,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define PMR_MAX_TRANSLATION_STACK_ALLOC				(32)
 
-/* Maximum size PMR can have is 8G of memory */
-#define PMR_MAX_SUPPORTED_SIZE (0x200000000ULL)
+/* Maximum size PMR can have is 1G of memory */
+#define PMR_MAX_SUPPORTED_SIZE (0x40000000ULL)
 /* Max number of pages in a PMR at 4k page size */
 #define PMR_MAX_SUPPORTED_4K_PAGE_COUNT (PMR_MAX_SUPPORTED_SIZE >> 12ULL)
 
