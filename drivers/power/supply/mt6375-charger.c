@@ -1568,6 +1568,10 @@ static int mt6375_enable_mos_short(struct charger_device *chgdev, bool en)
 	int ret = 0;
 	struct mt6375_chg_data *ddata = charger_get_data(chgdev);
 
+	if (!ddata->mos_pinctrl) {
+		return -1;
+	}
+
 	if(en) {
 		pinctrl_select_state(ddata->mos_pinctrl, ddata->mos_gpio_on);
 	} else {
