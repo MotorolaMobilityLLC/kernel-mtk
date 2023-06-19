@@ -11,7 +11,7 @@
 	#size-cells = <0>;
 
 	touch@0{
-		compatible = "focaltech,fts", "tchip,ilitek";
+		compatible = "focaltech,fts", "tchip,ilitek", "chipone-tddi";
 		reg = <0>; //Same as CS ID
 		status = "ok";
 
@@ -31,6 +31,17 @@
 		touch,psy-name = "battery";
 		//ilitek,report_gesture_key;
 		//ilitek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
+
+		//chipone
+		chipone,rst-gpio = <&pio 3 0x0>;
+		chipone,irq-gpio = <&pio 22 0x0>;
+		chipone,x-res = <1080>;
+		chipone,y-res = <2400>;
+
+	        //chipone,def-build-id = <0x0101>;
+	        //chipone,def-config-id = <0x0001>;
+		//chipone,supported_gesture_type = <0x06>;
+
 	};
 };
 
