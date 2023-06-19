@@ -1265,6 +1265,7 @@
       <elf-symbol name='cec_transmit_attempt_done_ts' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa9821b0'/>
       <elf-symbol name='cec_transmit_done_ts' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xefb73b42'/>
       <elf-symbol name='cec_unregister_adapter' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa5f18175'/>
+      <elf-symbol name='cgroup_add_dfl_cftypes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3a20cc66'/>
       <elf-symbol name='cgroup_add_legacy_cftypes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb3972323'/>
       <elf-symbol name='cgroup_path_ns' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xddd0f5a9'/>
       <elf-symbol name='cgroup_taskset_first' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa776e0ec'/>
@@ -45385,26 +45386,7 @@
         <enumerator name='UTASK_SSTEP_TRAPPED' value='3'/>
       </enum-decl>
       <typedef-decl name='upf_t' type-id='f0981eeb' filepath='include/linux/serial_core.h' line='107' column='1' id='5d1b117e'/>
-      <class-decl name='platform_msi_priv_data' size-in-bits='640' is-struct='yes' visibility='default' filepath='drivers/base/platform-msi.c' line='23' column='1' id='5d1d7263'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='dev' type-id='fa0b179b' visibility='default' filepath='drivers/base/platform-msi.c' line='24' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='host_data' type-id='eaa32e2f' visibility='default' filepath='drivers/base/platform-msi.c' line='25' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='msi_irq_groups' type-id='c97de1ac' visibility='default' filepath='drivers/base/platform-msi.c' line='26' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='arg' type-id='e36320e9' visibility='default' filepath='drivers/base/platform-msi.c' line='27' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='512'>
-          <var-decl name='write_msg' type-id='c335ba2b' visibility='default' filepath='drivers/base/platform-msi.c' line='28' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='576'>
-          <var-decl name='devid' type-id='95e97e5e' visibility='default' filepath='drivers/base/platform-msi.c' line='29' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='platform_msi_priv_data' is-struct='yes' visibility='default' is-declaration-only='yes' id='5d1d7263'/>
       <class-decl name='drm_simple_display_pipe' size-in-bits='24960' is-struct='yes' visibility='default' filepath='include/drm/drm_simple_kms_helper.h' line='222' column='1' id='5d26fb4d'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='crtc' type-id='3f5f978b' visibility='default' filepath='include/drm/drm_simple_kms_helper.h' line='223' column='1'/>
@@ -133938,9 +133920,14 @@
         <parameter type-id='b94a2f7c' name='adap' filepath='drivers/media/cec/core/cec-core.c' line='380' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='cgroup_add_legacy_cftypes' mangled-name='cgroup_add_legacy_cftypes' filepath='kernel/cgroup/cgroup.c' line='4321' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cgroup_add_legacy_cftypes'>
-        <parameter type-id='dc91d125' name='ss' filepath='kernel/cgroup/cgroup.c' line='4321' column='1'/>
-        <parameter type-id='03054cfa' name='cfts' filepath='kernel/cgroup/cgroup.c' line='4321' column='1'/>
+      <function-decl name='cgroup_add_dfl_cftypes' mangled-name='cgroup_add_dfl_cftypes' filepath='kernel/cgroup/cgroup.c' line='4304' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cgroup_add_dfl_cftypes'>
+        <parameter type-id='dc91d125' name='ss' filepath='kernel/cgroup/cgroup.c' line='4304' column='1'/>
+        <parameter type-id='03054cfa' name='cfts' filepath='kernel/cgroup/cgroup.c' line='4304' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='cgroup_add_legacy_cftypes' mangled-name='cgroup_add_legacy_cftypes' filepath='kernel/cgroup/cgroup.c' line='4322' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cgroup_add_legacy_cftypes'>
+        <parameter type-id='dc91d125' name='ss' filepath='kernel/cgroup/cgroup.c' line='4322' column='1'/>
+        <parameter type-id='03054cfa' name='cfts' filepath='kernel/cgroup/cgroup.c' line='4322' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='cgroup_path_ns' mangled-name='cgroup_path_ns' filepath='kernel/cgroup/cgroup.c' line='2295' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cgroup_path_ns'>
@@ -135415,14 +135402,14 @@
         <parameter type-id='95e97e5e' name='count' filepath='crypto/algapi.c' line='588' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='css_next_child' mangled-name='css_next_child' filepath='kernel/cgroup/cgroup.c' line='4373' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='css_next_child'>
-        <parameter type-id='cfff5953' name='pos' filepath='kernel/cgroup/cgroup.c' line='4373' column='1'/>
-        <parameter type-id='cfff5953' name='parent' filepath='kernel/cgroup/cgroup.c' line='4374' column='1'/>
+      <function-decl name='css_next_child' mangled-name='css_next_child' filepath='kernel/cgroup/cgroup.c' line='4374' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='css_next_child'>
+        <parameter type-id='cfff5953' name='pos' filepath='kernel/cgroup/cgroup.c' line='4374' column='1'/>
+        <parameter type-id='cfff5953' name='parent' filepath='kernel/cgroup/cgroup.c' line='4375' column='1'/>
         <return type-id='cfff5953'/>
       </function-decl>
-      <function-decl name='css_next_descendant_pre' mangled-name='css_next_descendant_pre' filepath='kernel/cgroup/cgroup.c' line='4443' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='css_next_descendant_pre'>
-        <parameter type-id='cfff5953' name='pos' filepath='kernel/cgroup/cgroup.c' line='4443' column='1'/>
-        <parameter type-id='cfff5953' name='root' filepath='kernel/cgroup/cgroup.c' line='4444' column='1'/>
+      <function-decl name='css_next_descendant_pre' mangled-name='css_next_descendant_pre' filepath='kernel/cgroup/cgroup.c' line='4444' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='css_next_descendant_pre'>
+        <parameter type-id='cfff5953' name='pos' filepath='kernel/cgroup/cgroup.c' line='4444' column='1'/>
+        <parameter type-id='cfff5953' name='root' filepath='kernel/cgroup/cgroup.c' line='4445' column='1'/>
         <return type-id='cfff5953'/>
       </function-decl>
       <function-decl name='csum_ipv6_magic' mangled-name='csum_ipv6_magic' filepath='arch/arm64/lib/csum.c' line='132' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='csum_ipv6_magic'>
