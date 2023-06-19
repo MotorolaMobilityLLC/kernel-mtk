@@ -40,8 +40,12 @@ extern int __attribute__ ((weak)) sm5109_BiasPower_enable(u32 avdd, u32 avee,u32
 #define BIAS_TMP_V0
 #endif
 
+enum panel_version{
+        PANEL_DVT1 = 3,
+        PANEL_DVT2 = 4,
+};
+
 static int tp_gesture_flag = 0;
-static int lcm_state = 0;
 
 struct csot {
 	struct device *dev;
@@ -57,6 +61,7 @@ struct csot {
 	int error;
 	unsigned int hbm_mode;
 	unsigned int cabc_mode;
+	enum panel_version version;
 };
 
 //static char bl_tb0[] = { 0x51, 0xff };
@@ -80,6 +85,7 @@ static inline struct csot *panel_to_csot(struct drm_panel *panel)
 	return container_of(panel, struct csot, panel);
 }
 
+#ifdef PANEL_SUPPORT_READBACK
 static int csot_dcs_read(struct csot *ctx, u8 cmd, void *data, size_t len)
 {
 	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
@@ -97,7 +103,6 @@ static int csot_dcs_read(struct csot *ctx, u8 cmd, void *data, size_t len)
 	return ret;
 }
 
-#ifdef PANEL_SUPPORT_READBACK
 static void csot_panel_get_data(struct csot *ctx)
 {
 	u8 buffer[3] = {0};
@@ -182,7 +187,7 @@ static void csot_panel_init(struct csot *ctx)
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
 
-	if (lcm_state == 1) {
+	if (ctx->version != PANEL_DVT2) {
 		csot_dcs_write_seq_static(ctx,0x00,0x00);
 		csot_dcs_write_seq_static(ctx,0xFF,0x87,0x25,0x01);
 		csot_dcs_write_seq_static(ctx,0x00,0x80);
@@ -294,18 +299,6 @@ static int panel_set_gesture_flag(int state)
 static int csot_unprepare(struct drm_panel *panel)
 {
 	struct csot *ctx = panel_to_csot(panel);
-	u8 buffer[3] = {0};
-
-	if (lcm_state == 0) {
-                lcm_state = csot_dcs_read(ctx, 0xDC, buffer, 1);
-                pr_info("return %d data(0x%02x) to lcm state\n",lcm_state, buffer[0]);
-                if (buffer[0] == 0x01) {
-                        lcm_state = 1;
-                } else {
-			lcm_state = 2;
-		}
-                pr_info("lcm_state = %d\n", lcm_state);
-        }
 
 	if (!ctx->prepared) {
 		pr_info("%s, already unprepared, return\n", __func__);
@@ -964,6 +957,7 @@ static int csot_probe(struct mipi_dsi_device *dsi)
 	struct csot *ctx;
 	struct device_node *backlight;
 	int ret;
+	const u32 *val;
 
 	pr_info("%s+ csot_ft8725,vdo,120hz\n", __func__);
 
@@ -1020,6 +1014,11 @@ static int csot_probe(struct mipi_dsi_device *dsi)
 	drm_panel_init(&ctx->panel, dev, &csot_drm_funcs, DRM_MODE_CONNECTOR_DSI);
 
 	drm_panel_add(&ctx->panel);
+
+	val = of_get_property(dev->of_node, "reg", NULL);
+        ctx->version = val ? be32_to_cpup(val) : 1;
+
+        pr_info("%s: panel version 0x%x\n", __func__, ctx->version);
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
