@@ -21,7 +21,7 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "aion";
-			mot,board-id = <0x43 0xB200>;
+			mot,board-id = <0x43 0xB200>, <0x44 0xC200>;
 		};
 	};
 };
