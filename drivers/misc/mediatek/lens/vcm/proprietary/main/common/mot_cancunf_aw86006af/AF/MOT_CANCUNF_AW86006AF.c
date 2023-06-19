@@ -316,7 +316,6 @@ int MOT_CANCUNF_AW86006AF_Release(struct inode *a_pstInode, struct file *a_pstFi
 
 		init_pos = (unsigned long)((INIT_POS_H << 8) | INIT_POS_L);
 		SetPos(init_pos);
-		msleep(40);
 	}
 
 	if (*g_pAF_Opened) {
