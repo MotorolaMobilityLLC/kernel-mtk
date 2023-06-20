@@ -259,7 +259,7 @@ static void csot_panel_init(struct csot *ctx)
 	csot_dcs_write_seq_static(ctx, 0x55,0x01);
 
 	csot_dcs_write_seq_static(ctx, 0x11, 0x00);
-	usleep_range(900000,900001);
+	usleep_range(90000,90001);
 	csot_dcs_write_seq_static(ctx, 0x29, 0x00);
 	usleep_range(20000,20001);
 
