@@ -263,7 +263,7 @@ static void csot_panel_init(struct csot *ctx)
 	csot_dcs_write_seq_static(ctx, 0x29, 0x00);
 	usleep_range(20000,20001);
 
-
+	pr_info("disp: %s-\n", __func__);
 }
 
 static int csot_disable(struct drm_panel *panel)
@@ -353,7 +353,7 @@ static int csot_prepare(struct drm_panel *panel)
 	struct csot *ctx = panel_to_csot(panel);
 	int ret;
 
-	pr_info("%s\n", __func__);
+	pr_info("disp: %s+\n", __func__);
 	if (ctx->prepared) {
 		pr_info("%s, already prepared, return\n", __func__);
 		return 0;
@@ -378,13 +378,13 @@ static int csot_prepare(struct drm_panel *panel)
 	csot_panel_get_data(ctx);
 #endif*/
 
+	pr_info("%s-\n", __func__);
 	return ret;
 }
 
 static int csot_enable(struct drm_panel *panel)
 {
 	struct csot *ctx = panel_to_csot(panel);
-
 
 	if (ctx->enabled)
 		return 0;
@@ -396,6 +396,7 @@ static int csot_enable(struct drm_panel *panel)
 
 	ctx->enabled = true;
 
+	pr_info("disp: %s-\n", __func__);
 	return 0;
 }
 
