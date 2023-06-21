@@ -1854,6 +1854,7 @@ struct kbase_context {
 #if !MALI_USE_CSF
 	void *platform_data;
 #endif
+	struct task_struct *task;
 };
 
 #ifdef CONFIG_MALI_CINSTR_GWT
