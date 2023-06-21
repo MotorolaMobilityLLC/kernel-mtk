@@ -339,7 +339,7 @@ static int tianma_prepare(struct drm_panel *panel)
 	struct tianma *ctx = panel_to_tianma(panel);
 	int ret;
 
-	pr_info("%s\n", __func__);
+	pr_info("disp: %s+\n", __func__);
 	if (ctx->prepared) {
 		pr_info("%s, already prepared, return\n", __func__);
 		return 0;
@@ -372,7 +372,7 @@ static int tianma_enable(struct drm_panel *panel)
 {
 	struct tianma *ctx = panel_to_tianma(panel);
 
-	pr_info("disp: %s+\n", __func__);
+	//pr_info("disp: %s+\n", __func__);
 	if (ctx->enabled)
 		return 0;
 
@@ -383,6 +383,7 @@ static int tianma_enable(struct drm_panel *panel)
 
 	ctx->enabled = true;
 
+	pr_info("disp: %s-\n", __func__);
 	return 0;
 }
 
