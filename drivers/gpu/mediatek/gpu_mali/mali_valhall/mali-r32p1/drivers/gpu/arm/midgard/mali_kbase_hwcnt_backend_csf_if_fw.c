@@ -304,7 +304,7 @@ static int kbasep_hwcnt_backend_csf_if_fw_ring_buf_alloc(
 	/* Get physical page for the buffer */
 	ret = kbase_mem_pool_alloc_pages(
 		&kbdev->mem_pools.small[KBASE_MEM_GROUP_CSF_FW], num_pages,
-		phys, false);
+		phys, false, NULL);
 	if (ret != num_pages)
 		goto phys_mem_pool_alloc_error;
 
