@@ -1101,6 +1101,8 @@ struct mtk_battery {
 	int (*resume)(struct mtk_battery *gm);
 
 	int log_level;
+
+	bool mmi_tbat_filter_enable;
 };
 
 struct mtk_battery_sysfs_field_info {
