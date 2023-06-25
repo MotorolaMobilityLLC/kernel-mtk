@@ -154,7 +154,7 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
 {
 	pr_info("disp: %s+\n", __func__);
 
-	sm5109_BiasPower_enable(15,15,5);
+	sm5109_BiasPower_enable(15,15,3);
 
 #if 0 //#ifdef BIAS_TMP_V0
 	ctx->bias_n_gpio = devm_gpiod_get(ctx->dev, "bias_n", GPIOD_OUT_HIGH);
@@ -188,11 +188,11 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
 	}
 	else {
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(5);
+		usleep_range(1000,1001);
 		gpiod_set_value(ctx->reset_gpio, 0);
-		msleep(5);
+		usleep_range(5000,5001);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(10);
+		usleep_range(5000,5001);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -212,9 +212,9 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
         tongxingda_dcs_write_seq_static(ctx, 0x26, 0x42);
 
 	tongxingda_dcs_write_seq_static(ctx, 0xFF,0x78,0x07,0x00);
-	msleep(80);
+	usleep_range(80000,80001);
 	tongxingda_dcs_write_seq_static(ctx, 0x29, 0x00);
-	msleep(10);
+	usleep_range(10000,10001);
 	tongxingda_dcs_write_seq_static(ctx, 0xFF,0x78,0x07,0x00);
 
 	pr_info("disp:init code %s-\n", __func__);
