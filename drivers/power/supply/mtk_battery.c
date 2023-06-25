@@ -1083,6 +1083,40 @@ int force_get_tbat_internal(struct mtk_battery *gm, bool update)
 	return bat_temperature_val;
 }
 
+#define MMI_GET_TBAT_INTERVAL 10 /*second*/
+#define TEMP_0K (-273)
+int mmi_get_tbat(struct mtk_battery *gm)
+{
+	ktime_t ctime = 0, dtime = 0;
+	static ktime_t pre_time = 0;
+	struct timespec64 tmp_time;
+	static int pre_bat_temp_val = TEMP_0K, avg_bat_temp = TEMP_0K;
+	int bat_temp_val = 0;
+
+	ctime = ktime_get_boottime();
+
+	dtime = ktime_sub(ctime, pre_time);
+	tmp_time = ktime_to_timespec64(dtime);
+
+	if (tmp_time.tv_sec < MMI_GET_TBAT_INTERVAL && avg_bat_temp != TEMP_0K)
+		return avg_bat_temp;
+
+	pre_time = ctime;
+
+	bat_temp_val = force_get_tbat_internal(gm, true);
+
+	if (pre_bat_temp_val == TEMP_0K)
+		pre_bat_temp_val = bat_temp_val;
+
+	avg_bat_temp = (pre_bat_temp_val + bat_temp_val) / 2;
+
+	bm_err("%s: bat_temp = %d, pre_bat_temp = %d, avg_bat_temp=%d\n", __func__, bat_temp_val, pre_bat_temp_val, avg_bat_temp);
+
+	pre_bat_temp_val = bat_temp_val;
+
+	return avg_bat_temp;
+}
+
 int force_get_tbat(struct mtk_battery *gm, bool update)
 {
 	int bat_temperature_val = 0;
@@ -1097,7 +1131,10 @@ int force_get_tbat(struct mtk_battery *gm, bool update)
 		return gm->fixed_bat_tmp;
 	}
 
-	bat_temperature_val = force_get_tbat_internal(gm, true);
+	if (gm->mmi_tbat_filter_enable)
+		bat_temperature_val = mmi_get_tbat(gm);
+	else
+		bat_temperature_val = force_get_tbat_internal(gm, true);
 
 	if (bat_temperature_val == -EHOSTDOWN)
 		return gm->cur_bat_temp;
@@ -2305,6 +2342,8 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 
 	fg_read_dts_val(np, "CHARGER_IEOC", &(fg_cust_data->charger_ieoc), 1);
 
+	gm->mmi_tbat_filter_enable = of_property_read_bool(np, "mmi,tbat-filter-enable");
+
 }
 
 #endif	/* end of CONFIG_OF */
@@ -2917,7 +2956,10 @@ static void fg_drv_update_hw_status(struct mtk_battery *gm)
 {
 	ktime_t ktime;
 
-	gm->tbat = force_get_tbat_internal(gm, true);
+	if (gm->mmi_tbat_filter_enable)
+		gm->tbat = mmi_get_tbat(gm);
+	else
+		gm->tbat = force_get_tbat_internal(gm, true);
 
 	bm_err("car[%d,%ld,%ld,%ld,%ld] tmp:%d soc:%d uisoc:%d vbat:%d ibat:%d baton:%d algo:%d gm3:%d %d %d %d %d,boot:%d\n",
 		gauge_get_int_property(GAUGE_PROP_COULOMB),
