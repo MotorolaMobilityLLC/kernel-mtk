@@ -40,9 +40,10 @@ extern int __attribute__ ((weak)) sm5109_BiasPower_enable(u32 avdd, u32 avee,u32
 #define BIAS_TMP_V0
 #endif
 
-enum panel_version{
-        PANEL_DVT1 = 3,
-        PANEL_DVT2 = 4,
+#define PANEL_REG_V0	4 	//keep consistent with panel dtsi
+enum panel_version {
+        PANEL_V1,		//DVT2, PVT
+        PANEL_V0,		//DVT1
 };
 
 static int tp_gesture_flag = 0;
@@ -187,7 +188,9 @@ static void csot_panel_init(struct csot *ctx)
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
 
-	if (ctx->version != PANEL_DVT2) {
+	if (PANEL_V0 == ctx->version) {
+		//PANEL_V0 for DVT1
+		pr_info("disp: %s panel version v0\n", __func__);
 		csot_dcs_write_seq_static(ctx,0x00,0x00);
 		csot_dcs_write_seq_static(ctx,0xFF,0x87,0x25,0x01);
 		csot_dcs_write_seq_static(ctx,0x00,0x80);
@@ -233,6 +236,7 @@ static void csot_panel_init(struct csot *ctx)
 		csot_dcs_write_seq_static(ctx,0x00,0xB0);
 		csot_dcs_write_seq_static(ctx,0xB4,0x00,0x08,0x02,0x00,0x00,0xbb,0x00,0x07,0x0d,0xb7,0x0c,0xb7,0x10,0xf0);
 	} else {
+		//PANEL_V1 for DVT2,PVT
 		csot_dcs_write_seq_static(ctx,0x00, 0x00);
 		csot_dcs_write_seq_static(ctx,0xFF, 0x87,0x25,0x01);
 		csot_dcs_write_seq_static(ctx,0x00, 0x80);
@@ -959,6 +963,7 @@ static int csot_probe(struct mipi_dsi_device *dsi)
 	struct device_node *backlight;
 	int ret;
 	const u32 *val;
+	u8 tmp_reg;
 
 	pr_info("%s+ csot_ft8725,vdo,120hz\n", __func__);
 
@@ -1016,10 +1021,15 @@ static int csot_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_add(&ctx->panel);
 
+	ctx->version = PANEL_V1;
 	val = of_get_property(dev->of_node, "reg", NULL);
-        ctx->version = val ? be32_to_cpup(val) : 1;
-
-        pr_info("%s: panel version 0x%x\n", __func__, ctx->version);
+	tmp_reg = val ? be32_to_cpup(val) : 1;
+	if (tmp_reg == PANEL_REG_V0) {
+		ctx->version = PANEL_V0;
+		pr_info("%s: panel reg=%d for PANEL_V0\n", __func__, tmp_reg);
+	}
+	else
+		pr_info("%s: default PANEL_V1, panel reg=%d\n", __func__, tmp_reg);
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
