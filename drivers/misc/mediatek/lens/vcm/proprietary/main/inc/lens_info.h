@@ -76,7 +76,9 @@
 //Begin: Add lens driver name for Cancunf
 #define MOT_CANCUNF_AFDRV_AW86006 "MOT_CANCUNF_AW86006AF"
 //End
-
+//Begin: Add lens driver name for Cancunn
+#define MOT_CANCUNN_AFDRV_AW86006 "MOT_CANCUNN_AW86006AF"
+//End
 #define CONVERT_CCU_TIMESTAMP 0x1000
 
 /* Structures */

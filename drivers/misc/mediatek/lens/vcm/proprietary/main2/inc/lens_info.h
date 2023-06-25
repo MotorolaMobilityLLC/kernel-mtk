@@ -60,7 +60,9 @@
 //Begin: Add lens driver name for Cancunf
 #define MOT_CANCUNF_AFDRV_DW9714 "MOT_CANCUNF_DW9714AF"
 //End
-
+//Begin: Add lens driver name for Cancunn
+#define MOT_CANCUNN_AFDRV_DW9714 "MOT_CANCUNN_DW9714AF"
+//End
 
 /* Structures */
 struct stAF_MotorInfo {

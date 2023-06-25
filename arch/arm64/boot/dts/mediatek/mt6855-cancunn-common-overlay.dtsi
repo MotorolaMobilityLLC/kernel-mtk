@@ -354,7 +354,7 @@
 
 //#include "mediatek/cust_mt6855_touch_1080x2400.dtsi"
 #include "mediatek/cust_mt6855_camera_v4l2.dtsi"
-
+/delete-node/ &camera_main_two_af_mtk;
 
 &i2c9 {
 	status = "okay";
