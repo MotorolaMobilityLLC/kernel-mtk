@@ -34,6 +34,8 @@
 	max_charger_voltage = <11000000>;
 	min_charger_voltage = <4600000>;
 
+        disable_aicl;
+
 	/*pdc && pe2*/
 	fast_charging_indicator = <0x06>;
 	/*swchg + 1CP*/
