@@ -39,3 +39,4 @@ main2af-y  += common/dw9718taf/DW9718TAF.o
 main2af-y  += common/gt9772af/GT9772AF.o
 main2af-y  += common/mot_devonf_dw9714af/MOT_DEVONF_DW9714AF.o
 main2af-y  += common/mot_cancunf_dw9714af/MOT_CANCUNF_DW9714AF.o
+main2af-y  += common/mot_cancunn_dw9714af/MOT_CANCUNN_DW9714AF.o
