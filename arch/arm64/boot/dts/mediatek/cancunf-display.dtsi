@@ -230,21 +230,6 @@
 
         };
 
-	panel6@0 {
-                compatible = "csot_ft8726,vid,120hz";
-                reg = <5>;
-                reset-gpios = <&pio 95 0>;
-                bias_n-gpios = <&pio 134 0>;
-                bias_p-gpios = <&pio 182 0>;
-                pinctrl-names = "default";
-                port {
-                        panel_in6: endpoint {
-                                remote-endpoint = <&dsi_out>;
-                        };
-                };
-
-        };
-
 	ports {
 		port {
 			dsi_out: endpoint {
