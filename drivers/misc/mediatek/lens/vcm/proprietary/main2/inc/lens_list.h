@@ -176,5 +176,20 @@ extern int MOT_CANCUNF_DW9714AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 				int *pAF_Opened);
 extern int MOT_CANCUNF_DW9714AF_GetFileName(unsigned char *pFileName);
 //End
+//Begin: Add lens driver interface for CancunN
+#define MOT_CANCUNN_DW9714_SetI2Cclient MOT_CANCUNN_DW9714AF_SetI2Cclient
+#define MOT_CANCUNN_DW9714_Ioctl MOT_CANCUNN_DW9714AF_Ioctl
+#define MOT_CANCUNN_DW9714_Release MOT_CANCUNN_DW9714AF_Release
+#define MOT_CANCUNN_DW9714_PowerDown MOT_CANCUNN_DW9714AF_PowerDown
+#define MOT_CANCUNN_DW9714_GetFileName MOT_CANCUNN_DW9714AF_GetFileName
+extern int MOT_CANCUNN_DW9714AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_CANCUNN_DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+				unsigned long a_u4Param);
+extern int MOT_CANCUNN_DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_CANCUNN_DW9714AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int MOT_CANCUNN_DW9714AF_GetFileName(unsigned char *pFileName);
+//End
 
 #endif
