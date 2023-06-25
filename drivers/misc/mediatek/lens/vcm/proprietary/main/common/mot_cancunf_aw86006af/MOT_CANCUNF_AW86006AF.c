@@ -24,7 +24,7 @@
 #include <linux/string.h>
 #include <uapi/asm-generic/errno-base.h>
 #include "lens_info.h"
-#include "../aw86006_ois.h"
+#include "aw86006_ois.h"
 //#include "AW86006AF.h"
 
 #define SOC_OIS_I2C_ADDR		0x69
@@ -43,7 +43,27 @@
 
 #endif
 
-struct i2c_client *g_pstAF_I2Cclient;
+/* Log Format */
+#ifdef AW_LOGI
+#undef AW_LOGI
+#define AW_LOGI(format, ...) \
+	pr_info("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, __func__, \
+								##__VA_ARGS__)
+#endif
+#ifdef AW_LOGD
+#undef AW_LOGD
+#define AW_LOGD(format, ...) \
+	pr_debug("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, \
+							__func__, ##__VA_ARGS__)
+#endif
+#ifdef AW_LOGE
+#undef AW_LOGE
+#define AW_LOGE(format, ...) \
+	pr_err("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, __func__, \
+								##__VA_ARGS__)
+#endif
+
+static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
 static int hea_test_runing = 0;

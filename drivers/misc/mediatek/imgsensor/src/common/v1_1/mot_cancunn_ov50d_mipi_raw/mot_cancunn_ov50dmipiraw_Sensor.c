@@ -788,8 +788,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-				//CANCUNN_OV50D_eeprom_format_calibration_data(&imgsensor);
-				//aw86006_update_fw_sync();
+				CANCUNN_OV50D_eeprom_format_calibration_data(&imgsensor);
+				aw86006_update_fw_sync();
 				return ERROR_NONE;
 			}
 
