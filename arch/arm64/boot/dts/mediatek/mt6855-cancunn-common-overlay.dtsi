@@ -15,6 +15,7 @@
 #include "mediatek/cancunn-display.dtsi"
 #include "mediatek/cancunn-charger.dtsi"
 #include "mediatek/mt6855_cancunn_camera_overlay.dtsi"
+#include "mediatek/cancunn-fps.dtsi"
 #include "mediatek/cancunn-sar.dtsi"
 #include "mediatek/mt6855-moto-memory.dtsi"
 
@@ -80,6 +81,7 @@
 		};
 	};
 
+/*
 	fingerfp_rst_high: fingerfp_rst_high {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO157__FUNC_GPIO157>;
@@ -140,8 +142,8 @@
 			output-low;
 		};
 	};
+*/
 };
-
 
 /* FINGERPRINT start */
 
@@ -156,6 +158,7 @@
 	};
 };
 
+/*
 &spi1 {
 	status = "okay";
 	mediatek,pad-select = <0>, <1>;
@@ -217,6 +220,7 @@
 		status = "okay";
 	};
 };
+*/
 
 &regulator_vibrator {
 	status = "disabled";
