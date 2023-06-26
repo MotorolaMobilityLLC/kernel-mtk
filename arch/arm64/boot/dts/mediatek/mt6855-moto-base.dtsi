@@ -14,6 +14,7 @@
 	tboard_thermistor5: thermal-ntc5 { };
 	tboard_thermistor6: thermal-ntc6 { };
 	tboard_thermistor7: thermal-ntc7 { };
+        tboard_thermistor8: thermal-ntc8 { };
 	charge_leds: charge_leds{ };
 	moto_chg_tcmd: moto_chg_tcmd { };
 	moto_wlc: moto_wlc { };
