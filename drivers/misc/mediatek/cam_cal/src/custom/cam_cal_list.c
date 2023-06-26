@@ -33,6 +33,10 @@ extern unsigned int mot_cancunf_s5k4h7_read_region(struct i2c_client *client, un
 extern unsigned int mot_cancunf_sc202_read_region(struct i2c_client *client, unsigned int addr,
 			unsigned char *data, unsigned int size);
 #endif
+#if defined(CONFIG_MOT_CANCUNN_CAMERA_PROJECT)
+extern unsigned int mot_cancunn_s5k4h7_read_region(struct i2c_client *client, unsigned int addr,
+			unsigned char *data, unsigned int size);
+#endif
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 #if defined(CONFIG_MOT_DEVONN_CAMERA_PROJECT)
 	{MOT_DEVONN_S5KJN1_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
@@ -48,6 +52,10 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{MOT_CANCUNF_HI1634Q_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_CANCUNF_S5K4H7_SENSOR_ID, 0x5A, mot_cancunf_s5k4h7_read_region},
 	{MOT_CANCUNF_SC202_SENSOR_ID, 0x6C, mot_cancunf_sc202_read_region},  // otp
+#elif defined(CONFIG_MOT_CANCUNN_CAMERA_PROJECT)
+	{MOT_CANCUNN_OV50D_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_CANCUNN_HI1634Q_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_CANCUNN_S5K4H7_SENSOR_ID, 0x5A, mot_cancunn_s5k4h7_read_region},  //otp
 #else
 	/*Below is commom sensor */
 	{HI1339_SENSOR_ID, 0xB0, Common_read_region},
