@@ -241,6 +241,7 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx,0XFB,0X01);
 	tianma_dcs_write_seq_static(ctx,0X36,0X00);
 	tianma_dcs_write_seq_static(ctx,0XB0,0X00);
+	tianma_dcs_write_seq_static(ctx,0X68,0X02,0x01);
 	tianma_dcs_write_seq_static(ctx,0X51,0X06,0x66); //max 0x07,0xFF
 	tianma_dcs_write_seq_static(ctx,0X53,0X2c);
         tianma_dcs_write_seq_static(ctx,0X55,0X01);
