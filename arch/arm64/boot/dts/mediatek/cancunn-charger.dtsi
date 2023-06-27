@@ -13,24 +13,28 @@
 
 &charger {
 	/* common */
-	battery_cv = <4480000>;
-	max_charger_voltage = <11000000>;
+	boot_battery_voltage = <3600000>;
+	battery_cv = <4500000>;
+	max_charger_voltage = <14500000>;
 	min_charger_voltage = <4600000>;
 
 	/* sw jeita */
 	enable_vbat_mon = <0>;
 	disable_aicl;
 
-	/*pe4 && pdc && pe2*/
-	fast_charging_indicator = <0x06>;
-
+	/*pe5 && pdc && pe2*/
+	fast_charging_indicator = <0x36>;
+	/*swchg + 1CP*/
+	charger_configuration= <3>;
+	wireless_factory_max_current = <3000000>;
+	wireless_factory_max_input_current = <600000>;
 	/* charging current */
 	usb_charger_current_suspend = <0>;
 	usb_charger_current_unconfigured = <70000>;
 	usb_charger_current_configured = <500000>;
 	usb_charger_current = <500000>;
-	ac_charger_current = <2050000>;
-	ac_charger_input_current = <2000000>;
+	ac_charger_current = <3000000>;
+	ac_charger_input_current = <3000000>;
 	non_std_ac_charger_current = <1000000>;
 	charging_host_charger_current = <1500000>;
 	apple_1_0a_charger_current = <650000>;
@@ -39,17 +43,26 @@
 	typec_limit_aicr = <3000000>;
 
 	/*mmi config*/
-	mmi,iterm-ma = <243>;
-	mmi,mmi-temp-zones = <0 4200 1000 0>,
-			<10 4250 3000 1000>,
-			<15 0 3000 3000>,
-			<45 0 4000 4000>,
-			<60 4200 4000 0>;
+	mmi,iterm-ma = <292>;
+	mmi,mmi-temp-zones = <0 4200 1200 0>,
+			<10 4250 3000 1800>,
+			<15 4500 3000 3000>,
+			<45 4300 6000 5200>,
+			<45 4400 5200 4000>,
+			<45 4500 4000 4000>,
+			<60 4200 5840 0>;
+	mmi,mmi-ffc-zones = <0 4200 292>,
+			<10 4500 292>,
+			<15 4500 292>,
+			<25 4530 776>,
+			<35 4530 946>,
+			<45 4530 1379>,
+			<60 4200 292>;
 	mmi,enable-charging-limit;
+	mmi,enable-mux;
 	mmi,upper-limit-capacity = <65>;
 	mmi,lower-limit-capacity = <60>;
-	mmi,mmi-cycle-cv-steps =<100 20>,
-			<200 40>;
+	mmi,min-cp-therm-current-ua = <1600000>;
 };
 
 &mt6375_typec {
@@ -57,21 +70,20 @@
 		/* 5V, 900ma */
 		pd,source-pdo-data = <0x0001905a>;
 
-		/* 9V, 2A */
+		/* 5V, 3A */
 		pd,sink-pdo-size = <2>;
-		pd,sink-pdo-data = <0x0002D0C8 0x0002D0C8> ;
+		pd,sink-pdo-data = <0x0001912c 0x0001912c> ;
 	};
 };
 
 &extcon_usb {
 	vbus-current = <1100000>;
 };
-
+/*
 &pdc {
 	pd_vbus_low_bound = <5000000>;
 	pd_vbus_upper_bound = <9000000>;
 
-	/* single charger */
 	sc_input_current = <2000000>;
 	sc_charger_current = <4000000>;
 };
@@ -80,7 +92,134 @@
 	pe40_max_vbus = <6000>;
 	pe40_max_ibus = <3000>;
 };
+*/
 
+&pdc {
+	sc_input_current = <3000000>;
+};
+
+&pe2 {
+	sc_input_current = <3000000>;
+};
+
+&pd_adapter{
+	ita_min = <1000>;
+};
+
+&pe5 {
+		compatible = "mediatek,charger,pe5";
+		gauge = <&mtk_gauge>;
+		polling_interval = <10000>;
+		ta_cv_ss_repeat_tmin = <25>;
+		vbat_cv = <4530>;
+		start_soc_min = <0>;
+		start_soc_max = <80>;
+		start_vbat_max = <4450>;
+		idvchg_term = <500>;
+		idvchg_step = <50>;
+		ita_level = <3000 2500 2000 1500>;
+		rcable_level = <350 400 500 600>;
+		ita_level_dual = <5000 3700 3400 3000>;
+		rcable_level_dual = <230 350 450 550>;
+		idvchg_ss_init = <1000>;
+		idvchg_ss_step = <250>;
+		idvchg_ss_step1 = <100>;
+		idvchg_ss_step2 = <50>;
+		idvchg_ss_step1_vbat = <4000>;
+		idvchg_ss_step2_vbat = <4200>;
+		ta_blanking = <400>;
+		swchg_aicr = <0>;
+		swchg_ichg = <1200>;
+		swchg_aicr_ss_init = <400>;
+		swchg_aicr_ss_step = <200>;
+		swchg_off_vbat = <4250>;
+		force_ta_cv_vbat = <4250>;
+		chg_time_max = <10800>;
+		tta_level_def = <0 0 0 0 25 50 60 70 80>;
+		tta_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tta_recovery_area = <3>;
+		tbat_level_def = <0 0 0 5 25 40 43 46 50>;
+		tbat_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tbat_recovery_area = <3>;
+		tdvchg_level_def = <0 0 0 5 25 55 60 65 70>;
+		tdvchg_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tdvchg_recovery_area = <3>;
+		tswchg_level_def = <0 0 0 5 25 65 70 75 80>;
+		tswchg_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tswchg_recovery_area = <3>;
+		ifod_threshold = <200>;
+		rsw_min = <20>;
+		ircmp_rbat = <40>;
+		ircmp_vclamp = <0>;
+		vta_cap_min = <6800>;
+		vta_cap_max = <11000>;
+		ita_cap_min = <1000>;
+		support_ta = "pca_ta_pps", "pd_adapter";
+		allow_not_check_ta_status;
+		vbat_threshold = <4150>;
+		mmi_therm_cur_thres = <500>;
+		mmi_therm_vol_thres = <80>;
+		mmi_therm_step = <3>;
+		mmi_max_ibat = <6000>;
+		charger = <&mt6375_chg>;
+		charger_device_0 {
+			chrg-name = "pmic-sw";
+			psy-name = "mtk-master-charger";
+			charging-curr-limited = <500000>;
+		};
+		charger_device_1 {
+			chrg-name = "cp-master";
+			psy-name = "cp-standalone";
+			charging-curr-min = <1800000>;
+		};
+};
+/*
+&odm {
+	mmi_chrg_manager {
+		compatible = "mmi,chrg-manager";
+		mmi,pps-volt-steps = <20000>;
+		mmi,pps-curr-steps = <40000>;
+		mmi,pd-volt-max = <12000000>;
+		mmi,pd-curr-max = <3000000>;
+		mmi,batt-curr-boost = <300000>;
+		mmi,batt-ovp-lmt = <4550000>;
+		mmi,pl-chrg-vbatt-min = <3000000>;
+		mmi,typec-middle-current = <800000>;
+		mmi,step-first-current-comp = <0>;
+		mmi,dont-rerun-aicl;
+		mmi,chrg-temp-zones-num = <5>;
+		mmi,mmi-chrg-temp-zones =
+				<0 4200 1200  0 0 0 0>,
+				<10 4250 3000 4500 1800 0 0>,
+				<15 4500 3000 0 0 0 0>,
+				<45 4300 6000 4400 5200 4530 4000>,
+				<60 4200 5840 0 0 0 0>;
+
+		mmi,mmi-ffc-zones = <4200 292>,
+				<4250 292>,
+				<4450 292>,
+				<4530 776>,
+				<4530 946>,
+				<4530 1379>,
+				<4200 292>;
+
+		mmi,thermal-min-level = <1500000>;
+
+		charger = <&mt6375_chg>;
+
+		charger_device_0 {
+			chrg-name = "pmic-sw";
+			psy-name = "mtk-master-charger";
+			charging-curr-limited = <500000>;
+		};
+		charger_device_1 {
+			chrg-name = "cp-master";
+			psy-name = "cp-standalone";
+			charging-curr-min = <1800000>;
+		};
+	};
+};
+*/
 &mtk_gauge {
 
 	DIFFERENCE_FULLOCV_ITH = <350>;  /*gauge cut-off current, should overtop ieoc 50ma*/
@@ -159,7 +298,7 @@
 
 	TEMPERATURE_T4 = <(-10)>;
 	ACTIVE_TABLE = <(5)>;
-	R_FG_VALUE = <(5)>;
+	R_FG_VALUE = <(2)>;
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
 
 	df-serialnum = "SB18D57454";
@@ -221,13 +360,13 @@
 	non_std_ac_charger_current = <1000000>;
 	charging_host_charger_current = <1000000>;
 };
-
+/*
 &mt6375_chg {
 	cv = <4480>;
 	ircmp_r = <0>;
 	ircmp_v = <0>;
 };
-
+*/
 &ap_ntc {
 	polling-delay = <5000>; /* milliseconds */
 	polling-delay-passive = <3000>; /* milliseconds */
@@ -319,6 +458,86 @@
 			cooling-device = <&charger_cooler 9 9>;
 		};
 	};
+};
+
+&pio {
+	bq25960_int_default: bq25960_int_default {
+		pinmux = <PINMUX_GPIO0__FUNC_GPIO0>;
+		slew-rate= <0>;
+		input-enable;
+		bias-pull-up;
+	};
+
+	mmi_control_wls_default: mmi_control_wls_default {
+		wls_control {
+			pinmux = <PINMUX_GPIO183__FUNC_GPIO183>;
+			output-low;
+		};
+	};
+
+	wls_cps4035_int_default: wls_cps4035_int_default {
+		wls_int {
+			pinmux = <PINMUX_GPIO5__FUNC_GPIO5>;
+			input-enable;
+			bias-pull-up;
+		};
+		wls_det_int {
+			pinmux = <PINMUX_GPIO80__FUNC_GPIO80>;
+			input-enable;
+			bias-pull-down;
+		};
+		wls_mode_select {
+			pinmux = <PINMUX_GPIO77__FUNC_GPIO77>;
+			output-low;
+                 };
+	};
+};
+
+&i2c9 {
+	bq25960-standalone@65 {
+		compatible = "ti,bq25960-standalone";
+		reg = <0x65>;
+
+		interrupt-parent = <&pio>;
+		interrupts = <0 IRQ_TYPE_EDGE_FALLING 0 0>;
+		interrupt-names = "bq25960_irq";
+		pinctrl-names = "default";
+		pinctrl-0 = <&bq25960_int_default>;
+
+		sc8541-addr = <0x6a>;
+	};
+};
+
+&i2c3 {
+    cps_wls_charger@38 {
+        compatible = "cps,wls-charger-cps4038";
+        wireless-fw-name = "cps4038.bin";
+        enable_stop_epp = <1>;
+        enable_rx_offset_detect = <1>;
+        /*stop rx offset detect battery soc*/
+        rod_stop_battery_soc = <90>;
+        bootmode = <&chosen>;
+        reg = <0x38>;
+        cps_wls_int = <&pio 5 0x0>;
+        cps_det_int = <&pio 80 0x0>;
+        wls_mode_select = <&pio 77 0x0>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&wls_cps4035_int_default>;
+        status = "okay";
+    };
+};
+
+&moto_wlc {
+	compatible = "moto,charger,wlc";
+	min_charger_voltage = <4600000>;
+	wlc_max_charger_current = <3150000>;
+	wlc_max_input_current = <1150000>;
+	mmi,wls_control_en = <&pio 183 0x0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmi_control_wls_default>;
+	#cooling-cells = <2>;
+	mmi,wlc-rx-mitigation = <(-1) 2500000 2000000 1500000 1200000
+							1000000 800000 500000>;
 };
 
 &charger_cooler {
