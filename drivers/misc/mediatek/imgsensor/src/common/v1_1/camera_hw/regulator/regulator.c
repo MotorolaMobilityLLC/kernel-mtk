@@ -27,6 +27,7 @@ static const int regulator_voltage[] = {
 struct REGULATOR_CTRL regulator_control[REGULATOR_TYPE_MAX_NUM] = {
 	{"vcama"},
 	{"vcama1"},
+	{"vcamafvdd"},
 	{"vcamaf"},
 	{"vcamd"},
 	{"vcamio"},
