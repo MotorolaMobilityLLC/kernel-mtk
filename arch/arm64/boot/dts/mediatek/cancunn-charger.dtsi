@@ -172,7 +172,7 @@
 
 	charging {
 		label = "charging";
-		gpios = <&pio 23 0x0>;
+		gpios = <&pio 38 0x0>;
 		default-state = "off";
 	};
 };
