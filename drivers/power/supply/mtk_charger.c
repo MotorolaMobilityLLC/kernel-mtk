@@ -3217,10 +3217,13 @@ void mmi_charge_rate_check(struct mtk_charger *info)
  	}
 
 	vbus = get_vbus(info);
+
+#ifndef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	if (icl * vbus >= TURBO_POWER_THRSH) {
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 		goto end_rate_check;
 	}
+#endif
 
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	if(get_uisoc(info) == 100)
