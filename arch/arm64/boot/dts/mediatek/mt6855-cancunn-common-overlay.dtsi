@@ -223,7 +223,7 @@
 */
 
 &regulator_vibrator {
-	status = "disabled";
+	status = "ok";
 };
 
 
