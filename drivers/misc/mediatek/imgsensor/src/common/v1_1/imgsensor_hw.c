@@ -19,6 +19,7 @@ char * const imgsensor_hw_pin_names[] = {
 	"rst",
 	"vcama",
 	"vcama1",
+	"vcamafvdd",
 	"vcamaf",
 	"vcamd",
 #if defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT) || defined(CONFIG_MOT_CANCUNN_CAMERA_PROJECT)
