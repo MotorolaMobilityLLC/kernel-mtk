@@ -809,6 +809,12 @@ config MOTO_CHARGE_PUMP_OVP_CONTROL_SUPPORT
         help
           This is to enable MOTO supports of charger vac control ovp.
 
+config MOTO_CHANNEL_SWITCH
+        bool "WIRELESS CHANNEL SWITCH CHARGER  control support"
+        default n
+        help
+          This is to enable MOTO supports of charger channel switch.
+
 config MOTO_CHG_FFC_5V10W_SUPPORT
 	bool "Enable 5V10W charger FFC feature"
 	default n

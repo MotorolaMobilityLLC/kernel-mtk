@@ -16,6 +16,7 @@
 	tboard_thermistor7: thermal-ntc7 { };
 	charge_leds: charge_leds{ };
 	moto_chg_tcmd: moto_chg_tcmd { };
+	moto_wlc: moto_wlc { };
 	flashlights_devonf: flashlights_devonf { };
         flashlights_cancunf: flashlights_cancunf { };
 };
