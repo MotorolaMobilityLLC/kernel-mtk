@@ -33,6 +33,9 @@ enum mmi_dvchg_mux_channel {
 	MMI_DVCHG_MUX_CLOSE,
 	MMI_DVCHG_MUX_MANUAL_OPEN,
 	MMI_DVCHG_MUX_DISABLE,
+#ifdef CONFIG_MOTO_CHANNEL_SWITCH
+	MMI_DVCHG_MUX_OTG_WLC_OPEN,
+#endif
 };
 
 struct charger_properties {
@@ -224,6 +227,9 @@ struct charger_ops {
 
 	/* enable adc*/
 	int (*enable_adc)(struct charger_device *dev, bool en);
+#ifdef CONFIG_MOTO_CHANNEL_SWITCH
+	int (*get_vmos_chg)(struct charger_device *chg_dev, bool type, int *uV);
+#endif
 
 };
 
@@ -422,4 +428,7 @@ extern int charger_dev_notify(
 extern int charger_dev_config_mux(struct charger_device *chg_dev,
 	enum mmi_dvchg_mux_channel typec_mos, enum mmi_dvchg_mux_channel wls_mos);
 extern int charger_dev_enable_adc(struct charger_device *chg_dev, bool en);
+#ifdef CONFIG_MOTO_CHANNEL_SWITCH
+extern int charger_dev_get_vmos_adc(struct charger_device *chg_dev, bool type, int *uV);
+#endif
 #endif /*LINUX_POWER_CHARGER_CLASS_H*/
