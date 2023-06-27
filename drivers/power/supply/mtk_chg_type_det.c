@@ -207,7 +207,65 @@ static void handle_pd_rdy_attach(struct mtk_ctd_info *mci, struct tcp_notify *no
 		handle_typec_pd_attach(mci, attach);
 	}
 }
+#ifdef CONFIG_MOTO_CHANNEL_SWITCH
+static int wireless_get_wireless_online(int *online)
+{
+	int ret = 0;
+	struct power_supply *wl_psy = NULL;
+	union power_supply_propval prop;
 
+	wl_psy = power_supply_get_by_name("wireless");
+	if (wl_psy == NULL || IS_ERR(wl_psy)) {
+		pr_err("%s Couldn't get wl_psy\n", __func__);
+		prop.intval = 0;
+	} else {
+		ret = power_supply_get_property(wl_psy,
+			POWER_SUPPLY_PROP_ONLINE, &prop);
+		if (ret) {
+			pr_err("%s Couldn't get online status\n", __func__);
+			return ret;
+		}
+	}
+	*online = prop.intval;
+	pr_info("%s get wl_psy, online = %d\n", __func__, *online);
+
+	return ret;
+}
+
+static int wireless_get_charger_type(struct mtk_ctd_info *mci)
+{
+	int ret;
+	int adc_vol = 0;
+	int wireless_online = 0;
+	struct charger_device *dev;
+
+	pr_info("%s enter\n", __func__);
+	dev = get_charger_by_name("primary_dvchg");
+	if (!dev) {
+		pr_err("%s:find primary divider charger fail\n", __func__);
+		return -EINVAL;
+	}
+
+	ret = wireless_get_wireless_online(&wireless_online);
+	if (ret){
+		pr_err("%s:get wireless status fail\n", __func__);
+		return -EINVAL;
+	}
+
+
+	ret = charger_dev_get_vmos_adc(dev, true, &adc_vol);
+	if (ret) {
+		pr_err("%s:get vmos adc fail\n", __func__);
+		return -EINVAL;
+	}
+	if (((adc_vol > VBUS_VAC1_ONLINE_VOLTAGE) && wireless_online) || (!wireless_online)) {
+		mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, true);
+		handle_typec_pd_attach(mci, ATTACH_TYPE_TYPEC);
+	}
+
+	return 0;
+}
+#endif
 static void handle_audio_attach(struct mtk_ctd_info *mci, struct tcp_notify *noti)
 {
 	int attach;
@@ -231,7 +289,9 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #ifdef MTK_BASE
 	int counter = 0;	/* for coverity */
 #endif
-
+#ifdef CONFIG_MOTO_CHANNEL_SWITCH
+	int ret = 0;
+#endif
 	switch (event) {
 	case TCP_NOTIFY_SINK_VBUS:
 		handle_audio_attach(mci, noti);
@@ -252,8 +312,16 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
 					noti->typec_state.polarity);
 			mci->is_mmi_pd_hardreset_plugout = false;
+#ifdef CONFIG_MOTO_CHANNEL_SWITCH
+			ret = wireless_get_charger_type(mci);
+			if(ret != 0) {
+			    mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, true);
+			    handle_typec_pd_attach(mci, ATTACH_TYPE_TYPEC);
+			}
+#else
 			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, true);
 			handle_typec_pd_attach(mci, ATTACH_TYPE_TYPEC);
+#endif /* CONFIG_MOTO_CHANNEL_SWITCH */
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
 		    noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
 		    noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC ||
