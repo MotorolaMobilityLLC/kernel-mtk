@@ -102,6 +102,13 @@ config WAIT_TX_RETRY_DONE
           to send
           Hardreset
 
+config DISABLE_SUPPORT_MMI_ADAPTER
+        bool "disable MMI private PD protocol"
+        default n
+        help
+          Say Yes to disable MMI pd protocl.
+          It is mainly used as pd charger
+
 config USB_PD_VBUS_STABLE_TOUT
 	int "PD VBUS Stable Timeout"
 	depends on USB_POWER_DELIVERY
