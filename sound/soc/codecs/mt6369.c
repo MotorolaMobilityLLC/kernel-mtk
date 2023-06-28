@@ -2213,9 +2213,15 @@ static int mt_mic_bias_0_event(struct snd_soc_dapm_widget *w,
 		}
 
 		/* MISBIAS0 = 1P9V */
+#ifdef CONFIG_CANCUNN_AUDIO
+		regmap_update_bits(priv->regmap, MT6369_AUDENC_ANA_CON17,
+				   RG_AUDMICBIAS0VREF_MASK_SFT,
+				   MIC_BIAS_2P5 << RG_AUDMICBIAS0VREF_SFT);
+#else
 		regmap_update_bits(priv->regmap, MT6369_AUDENC_ANA_CON17,
 				   RG_AUDMICBIAS0VREF_MASK_SFT,
 				   MIC_BIAS_1P9 << RG_AUDMICBIAS0VREF_SFT);
+#endif
 		/* vow low power select */
 		regmap_update_bits(priv->regmap, MT6369_AUDENC_ANA_CON17,
 				   RG_AUDMICBIAS0LOWPEN_MASK_SFT,
@@ -5713,8 +5719,11 @@ static int mt6369_rcv_acc_set(struct snd_kcontrol *kcontrol,
 
 	/* Enable MICBIAS0, MISBIAS0 = 1P9V */
 	regmap_write(priv->regmap, MT6369_AUDENC_ANA_CON17, 0x1);
+#ifdef CONFIG_CANCUNN_AUDIO
+	regmap_write(priv->regmap, MT6369_AUDENC_ANA_CON17, 0x51);
+#else
 	regmap_write(priv->regmap, MT6369_AUDENC_ANA_CON17, 0x21);
-
+#endif
 	/* Audio L preamplifier input sel : AIN0 */
 	regmap_write(priv->regmap, MT6369_AUDENC_ANA_CON0, 0x40);
 	/* Enable audio L PGA */
