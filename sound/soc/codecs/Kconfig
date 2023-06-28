@@ -307,6 +307,9 @@ config SND_SOC_88PM860X
 	tristate
 	depends on MFD_88PM860X
 
+config CANCUNN_AUDIO
+	tristate "Cancun on-board mic power supply 2.6v"
+
 config SND_SOC_ARIZONA
 	tristate
 	default y if SND_SOC_CS47L24=y
