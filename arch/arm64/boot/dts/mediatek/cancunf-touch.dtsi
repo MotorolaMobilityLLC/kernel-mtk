@@ -9,6 +9,9 @@
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
+	pinctrl-names = "default", "ft8725_spi_mode";
+        pinctrl-0 = <&ctp_ft8725_pins_default>;
+        pinctrl-1 = <&ctp_ft8725_spi_mode>;
 
 	touch@0{
 		compatible = "novatek,NVT-ts-spi","focaltech,fts", "tchip,ilitek";
@@ -48,6 +51,20 @@
 		ilitek,report_gesture_key;
 		ilitek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
 	};
+};
+
+&pio {
+        ctp_ft8725_pins_default: pins_default {
+        };
+        ctp_ft8725_spi_mode: spimode_default {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO73__FUNC_SPI3_CLK>,
+                                <PINMUX_GPIO74__FUNC_SPI3_CSB>,
+                                <PINMUX_GPIO75__FUNC_SPI3_MO>,
+                                <PINMUX_GPIO76__FUNC_SPI3_MI>;
+                        drive-strength = <2>;
+                };
+        };
 };
 
 /* TOUCH end */
