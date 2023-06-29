@@ -1,0 +1,112 @@
+/* Copyright (c) 2021, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&mtkfb {
+	pinctrl-names = "dispdefault", "lcm_rst_out0_gpio", "lcm_rst_out1_gpio",
+			"lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio",
+			"lcd_bias_enn0_gpio", "lcd_bias_enn1_gpio",
+			"lcm_pwr_en_out0_gpio", "lcm_pwr_en_out1_gpio";
+	pinctrl-0 = <&mtkfb_pins_default>;
+	pinctrl-1 = <&mtkfb_pins_lcm_reset0>;
+	pinctrl-2 = <&mtkfb_pins_lcm_reset1>;
+	pinctrl-3 = <&mtkfb_pins_lcd_bias_enp0>;
+	pinctrl-4 = <&mtkfb_pins_lcd_bias_enp1>;
+	pinctrl-5 = <&mtkfb_pins_lcd_bias_enn0>;
+	pinctrl-6 = <&mtkfb_pins_lcd_bias_enn1>;
+	pinctrl-7 = <&mtkfb_pins_lcm_pwr_en_out0>;
+	pinctrl-8 = <&mtkfb_pins_lcm_pwr_en_out1>;
+	status = "okay";
+};
+
+&pio {
+	mtkfb_pins_lcm_reset0: lcm_rst_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_reset1: lcm_rst_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO16__FUNC_GPIO16>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enp1: lcd_bias_enp1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO16__FUNC_GPIO16>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO13__FUNC_GPIO13>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO13__FUNC_GPIO13>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_pwr_en_out0: lcm_pwr_en_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO165__FUNC_GPIO165>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_pwr_en_out1: lcm_pwr_en_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO165__FUNC_GPIO165>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_default: dispdefault {
+	};
+};
+
+&dsi0 {
+	status = "okay";
+
+	panel1@0 {
+		/delete-property/ compatible;
+		/delete-property/ pm-enable-gpios;
+		/delete-property/ reset-gpios;
+		/delete-property/gate-ic;
+
+		compatible = "mot,dummy,vdo,60hz";
+		reg = <0>;
+		pinctrl-names = "default";
+	};
+};
