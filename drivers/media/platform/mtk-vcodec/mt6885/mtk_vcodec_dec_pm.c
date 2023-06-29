@@ -901,7 +901,7 @@ void mtk_vdec_dvfs_begin(struct mtk_vcodec_ctx *ctx, int hw_id)
 		vdec_req_freq[hw_id] = target_freq_64;
 	}
 
-	if (dev->dec_cnt > 2)
+	if (dev->dec_cnt > 5)
 		vdec_req_freq[hw_id] = 546;
 
 	vdec_freq = vdec_req_freq[0] > vdec_req_freq[1] ?
