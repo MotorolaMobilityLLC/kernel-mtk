@@ -11,10 +11,21 @@
 #include "inc/tcpci_typec.h"
 #include "inc/tcpci_timer.h"
 
+#ifdef CONFIG_MOTO_CHANNEL_SWITCH
+#include "mtk_charger.h"
+#endif
+
 #if (CONFIG_TYPEC_CAP_TRY_SOURCE || CONFIG_TYPEC_CAP_TRY_SINK)
 #define CONFIG_TYPEC_CAP_TRY_STATE 1
 #else
 #define CONFIG_TYPEC_CAP_TRY_STATE 0
+#endif
+
+#ifdef CONFIG_MOTO_CHANNEL_SWITCH
+#define ON 1
+#define CC_SUM_MAX 30
+#define CC_SUM_MIN 0
+static bool g_flag = false;
 #endif
 
 /* For Rp3A */
@@ -2071,9 +2082,36 @@ static inline bool typec_is_ignore_cc_change(
 	return false;
 }
 
+#ifdef CONFIG_MOTO_CHANNEL_SWITCH
+static int mmi_mux_typec_chg_chan(enum mmi_mux_channel channel, bool on)
+{
+	struct mtk_charger *info = NULL;
+	struct power_supply *chg_psy = NULL;
+
+	chg_psy = power_supply_get_by_name("mtk-master-charger");
+	if (chg_psy == NULL || IS_ERR(chg_psy)) {
+		pr_err("%s Couldn't get chg_psy\n", __func__);
+		return 0;
+	} else {
+		info = (struct mtk_charger *)power_supply_get_drvdata(chg_psy);
+	}
+
+	pr_info("%s open typec WLC chan =%d, on = %d\n", __func__, channel, on);
+	if (info->algo.do_mux)
+		info->algo.do_mux(info, channel, on);
+	else
+		pr_err("%s get info->algo.do_mux fail", __func__);
+
+	return 0;
+}
+#endif
+
 int tcpc_typec_handle_cc_change(struct tcpc_device *tcpc)
 {
 	int ret;
+#ifdef CONFIG_MOTO_CHANNEL_SWITCH
+	int cc_sum = 0;
+#endif
 	uint8_t rp_present;
 
 #if CONFIG_WATER_DETECTION
@@ -2088,7 +2126,15 @@ int tcpc_typec_handle_cc_change(struct tcpc_device *tcpc)
 		return ret;
 
 	TYPEC_INFO("[CC_Alert] %d/%d\n", typec_get_cc1(), typec_get_cc2());
-
+#ifdef CONFIG_MOTO_CHANNEL_SWITCH
+	cc_sum = typec_get_cc1() + typec_get_cc2();
+	if ((cc_sum < CC_SUM_MAX && cc_sum > CC_SUM_MIN) && !g_flag) {
+		 mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, ON);
+		g_flag = true;
+	} else if((cc_sum == CC_SUM_MAX) && g_flag) {
+		g_flag = false;
+	}
+#endif
 	if (typec_is_cc_no_res()) {
 		TYPEC_DBG("[Warning] CC No Res\n");
 		if (tcpc->typec_lpm && !tcpc->typec_cable_only)
