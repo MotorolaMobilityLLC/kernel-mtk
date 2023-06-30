@@ -955,8 +955,13 @@ static int mmi_mux_switch(struct mtk_charger *info, enum mmi_mux_channel channel
 					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG;
 					info->mmi.mux_channel.on = true;
 				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG) {
+#ifndef CONFIG_MOTO_CHANNEL_SWITCH
 					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG);
 					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG;
+#else
+					//mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG;
+#endif
 					info->mmi.mux_channel.on = true;
 				} else {
 					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_CHG);
@@ -977,6 +982,9 @@ static int mmi_mux_switch(struct mtk_charger *info, enum mmi_mux_channel channel
 					//mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG);
 					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG;
 					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG) {
+                                        info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG;
+                                        info->mmi.mux_channel.on = true;
 #endif
 				} else {
 					mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
