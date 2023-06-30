@@ -821,7 +821,11 @@ static void mmi_charger_ffc_init(struct mtk_charger *info)
 	struct mmi_params *mmi = &info->mmi;
 
 	mmi->ffc_state = CHARGER_FFC_STATE_INITIAL;
+#ifdef CONFIG_MOTO_CHG_FFC_THRESHOLD_1900
+	mmi->ffc_entry_threshold = 1900000;
+#else
 	mmi->ffc_entry_threshold = 2000000;
+#endif
 	mmi->ffc_exit_threshold =  1800000;
 	mmi->ffc_ibat_windowsum = 0;
 	mmi->ffc_ibat_count = 0;

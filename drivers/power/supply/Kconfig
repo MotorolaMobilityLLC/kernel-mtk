@@ -821,6 +821,12 @@ config MOTO_CHG_FFC_5V10W_SUPPORT
 	help
 		This is to enable MOTO 5V10W Charger FFC feature.
 
+config MOTO_CHG_FFC_THRESHOLD_1900
+	bool "Set 5V10W Charger FFC THRESHOLD 1900"
+	default n
+	help
+		This is to enable MOTO 5V10W Charger FFC THRESHOLD 1900mA.
+
 config CHARGER_CROS_USBPD
 	tristate "ChromeOS EC based USBPD charger"
 	depends on CROS_USBPD_NOTIFY
