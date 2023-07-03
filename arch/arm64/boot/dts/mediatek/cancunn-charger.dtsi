@@ -301,9 +301,9 @@
 	R_FG_VALUE = <(2)>;
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
 
-	df-serialnum = "SB18D57454";
-	#include "bat_setting/mt6855_battery_pd50_sunw_5000mah.dtsi"
-        #include "bat_setting/mt6855_battery_pd50_scud_5000mah.dtsi"
+	df-serialnum = "SB18D94521";
+        #include "bat_setting/mt6855_battery_table_QA50_JIADE_5000mah.dtsi"
+        #include "bat_setting/mt6855_battery_table_QA50_ALT_5000mah.dtsi"
 };
 
 &charge_leds {
