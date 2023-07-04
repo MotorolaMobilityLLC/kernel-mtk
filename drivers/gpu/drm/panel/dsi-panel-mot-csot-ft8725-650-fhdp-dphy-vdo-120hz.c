@@ -40,6 +40,8 @@ extern int __attribute__ ((weak)) sm5109_BiasPower_enable(u32 avdd, u32 avee,u32
 #define BIAS_TMP_V0
 #endif
 
+#define CSOT_PANEL_VENDOR_ID  		0x54250208
+#define CSOT_PANEL_V0_VENDOR_ID  	(CSOT_PANEL_VENDOR_ID - 1)
 #define PANEL_REG_V0	4 	//keep consistent with panel dtsi
 enum panel_version {
         PANEL_V1,		//DVT2, PVT
@@ -955,6 +957,34 @@ static const struct drm_panel_funcs csot_drm_funcs = {
 	.get_modes = csot_get_modes,
 };
 
+static void csot_parse_panel_version(struct csot *ctx)
+{
+	int rc;
+	struct device_node *chosen = of_find_node_by_name(NULL, "chosen");
+
+	ctx->version = PANEL_V1;
+	if(chosen) {
+		u32 tmp_id = 0;
+
+		rc = of_property_read_u32(chosen, "mmi,panel_vendor_id", &tmp_id);
+		if (!rc) {
+			if (CSOT_PANEL_V0_VENDOR_ID == tmp_id) {
+				ctx->version = PANEL_V0;
+				pr_info("csot panel version v0, ver=%d, vendor_id=0x%x\n", ctx->version, tmp_id);
+			}
+			else
+				pr_info("csot get vendor_id:0x%x\n", tmp_id);
+		}
+		else
+			pr_info("csot mmi,panel_vendor_id not get\n");
+	}
+	else
+		pr_info("csot_parse_panel_version: chosen node null\n");
+
+	pr_info("parse csot panel version:%d\n", ctx->version);
+	return;
+}
+
 static int csot_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
@@ -962,8 +992,6 @@ static int csot_probe(struct mipi_dsi_device *dsi)
 	struct csot *ctx;
 	struct device_node *backlight;
 	int ret;
-	const u32 *val;
-	u8 tmp_reg;
 
 	pr_info("%s+ csot_ft8725,vdo,120hz\n", __func__);
 
@@ -1021,15 +1049,8 @@ static int csot_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_add(&ctx->panel);
 
-	ctx->version = PANEL_V1;
-	val = of_get_property(dev->of_node, "reg", NULL);
-	tmp_reg = val ? be32_to_cpup(val) : 1;
-	if (tmp_reg == PANEL_REG_V0) {
-		ctx->version = PANEL_V0;
-		pr_info("%s: panel reg=%d for PANEL_V0\n", __func__, tmp_reg);
-	}
-	else
-		pr_info("%s: default PANEL_V1, panel reg=%d\n", __func__, tmp_reg);
+	//parse panel version for dvt1/dvt2
+	csot_parse_panel_version(ctx);
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
