@@ -5,44 +5,64 @@
 
 /* TOUCH start */
 
+&pio {
+    ctp_ft8725_pins_default: pins_default {
+        };
+        ctp_ft8725_spi_mode: spimode_default {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO73__FUNC_SPI3_CLK>,
+                                <PINMUX_GPIO74__FUNC_SPI3_CSB>,
+                                <PINMUX_GPIO75__FUNC_SPI3_MO>,
+                                <PINMUX_GPIO76__FUNC_SPI3_MI>;
+                        drive-strength = <2>;
+                };
+        };
+};
+
 &spi3 {
-	status = "okay";
-	#address-cells = <1>;
-	#size-cells = <0>;
+    status = "okay";
+    mediatek,pad-select = <0>, <1>, <2>;
+    pinctrl-names = "default", "ft8725_spi_mode";
+    pinctrl-0 = <&ctp_ft8725_pins_default>;
+    pinctrl-1 = <&ctp_ft8725_spi_mode>;
+    focaltech@0 {
+        status = "okay";
+        compatible = "focaltech,fts";
+        reg = <0>;
+        spi-max-frequency = <6000000>;
+        interrupt-parent = <&pio>;
+        interrupts = <22 IRQ_TYPE_EDGE_FALLING 22 0>;
+        focaltech,reset-gpio = <&pio 3 0>;
+        focaltech,irq-gpio = <&pio 22 02>;
+        focaltech,max-touch-number = <10>;
+        focaltech,display-coords =  <0 0 1080 2400>;
+                focaltech,report_gesture_key = <59>;
+        focaltech,panel-supplier = "djn";
+    };
 
-	touch@0{
-		compatible = "focaltech,fts", "tchip,ilitek", "chipone-tddi";
-		reg = <0>; //Same as CS ID
-		status = "ok";
+    ilitek@1 {
+        status = "okay";
+        compatible = "tchip,ilitek";
+        reg = <1>;
+        spi-max-frequency = <10000000>;
+        interrupt-parent = <&pio>;
+        interrupts = <22 IRQ_TYPE_EDGE_FALLING 22 0>;
+                touch,reset-gpio = <&pio 3 0>;
+                touch,irq-gpio = <&pio 22 02>;
+                touch,psy-name = "battery";
+    };
 
-		spi-max-frequency = <9600000>;	//4800000,9600000,15000000,19200000
-
-		//FTS
-		focaltech,reset-gpio = <&pio 3 0x0>;
-		focaltech,irq-gpio = <&pio 22 0x0>;
-		focaltech,max-touch-number = <10>;
-		focaltech,display-coords = <0 0 1080 2400>;
-		focaltech,report_gesture_key = <59>;
-		focaltech,panel-supplier = "djn";
-
-		//ilitek
-		touch,reset-gpio = <&pio 3 0x0>;
-		touch,irq-gpio = <&pio 22 0x0>;
-		touch,psy-name = "battery";
-		//ilitek,report_gesture_key;
-		//ilitek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
-
-		//chipone
-		chipone,rst-gpio = <&pio 3 0x0>;
-		chipone,irq-gpio = <&pio 22 0x0>;
-		chipone,x-res = <1080>;
-		chipone,y-res = <2400>;
-
-	        //chipone,def-build-id = <0x0101>;
-	        //chipone,def-config-id = <0x0001>;
-		//chipone,supported_gesture_type = <0x06>;
-
-	};
+    chipone_tddi@2 {
+                compatible = "chipone-tddi";
+                reg = <2>;
+                spi-max-frequency = <9600000>;
+                interrupt-parent = <&pio>;
+                interrupts = <22 0x2008>;
+                chipone,rst-gpio = <&pio 3 0x00>;
+                chipone,irq-gpio = <&pio 22 0x00>;
+                chipone,x-res = <1080>;
+                chipone,y-res = <2400>;
+    };
 };
 
 /* TOUCH end */
