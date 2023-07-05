@@ -258,7 +258,10 @@ static void csot_panel_init(struct csot *ctx)
 	csot_dcs_write_seq_static(ctx,0xCE,0x00);
 	csot_dcs_write_seq_static(ctx,0x00,0xA1);
 	csot_dcs_write_seq_static(ctx,0xC1,0xCC);
+	csot_dcs_write_seq_static(ctx,0x00,0x0E);
+        csot_dcs_write_seq_static(ctx,0xF3,0x80,0xFF);
 	csot_dcs_write_seq_static(ctx,0x35,0x00);
+	csot_dcs_write_seq_static(ctx,0xA0,0x02);
 
 	csot_dcs_write_seq_static(ctx, 0x51,0xCC,0x0C);
 	csot_dcs_write_seq_static(ctx, 0x53,0x2C);
