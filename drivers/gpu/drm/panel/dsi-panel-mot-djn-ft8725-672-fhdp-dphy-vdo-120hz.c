@@ -193,12 +193,14 @@ static void dijing_panel_init(struct dijing *ctx)
 		//return;
 	}
 	else {
-		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(5);
 		gpiod_set_value(ctx->reset_gpio, 0);
-		msleep(5);
+		usleep_range(5 * 1000, 8 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(10);
+		usleep_range(3 * 1000, 8 * 1000);
+		gpiod_set_value(ctx->reset_gpio, 0);
+		usleep_range(3 * 1000, 5 * 1000);
+		gpiod_set_value(ctx->reset_gpio, 1);
+		usleep_range(10 * 1000, 15 * 1000);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -314,7 +316,7 @@ static int dijing_prepare(struct drm_panel *panel)
 #endif
 #ifdef BIAS_SM5109
 	sm5109_BiasPower_enable(15,15,5);
-	msleep(1);
+	msleep(3);
 #endif
 	dijing_panel_init(ctx);
 	ctx->hbm_mode = 0;
