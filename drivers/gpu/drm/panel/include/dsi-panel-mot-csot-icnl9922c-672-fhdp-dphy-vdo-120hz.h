@@ -40,7 +40,7 @@
 /*Parameter setting for mode 2 Start*/
 #define MODE_120_FPS                  120
 #define MODE_120_VFP                  38
-#define MODE_120_HFP                  16
+#define MODE_120_HFP                  20
 /*Parameter setting for mode 2 End*/
 
 /*Parameter setting for mode 3 Start*/
