@@ -248,9 +248,6 @@ int kbase_context_add_to_dev_list(struct kbase_context *kctx)
 	list_add(&kctx->kctx_list_link, &kctx->kbdev->kctx_list);
 	mutex_unlock(&kctx->kbdev->kctx_list_lock);
 
-	if (likely(kctx->filp))
-		put_task_struct(kctx->task);
-
 	kbase_timeline_post_kbase_context_create(kctx);
 
 	return 0;
@@ -318,8 +315,10 @@ void kbase_context_common_term(struct kbase_context *kctx)
 	kbase_remove_kctx_from_process(kctx);
 	mutex_unlock(&kctx->kbdev->kctx_list_lock);
 
-	if (likely(kctx->filp))
+	if (likely(kctx->filp)) {
 		mmdrop(kctx->process_mm);
+		put_task_struct(kctx->task);
+	}
 
 	KBASE_KTRACE_ADD(kctx->kbdev, CORE_CTX_DESTROY, kctx, 0u);
 }
