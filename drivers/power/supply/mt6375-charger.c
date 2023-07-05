@@ -34,7 +34,7 @@
 bool typecotp_chg;
 #endif
 
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
 extern int wt6670f_set_voltage(u16 voltage);
 extern int wt6670f_set_volt_count(int count);
 extern int wt6670f_en_hvdcp(void);
@@ -284,7 +284,7 @@ struct mt6375_chg_data {
 	int vbat0_flag;
 	int mmi_chg_status;
 
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
 	struct delayed_work psy_dwork;
 	int pulse_cnt;
 #endif
@@ -1124,7 +1124,7 @@ static void mt6375_chg_bc12_work_func(struct work_struct *work)
 		ddata->psy_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
 		ddata->psy_usb_type = POWER_SUPPLY_USB_TYPE_DCP;
 
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
 		schedule_delayed_work(&ddata->psy_dwork, 0);
 #endif
 
@@ -1998,7 +1998,7 @@ static int mt6375_enable_chg_type_det(struct charger_device *chgdev, bool en)
 	return 0;
 }
 
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
 #define HVDCP_POWER_MIN			15000
 #define HVDCP_VOLTAGE_BASIC		5000000
 #define HVDCP_VOLTAGE_NOM		(HVDCP_VOLTAGE_BASIC - 200000)
@@ -2313,7 +2313,7 @@ static int mt6375_plug_out(struct charger_device *chgdev)
 
 	ddata->mmi_chg_status = POWER_SUPPLY_STATUS_DISCHARGING;
 
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
 	if(m_chg_type != 0 && is_already_probe_ok != 0){
 		wt6670f_reset_chg_type();
 		ddata->pulse_cnt = 0;
@@ -3024,7 +3024,7 @@ static int mt6375_chg_probe(struct platform_device *pdev)
 	}
 	INIT_WORK(&ddata->bc12_work, mt6375_chg_bc12_work_func);
 
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
     INIT_DELAYED_WORK(&ddata->psy_dwork, wt6670f_get_charger_type_func_work);
 #endif
 
@@ -3094,7 +3094,7 @@ static int mt6375_chg_remove(struct platform_device *pdev)
 
 	mt_dbg(&pdev->dev, "%s\n", __func__);
 	if (ddata) {
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
 		cancel_delayed_work_sync(&ddata->psy_dwork);
 #endif
 		charger_device_unregister(ddata->chgdev);
