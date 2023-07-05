@@ -219,11 +219,11 @@ static void tianma_panel_init(struct tianma *ctx)
 	}
 	else {
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(3);
+		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 0);
-		msleep(15);
+		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(10);
+		usleep_range(10 * 1000, 12 * 1000);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -246,7 +246,7 @@ static void tianma_panel_init(struct tianma *ctx)
 	msleep(120);
 	tianma_dcs_write_seq_static(ctx, 0x29, 0x00);
 	msleep(20);
-	tianma_dcs_write_seq_static(ctx, 0x35, 0x00);
+	tianma_dcs_write_seq_static(ctx, 0x35, 0x01, 0x00);
 	msleep(1);
 
 	pr_info("disp:init code %s, data_rate=%d-\n", __func__, DATA_RATE);
@@ -317,9 +317,10 @@ static int tianma_unprepare(struct drm_panel *panel)
 		//#ifdef IOVCC_IS_LOW
 		gpiod_set_value(ctx->reset_gpio, 0);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-		msleep(1);
+		usleep_range(3 * 1000, 8 * 1000);
    }
 #ifdef PANEL_LDO_VTP_EN
+	usleep_range(5 * 1000, 8 * 1000);
 	lcm_enable_reg_vtp_1p8(0);
 #endif
 
