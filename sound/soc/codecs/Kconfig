@@ -308,7 +308,7 @@ config SND_SOC_88PM860X
 	depends on MFD_88PM860X
 
 config CANCUNN_AUDIO
-	tristate "Cancun on-board mic power supply 2.6v"
+	tristate "Cancun on-board mic power supply 2.5v"
 
 config SND_SOC_ARIZONA
 	tristate
