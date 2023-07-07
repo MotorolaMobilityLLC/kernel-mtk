@@ -69,6 +69,7 @@ struct board_ntc_info {
 	void __iomem *data_reg;
 	void __iomem *dbg_reg;
 	void __iomem *en_reg;
+        unsigned int prev_val;
 	struct pmic_auxadc_data *adc_data;
 	struct iio_channel *chan_md_ntc;
 	struct iio_channel *chan_charger_ntc;
@@ -230,6 +231,8 @@ static int board_ntc_get_temp(void *data, int *temp)
 	struct tia_data *tia_param = ntc_info->adc_data->tia_param;
 	unsigned int val, r_type, r_ntc;
 	unsigned long long v_in;
+        unsigned int read_tia_reg_time = 0;
+        const unsigned int read_tia_reg_time_max = 3;
 	static int pre_temp = 200 * 10;//200C as init val
 
 	if (adc_data->is_print_tia_cg == true)
@@ -254,7 +257,7 @@ static int board_ntc_get_temp(void *data, int *temp)
 		iio_read_channel_raw(ntc_info->chan_tspk_ntc, &val);
 		r_type = 0;
 	} else {
-		val = readl(ntc_info->data_reg);
+		//val = readl(ntc_info->data_reg);
 		//pr_info("%s:%d: ntc_info->data_reg=0x%x val=0x%x\n", __func__, __LINE__, ntc_info->data_reg, val);
 
 //	val = readl(ntc_info->data_reg);
@@ -262,6 +265,26 @@ static int board_ntc_get_temp(void *data, int *temp)
 //	if (r_type >= adc_data->num_of_pullup_r_type) {
 //		dev_err(ntc_info->dev, "Invalid r_type = %d\n", r_type);
 //		return -EINVAL;
+           do {
+               val = readl(ntc_info->data_reg);
+               if(val != 0)
+                   break;
+
+               mdelay(3);
+               read_tia_reg_time++;
+           } while (read_tia_reg_time < read_tia_reg_time_max);
+
+           if (val == 0) {
+               if (ntc_info->prev_val == 0) {
+                   *temp = 25000;
+                   dev_info(ntc_info->dev, "ntc_info->prev_val == 0, temp=25000\n");
+                   return 0;
+               }
+               val = ntc_info->prev_val;
+               dev_info(ntc_info->dev, "val = ntc_info->prev_val\n");
+           }
+
+           ntc_info->prev_val = val;
 
 		r_type = get_tia_rc_sel(val, tia_param->rc_offset, tia_param->rc_mask);
 
@@ -421,6 +444,7 @@ static int board_ntc_probe(struct platform_device *pdev)
 		return ret;
 
 	ntc_info->dev = &pdev->dev;
+        ntc_info->prev_val = 0;
 	ntc_info->adc_data = (struct pmic_auxadc_data *)
 		of_device_get_match_data(&pdev->dev);
 	if (!ntc_info->adc_data->is_initialized) {
