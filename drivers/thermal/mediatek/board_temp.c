@@ -257,26 +257,26 @@ static int board_ntc_get_temp(void *data, int *temp)
 		iio_read_channel_raw(ntc_info->chan_tspk_ntc, &val);
 		r_type = 0;
 	} else {
-		do {
-			val = readl(ntc_info->data_reg);
-			if(val != 0)
-				break;
+		//do {
+		//	val = readl(ntc_info->data_reg);
+		//	if(val != 0)
+		//		break;
 
-			mdelay(3);
-			read_tia_reg_time++;
-		} while (read_tia_reg_time < read_tia_reg_time_max);
+		//	mdelay(3);
+		//	read_tia_reg_time++;
+		//} while (read_tia_reg_time < read_tia_reg_time_max);
+                //
+		//if (val == 0) {
+		//	if (ntc_info->prev_val == 0) {
+		//		*temp = 25000;
+		//		dev_info(ntc_info->dev, "ntc_info->prev_val == 0, temp=25000\n");
+		//		return 0;
+		//	}
+		//	val = ntc_info->prev_val;
+		//	dev_info(ntc_info->dev, "val = ntc_info->prev_val\n");
+		//}
 
-		if (val == 0) {
-			if (ntc_info->prev_val == 0) {
-				*temp = 25000;
-				dev_info(ntc_info->dev, "ntc_info->prev_val == 0, temp=25000\n");
-				return 0;
-			}
-			val = ntc_info->prev_val;
-			dev_info(ntc_info->dev, "val = ntc_info->prev_val\n");
-		}
-
-		ntc_info->prev_val = val;
+		//ntc_info->prev_val = val;
 		//pr_info("%s:%d: ntc_info->data_reg=0x%x val=0x%x\n", __func__, __LINE__, ntc_info->data_reg, val);
 
 //	do {
@@ -303,6 +303,26 @@ static int board_ntc_get_temp(void *data, int *temp)
 //	if (r_type >= adc_data->num_of_pullup_r_type) {
 //		dev_err(ntc_info->dev, "Invalid r_type = %d\n", r_type);
 //		return -EINVAL;
+           do {
+               val = readl(ntc_info->data_reg);
+               if(val != 0)
+                   break;
+
+               mdelay(3);
+               read_tia_reg_time++;
+           } while (read_tia_reg_time < read_tia_reg_time_max);
+
+           if (val == 0) {
+               if (ntc_info->prev_val == 0) {
+                   *temp = 25000;
+                   dev_info(ntc_info->dev, "ntc_info->prev_val == 0, temp=25000\n");
+                   return 0;
+               }
+               val = ntc_info->prev_val;
+               dev_info(ntc_info->dev, "val = ntc_info->prev_val\n");
+           }
+
+           ntc_info->prev_val = val;
 
 		r_type = get_tia_rc_sel(val, tia_param->rc_offset, tia_param->rc_mask);
 
