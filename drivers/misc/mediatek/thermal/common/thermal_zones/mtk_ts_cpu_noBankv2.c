@@ -1763,6 +1763,13 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 		/* TEMPMONCTL0 */
 		thermal_disable_all_periodoc_temp_sensing();
 #endif
+#if CFG_LVTS_DOMINATOR
+#if CFG_THERM_LVTS
+		lvts_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
+#endif
+#else
+		tscpu_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
+#endif
 
 #if !defined(CFG_THERM_NO_AUXADC)
 		tscpu_thermal_initial_all_tc();
@@ -1771,6 +1778,7 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 		thermal_release_all_periodoc_temp_sensing();
 
 #endif
+
 		tscpu_clear_all_temp();
 #if CFG_THERM_LVTS
 		lvts_disable_all_sensing_points();
@@ -1778,13 +1786,7 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 		lvts_enable_all_sensing_points();
 #endif
 
-#if CFG_LVTS_DOMINATOR
-#if CFG_THERM_LVTS
-		lvts_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
-#endif
-#else
-		tscpu_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
-#endif
+
 
 #if defined(THERMAL_KERNEL_SUSPEND_RESUME_NOTIFY) && \
 	!defined(THERMAL_KERNEL_SUSPEND_RESUME_NOTIFY_ONLY_AT_SHUTDOWN)
