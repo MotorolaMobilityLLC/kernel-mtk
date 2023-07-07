@@ -67,6 +67,7 @@ struct board_ntc_info {
 	void __iomem *data_reg;
 	void __iomem *dbg_reg;
 	void __iomem *en_reg;
+	unsigned int prev_val;
 	struct pmic_auxadc_data *adc_data;
 };
 
@@ -222,11 +223,33 @@ static int board_ntc_get_temp(void *data, int *temp)
 	struct tia_data *tia_param = ntc_info->adc_data->tia_param;
 	unsigned int val, r_type, r_ntc, dbg_reg, en_reg;
 	unsigned long long v_in;
+	unsigned int read_tia_reg_time = 0;
+	const unsigned int read_tia_reg_time_max = 3;
 
 	if (adc_data->is_print_tia_cg == true)
 		print_tia_reg(ntc_info->dev);
 
-	val = readl(ntc_info->data_reg);
+	do {
+		val = readl(ntc_info->data_reg);
+		if(val != 0)
+			break;
+
+		mdelay(3);
+		read_tia_reg_time++;
+	} while (read_tia_reg_time < read_tia_reg_time_max);
+
+	if (val == 0) {
+		if (ntc_info->prev_val == 0) {
+			*temp = 25000;
+			dev_info(ntc_info->dev, "ntc_info->prev_val == 0, temp=25000\n");
+			return 0;
+		}
+		val = ntc_info->prev_val;
+		dev_info(ntc_info->dev, "val = ntc_info->prev_val\n");
+	}
+
+	ntc_info->prev_val = val;
+
 	r_type = get_tia_rc_sel(val, tia_param->rc_offset, tia_param->rc_mask);
 	if (r_type >= adc_data->num_of_pullup_r_type) {
 		dev_err(ntc_info->dev, "Invalid r_type = %d\n", r_type);
@@ -368,6 +391,7 @@ static int board_ntc_probe(struct platform_device *pdev)
 		return ret;
 
 	ntc_info->dev = &pdev->dev;
+	ntc_info->prev_val = 0;
 	ntc_info->adc_data = (struct pmic_auxadc_data *)
 		of_device_get_match_data(&pdev->dev);
 	if (!ntc_info->adc_data->is_initialized) {
