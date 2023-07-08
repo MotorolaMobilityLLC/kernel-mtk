@@ -791,6 +791,12 @@ config MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
         help
           This is to enable MOTO supports of charger pump.
 
+config MOTO_CHARGER_PUMP_MEASURE_AVG_VOL
+        bool "Enable charger pump measure AVG voltage for Moto"
+        default n
+        help
+          This is to enable charger pump measure AVG voltage.
+
 config MOTO_CHARGER_MT6375_SUPPORT
         bool "MT6375 sw charger support"
         default n
