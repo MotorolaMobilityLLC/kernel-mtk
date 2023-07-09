@@ -3153,7 +3153,11 @@ static bool mmi_has_current_tapered(struct mtk_charger *info,
 	return change_state;
 }
 
+#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#define TURBO_POWER_THRSH 15000000 /*15W*/
+#else
 #define TURBO_POWER_THRSH 12000000 /*12W*/
+#endif
 #define WEAK_CHRG_THRSH 450
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 #define TURBO_CHRG_THRSH 3000
@@ -3222,12 +3226,17 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 
 	vbus = get_vbus(info);
 
-#ifndef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+//#ifndef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	if ((icl * vbus >= TURBO_POWER_THRSH) && (icl < TURBO_CHRG_THRSH)) {
+#else
 	if (icl * vbus >= TURBO_POWER_THRSH) {
+#endif
+		pr_err("[%s]Charging power = %d, it's Turbo \n", __func__, icl * vbus);
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 		goto end_rate_check;
 	}
-#endif
+//#endif
 
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	if(get_uisoc(info) == 100)
@@ -3250,7 +3259,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	{
 		if(info->mmi.charge_rate != POWER_SUPPLY_CHARGE_RATE_TURBO){
-	              if ((ibus > 2300) || ((get_uisoc(info) > 85) && (ibus > 2100)))
+	              if ((ibus >= 2500) || ((get_uisoc(info) > 85) && (ibus > 2100)))
 		         info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 		      else
 		         info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
@@ -3263,7 +3272,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	else if ((info->mmi.charge_rate != POWER_SUPPLY_CHARGE_RATE_TURBO) &&
-		 ((ibus > 2300) || ((get_uisoc(info) > 85) && (ibus > 2100))))
+		 ((ibus >= 2500) || ((get_uisoc(info) > 85) && (ibus > 2100))))
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 	else if (info->mmi.charge_rate != POWER_SUPPLY_CHARGE_RATE_TURBO)
 #else
@@ -3285,8 +3294,8 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 
 end_rate_check:
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
-	pr_info("%s ICL:%d, aicl_lmt:%d, ibus: %d, Rp:%d, PD:%d, chg_type: %d, Charger Detected: %s\n",
-		__func__, icl, aicl_lmt, ibus, rp_level, info->pd_type, m_chg_type, charge_rate[info->mmi.charge_rate]);
+	pr_info("%s ICL:%d, aicl_lmt:%d, vbus: %d, ibus: %d, Rp:%d, PD:%d, chg_type: %d, Charger Detected: %s\n",
+		__func__, icl, aicl_lmt, vbus, ibus, rp_level, info->pd_type, m_chg_type, charge_rate[info->mmi.charge_rate]);
 #else
 	pr_info("%s ICL:%d, Rp:%d, PD:%d, Charger Detected: %s\n",
 		__func__, icl, rp_level, info->pd_type, charge_rate[info->mmi.charge_rate]);
