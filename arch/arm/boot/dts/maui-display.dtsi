@@ -96,17 +96,3 @@
 	};
 };
 
-&dsi0 {
-	status = "okay";
-
-	panel1@0 {
-		/delete-property/ compatible;
-		/delete-property/ pm-enable-gpios;
-		/delete-property/ reset-gpios;
-		/delete-property/gate-ic;
-
-		compatible = "mot,dummy,vdo,60hz";
-		reg = <0>;
-		pinctrl-names = "default";
-	};
-};
