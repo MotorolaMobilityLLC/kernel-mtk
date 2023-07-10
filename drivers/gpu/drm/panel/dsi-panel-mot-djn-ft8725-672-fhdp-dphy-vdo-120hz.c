@@ -474,7 +474,7 @@ static struct mtk_panel_params ext_params = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 	//.data_rate_khz = 808000,
-	.data_rate = 808,
+	.data_rate = 818,
 	.lfr_enable = 0,
 	.lfr_minimum_fps = MODE_120_FPS,
 	.dyn_fps = {

@@ -21,7 +21,7 @@
 
 #define DATA_RATE                   912
 #define HSA                         2
-#define HBP                         60
+#define HBP                         18
 #define VSA                         4
 #define VBP                         40
 
