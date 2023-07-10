@@ -268,6 +268,7 @@ static int tianma_unprepare(struct drm_panel *panel)
 	}
 	pr_info("%s\n", __func__);
 
+        msleep(6);
 	tianma_dcs_write_seq_static(ctx, 0x28);
 	msleep(20);
 	tianma_dcs_write_seq_static(ctx, 0x10);
@@ -275,7 +276,14 @@ static int tianma_unprepare(struct drm_panel *panel)
 
 	ctx->prepared = false;
 
-	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
+	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
+	if(!tp_gesture_flag) {
+#ifdef BIAS_SM5109
+		pr_info("%s: sm5109_BiasPower_disable\n", __func__);
+		sm5109_BiasPower_disable(5);
+#endif
+	}
+        ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
 		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
 			__func__, PTR_ERR(ctx->reset_gpio));
@@ -286,15 +294,6 @@ static int tianma_unprepare(struct drm_panel *panel)
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		msleep(1);
    }
-
-	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
-	if(!tp_gesture_flag) {
-#ifdef BIAS_SM5109
-		pr_info("%s: sm5109_BiasPower_disable\n", __func__);
-		sm5109_BiasPower_disable(5);
-#endif
-	}
-
 #ifdef PANEL_LDO_VTP_EN
 	lcm_enable_reg_vtp_1p8(0);
 #endif
@@ -366,7 +365,7 @@ static int tianma_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-	.clock		= 337317,
+	.clock		= 334984,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
@@ -483,7 +482,7 @@ static struct mtk_panel_params ext_params = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 	//.data_rate_khz = 808000,
-	.data_rate = 912,
+	.data_rate = 842,
 	.lfr_enable = 0,
 	.lfr_minimum_fps = MODE_120_FPS,
 	.dyn_fps = {
