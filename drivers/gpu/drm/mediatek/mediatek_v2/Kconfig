@@ -70,3 +70,10 @@ config DISP_ESD_NOTIFY_SUPPORT
           To set display recvy notification support.
           Some panel need LCM send notification for TP recover when LCD reset.
           If unsure, set N.
+config MTK_DRM_DSI_DPHY_TIMCONFIG_V2
+       bool "enable to invoke mtk_dsi_dphy_timconfig_v2 for fps"
+       default n
+       help
+         To invoke mtk_dsi_dphy_timconfig_v2 when needed.
+         Some project need use mtk_dsi_dphy_timconfig_v2 to solve frame rate differ between LK and kernel.
+         If unsure, set N.

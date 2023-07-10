@@ -567,6 +567,7 @@ static void mtk_dsi_post_cmd(struct mtk_dsi *dsi,
 
 #define NS_TO_CYCLE1(n, c)	((DO_COMMON_DIV((n), (c))) + (((n) % (c)) ? 1 : 0))
 
+#ifndef CONFIG_MTK_DRM_DSI_DPHY_TIMCONFIG_V2
 static void mtk_dsi_dphy_timconfig_v1(struct mtk_dsi *dsi, void *handle)
 {
 	u32 lpx = 0;
@@ -642,6 +643,7 @@ static void mtk_dsi_dphy_timconfig_v1(struct mtk_dsi *dsi, void *handle)
 	else
 		writel(value, dsi->regs + DSI_PHY_TIMECON3);
 }
+#endif
 
 static void mtk_dsi_dphy_timconfig_v2(struct mtk_dsi *dsi, void *handle)
 {
@@ -903,10 +905,14 @@ CONFIG_REG:
 static void mtk_dsi_dphy_timconfig(struct mtk_dsi *dsi, void *handle)
 {
 	if (dsi && dsi->driver_data) {
+#ifdef CONFIG_MTK_DRM_DSI_DPHY_TIMCONFIG_V2
+		mtk_dsi_dphy_timconfig_v2(dsi, handle);
+#else
 		if (dsi->driver_data->n_verion <= VER_N6)
 			mtk_dsi_dphy_timconfig_v1(dsi, handle);
 		else
 			mtk_dsi_dphy_timconfig_v2(dsi, handle);
+#endif
 	}
 }
 
