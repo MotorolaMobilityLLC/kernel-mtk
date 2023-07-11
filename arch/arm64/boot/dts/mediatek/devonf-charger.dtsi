@@ -177,6 +177,7 @@
 	VIR_OLDOCV_DIFF_EMB_LT = <3000>; /*0.1mv*/
         CURR_MEASURE_20A = <(0)>;
         UNIT_MULTIPLE = <(1)>;
+	SHUTDOWN_1_TIME = <(10)>;
 
 	/* battery prop */
 	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
