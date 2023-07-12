@@ -32,6 +32,11 @@
 #define REG_FLAG1		0x0A
 #define REG_FLAG2		0x0B
 
+#define AW36518_REG_BOOST_CONFIG        (0x07)
+#define AW36518_BIT_SOFT_RST_MASK       (0xf0)
+#define AW36518_BIT_SOFT_RST_ENABLE     (1<<7)
+#define AW36518_BIT_SOFT_RST_DISABLE    (0<<7)
+
 /* fault mask */
 #define FAULT_TIMEOUT	(1<<0)
 #define FAULT_THERMAL_SHUTDOWN	(1<<2)
@@ -476,7 +481,7 @@ static void aw36518_v4l2_i2c_subdev_init(struct v4l2_subdev *sd,
 static int aw36518_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 {
 	int ret;
-
+	unsigned int reg_val = 0;
 	pr_info("%s\n", __func__);
 
 	ret = pm_runtime_get_sync(sd->dev);
@@ -485,6 +490,23 @@ static int aw36518_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 		return ret;
 	}
 
+	ret = regmap_read(aw36518_flash_data->regmap, AW36518_REG_BOOST_CONFIG, &reg_val);
+	if (ret < 0)
+	{
+		pr_info("%s read reset reg fail\n", __func__);
+  		return ret;
+	}
+
+	ret = regmap_update_bits(aw36518_flash_data->regmap,
+				  AW36518_REG_BOOST_CONFIG,
+                                  AW36518_BIT_SOFT_RST_MASK,
+                                  AW36518_BIT_SOFT_RST_ENABLE);
+	if (ret < 0)
+	{
+		pr_info("%s reset fail reg_val =%d\n", __func__,reg_val);
+  		return ret;
+	}
+        pr_info("%s reset reg_val =%d\n", __func__,reg_val);
 	return 0;
 }
 
@@ -560,7 +582,6 @@ static int aw36518_init(struct aw36518_flash *flash)
 {
 	int rval = 0;
 	unsigned int reg_val;
-
 	/* set timeout */
 	rval = aw36518_flash_tout_ctrl(flash, aw36518_FLASH_TOUT_MAX);
 	if (rval < 0)
