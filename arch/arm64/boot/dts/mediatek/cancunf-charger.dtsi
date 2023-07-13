@@ -36,7 +36,7 @@
         enable_dynamic_mivr;
 
 	/*pdc && pe2*/
-	fast_charging_indicator = <0x06>;
+	fast_charging_indicator = <0x0e>;
 	/*swchg + 1CP*/
 	//charger_configuration= <3>;
 
@@ -79,11 +79,11 @@
 	ircmp_r = <0>;
 	ircmp_v = <0>;
 };
-
+/*
 &pdc {
 	sc_input_current = <3000000>;
 };
-
+*/
 &pe2 {
 	sc_input_current = <3000000>;
 };
@@ -93,9 +93,9 @@
 	pd-data {
 		/* 5V, 900ma */
 		pd,source-pdo-data = <0x0001905a>;
-		/* 5V, 3A */
+		/* 9V, 2A */
 		pd,sink-pdo-size = <2>;
-                pd,sink-pdo-data = <0x0001912c 0x0001912c> ;
+                pd,sink-pdo-data = <0x0002d0c8 0x0002d0c8> ;
 	};
 };
 
@@ -103,7 +103,7 @@
 	vbus-current = <1100000>;
 };
 
-/*
+
 &pdc {
 	pd_vbus_low_bound = <5000000>;
 	pd_vbus_upper_bound = <9000000>;
@@ -111,14 +111,14 @@
 	sc_input_current = <3000000>;
 	sc_charger_current = <4000000>;
 };
-*/
 
-/*
+
+
 &pe4 {
 	pe40_max_vbus = <6000>;
 	pe40_max_ibus = <3000>;
 };
-*/
+
 
 &pd_adapter{
 	ita_min = <1000>;
