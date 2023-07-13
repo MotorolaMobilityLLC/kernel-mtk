@@ -320,7 +320,7 @@
 	charge_led {
 		label = "red";
 		led_mode = <2>;
-		gpio_config = <23>;
+		gpio_config = <38>;
 	};
 };
 
