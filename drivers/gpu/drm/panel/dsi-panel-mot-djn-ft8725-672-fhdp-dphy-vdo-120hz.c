@@ -758,6 +758,110 @@ static enum mtk_lcm_version panel_get_lcm_version(void)
 	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
 }
 
+static int panel_cabc_set_cmdq(struct dijing *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_state)
+{
+	struct mtk_panel_para_table cabc_ui_table = {2, {0x55, 0x01}};
+	struct mtk_panel_para_table cabc_mv_table = {2, {0x55, 0x03}};
+	struct mtk_panel_para_table cabc_off_table = {2, {0x55, 0x00}};
+
+	if (cabc_state > 3) {
+		pr_info("%s: invalid CABC mode:%d, return\n", __func__, cabc_state);
+		return -1;
+	}
+
+	switch (cabc_state)
+	{
+		case 0:
+			cb(dsi, handle, &cabc_ui_table, 1);
+			pr_info("%s: set CABC mode 0", __func__);
+			break;
+		case 1:
+			cb(dsi, handle, &cabc_mv_table, 1);
+			pr_info("%s: set CABC mode 1", __func__);
+			break;
+		case 2:
+			cb(dsi, handle, &cabc_off_table, 1);
+			pr_info("%s: set CABC mode 2", __func__);
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+static int panel_hbm_set_cmdq(struct dijing *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0xFF, 0x0F}};
+	struct mtk_panel_para_table hbm_off_table = {3, {0x51, 0xCC, 0x0C}};
+
+	if (hbm_state > 2) {
+		pr_info("%s: invalid HBM mode:%d, return\n", __func__, hbm_state);
+		return -1;
+	}
+
+	switch (hbm_state) {
+		case 0:
+			cb(dsi, handle, &hbm_off_table, 1);
+			pr_info("%s: set HBM off", __func__);
+			break;
+		case 1:
+			cb(dsi, handle, &hbm_on_table, 1);
+			pr_info("%s: set HBM on", __func__);
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+static int panel_feature_set(struct drm_panel *panel, void *dsi,
+			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
+{
+
+	struct dijing *ctx = panel_to_dijing(panel);
+	int ret = -1;
+
+	if (!cb) {
+		pr_info("%s: cb NULL\n", __func__);
+		return -1;
+	}
+
+	if (!ctx->enabled) {
+		pr_info("%s: skip set feature %d to %d, panel not enabled\n", __func__, param_info.param_idx, param_info.value);
+		return -1;
+	}
+
+	pr_info("%s: start set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+	switch (param_info.param_idx) {
+		case PARAM_CABC:
+			if (ctx->cabc_mode != param_info.value) {
+				ctx->cabc_mode = param_info.value;
+				panel_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set CABC to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else
+				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
+			break;
+		case PARAM_HBM:
+			if (ctx->hbm_mode != param_info.value) {
+				ctx->hbm_mode = param_info.value;
+				panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set HBM to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else
+				pr_info("%s: skip same HBM mode:%d\n", __func__, ctx->hbm_mode);
+			break;
+		default:
+			pr_info("%s: skip unsupport feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+			break;
+	}
+
+	pr_debug("%s: set feature %d to %d, ret %d\n", __func__, param_info.param_idx, param_info.value, ret);
+	return ret;
+}
 
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = dijing_setbacklight_cmdq,
@@ -766,6 +870,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.get_lcm_version = panel_get_lcm_version,
 //	.ata_check = panel_ata_check,
 //	.set_gesture_flag = panel_set_gesture_flag,
+	.panel_feature_set = panel_feature_set,
 };
 #endif
 
