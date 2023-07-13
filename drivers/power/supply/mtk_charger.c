@@ -85,6 +85,10 @@ bool pdc_type = false;
 bool typecotp_charger;
 #endif
 
+#ifdef CONFIG_CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT
+bool plugout_flag = false;
+#endif
+
 struct tag_bootmode {
 	u32 size;
 	u32 tag;
@@ -2416,6 +2420,28 @@ stop_charging:
 		mtk_charger_force_disable_power_path(info, CHG1_SETTING, false);
 		pr_info("[%s] force disable power path false\n", __func__);
 	}
+#ifdef CONFIG_CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT
+	chr_err("yyatm_enabled:%d plugout_flag:%d\n", info->atm_enabled,plugout_flag);
+	if (info->atm_enabled && (info->can_charging == false) && (plugout_flag == true)) {
+		chr_err("yySET_ICL in\n");
+		switch (info->chr_type) {
+		case POWER_SUPPLY_TYPE_USB:
+			charger_dev_set_input_current(info->chg1_dev, 500000);
+			//chr_err("yyusb or non:500\n");
+			break;
+		case POWER_SUPPLY_TYPE_USB_CDP:
+			charger_dev_set_input_current(info->chg1_dev, 1500000);
+			//chr_err("yycdp:1500\n");
+			break;
+		case POWER_SUPPLY_TYPE_USB_DCP:
+			charger_dev_set_input_current(info->chg1_dev, 2000000);
+			//chr_err("yydcp:2000\n");
+			break;
+		default:
+			break;
+		}
+	}
+#endif
 }
 
 static int  mtk_charger_tcmd_set_usb_current(void *input, int  val);
@@ -2631,7 +2657,9 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 	memset(&info->mmi.apdo_cap, 0, sizeof(struct adapter_auth_data));
 	info->mmi.pd_cap_max_watt = 0;
 	info->mmi.charger_watt = 0;
-
+	#ifdef CONFIG_CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT
+	plugout_flag = true;
+	#endif
 	power_supply_changed(info->psy1);
 	return 0;
 }
