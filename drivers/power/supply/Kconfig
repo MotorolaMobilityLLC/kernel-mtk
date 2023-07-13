@@ -1129,4 +1129,10 @@ config MOTO_JP_TYPECOTP_SUPPORT
 	help
 	  This is config cancunf jp typecotp support
 
+config CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT
+	bool "This is config cancunf factorymode set icl support"
+	default n
+	help
+	  This is config cancunf factorymode set icl support
+
 endif # POWER_SUPPLY
