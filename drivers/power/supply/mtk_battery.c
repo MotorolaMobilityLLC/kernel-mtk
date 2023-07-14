@@ -3398,6 +3398,10 @@ static int shutdown_event_handler(struct mtk_battery *gm)
 	int current_soc = gm->soc;
 	int vbat = 0;
 	int tmp = 25;
+#ifdef	CONFIG_MOTO_SELECT_LOW_TMP_BATVOL
+	const char *dev_sn;
+	int low_tmp_bat;
+#endif
 	struct shutdown_controller *sdd = &gm->sdc;
 
 	tmp_duraction.tv_sec = 0;
@@ -3491,6 +3495,27 @@ static int shutdown_event_handler(struct mtk_battery *gm)
 		sdd->avgvbat = vbatcnt / AVGVBAT_ARRAY_SIZE;
 		tmp = force_get_tbat(gm, true);
 
+#ifdef CONFIG_MOTO_SELECT_LOW_TMP_BATVOL
+		dev_sn = mmi_get_battery_serialnumber();
+
+		if (strcmp(dev_sn, "SB18D86479")) {
+			low_tmp_bat = 3350;
+		} else {
+			low_tmp_bat = 3300;
+		}
+
+		bm_debug("lbatcheck vbat:%d avgvbat:%d %d,%d tmp:%d,bound:%d,th:%d %d,en:%d\n",
+			vbat,
+			sdd->avgvbat,
+			sdd->vbat_lt,
+			sdd->vbat_lt_lv1,
+			tmp,
+			BAT_VOLTAGE_LOW_BOUND,
+			LOW_TEMP_THRESHOLD,
+			low_tmp_bat,
+			LOW_TEMP_DISABLE_LOW_BAT_SHUTDOWN);
+
+#else
 		bm_debug("lbatcheck vbat:%d avgvbat:%d %d,%d tmp:%d,bound:%d,th:%d %d,en:%d\n",
 			vbat,
 			sdd->avgvbat,
@@ -3501,6 +3526,7 @@ static int shutdown_event_handler(struct mtk_battery *gm)
 			LOW_TEMP_THRESHOLD,
 			LOW_TMP_BAT_VOLTAGE_LOW_BOUND,
 			LOW_TEMP_DISABLE_LOW_BAT_SHUTDOWN);
+#endif
 
 		if (sdd->avgvbat < BAT_VOLTAGE_LOW_BOUND) {
 			/* avg vbat less than 3.4v */
@@ -3515,8 +3541,13 @@ static int shutdown_event_handler(struct mtk_battery *gm)
 						bm_debug("normal tmp, battery voltage is low shutdown\n");
 						wakeup_fg_algo(gm,
 							FG_INTR_SHUTDOWN);
+#if CONFIG_MOTO_SELECT_LOW_TMP_BATVOL
+					} else if (sdd->avgvbat <=
+						low_tmp_bat) {
+#else
 					} else if (sdd->avgvbat <=
 						LOW_TMP_BAT_VOLTAGE_LOW_BOUND) {
+#endif
 						down_to_low_bat = 1;
 						bm_debug("cold tmp, battery voltage is low shutdown\n");
 						wakeup_fg_algo(gm,
