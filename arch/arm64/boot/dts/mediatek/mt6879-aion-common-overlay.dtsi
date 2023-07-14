@@ -676,11 +676,14 @@
 		compatible = "sgm62110";
 		reg = <0x75>;
 
+		mmi,reg-vout2 = <3550>;
+
 		regulators {
 			bob_buck: ldo1 {
 				regulator-name = "sgm62110-buck";
 			};
 		};
+
 	};
 };
 
