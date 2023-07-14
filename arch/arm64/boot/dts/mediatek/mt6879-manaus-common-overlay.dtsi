@@ -69,8 +69,8 @@
 
 &regulator_vibrator {
 	status = "ok";
-	min-volt = <3000000>;
-	max-volt = <3000000>;
+	min-volt = <2700000>;
+	max-volt = <2700000>;
 };
 &vibrator0 {
 	status = "disabled";
