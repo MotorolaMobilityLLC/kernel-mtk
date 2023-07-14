@@ -35,6 +35,8 @@ struct sgm62110_chip {
 	struct regulator_dev *rdev;
 	int chip_irq;
 	int chip_cs_pin;
+
+	int reg_vout2;
 };
 
 static const struct regmap_config sgm62110_regmap_config = {
@@ -173,12 +175,65 @@ static int sgm62110_regulator_init(struct sgm62110_chip *chip)
 
 	return 0;
 }
+static int sgm62110_parse_dt(struct device_node *np, struct sgm62110_chip *chip)
+{
+	int ret = 0;
+
+	ret = of_property_read_u32(np, "mmi,reg-vout2", &chip->reg_vout2);
+	if (ret) {
+		chip->reg_vout2 = 0;
+		dev_err(chip->dev,"Failed to read node of mmi,reg-vout2\n");
+	}
+
+	return ret;
+}
+
+static int sgm62110_init_reg_vout2(struct sgm62110_chip *chip)
+{
+	int ret = 0, val = 0;
+	bool range = 0;
+	unsigned int reg_val = 0;
+
+	if (!chip->reg_vout2)
+		return ret;
+
+	ret = regmap_read(chip->regmap, SGM62110_REG_CONTROL, &val);
+	if (ret < 0) {
+		dev_err(chip->dev, "Failed to read control register(%d)\n",
+			ret);
+		return ret;
+	}
+
+	range = !!(val & (1<<6));
+
+	if (range)
+		reg_val = (chip->reg_vout2 - 2025) / 25;
+	else
+		reg_val = (chip->reg_vout2 - 1800) / 25;
+
+	ret = regmap_write(chip->regmap, SGM62110_REG_VOUT2, reg_val);
+	if (ret < 0) {
+		dev_err(chip->dev, "Failed to wirte reg vout2(%d)\n",
+			ret);
+		return ret;
+	}
+
+	return ret;
+}
+
+static int sgm62110_hw_init(struct sgm62110_chip *chip)
+{
+	sgm62110_init_reg_vout2(chip);
+
+	return 0;
+}
 
 static int sgm62110_i2c_probe(struct i2c_client *client,
 			      const struct i2c_device_id *id)
 {
 	struct device *dev = &client->dev;
 	struct sgm62110_chip *chip;
+	struct device_node *node = client->dev.of_node;
 	int error = 0;
 	pr_info("sgm62110_i2c_probe start\n");
 
@@ -200,6 +255,10 @@ static int sgm62110_i2c_probe(struct i2c_client *client,
 	}
 
 	sgm62110_regulator_init(chip);
+
+	sgm62110_parse_dt(node, chip);
+
+	sgm62110_hw_init(chip);
 
 	dev_info(chip->dev, "sgm62110_i2c_probe end\n");
 	return error;

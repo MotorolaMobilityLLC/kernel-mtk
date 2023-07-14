@@ -15,7 +15,7 @@
 #include <dt-bindings/iio/mt635x-auxadc.h>
 
 &mt6363_dynamic_loading_throttling {
-	vbb-uvlo-level = <2400>;
+	vbb-uvlo-level = <2300>;
 };
 
 &mt6375_typec {
