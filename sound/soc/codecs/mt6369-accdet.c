@@ -850,24 +850,28 @@ static void send_key_event(u32 keycode, u32 flag)
 			report = SND_JACK_BTN_1;
 		snd_soc_jack_report(&accdet->jack, report,
 				SND_JACK_BTN_1);
+		pr_info("accdet send_key_event: DW_KEY report: 0x%x\n", report);
 		break;
 	case UP_KEY:
 		if (flag != 0)
 			report = SND_JACK_BTN_2;
 		snd_soc_jack_report(&accdet->jack, report,
 				SND_JACK_BTN_2);
+		pr_info("accdet send_key_event: UP_KEY report: 0x%x\n", report);
 		break;
 	case MD_KEY:
 		if (flag != 0)
 			report = SND_JACK_BTN_0;
 		snd_soc_jack_report(&accdet->jack, report,
 				SND_JACK_BTN_0);
+		pr_info("accdet send_key_event: MD_KEY report: 0x%x\n", report);
 		break;
 	case AS_KEY:
 		if (flag != 0)
 			report = SND_JACK_BTN_3;
 		snd_soc_jack_report(&accdet->jack, report,
 				SND_JACK_BTN_3);
+		pr_info("accdet send_key_event: AS_KEY report: 0x%x\n", report);
 		break;
 	}
 }
