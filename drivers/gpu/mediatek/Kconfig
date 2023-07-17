@@ -174,3 +174,9 @@ config MTK_GPU_MT6739_SUPPORT
 	  Set Y or M to select this feature for specific platform-mt6739,
 	  and set N to disable.
 	  It is additional config to separate platforms.
+
+config MOTO_GPU_CANCUNN_DEBUGGING
+       bool "Enable Moto debugging code for GPU on Cancunn"
+       default n
+       help
+         Add cancun 5G NA gpu debug information
