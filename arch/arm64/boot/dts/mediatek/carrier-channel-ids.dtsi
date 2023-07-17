@@ -61,7 +61,7 @@
 				"openmx",	/* 41 */
 				"altmx",	/* 42 */
 				"openpe",	/* 43 */
-				"undefined",	/* 44 */
+				"openpub",	/* 44 */
 				"undefined",	/* 45 */
 				"undefined",	/* 46 */
 				"undefined",	/* 47 */
@@ -126,8 +126,8 @@
 				"veoneu",	/* 106 */
 				"openeu",	/* 107 */
 				"reteu2",	/* 108 */
-				"undefined",	/* 109 */
-				"undefined",	/* 110 */
+				"demogb",	/* 109 */
+				"retdemo",	/* 110 */
 				"undefined",	/* 111 */
 				"undefined",	/* 112 */
 				"undefined",	/* 113 */
