@@ -149,3 +149,6 @@ endif
 #moto-charger@jianyong.pan  20220412 start
 obj-$(CONFIG_CHARGER_SGM415XX) += sgm415xx.o
 #moto-charger@jianyong.pan  20220412 end
+
+obj-$(CONFIG_MTK_BQ2560x_SUPPORT) += bq2560x_charger.o
+
