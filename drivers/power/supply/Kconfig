@@ -1148,4 +1148,10 @@ config CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT
 	help
 	  This is config cancunf factorymode set icl support
 
+config MTK_BQ2560x_SUPPORT
+	bool "Charger Driver for BQ 2560x Charger IC"
+        default n
+	help
+	  BQ 2560x.
+
 endif # POWER_SUPPLY
