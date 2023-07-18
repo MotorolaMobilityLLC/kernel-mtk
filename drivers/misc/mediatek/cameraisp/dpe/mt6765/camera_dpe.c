@@ -95,6 +95,7 @@ struct DPE_CLK_STRUCT dpe_clk;
 #define DPE_USE_GCE
 /* #define DPE_DEBUG_USE  */
 /* #define DPE_MULTIPROCESS_TIMING_ISSUE  */
+/* #define DPE_REG_RW_USE */
 /*I can' test the situation in FPGA, because the velocity of FPGA is so slow. */
 #define MyTag "[DPE]"
 #define IRQTag "KEEPER"
@@ -107,7 +108,7 @@ struct DPE_CLK_STRUCT dpe_clk;
 #define log_dbg(format, args...)
 #endif
 #define LOG_ERR(format, args...)    pr_info(MyTag format,  ##args)
-#define LOG_INF(format, args...)    pr_debug(MyTag format,  ##args)
+#define LOG_INF(format, args...)    pr_info(MyTag format,  ##args)
 #define LOG_NOTICE(format, args...) pr_notice(MyTag format,  ##args)
 
 /* For other projects. */
@@ -1350,6 +1351,22 @@ static signed int ConfigDVEHW(struct DPE_DVEConfig *pDveConfig)
 			pDveConfig->DPE_DVE_RESPO_R_BASE_ADDR);
 
 	}
+
+	if (pDveConfig->DPE_DVE_IMGI_L_BASE_ADDR == 0x0 ||
+		pDveConfig->DPE_DVE_IMGI_R_BASE_ADDR == 0x0 ||
+		pDveConfig->DPE_DVE_DVI_L_BASE_ADDR == 0x0 ||
+		pDveConfig->DPE_DVE_DVI_R_BASE_ADDR == 0x0 ||
+		pDveConfig->DPE_DVE_DVO_L_BASE_ADDR == 0x0 ||
+		pDveConfig->DPE_DVE_DVO_R_BASE_ADDR == 0x0 ||
+		((pDveConfig->DPE_DVE_IMGI_L_BASE_ADDR & 0x3) != 0) ||
+		((pDveConfig->DPE_DVE_IMGI_R_BASE_ADDR & 0x3) != 0) ||
+		((pDveConfig->DPE_DVE_DVI_L_BASE_ADDR & 0x3) != 0) ||
+		((pDveConfig->DPE_DVE_DVI_R_BASE_ADDR & 0x3) != 0) ||
+		((pDveConfig->DPE_DVE_DVO_L_BASE_ADDR & 0x3) != 0) ||
+		((pDveConfig->DPE_DVE_DVO_R_BASE_ADDR & 0x3) != 0)) {
+		LOG_INF("DVE INPUT BASE ADDR is Invalid!\n");
+		return -EFAULT;
+	}
 #ifdef DPE_USE_GCE
 
 #ifdef __DPE_KERNEL_PERFORMANCE_MEASURE__
@@ -1756,8 +1773,16 @@ static signed int ConfigWMFEHW(struct DPE_WMFEConfig *pWmfeCfg)
 		uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_DPE);
 #endif
 	unsigned int i = 0;
+	unsigned int wmfeWidth = 0;
+	unsigned int wmfeHeight = 0;
 	/* unsigned int wmfe_mask_value = 0; */
 	/* unsigned int wmfe_mask_mode = 0; */
+	if ((pWmfeCfg->WmfeCtrlSize > WMFE_CTRL_SIZE) ||
+		(pWmfeCfg->WmfeCtrlSize == 0)) {
+		LOG_ERR("Abnormal Ctrl Size: %d, Max Ctrl Size is %d\n",
+			pWmfeCfg->WmfeCtrlSize, WMFE_CTRL_SIZE);
+		return -EFAULT;
+	}
 
 	if (DPE_DBG_DBGLOG == (DPE_DBG_DBGLOG & DPEInfo.DebugMask)) {
 		log_dbg("Config WMFEHW Start!\n");
@@ -1791,6 +1816,34 @@ static signed int ConfigWMFEHW(struct DPE_WMFEConfig *pWmfeCfg)
 			/* log_dbg("WMFE_MASK_VALUE_%d_REG:0x%x!\n", i, */
 			/* pWmfeCfg->WmfeCtrl[i].WMFE_MASK_VALUE); */
 	}
+	}
+
+	for (i = 0; i < pWmfeCfg->WmfeCtrlSize; i++) {
+		if (pWmfeCfg->WmfeCtrl[i].WMFE_TBLI_STRIDE < 256) {
+			LOG_INF("WMFE TBLI STRIDE(%d) is Invalid!\n",
+				pWmfeCfg->WmfeCtrl[i].WMFE_TBLI_STRIDE);
+			return -EFAULT;
+		}
+		if (pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_BASE_ADDR == 0x0 ||
+			pWmfeCfg->WmfeCtrl[i].WMFE_DPI_BASE_ADDR == 0x0 ||
+			pWmfeCfg->WmfeCtrl[i].WMFE_DPO_BASE_ADDR == 0x0 ||
+			((pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_BASE_ADDR & 0x3) != 0) ||
+			((pWmfeCfg->WmfeCtrl[i].WMFE_DPI_BASE_ADDR & 0x3) != 0) ||
+			((pWmfeCfg->WmfeCtrl[i].WMFE_DPO_BASE_ADDR & 0x3) != 0) ||
+			pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_STRIDE == 0x0 ||
+			pWmfeCfg->WmfeCtrl[i].WMFE_DPI_STRIDE == 0x0 ||
+			pWmfeCfg->WmfeCtrl[i].WMFE_DPO_STRIDE == 0x0) {
+			LOG_INF("WMFE INPUT BASE ADDR is Invalid!\n");
+			return -EFAULT;
+		}
+		wmfeWidth = pWmfeCfg->WmfeCtrl[i].WMFE_SIZE & 0xFFFF;
+		wmfeHeight = (pWmfeCfg->WmfeCtrl[i].WMFE_SIZE >> 16) & 0xFFFF;
+		if (wmfeWidth == 0 || wmfeHeight == 0 ||
+			pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_STRIDE < wmfeWidth ||
+			pWmfeCfg->WmfeCtrl[i].WMFE_DPO_STRIDE < wmfeWidth) {
+			LOG_INF("WMFE INPUT Size(%d, %d) is Invalid!\n", wmfeWidth, wmfeHeight);
+			return -EFAULT;
+		}
 	}
 #ifdef DPE_USE_GCE
 
@@ -1993,10 +2046,17 @@ static signed int DPE_DumpReg(void)
 {
 	signed int Ret = 0;
 	unsigned int i, j;
+	if (g_u4EnableClockCount == 0) {
+		LOG_ERR("DumpReg: DPE CLK Not Opened!\n");
+		Ret = -EFAULT;
+		return Ret;
+	}
 	/*  */
 	LOG_INF("- E.");
 	/*  */
 	LOG_INF("DVE Config Info\n");
+	/* LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_INT_STATUS_HW), */
+	/*	(unsigned int)DPE_RD32(DPE_DVE_INT_STATUS_REG)); */
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_CTRL_HW),
 		(unsigned int)DPE_RD32(DPE_DVE_CTRL_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_START_HW),
@@ -2050,6 +2110,58 @@ static signed int DPE_DumpReg(void)
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_TYPE_CTRL_1_HW),
 		(unsigned int)DPE_RD32(DPE_DVE_TYPE_CTRL_1_REG));
 
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_IMGI_L_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_IMGI_L_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_IMGI_L_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_IMGI_L_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_IMGI_R_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_IMGI_R_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_IMGI_R_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_IMGI_R_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_DVI_L_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_DVI_L_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_DVI_L_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_DVI_L_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_DVI_R_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_DVI_R_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_DVI_R_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_DVI_R_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_MASKI_L_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_MASKI_L_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_MASKI_L_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_MASKI_L_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_MASKI_R_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_MASKI_R_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_MASKI_R_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_MASKI_R_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_DVO_L_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_DVO_L_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_DVO_L_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_DVO_L_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_DVO_R_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_DVO_R_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_DVO_R_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_DVO_R_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_CONFO_L_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_CONFO_L_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_CONFO_L_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_CONFO_L_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_CONFO_R_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_CONFO_R_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_CONFO_R_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_CONFO_R_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_RESPO_L_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_RESPO_L_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_RESPO_L_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_RESPO_L_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_RESPO_R_BASE_ADDR_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_RESPO_R_BASE_ADDR_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_RESPO_R_STRIDE_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_RESPO_R_STRIDE_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_TYPE_CTRL_2_HW),
+		(unsigned int)DPE_RD32(DPE_DVE_TYPE_CTRL_2_REG));
+	/* LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_STA_HW), */
+	/*	(unsigned int)DPE_RD32(DPE_DVE_STA_REG)); */
 	LOG_INF("DVE Debug Info\n");
 
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_DVE_DBG_INFO_00_HW),
@@ -2076,8 +2188,12 @@ static signed int DPE_DumpReg(void)
 
 	LOG_INF("WMFE Config Info\n");
 	/* WMFE Config0 */
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_WMFE_START_HW),
-		(unsigned int)DPE_RD32(DPE_WMFE_START_REG));
+	/* LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_WMFE_START_HW), */
+	/*	(unsigned int)DPE_RD32(DPE_WMFE_START_REG)); */
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_WMFE_CTRL_0_HW),
+		(unsigned int)DPE_RD32(DPE_WMFE_CTRL_0_REG));
+	/* LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_WMFE_INT_STATUS_HW), */
+	/*	(unsigned int)DPE_RD32(DPE_WMFE_INT_STATUS_REG)); */
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_WMFE_CTRL_0_HW),
 		(unsigned int)DPE_RD32(DPE_WMFE_CTRL_0_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_WMFE_SIZE_0_HW),
@@ -2330,8 +2446,8 @@ static inline void DPE_Disable_Unprepare_ccf_clock(void)
 static void DPE_EnableClock(bool En)
 {
 	if (En) {		/* Enable clock. */
-		/* log_dbg("Dpe clock enbled. g_u4EnableClockCount: %d.", */
-		/* g_u4EnableClockCount); */
+		LOG_INF("Dpe clock enable. g_u4EnableClockCount: %d.\n",
+			g_u4EnableClockCount);
 		switch (g_u4EnableClockCount) {
 		case 0:
 #ifndef __DPE_EP_NO_CLKMGR__
@@ -2357,8 +2473,8 @@ static void DPE_EnableClock(bool En)
 		spin_unlock(&(DPEInfo.SpinLockDPE));
 	} else {		/* Disable clock. */
 
-		/* log_dbg("Dpe clock disabled. g_u4EnableClockCount: %d.", */
-		/* g_u4EnableClockCount); */
+		LOG_INF("Dpe clock disable. g_u4EnableClockCount: %d.\n",
+			g_u4EnableClockCount);
 		spin_lock(&(DPEInfo.SpinLockDPE));
 		g_u4EnableClockCount--;
 		spin_unlock(&(DPEInfo.SpinLockDPE));
@@ -2395,25 +2511,33 @@ static inline void DPE_Reset(void)
 
 	if (DPEInfo.UserCount > 1) {
 		spin_unlock(&(DPEInfo.SpinLockDPERef));
-		log_dbg("Curr UserCount(%d) users exist", DPEInfo.UserCount);
+		log_dbg("Curr UserCount(%d) users exist\n", DPEInfo.UserCount);
+	} else if (DPEInfo.UserCount < 1) {
+		spin_unlock(&(DPEInfo.SpinLockDPERef));
+		log_dbg("No user exist\n", DPEInfo.UserCount);
 	} else {
 		spin_unlock(&(DPEInfo.SpinLockDPERef));
 
-		/* Reset DPE flow */
-		DPE_WR32(DPE_RST_REG, 0x1);
-		while ((DPE_RD32(DPE_RST_REG) & 0x02) != 0x2)
-			log_dbg("DPE resetting...\n");
+		if (g_u4EnableClockCount > 0) {
+			/* Reset DPE flow */
+			DPE_WR32(DPE_RST_REG, 0x1);
+			while ((DPE_RD32(DPE_RST_REG) & 0x02) != 0x2)
+				log_dbg("DPE resetting...\n");
 
-		DPE_WR32(DPE_RST_REG, 0x11);
-		DPE_WR32(DPE_RST_REG, 0x10);
-		DPE_WR32(DPE_RST_REG, 0x0);
-		DPE_WR32(DPE_DVE_START_REG, 0);
-		DPE_WR32(DPE_WMFE_START_REG, 0);
-		log_dbg(" DPE Reset end!\n");
+			DPE_WR32(DPE_RST_REG, 0x11);
+			DPE_WR32(DPE_RST_REG, 0x10);
+			DPE_WR32(DPE_RST_REG, 0x0);
+			DPE_WR32(DPE_DVE_START_REG, 0);
+			DPE_WR32(DPE_WMFE_START_REG, 0);
+			log_dbg(" DPE Reset end!\n");
+		} else {
+			LOG_ERR("DPE Reset but CLK not open!\n");
+		}
 	}
 
 }
 
+#ifdef DPE_REG_RW_USE
 static signed int DPE_ReadReg(struct DPE_REG_IO_STRUCT *pRegIo)
 {
 	unsigned int i;
@@ -2424,7 +2548,7 @@ static signed int DPE_ReadReg(struct DPE_REG_IO_STRUCT *pRegIo)
 	struct DPE_REG_STRUCT *pTmpData = NULL;
 
 	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) ||
-	(pRegIo->Count > (DPE_REG_RANGE>>2))) {
+		(pRegIo->Count > (DPE_REG_RANGE>>2))) {
 		LOG_INF("DPE ReadReg pRegIo->pData is NULL, Count:%d!!",
 			pRegIo->Count);
 		Ret = -EFAULT;
@@ -2444,7 +2568,7 @@ static signed int DPE_ReadReg(struct DPE_REG_IO_STRUCT *pRegIo)
 	(pRegIo->Count) * sizeof(struct DPE_REG_STRUCT)) == 0) {
 		for (i = 0; i < pRegIo->Count; i++) {
 			if ((ISP_DPE_BASE + pData->Addr >= ISP_DPE_BASE)
-			&& (pData->Addr < DPE_REG_RANGE)
+			&& (ISP_DPE_BASE + pData->Addr < (ISP_DPE_BASE + DPE_REG_RANGE))
 			&& ((pData->Addr & 0x3) == 0)) {
 				pData->Val =
 					DPE_RD32(ISP_DPE_BASE + pData->Addr);
@@ -2504,8 +2628,9 @@ static signed int DPE_WriteRegToHw
 				(unsigned int) (pReg[i].Val));
 		}
 
-		if ((pReg[i].Addr < DPE_REG_RANGE) &&
-			((pReg[i].Addr & 0x3) == 0)) {
+		if (((ISP_DPE_BASE + pReg[i].Addr) <
+			(ISP_DPE_BASE + DPE_REG_RANGE))
+			&& ((pReg[i].Addr & 0x3) == 0)) {
 			DPE_WR32(ISP_DPE_BASE + pReg[i].Addr, pReg[i].Val);
 		} else {
 			LOG_INF("Wrong address(0x%p), DPE_BASE(0x%p)\n",
@@ -2564,7 +2689,7 @@ EXIT:
 	}
 	return Ret;
 }
-
+#endif
 static signed int DPE_WaitIrq(struct DPE_WAIT_IRQ_STRUCT *WaitIrq)
 {
 
@@ -2576,17 +2701,6 @@ static signed int DPE_WaitIrq(struct DPE_WAIT_IRQ_STRUCT *WaitIrq)
 	unsigned long flags; /* old: unsigned int flags;*/
 	unsigned int irqStatus;
 	/*int cnt = 0;*/
-	struct timeval time_getrequest;
-	unsigned long long sec = 0;
-	unsigned long usec = 0;
-
-	/* do_gettimeofday(&time_getrequest); */
-	sec = cpu_clock(0);	/* ns */
-	do_div(sec, 1000);	/* usec */
-	usec = do_div(sec, 1000000);	/* sec and usec */
-	time_getrequest.tv_usec = usec;
-	time_getrequest.tv_sec = sec;
-
 
 	/* Debug interrupt */
 	if (DPEInfo.DebugMask & DPE_DBG_INT) {
@@ -2644,8 +2758,10 @@ static signed int DPE_WaitIrq(struct DPE_WAIT_IRQ_STRUCT *WaitIrq)
 	} else {
 		LOG_INF("No Such Stats can be waited!!\n");
 		LOG_INF("irq Type/User/Sts/Pid(0x%x/%d/0x%x/%d)\n",
-		WaitIrq->Type, WaitIrq->UserKey,
-		WaitIrq->Status, WaitIrq->ProcessID);
+			WaitIrq->Type, WaitIrq->UserKey,
+			WaitIrq->Status, WaitIrq->ProcessID);
+		Ret = -EFAULT;
+		goto EXIT;
 	}
 
 
@@ -2727,7 +2843,7 @@ static signed int DPE_WaitIrq(struct DPE_WAIT_IRQ_STRUCT *WaitIrq)
 #ifdef DPE_USE_GCE
 
 #ifdef DPE_MULTIPROCESS_TIMING_ISSUE
-			DPEInfo.ReadReqIdx =
+		DPEInfo.ReadReqIdx =
 			(DPEInfo.ReadReqIdx + 1) %
 			_SUPPORT_MAX_DPE_FRAME_REQUEST_;
 		/* actually, it doesn't happen the timging issue!! */
@@ -2791,7 +2907,7 @@ static long DPE_ioctl
 	signed int Ret = 0;
 
 	/*unsigned int pid = 0;*/
-	struct DPE_REG_IO_STRUCT RegIo;
+	/* struct DPE_REG_IO_STRUCT RegIo; */
 	struct DPE_WAIT_IRQ_STRUCT IrqInfo;
 	struct DPE_CLEAR_IRQ_STRUCT ClearIrq;
 	struct DPE_DVERequest dpe_DveReq;
@@ -2819,6 +2935,12 @@ static long DPE_ioctl
 	switch (Cmd) {
 	case DPE_RESET:
 	{
+		LOG_INF("IOCTL: DPE_RESET\n");
+		if (g_u4EnableClockCount == 0) {
+			LOG_ERR("RESET: DPE CLK Not Opened!\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
 		spin_lock(&(DPEInfo.SpinLockDPE));
 		DPE_Reset();
 		spin_unlock(&(DPEInfo.SpinLockDPE));
@@ -2828,13 +2950,19 @@ static long DPE_ioctl
 	/*  */
 	case DPE_DUMP_REG:
 	{
+		LOG_INF("IOCTL: DPE_DUMP_REG\n");
+		if (g_u4EnableClockCount == 0) {
+			LOG_ERR("DUMP_REG: DPE CLK Not Opened!\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
 		Ret = DPE_DumpReg();
 		break;
 	}
 	case DPE_DUMP_ISR_LOG:
 	{
 		unsigned int currentPPB = m_CurrentPPB;
-
+		LOG_INF("IOCTL: DPE_DUMP_ISR_LOG\n");
 		spin_lock_irqsave
 		(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
 		flags);
@@ -2851,32 +2979,48 @@ static long DPE_ioctl
 	}
 	case DPE_READ_REGISTER:
 	{
-		if (copy_from_user(&RegIo, (void *)Param,
-			sizeof(struct DPE_REG_IO_STRUCT)) == 0) {
-			/* 2nd layer behavoir of copy from user */
-			/* is implemented in DPE_ReadReg(...) */
-			Ret = DPE_ReadReg(&RegIo);
-		} else {
-			LOG_INF("DPE_READ_REGISTER copy_from_user failed");
-			Ret = -EFAULT;
-		}
-		break;
+		LOG_INF("IOCTL: DPE_READ_REGISTER, Abort\n");
+		goto EXIT;
+		/*
+		 *if (g_u4EnableClockCount == 0) {
+		 *	LOG_ERR("READ_REGISTER: DPE CLK Not Opened!\n");
+		 *	Ret = -EFAULT;
+		 *	goto EXIT;
+		 *}
+		 *if (copy_from_user(&RegIo, (void *)Param,
+		 *	sizeof(struct DPE_REG_IO_STRUCT)) == 0) {
+		 *	Ret = DPE_ReadReg(&RegIo);
+		 *} else {
+		 *	LOG_INF("DPE_READ_REGISTER copy_from_user failed");
+		 *	Ret = -EFAULT;
+		 *}
+		 *break;
+		 */
 	}
 	case DPE_WRITE_REGISTER:
 	{
-		if (copy_from_user(&RegIo, (void *)Param,
-			sizeof(struct DPE_REG_IO_STRUCT)) == 0) {
-			/* 2nd layer behavoir of copy from user is */
-			/* implemented in DPE_WriteReg(...) */
-			Ret = DPE_WriteReg(&RegIo);
-		} else {
-			LOG_INF("DPE_WRITE_REGISTER copy_from_user failed");
-			Ret = -EFAULT;
-		}
-		break;
+		LOG_INF("IOCTL: DPE_WRITE_REGISTER, Abort\n");
+		goto EXIT;
+		/*
+		 *if (g_u4EnableClockCount == 0) {
+		 *	LOG_ERR("WRITE_REGISTER: DPE CLK Not Opened!\n");
+		 *	Ret = -EFAULT;
+		 *	goto EXIT;
+		 *}
+		 *if (copy_from_user(&RegIo, (void *)Param,
+		 *	sizeof(struct DPE_REG_IO_STRUCT)) == 0) {
+		 *	Ret = DPE_WriteReg(&RegIo);
+		 *} else {
+		 *	LOG_INF("DPE_WRITE_REGISTER copy_from_user failed");
+		 *	Ret = -EFAULT;
+		 *}
+		 *break;
+		 */
 	}
 	case DPE_WAIT_IRQ:
 	{
+		/* LOG_INF("IOCTL: DPE_WAIT_IRQ\n"); */
+
 		if (copy_from_user(&IrqInfo, (void *)Param,
 			sizeof(struct DPE_WAIT_IRQ_STRUCT)) == 0) {
 			/*  */
@@ -2922,6 +3066,7 @@ static long DPE_ioctl
 	}
 	case DPE_CLEAR_IRQ:
 	{
+		/* LOG_INF("IOCTL: DPE_CLEAR_IRQ\n"); */
 		if (copy_from_user(&ClearIrq, (void *)Param,
 			sizeof(struct DPE_CLEAR_IRQ_STRUCT)) == 0) {
 			log_dbg("DPE_CLEAR_IRQ Type(%d)",
@@ -2967,7 +3112,12 @@ static long DPE_ioctl
 	{
 	signed int WIdx;
 	signed int FWRIdx;
-
+	/* LOG_INF("IOCTL: DPE_DVE_ENQUE_REQ\n"); */
+	if (g_u4EnableClockCount == 0) {
+		LOG_ERR("DVE_ENQUE_REQ: DPE CLK Not Opened!\n");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 	if (copy_from_user(&dpe_DveReq, (void *)Param,
 		sizeof(struct DPE_DVERequest)) == 0) {
 		log_dbg("DVE_ENQNUE_NUM:%d, pid:%d\n",
@@ -3061,6 +3211,12 @@ static long DPE_ioctl
 	{
 	signed int ReadIdx;
 	signed int FrameRDIdx;
+	/* LOG_INF("IOCTL: DPE_DVE_DEQUE_REQ\n"); */
+	if (g_u4EnableClockCount == 0) {
+		LOG_ERR("DVE_DEQUE_REQ: DPE CLK Not Opened!\n");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 
 	if (copy_from_user(&dpe_DveReq,
 		(void *)Param, sizeof(struct DPE_DVERequest)) == 0) {
@@ -3144,6 +3300,12 @@ LOG_INF("DEQ_NUM No Buf!,ReadIdx(%d),ReqSta(%d),FrameRDIdx(%d),enqReqNum(%d)\n",
 	{
 	signed int WIdx;
 	signed int FWRIdx;
+	/* LOG_INF("IOCTL: DPE_WMFE_ENQUE_REQ\n"); */
+	if (g_u4EnableClockCount == 0) {
+		LOG_ERR("WMFE_ENQUE_REQ: DPE CLK Not Opened!\n");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 
 	if (copy_from_user(&dpe_WmfeReq, (void *)Param,
 	sizeof(struct DPE_WMFERequest)) == 0) {
