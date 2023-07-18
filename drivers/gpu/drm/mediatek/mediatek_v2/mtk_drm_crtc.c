@@ -6624,6 +6624,9 @@ void mtk_drm_crtc_enable(struct drm_crtc *crtc, bool skip_esd)
 	int i, j;
 	struct mtk_ddp_comp *output_comp = NULL;
 	int en = 1;
+	unsigned int mmsys_id = 0;
+
+	mmsys_id = mtk_get_mmsys_id(crtc);
 
 	CRTC_MMP_EVENT_START(crtc_id, enable,
 			mtk_crtc->enabled, 0);
@@ -6665,7 +6668,10 @@ void mtk_drm_crtc_enable(struct drm_crtc *crtc, bool skip_esd)
 		mtk_crtc_ddp_prepare(mtk_crtc);
 	}
 
-	mtk_gce_backup_slot_restore(mtk_crtc, __func__);
+	if(mmsys_id == MMSYS_MT6983)
+		mtk_gce_backup_slot_restore(mtk_crtc, __func__);
+	else
+		mtk_gce_backup_slot_init(mtk_crtc);
 
 #ifndef DRM_CMDQ_DISABLE
 	/* 3. power on cmdq client */
@@ -7394,6 +7400,9 @@ void mtk_drm_crtc_disable(struct drm_crtc *crtc, bool need_wait, bool skip_esd)
 	struct cmdq_client *client;
 #endif
 	int en = 0;
+	unsigned int mmsys_id = 0;
+
+	mmsys_id = mtk_get_mmsys_id(crtc);
 
 	CRTC_MMP_EVENT_START(crtc_id, disable,
 			mtk_crtc->enabled, 0);
@@ -7448,7 +7457,8 @@ void mtk_drm_crtc_disable(struct drm_crtc *crtc, bool need_wait, bool skip_esd)
 	cmdq_mbox_disable(client->chan);
 	CRTC_MMP_MARK(crtc_id, disable, 1, 2);
 #endif
-	mtk_gce_backup_slot_save(mtk_crtc, __func__);
+	if(mmsys_id == MMSYS_MT6983)
+		mtk_gce_backup_slot_save(mtk_crtc, __func__);
 
 	/* 9. power off all modules in this CRTC */
 	mtk_crtc_ddp_unprepare(mtk_crtc);
@@ -10453,51 +10463,56 @@ void mtk_gce_backup_slot_restore(struct mtk_drm_crtc *mtk_crtc, const char *mast
 	size = mtk_gce_get_dummy_table(mmsys_id, &table);
 	if (size == 0)
 		return;
+	if(mmsys_id == MMSYS_MT6983){
 
-	if (IS_ERR_OR_NULL(dummy_data)) {
-		for (i = 0 ; i < size ; i++)
-			writel(0x0, table[i].addr + table[i].offset);
-	} else {
-		unsigned int slot_idx, reg_val;
+		if (IS_ERR_OR_NULL(dummy_data)) {
+			for (i = 0 ; i < size ; i++)
+				writel(0x0, table[i].addr + table[i].offset);
+		} else {
+			unsigned int slot_idx, reg_val;
 
-		/* only restore CRTC corresponding slot */
-		for (i = 0 ; i < mtk_crtc->layer_nr ; ++i) {
-			unsigned int plane_idx;
+			/* only restore CRTC corresponding slot */
+			for (i = 0 ; i < mtk_crtc->layer_nr ; ++i) {
+				unsigned int plane_idx;
 
-			plane_idx = mtk_get_plane_slot_idx(mtk_crtc, i);
-		/* restore layer fence */
-			slot_idx = DISP_SLOT_CUR_CONFIG_FENCE(plane_idx);
+				plane_idx = mtk_get_plane_slot_idx(mtk_crtc, i);
+			/* restore layer fence */
+				slot_idx = DISP_SLOT_CUR_CONFIG_FENCE(plane_idx);
+				slot_idx = slot_idx / sizeof(unsigned int);
+				reg_val = dummy_data[slot_idx];
+				writel(reg_val, table[slot_idx].addr + table[slot_idx].offset);
+
+			/* restore layer fence subtractor */
+				slot_idx = DISP_SLOT_SUBTRACTOR_WHEN_FREE(plane_idx);
+				slot_idx = slot_idx / sizeof(unsigned int);
+				reg_val = dummy_data[slot_idx];
+				writel(reg_val, table[slot_idx].addr + table[slot_idx].offset);
+			}
+
+			/* restore present fence */
+			slot_idx = DISP_SLOT_PRESENT_FENCE(drm_crtc_index(crtc));
 			slot_idx = slot_idx / sizeof(unsigned int);
 			reg_val = dummy_data[slot_idx];
 			writel(reg_val, table[slot_idx].addr + table[slot_idx].offset);
 
-		/* restore layer fence subtractor */
-			slot_idx = DISP_SLOT_SUBTRACTOR_WHEN_FREE(plane_idx);
-			slot_idx = slot_idx / sizeof(unsigned int);
-			reg_val = dummy_data[slot_idx];
-			writel(reg_val, table[slot_idx].addr + table[slot_idx].offset);
-		}
+			comp = mtk_ddp_comp_find_by_id(crtc, DDP_COMPONENT_WDMA0);
+			if (!comp)
+				comp = mtk_ddp_comp_find_by_id(crtc, DDP_COMPONENT_WDMA1);
 
-		/* restore present fence */
-		slot_idx = DISP_SLOT_PRESENT_FENCE(drm_crtc_index(crtc));
-		slot_idx = slot_idx / sizeof(unsigned int);
-		reg_val = dummy_data[slot_idx];
-		writel(reg_val, table[slot_idx].addr + table[slot_idx].offset);
-
-		comp = mtk_ddp_comp_find_by_id(crtc, DDP_COMPONENT_WDMA0);
-		if (!comp)
-			comp = mtk_ddp_comp_find_by_id(crtc, DDP_COMPONENT_WDMA1);
-
-		for (i = (DISP_SLOT_RDMA_FB_IDX / sizeof(unsigned int)) ; i < size ; i++) {
-			if (i == (DISP_SLOT_CUR_OUTPUT_FENCE / sizeof(unsigned int)) && !comp)
-				DDPINFO("%s, crtc[%d] havn't wdma,skip restore output fence\n",
-					__func__, drm_crtc_index(crtc));
-			else {
-				reg_val = dummy_data[i];
-				writel(reg_val, table[i].addr + table[i].offset);
+			for (i = (DISP_SLOT_RDMA_FB_IDX / sizeof(unsigned int)) ; i < size ; i++) {
+				if (i == (DISP_SLOT_CUR_OUTPUT_FENCE / sizeof(unsigned int)) && !comp)
+					DDPINFO("%s, crtc[%d] havn't wdma,skip restore output fence\n",
+						__func__, drm_crtc_index(crtc));
+				else {
+					reg_val = dummy_data[i];
+					writel(reg_val, table[i].addr + table[i].offset);
+				}
 			}
 		}
-	}
+	} else
+		for (i = 0; i < size; i++)
+			writel(dummy_data[i], table[i].addr + table[i].offset);
+
 	DDPDBG("%s, by %s\n", __func__,
 		IS_ERR_OR_NULL(master) ? "unknown" : master);
 }
