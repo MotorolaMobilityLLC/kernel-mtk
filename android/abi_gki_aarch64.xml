@@ -7828,90 +7828,90 @@
       <pointer-type-def type-id='78964cd8' size-in-bits='64' id='00dcae0e'/>
       <qualified-type-def type-id='a8966aec' const='yes' id='00dd00af'/>
       <pointer-type-def type-id='ed626d0d' size-in-bits='64' id='00e2a7ce'/>
-      <class-decl name='snd_soc_pcm_runtime' size-in-bits='14336' is-struct='yes' visibility='default' filepath='include/sound/soc.h' line='1045' column='1' id='00e3a6d4'>
+      <class-decl name='snd_soc_pcm_runtime' size-in-bits='14336' is-struct='yes' visibility='default' filepath='include/sound/soc.h' line='1049' column='1' id='00e3a6d4'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='dev' type-id='fa0b179b' visibility='default' filepath='include/sound/soc.h' line='1046' column='1'/>
+          <var-decl name='dev' type-id='fa0b179b' visibility='default' filepath='include/sound/soc.h' line='1050' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='card' type-id='3059cd0b' visibility='default' filepath='include/sound/soc.h' line='1047' column='1'/>
+          <var-decl name='card' type-id='3059cd0b' visibility='default' filepath='include/sound/soc.h' line='1051' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='dai_link' type-id='af5a73b0' visibility='default' filepath='include/sound/soc.h' line='1048' column='1'/>
+          <var-decl name='dai_link' type-id='af5a73b0' visibility='default' filepath='include/sound/soc.h' line='1052' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='ops' type-id='73803d48' visibility='default' filepath='include/sound/soc.h' line='1049' column='1'/>
+          <var-decl name='ops' type-id='73803d48' visibility='default' filepath='include/sound/soc.h' line='1053' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1280'>
-          <var-decl name='params_select' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1051' column='1'/>
+          <var-decl name='params_select' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1055' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1344'>
-          <var-decl name='dpcm' type-id='39f07796' visibility='default' filepath='include/sound/soc.h' line='1054' column='1'/>
+          <var-decl name='dpcm' type-id='39f07796' visibility='default' filepath='include/sound/soc.h' line='1058' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12096'>
-          <var-decl name='pmdown_time' type-id='bd54fe1a' visibility='default' filepath='include/sound/soc.h' line='1056' column='1'/>
+          <var-decl name='pmdown_time' type-id='bd54fe1a' visibility='default' filepath='include/sound/soc.h' line='1060' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12160'>
-          <var-decl name='pcm' type-id='4c9f335b' visibility='default' filepath='include/sound/soc.h' line='1059' column='1'/>
+          <var-decl name='pcm' type-id='4c9f335b' visibility='default' filepath='include/sound/soc.h' line='1063' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12224'>
-          <var-decl name='compr' type-id='dc1e097e' visibility='default' filepath='include/sound/soc.h' line='1060' column='1'/>
+          <var-decl name='compr' type-id='dc1e097e' visibility='default' filepath='include/sound/soc.h' line='1064' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12288'>
-          <var-decl name='dais' type-id='8f157e69' visibility='default' filepath='include/sound/soc.h' line='1069' column='1'/>
+          <var-decl name='dais' type-id='8f157e69' visibility='default' filepath='include/sound/soc.h' line='1073' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12352'>
-          <var-decl name='num_codecs' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1070' column='1'/>
+          <var-decl name='num_codecs' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1074' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12384'>
-          <var-decl name='num_cpus' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1071' column='1'/>
+          <var-decl name='num_cpus' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1075' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12416'>
-          <var-decl name='playback_widget' type-id='810606ec' visibility='default' filepath='include/sound/soc.h' line='1073' column='1'/>
+          <var-decl name='playback_widget' type-id='810606ec' visibility='default' filepath='include/sound/soc.h' line='1077' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12480'>
-          <var-decl name='capture_widget' type-id='810606ec' visibility='default' filepath='include/sound/soc.h' line='1074' column='1'/>
+          <var-decl name='capture_widget' type-id='810606ec' visibility='default' filepath='include/sound/soc.h' line='1078' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12544'>
-          <var-decl name='delayed_work' type-id='5ad6e0ef' visibility='default' filepath='include/sound/soc.h' line='1076' column='1'/>
+          <var-decl name='delayed_work' type-id='5ad6e0ef' visibility='default' filepath='include/sound/soc.h' line='1080' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='13632'>
-          <var-decl name='close_delayed_work_func' type-id='d3d046f7' visibility='default' filepath='include/sound/soc.h' line='1077' column='1'/>
+          <var-decl name='close_delayed_work_func' type-id='d3d046f7' visibility='default' filepath='include/sound/soc.h' line='1081' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='13696'>
-          <var-decl name='debugfs_dpcm_root' type-id='27675065' visibility='default' filepath='include/sound/soc.h' line='1079' column='1'/>
+          <var-decl name='debugfs_dpcm_root' type-id='27675065' visibility='default' filepath='include/sound/soc.h' line='1083' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='13760'>
-          <var-decl name='num' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1082' column='1'/>
+          <var-decl name='num' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1086' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='13824'>
-          <var-decl name='list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='1083' column='1'/>
+          <var-decl name='list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='1087' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='13952'>
-          <var-decl name='mark_startup' type-id='06b2cd14' visibility='default' filepath='include/sound/soc.h' line='1086' column='1'/>
+          <var-decl name='mark_startup' type-id='06b2cd14' visibility='default' filepath='include/sound/soc.h' line='1090' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14016'>
-          <var-decl name='mark_hw_params' type-id='06b2cd14' visibility='default' filepath='include/sound/soc.h' line='1087' column='1'/>
+          <var-decl name='mark_hw_params' type-id='06b2cd14' visibility='default' filepath='include/sound/soc.h' line='1091' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14080'>
-          <var-decl name='mark_trigger' type-id='06b2cd14' visibility='default' filepath='include/sound/soc.h' line='1088' column='1'/>
+          <var-decl name='mark_trigger' type-id='06b2cd14' visibility='default' filepath='include/sound/soc.h' line='1092' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14144'>
-          <var-decl name='mark_compr_startup' type-id='b7c1d7d5' visibility='default' filepath='include/sound/soc.h' line='1089' column='1'/>
+          <var-decl name='mark_compr_startup' type-id='b7c1d7d5' visibility='default' filepath='include/sound/soc.h' line='1093' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14208'>
-          <var-decl name='pop_wait' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1092' column='1'/>
+          <var-decl name='pop_wait' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1096' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14209'>
-          <var-decl name='fe_compr' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1093' column='1'/>
+          <var-decl name='fe_compr' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1097' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14240'>
-          <var-decl name='num_components' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='1095' column='1'/>
+          <var-decl name='num_components' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='1099' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14272'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1097' column='1'/>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1101' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14336'>
-          <var-decl name='components' type-id='d936a132' visibility='default' filepath='include/sound/soc.h' line='1099' column='1'/>
+          <var-decl name='components' type-id='d936a132' visibility='default' filepath='include/sound/soc.h' line='1103' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='8cd967bc' size-in-bits='64' id='00e8fe5a'/>
@@ -9135,36 +9135,36 @@
         <parameter type-id='fce0537d'/>
         <return type-id='91ce1af9'/>
       </function-type>
-      <class-decl name='soc_enum' size-in-bits='896' is-struct='yes' visibility='default' filepath='include/sound/soc.h' line='1172' column='1' id='044208ec'>
+      <class-decl name='soc_enum' size-in-bits='896' is-struct='yes' visibility='default' filepath='include/sound/soc.h' line='1176' column='1' id='044208ec'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='reg' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='1173' column='1'/>
+          <var-decl name='reg' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='1177' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='shift_l' type-id='002ac4a6' visibility='default' filepath='include/sound/soc.h' line='1174' column='1'/>
+          <var-decl name='shift_l' type-id='002ac4a6' visibility='default' filepath='include/sound/soc.h' line='1178' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='40'>
-          <var-decl name='shift_r' type-id='002ac4a6' visibility='default' filepath='include/sound/soc.h' line='1175' column='1'/>
+          <var-decl name='shift_r' type-id='002ac4a6' visibility='default' filepath='include/sound/soc.h' line='1179' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='items' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1176' column='1'/>
+          <var-decl name='items' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1180' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='96'>
-          <var-decl name='mask' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1177' column='1'/>
+          <var-decl name='mask' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1181' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='texts' type-id='13956559' visibility='default' filepath='include/sound/soc.h' line='1178' column='1'/>
+          <var-decl name='texts' type-id='13956559' visibility='default' filepath='include/sound/soc.h' line='1182' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='values' type-id='5b2fd8e8' visibility='default' filepath='include/sound/soc.h' line='1179' column='1'/>
+          <var-decl name='values' type-id='5b2fd8e8' visibility='default' filepath='include/sound/soc.h' line='1183' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='autodisable' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1180' column='1'/>
+          <var-decl name='autodisable' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1184' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='320'>
-          <var-decl name='dobj' type-id='01edcafc' visibility='default' filepath='include/sound/soc.h' line='1182' column='1'/>
+          <var-decl name='dobj' type-id='01edcafc' visibility='default' filepath='include/sound/soc.h' line='1186' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='832'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1185' column='1'/>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1189' column='1'/>
         </data-member>
       </class-decl>
       <enum-decl name='dwc3_ep0_state' filepath='drivers/usb/dwc3/core.h' line='780' column='1' id='045093ad'>
@@ -24742,172 +24742,172 @@
           <var-decl name='pcm_subclass' type-id='8a661f2b' visibility='default' filepath='include/sound/soc.h' line='908' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1888'>
-          <var-decl name='dpcm_lock' type-id='fb4018a0' visibility='default' filepath='include/sound/soc.h' line='910' column='1'/>
+          <var-decl name='unused' type-id='fb4018a0' visibility='default' filepath='include/sound/soc.h' line='913' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1920'>
-          <var-decl name='probe' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='912' column='1'/>
+          <var-decl name='probe' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='916' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1984'>
-          <var-decl name='late_probe' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='913' column='1'/>
+          <var-decl name='late_probe' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='917' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2048'>
-          <var-decl name='remove' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='914' column='1'/>
+          <var-decl name='remove' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='918' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2112'>
-          <var-decl name='suspend_pre' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='918' column='1'/>
+          <var-decl name='suspend_pre' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='922' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2176'>
-          <var-decl name='suspend_post' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='919' column='1'/>
+          <var-decl name='suspend_post' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='923' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2240'>
-          <var-decl name='resume_pre' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='920' column='1'/>
+          <var-decl name='resume_pre' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='924' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2304'>
-          <var-decl name='resume_post' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='921' column='1'/>
+          <var-decl name='resume_post' type-id='edcb70dd' visibility='default' filepath='include/sound/soc.h' line='925' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2368'>
-          <var-decl name='set_bias_level' type-id='4a944438' visibility='default' filepath='include/sound/soc.h' line='924' column='1'/>
+          <var-decl name='set_bias_level' type-id='4a944438' visibility='default' filepath='include/sound/soc.h' line='928' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2432'>
-          <var-decl name='set_bias_level_post' type-id='4a944438' visibility='default' filepath='include/sound/soc.h' line='927' column='1'/>
+          <var-decl name='set_bias_level_post' type-id='4a944438' visibility='default' filepath='include/sound/soc.h' line='931' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2496'>
-          <var-decl name='add_dai_link' type-id='1391f54a' visibility='default' filepath='include/sound/soc.h' line='931' column='1'/>
+          <var-decl name='add_dai_link' type-id='1391f54a' visibility='default' filepath='include/sound/soc.h' line='935' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2560'>
-          <var-decl name='remove_dai_link' type-id='e3fceddb' visibility='default' filepath='include/sound/soc.h' line='933' column='1'/>
+          <var-decl name='remove_dai_link' type-id='e3fceddb' visibility='default' filepath='include/sound/soc.h' line='937' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2624'>
-          <var-decl name='pmdown_time' type-id='bd54fe1a' visibility='default' filepath='include/sound/soc.h' line='936' column='1'/>
+          <var-decl name='pmdown_time' type-id='bd54fe1a' visibility='default' filepath='include/sound/soc.h' line='940' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2688'>
-          <var-decl name='dai_link' type-id='af5a73b0' visibility='default' filepath='include/sound/soc.h' line='939' column='1'/>
+          <var-decl name='dai_link' type-id='af5a73b0' visibility='default' filepath='include/sound/soc.h' line='943' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2752'>
-          <var-decl name='num_links' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='940' column='1'/>
+          <var-decl name='num_links' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='944' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2816'>
-          <var-decl name='rtd_list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='942' column='1'/>
+          <var-decl name='rtd_list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='946' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2944'>
-          <var-decl name='num_rtd' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='943' column='1'/>
+          <var-decl name='num_rtd' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='947' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3008'>
-          <var-decl name='codec_conf' type-id='f10279fe' visibility='default' filepath='include/sound/soc.h' line='946' column='1'/>
+          <var-decl name='codec_conf' type-id='f10279fe' visibility='default' filepath='include/sound/soc.h' line='950' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3072'>
-          <var-decl name='num_configs' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='947' column='1'/>
+          <var-decl name='num_configs' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='951' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3136'>
-          <var-decl name='aux_dev' type-id='8ace4add' visibility='default' filepath='include/sound/soc.h' line='953' column='1'/>
+          <var-decl name='aux_dev' type-id='8ace4add' visibility='default' filepath='include/sound/soc.h' line='957' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3200'>
-          <var-decl name='num_aux_devs' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='954' column='1'/>
+          <var-decl name='num_aux_devs' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='958' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3264'>
-          <var-decl name='aux_comp_list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='955' column='1'/>
+          <var-decl name='aux_comp_list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='959' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3392'>
-          <var-decl name='controls' type-id='31e035f7' visibility='default' filepath='include/sound/soc.h' line='957' column='1'/>
+          <var-decl name='controls' type-id='31e035f7' visibility='default' filepath='include/sound/soc.h' line='961' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3456'>
-          <var-decl name='num_controls' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='958' column='1'/>
+          <var-decl name='num_controls' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='962' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3520'>
-          <var-decl name='dapm_widgets' type-id='dae78f89' visibility='default' filepath='include/sound/soc.h' line='964' column='1'/>
+          <var-decl name='dapm_widgets' type-id='dae78f89' visibility='default' filepath='include/sound/soc.h' line='968' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3584'>
-          <var-decl name='num_dapm_widgets' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='965' column='1'/>
+          <var-decl name='num_dapm_widgets' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='969' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3648'>
-          <var-decl name='dapm_routes' type-id='8f3d28b8' visibility='default' filepath='include/sound/soc.h' line='966' column='1'/>
+          <var-decl name='dapm_routes' type-id='8f3d28b8' visibility='default' filepath='include/sound/soc.h' line='970' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3712'>
-          <var-decl name='num_dapm_routes' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='967' column='1'/>
+          <var-decl name='num_dapm_routes' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='971' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3776'>
-          <var-decl name='of_dapm_widgets' type-id='dae78f89' visibility='default' filepath='include/sound/soc.h' line='968' column='1'/>
+          <var-decl name='of_dapm_widgets' type-id='dae78f89' visibility='default' filepath='include/sound/soc.h' line='972' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3840'>
-          <var-decl name='num_of_dapm_widgets' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='969' column='1'/>
+          <var-decl name='num_of_dapm_widgets' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='973' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3904'>
-          <var-decl name='of_dapm_routes' type-id='8f3d28b8' visibility='default' filepath='include/sound/soc.h' line='970' column='1'/>
+          <var-decl name='of_dapm_routes' type-id='8f3d28b8' visibility='default' filepath='include/sound/soc.h' line='974' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3968'>
-          <var-decl name='num_of_dapm_routes' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='971' column='1'/>
+          <var-decl name='num_of_dapm_routes' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='975' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='4032'>
-          <var-decl name='component_dev_list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='974' column='1'/>
+          <var-decl name='component_dev_list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='978' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='4160'>
-          <var-decl name='list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='975' column='1'/>
+          <var-decl name='list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='979' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='4288'>
-          <var-decl name='widgets' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='977' column='1'/>
+          <var-decl name='widgets' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='981' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='4416'>
-          <var-decl name='paths' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='978' column='1'/>
+          <var-decl name='paths' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='982' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='4544'>
-          <var-decl name='dapm_list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='979' column='1'/>
+          <var-decl name='dapm_list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='983' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='4672'>
-          <var-decl name='dapm_dirty' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='980' column='1'/>
+          <var-decl name='dapm_dirty' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='984' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='4800'>
-          <var-decl name='dobj_list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='983' column='1'/>
+          <var-decl name='dobj_list' type-id='72f469ec' visibility='default' filepath='include/sound/soc.h' line='987' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='4928'>
-          <var-decl name='dapm' type-id='95201ae5' visibility='default' filepath='include/sound/soc.h' line='986' column='1'/>
+          <var-decl name='dapm' type-id='95201ae5' visibility='default' filepath='include/sound/soc.h' line='990' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='5568'>
-          <var-decl name='dapm_stats' type-id='fef29e19' visibility='default' filepath='include/sound/soc.h' line='987' column='1'/>
+          <var-decl name='dapm_stats' type-id='fef29e19' visibility='default' filepath='include/sound/soc.h' line='991' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='5696'>
-          <var-decl name='update' type-id='33146de3' visibility='default' filepath='include/sound/soc.h' line='988' column='1'/>
+          <var-decl name='update' type-id='33146de3' visibility='default' filepath='include/sound/soc.h' line='992' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='5760'>
-          <var-decl name='debugfs_card_root' type-id='27675065' visibility='default' filepath='include/sound/soc.h' line='991' column='1'/>
+          <var-decl name='debugfs_card_root' type-id='27675065' visibility='default' filepath='include/sound/soc.h' line='995' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='5824'>
-          <var-decl name='deferred_resume_work' type-id='ef9025d0' visibility='default' filepath='include/sound/soc.h' line='994' column='1'/>
+          <var-decl name='deferred_resume_work' type-id='ef9025d0' visibility='default' filepath='include/sound/soc.h' line='998' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6208'>
-          <var-decl name='pop_time' type-id='19c2251e' visibility='default' filepath='include/sound/soc.h' line='996' column='1'/>
+          <var-decl name='pop_time' type-id='19c2251e' visibility='default' filepath='include/sound/soc.h' line='1000' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6240'>
-          <var-decl name='instantiated' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='999' column='1'/>
+          <var-decl name='instantiated' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1003' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6241'>
-          <var-decl name='topology_shortname_created' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1000' column='1'/>
+          <var-decl name='topology_shortname_created' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1004' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6242'>
-          <var-decl name='fully_routed' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1001' column='1'/>
+          <var-decl name='fully_routed' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1005' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6243'>
-          <var-decl name='disable_route_checks' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1002' column='1'/>
+          <var-decl name='disable_route_checks' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1006' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6244'>
-          <var-decl name='probed' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1003' column='1'/>
+          <var-decl name='probed' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1007' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6245'>
-          <var-decl name='component_chaining' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1004' column='1'/>
+          <var-decl name='component_chaining' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1008' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6272'>
-          <var-decl name='drvdata' type-id='eaa32e2f' visibility='default' filepath='include/sound/soc.h' line='1006' column='1'/>
+          <var-decl name='drvdata' type-id='eaa32e2f' visibility='default' filepath='include/sound/soc.h' line='1010' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6336'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1008' column='1'/>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1012' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6400'>
-          <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1009' column='1'/>
+          <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1013' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6464'>
-          <var-decl name='android_kabi_reserved3' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1010' column='1'/>
+          <var-decl name='android_kabi_reserved3' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1014' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6528'>
-          <var-decl name='android_kabi_reserved4' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1011' column='1'/>
+          <var-decl name='android_kabi_reserved4' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1015' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='ddf16879' size-in-bits='64' id='29af9a71'/>
@@ -27578,7 +27578,7 @@
           <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/linux/gpio/driver.h' line='281' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='mnt_pcp' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/../fs/mount.h' line='27' column='1' id='3106563e'>
+      <class-decl name='mnt_pcp' size-in-bits='64' is-struct='yes' visibility='default' filepath='fs/mount.h' line='27' column='1' id='3106563e'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='mnt_count' type-id='95e97e5e' visibility='default' filepath='fs/mount.h' line='28' column='1'/>
         </data-member>
@@ -94801,7 +94801,7 @@
         <parameter type-id='af051c69'/>
         <return type-id='80f4b756'/>
       </function-type>
-      <class-decl name='mountpoint' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/../fs/mount.h' line='32' column='1' id='c1501314'>
+      <class-decl name='mountpoint' size-in-bits='320' is-struct='yes' visibility='default' filepath='fs/mount.h' line='32' column='1' id='c1501314'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='m_hash' type-id='03a4a074' visibility='default' filepath='fs/mount.h' line='33' column='1'/>
         </data-member>
@@ -108472,7 +108472,7 @@
       </array-type-def>
       <pointer-type-def type-id='364c344e' size-in-bits='64' id='ddf6796c'/>
       <pointer-type-def type-id='f1828bdc' size-in-bits='64' id='ddfb71fa'/>
-      <class-decl name='mnt_namespace' size-in-bits='960' is-struct='yes' visibility='default' filepath='fs/mount.h' line='8' column='1' id='de031042'>
+      <class-decl name='mnt_namespace' size-in-bits='960' is-struct='yes' visibility='default' filepath='include/../fs/mount.h' line='8' column='1' id='de031042'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='ns' type-id='99f367f2' visibility='default' filepath='fs/mount.h' line='9' column='1'/>
         </data-member>
@@ -158170,9 +158170,9 @@
         <parameter type-id='95e97e5e' name='num' filepath='sound/soc/soc-dapm.c' line='3211' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='snd_soc_dpcm_get_substream' mangled-name='snd_soc_dpcm_get_substream' filepath='sound/soc/soc-pcm.c' line='2844' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_dpcm_get_substream'>
-        <parameter type-id='95316552' name='be' filepath='sound/soc/soc-pcm.c' line='2844' column='1'/>
-        <parameter type-id='95e97e5e' name='stream' filepath='sound/soc/soc-pcm.c' line='2844' column='1'/>
+      <function-decl name='snd_soc_dpcm_get_substream' mangled-name='snd_soc_dpcm_get_substream' filepath='sound/soc/soc-pcm.c' line='2922' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_dpcm_get_substream'>
+        <parameter type-id='95316552' name='be' filepath='sound/soc/soc-pcm.c' line='2922' column='1'/>
+        <parameter type-id='95e97e5e' name='stream' filepath='sound/soc/soc-pcm.c' line='2922' column='1'/>
         <return type-id='06b2cd14'/>
       </function-decl>
       <function-decl name='snd_soc_find_dai' mangled-name='snd_soc_find_dai' filepath='sound/soc/soc-core.c' line='811' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_find_dai'>
@@ -158406,10 +158406,10 @@
         <parameter type-id='80f4b756' name='driver_name' filepath='sound/soc/soc-core.c' line='280' column='1'/>
         <return type-id='807b7702'/>
       </function-decl>
-      <function-decl name='snd_soc_runtime_calc_hw' mangled-name='snd_soc_runtime_calc_hw' filepath='sound/soc/soc-pcm.c' line='525' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_runtime_calc_hw'>
-        <parameter type-id='95316552' name='rtd' filepath='sound/soc/soc-pcm.c' line='525' column='1'/>
-        <parameter type-id='17e4a02a' name='hw' filepath='sound/soc/soc-pcm.c' line='526' column='1'/>
-        <parameter type-id='95e97e5e' name='stream' filepath='sound/soc/soc-pcm.c' line='526' column='1'/>
+      <function-decl name='snd_soc_runtime_calc_hw' mangled-name='snd_soc_runtime_calc_hw' filepath='sound/soc/soc-pcm.c' line='551' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_runtime_calc_hw'>
+        <parameter type-id='95316552' name='rtd' filepath='sound/soc/soc-pcm.c' line='551' column='1'/>
+        <parameter type-id='17e4a02a' name='hw' filepath='sound/soc/soc-pcm.c' line='552' column='1'/>
+        <parameter type-id='95e97e5e' name='stream' filepath='sound/soc/soc-pcm.c' line='552' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='snd_soc_runtime_set_dai_fmt' mangled-name='snd_soc_runtime_set_dai_fmt' filepath='sound/soc/soc-core.c' line='1233' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_runtime_set_dai_fmt'>
@@ -158417,9 +158417,9 @@
         <parameter type-id='f0981eeb' name='dai_fmt' filepath='sound/soc/soc-core.c' line='1234' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='snd_soc_set_runtime_hwparams' mangled-name='snd_soc_set_runtime_hwparams' filepath='sound/soc/soc-pcm.c' line='297' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_set_runtime_hwparams'>
-        <parameter type-id='06b2cd14' name='substream' filepath='sound/soc/soc-pcm.c' line='297' column='1'/>
-        <parameter type-id='d661a615' name='hw' filepath='sound/soc/soc-pcm.c' line='298' column='1'/>
+      <function-decl name='snd_soc_set_runtime_hwparams' mangled-name='snd_soc_set_runtime_hwparams' filepath='sound/soc/soc-pcm.c' line='321' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_set_runtime_hwparams'>
+        <parameter type-id='06b2cd14' name='substream' filepath='sound/soc/soc-pcm.c' line='321' column='1'/>
+        <parameter type-id='d661a615' name='hw' filepath='sound/soc/soc-pcm.c' line='322' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='snd_soc_tplg_component_load' mangled-name='snd_soc_tplg_component_load' filepath='sound/soc/soc-topology.c' line='2641' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_tplg_component_load'>
@@ -164805,7 +164805,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
