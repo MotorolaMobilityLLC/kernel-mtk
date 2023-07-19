@@ -231,10 +231,6 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x06);
 	tianma_dcs_write_seq_static(ctx, 0x3E, 0x62);
 	tianma_dcs_write_seq_static(ctx, 0x08, 0x20);
-	tianma_dcs_write_seq_static(ctx, 0x79, 0x00);
-	tianma_dcs_write_seq_static(ctx, 0x48, 0xB5);
-	tianma_dcs_write_seq_static(ctx, 0x4F, 0x1F);
-	tianma_dcs_write_seq_static(ctx, 0xC7, 0x05);
 	tianma_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x03);
 	tianma_dcs_write_seq_static(ctx, 0x83, 0x30);
 	tianma_dcs_write_seq_static(ctx, 0x84, 0x02);
@@ -458,7 +454,7 @@ static struct mtk_panel_params ext_params = {
 	.change_fps_by_vfp_send_cmd = 0,
 	.vfp_low_power = 20,
 	.cust_esd_check = 0,
-	.esd_check_enable = 1,
+	.esd_check_enable = 0,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
