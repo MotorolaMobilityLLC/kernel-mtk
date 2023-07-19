@@ -3198,6 +3198,8 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 	int rc = 0;
 	int rp_level = 0;
 	int vbus = 0;
+	static struct chg_alg_device *pe2_alg = NULL;
+
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	struct chg_alg_device *alg = NULL;
 	int i = 0;
@@ -3252,19 +3254,30 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 		goto end_rate_check;
  	}
 
+	//detect if PE2.0 adaptor insert
+	if (pe2_alg == NULL) {
+		pe2_alg = get_chg_alg_by_name("pe2");
+		if (!pe2_alg) {
+			pr_err("[%s]Charging not found pe2\n", __func__);
+		}
+	}
+	if (pe2_alg != NULL) {
+		if (chg_alg_is_algo_running(pe2_alg)) {
+			info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+			goto end_rate_check;
+		}
+	}
+
 	vbus = get_vbus(info);
 
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 //#ifndef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	if ((icl * vbus >= TURBO_POWER_THRSH) && (icl < TURBO_CHRG_THRSH)) {
-#else
-	if (icl * vbus >= TURBO_POWER_THRSH) {
-#endif
 		pr_err("[%s]Charging power = %d, it's Turbo \n", __func__, icl * vbus);
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 		goto end_rate_check;
 	}
-//#endif
+#endif
 
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	if(get_uisoc(info) == 100)
@@ -3294,7 +3307,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 		}
 	}
 #else
-		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;//BC1.2 only show normal instead of turbo
 #endif
 	else if (icl < WEAK_CHRG_THRSH)
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
@@ -3429,6 +3442,9 @@ static bool mmi_check_vbus_present(struct mtk_charger *info)
 }
 
 #define PPS_6A 6000
+#define MOTO_10W 10000
+#define MOTO_15W 15000
+#define MOTO_30W 30000
 #define MOTO_68W 68000
 #define MOTO_125W 125000
 #define PPS_60W 60000
@@ -3630,7 +3646,12 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 		}
 	    }
 #else
-		power_watt = 5 * icl /1000;
+		if (info->mmi.charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO)
+			power_watt = MOTO_15W / 1000; //for PE2.0
+		else if (get_charger_type(info) == POWER_SUPPLY_TYPE_USB_DCP)
+			power_watt = MOTO_10W / 1000; //for DCP type
+		else
+			power_watt = 5 * icl /1000; //for SDP and CDP
 #endif
 	}
 
