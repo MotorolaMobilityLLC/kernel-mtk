@@ -33,6 +33,9 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/alarmtimer.h>
 
+#undef CREATE_TRACE_POINTS
+#include <trace/hooks/wakeupbypass.h>
+
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 #include <linux/sched/clock.h>
 #endif
@@ -295,6 +298,7 @@ static int alarmtimer_suspend(struct device *dev)
 	struct rtc_device *rtc;
 	unsigned long flags;
 	struct rtc_time tm;
+	int wakeup_bypass_enabled = 0;
 #ifdef CONFIG_ALARMTIMER_DEBUG
 	struct rtc_time time;
 #endif
@@ -305,6 +309,10 @@ static int alarmtimer_suspend(struct device *dev)
 	type = freezer_alarmtype;
 	freezer_delta = 0;
 	spin_unlock_irqrestore(&freezer_delta_lock, flags);
+
+	trace_android_vh_wakeup_bypass(&wakeup_bypass_enabled);
+	if (wakeup_bypass_enabled)
+		return 0;
 
 	rtc = alarmtimer_get_rtcdev();
 	/* If we have no rtcdev, just return */
