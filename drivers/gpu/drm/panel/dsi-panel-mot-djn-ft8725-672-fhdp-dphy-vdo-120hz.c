@@ -205,6 +205,7 @@ static void dijing_panel_init(struct dijing *ctx)
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
 
+        dijing_dcs_write_seq_static(ctx, 0x35, 0x00,0x00);
 	dijing_dcs_write_seq_static(ctx, 0x51, 0xCC,0x0C);
 	dijing_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	dijing_dcs_write_seq_static(ctx, 0x55, 0x01);
@@ -422,7 +423,7 @@ static struct mtk_panel_params ext_params = {
 	.change_fps_by_vfp_send_cmd = 0,
 	.vfp_low_power = 20,
 	.cust_esd_check = 0,
-	.esd_check_enable = 0,
+	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
