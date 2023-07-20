@@ -26,5 +26,11 @@
 	};
 };
 
+&mt6363keys {
+        home {
+                linux,keycodes = <115>;
+        };
+};
+
 #include <cancunn_evb/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
