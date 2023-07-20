@@ -897,6 +897,8 @@ static void wfpm_reset_work_func(struct work_struct *work)
 	mddp_check_feature();
 	mddpw_wfpm_send_smem_layout();
 	if (app->state != MDDP_STATE_DISABLED) {
+		mddp_f_dev_del_wan_dev(app->ap_cfg.ul_dev_name);
+		mddp_f_dev_del_lan_dev(app->ap_cfg.dl_dev_name);
 		mddp_sm_on_event(app, MDDP_EVT_FUNC_ENABLE);
 	}
 }
