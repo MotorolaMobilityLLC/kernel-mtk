@@ -7908,10 +7908,10 @@
           <var-decl name='num_components' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='1099' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14272'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1101' column='1'/>
+          <var-decl name='' type-id='ac5ab6ad' visibility='default' filepath='include/sound/soc.h' line='1111' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14336'>
-          <var-decl name='components' type-id='d936a132' visibility='default' filepath='include/sound/soc.h' line='1103' column='1'/>
+          <var-decl name='components' type-id='d936a132' visibility='default' filepath='include/sound/soc.h' line='1113' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='8cd967bc' size-in-bits='64' id='00e8fe5a'/>
@@ -9135,36 +9135,36 @@
         <parameter type-id='fce0537d'/>
         <return type-id='91ce1af9'/>
       </function-type>
-      <class-decl name='soc_enum' size-in-bits='896' is-struct='yes' visibility='default' filepath='include/sound/soc.h' line='1176' column='1' id='044208ec'>
+      <class-decl name='soc_enum' size-in-bits='896' is-struct='yes' visibility='default' filepath='include/sound/soc.h' line='1186' column='1' id='044208ec'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='reg' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='1177' column='1'/>
+          <var-decl name='reg' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='1187' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='shift_l' type-id='002ac4a6' visibility='default' filepath='include/sound/soc.h' line='1178' column='1'/>
+          <var-decl name='shift_l' type-id='002ac4a6' visibility='default' filepath='include/sound/soc.h' line='1188' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='40'>
-          <var-decl name='shift_r' type-id='002ac4a6' visibility='default' filepath='include/sound/soc.h' line='1179' column='1'/>
+          <var-decl name='shift_r' type-id='002ac4a6' visibility='default' filepath='include/sound/soc.h' line='1189' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='items' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1180' column='1'/>
+          <var-decl name='items' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1190' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='96'>
-          <var-decl name='mask' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1181' column='1'/>
+          <var-decl name='mask' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1191' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='texts' type-id='13956559' visibility='default' filepath='include/sound/soc.h' line='1182' column='1'/>
+          <var-decl name='texts' type-id='13956559' visibility='default' filepath='include/sound/soc.h' line='1192' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='values' type-id='5b2fd8e8' visibility='default' filepath='include/sound/soc.h' line='1183' column='1'/>
+          <var-decl name='values' type-id='5b2fd8e8' visibility='default' filepath='include/sound/soc.h' line='1193' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='autodisable' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1184' column='1'/>
+          <var-decl name='autodisable' type-id='f0981eeb' visibility='default' filepath='include/sound/soc.h' line='1194' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='320'>
-          <var-decl name='dobj' type-id='01edcafc' visibility='default' filepath='include/sound/soc.h' line='1186' column='1'/>
+          <var-decl name='dobj' type-id='01edcafc' visibility='default' filepath='include/sound/soc.h' line='1196' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='832'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1189' column='1'/>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/sound/soc.h' line='1199' column='1'/>
         </data-member>
       </class-decl>
       <enum-decl name='dwc3_ep0_state' filepath='drivers/usb/dwc3/core.h' line='780' column='1' id='045093ad'>
@@ -27578,7 +27578,7 @@
           <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/linux/gpio/driver.h' line='281' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='mnt_pcp' size-in-bits='64' is-struct='yes' visibility='default' filepath='fs/mount.h' line='27' column='1' id='3106563e'>
+      <class-decl name='mnt_pcp' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/../fs/mount.h' line='27' column='1' id='3106563e'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='mnt_count' type-id='95e97e5e' visibility='default' filepath='fs/mount.h' line='28' column='1'/>
         </data-member>
@@ -29616,7 +29616,7 @@
           <var-decl name='size' type-id='2f162548' visibility='default' filepath='include/uapi/sound/asoc.h' line='241' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='' type-id='ac5ab6ae' visibility='default' filepath='include/uapi/sound/asoc.h' line='242' column='1'/>
+          <var-decl name='' type-id='ac5ab6af' visibility='default' filepath='include/uapi/sound/asoc.h' line='242' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='usb_config_descriptor' size-in-bits='72' is-struct='yes' visibility='default' filepath='include/uapi/linux/usb/ch9.h' line='349' column='1' id='372ebfa4'>
@@ -38414,7 +38414,7 @@
           <var-decl name='type' type-id='2f162548' visibility='default' filepath='include/uapi/sound/asoc.h' line='259' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='' type-id='ac5ab6af' visibility='default' filepath='include/uapi/sound/asoc.h' line='260' column='1'/>
+          <var-decl name='' type-id='ac5ab6b0' visibility='default' filepath='include/uapi/sound/asoc.h' line='260' column='1'/>
         </data-member>
       </class-decl>
       <array-type-def dimensions='1' type-id='f0981eeb' size-in-bits='160' id='4d5a4f46'>
@@ -66107,7 +66107,7 @@
           <var-decl name='num_elems' type-id='2f162548' visibility='default' filepath='include/uapi/sound/asoc.h' line='227' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='96'>
-          <var-decl name='' type-id='ac5ab6ad' visibility='default' filepath='include/uapi/sound/asoc.h' line='228' column='1'/>
+          <var-decl name='' type-id='ac5ab6ae' visibility='default' filepath='include/uapi/sound/asoc.h' line='228' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='49178f86' size-in-bits='64' id='8a47abc3'/>
@@ -84107,7 +84107,18 @@
           <var-decl name='widget' type-id='ca569b91' visibility='default' filepath='include/sound/soc-topology.h' line='68' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='228' column='1' id='ac5ab6ad'>
+      <union-decl name='__anonymous_union__' size-in-bits='64' is-anonymous='yes' visibility='default' filepath='include/sound/soc.h' line='1111' column='1' id='ac5ab6ad'>
+        <data-member access='public'>
+          <var-decl name='dpcm_be_start' type-id='1872161b' visibility='default' filepath='include/sound/soc.h' line='1111' column='1'/>
+        </data-member>
+        <data-member access='public'>
+          <var-decl name='' type-id='e7f43fb0' visibility='default' filepath='include/sound/soc.h' line='1111' column='1'/>
+        </data-member>
+        <data-member access='public'>
+          <var-decl name='' type-id='ac5ab5e2' visibility='default' filepath='include/sound/soc.h' line='1111' column='1'/>
+        </data-member>
+      </union-decl>
+      <union-decl name='__anonymous_union__' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='228' column='1' id='ac5ab6ae'>
         <data-member access='public'>
           <var-decl name='uuid' type-id='ebaaecd3' visibility='default' filepath='include/uapi/sound/asoc.h' line='229' column='1'/>
         </data-member>
@@ -84118,7 +84129,7 @@
           <var-decl name='string' type-id='e9564905' visibility='default' filepath='include/uapi/sound/asoc.h' line='231' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='242' column='1' id='ac5ab6ae'>
+      <union-decl name='__anonymous_union__' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='242' column='1' id='ac5ab6af'>
         <data-member access='public'>
           <var-decl name='data' type-id='e84913bd' visibility='default' filepath='include/uapi/sound/asoc.h' line='243' column='1'/>
         </data-member>
@@ -84126,7 +84137,7 @@
           <var-decl name='array' type-id='591a7f7d' visibility='default' filepath='include/uapi/sound/asoc.h' line='244' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='1024' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='260' column='1' id='ac5ab6af'>
+      <union-decl name='__anonymous_union__' size-in-bits='1024' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='260' column='1' id='ac5ab6b0'>
         <data-member access='public'>
           <var-decl name='data' type-id='28645bde' visibility='default' filepath='include/uapi/sound/asoc.h' line='261' column='1'/>
         </data-member>
@@ -94801,7 +94812,7 @@
         <parameter type-id='af051c69'/>
         <return type-id='80f4b756'/>
       </function-type>
-      <class-decl name='mountpoint' size-in-bits='320' is-struct='yes' visibility='default' filepath='fs/mount.h' line='32' column='1' id='c1501314'>
+      <class-decl name='mountpoint' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/../fs/mount.h' line='32' column='1' id='c1501314'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='m_hash' type-id='03a4a074' visibility='default' filepath='fs/mount.h' line='33' column='1'/>
         </data-member>
@@ -108472,7 +108483,7 @@
       </array-type-def>
       <pointer-type-def type-id='364c344e' size-in-bits='64' id='ddf6796c'/>
       <pointer-type-def type-id='f1828bdc' size-in-bits='64' id='ddfb71fa'/>
-      <class-decl name='mnt_namespace' size-in-bits='960' is-struct='yes' visibility='default' filepath='include/../fs/mount.h' line='8' column='1' id='de031042'>
+      <class-decl name='mnt_namespace' size-in-bits='960' is-struct='yes' visibility='default' filepath='fs/mount.h' line='8' column='1' id='de031042'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='ns' type-id='99f367f2' visibility='default' filepath='fs/mount.h' line='9' column='1'/>
         </data-member>
@@ -158170,9 +158181,9 @@
         <parameter type-id='95e97e5e' name='num' filepath='sound/soc/soc-dapm.c' line='3211' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='snd_soc_dpcm_get_substream' mangled-name='snd_soc_dpcm_get_substream' filepath='sound/soc/soc-pcm.c' line='2922' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_dpcm_get_substream'>
-        <parameter type-id='95316552' name='be' filepath='sound/soc/soc-pcm.c' line='2922' column='1'/>
-        <parameter type-id='95e97e5e' name='stream' filepath='sound/soc/soc-pcm.c' line='2922' column='1'/>
+      <function-decl name='snd_soc_dpcm_get_substream' mangled-name='snd_soc_dpcm_get_substream' filepath='sound/soc/soc-pcm.c' line='2968' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_dpcm_get_substream'>
+        <parameter type-id='95316552' name='be' filepath='sound/soc/soc-pcm.c' line='2968' column='1'/>
+        <parameter type-id='95e97e5e' name='stream' filepath='sound/soc/soc-pcm.c' line='2968' column='1'/>
         <return type-id='06b2cd14'/>
       </function-decl>
       <function-decl name='snd_soc_find_dai' mangled-name='snd_soc_find_dai' filepath='sound/soc/soc-core.c' line='811' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_find_dai'>
@@ -158406,10 +158417,10 @@
         <parameter type-id='80f4b756' name='driver_name' filepath='sound/soc/soc-core.c' line='280' column='1'/>
         <return type-id='807b7702'/>
       </function-decl>
-      <function-decl name='snd_soc_runtime_calc_hw' mangled-name='snd_soc_runtime_calc_hw' filepath='sound/soc/soc-pcm.c' line='551' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_runtime_calc_hw'>
-        <parameter type-id='95316552' name='rtd' filepath='sound/soc/soc-pcm.c' line='551' column='1'/>
-        <parameter type-id='17e4a02a' name='hw' filepath='sound/soc/soc-pcm.c' line='552' column='1'/>
-        <parameter type-id='95e97e5e' name='stream' filepath='sound/soc/soc-pcm.c' line='552' column='1'/>
+      <function-decl name='snd_soc_runtime_calc_hw' mangled-name='snd_soc_runtime_calc_hw' filepath='sound/soc/soc-pcm.c' line='557' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_runtime_calc_hw'>
+        <parameter type-id='95316552' name='rtd' filepath='sound/soc/soc-pcm.c' line='557' column='1'/>
+        <parameter type-id='17e4a02a' name='hw' filepath='sound/soc/soc-pcm.c' line='558' column='1'/>
+        <parameter type-id='95e97e5e' name='stream' filepath='sound/soc/soc-pcm.c' line='558' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='snd_soc_runtime_set_dai_fmt' mangled-name='snd_soc_runtime_set_dai_fmt' filepath='sound/soc/soc-core.c' line='1233' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_runtime_set_dai_fmt'>
@@ -158417,9 +158428,9 @@
         <parameter type-id='f0981eeb' name='dai_fmt' filepath='sound/soc/soc-core.c' line='1234' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='snd_soc_set_runtime_hwparams' mangled-name='snd_soc_set_runtime_hwparams' filepath='sound/soc/soc-pcm.c' line='321' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_set_runtime_hwparams'>
-        <parameter type-id='06b2cd14' name='substream' filepath='sound/soc/soc-pcm.c' line='321' column='1'/>
-        <parameter type-id='d661a615' name='hw' filepath='sound/soc/soc-pcm.c' line='322' column='1'/>
+      <function-decl name='snd_soc_set_runtime_hwparams' mangled-name='snd_soc_set_runtime_hwparams' filepath='sound/soc/soc-pcm.c' line='327' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_set_runtime_hwparams'>
+        <parameter type-id='06b2cd14' name='substream' filepath='sound/soc/soc-pcm.c' line='327' column='1'/>
+        <parameter type-id='d661a615' name='hw' filepath='sound/soc/soc-pcm.c' line='328' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='snd_soc_tplg_component_load' mangled-name='snd_soc_tplg_component_load' filepath='sound/soc/soc-topology.c' line='2641' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_tplg_component_load'>
