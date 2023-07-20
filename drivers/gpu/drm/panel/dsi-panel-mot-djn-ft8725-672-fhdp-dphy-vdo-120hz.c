@@ -206,7 +206,7 @@ static void dijing_panel_init(struct dijing *ctx)
 	}
 
 	dijing_dcs_write_seq_static(ctx, 0x51, 0xCC,0x0C);
-	dijing_dcs_write_seq_static(ctx, 0x53, 0x24);
+	dijing_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	dijing_dcs_write_seq_static(ctx, 0x55, 0x01);
 
 	dijing_dcs_write_seq_static(ctx, 0x11, 0x00);
