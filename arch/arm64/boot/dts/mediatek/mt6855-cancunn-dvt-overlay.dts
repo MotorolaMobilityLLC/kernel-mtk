@@ -21,28 +21,10 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "cancunn";
-			mot,board-id = <0x47 0xA000>;
+			mot,board-id = <0x47 0xB100>;
 		};
 	};
 };
 
-/* TOUCH start */
-
-&spi3 {
-
-	touch@0{
-
-		chipone,ldo_en_flag = <1>;
-	};
-};
-/* TOUCH end */
-/* DISPLAY start */
-&dsi0 {
-	panel2@0 {
-		panel-vddio-use-ldo = <1>;
-		ldo_en-gpios = <&pio 158 0>;
-	};
-};
-/* DISPLAY END */
-#include <cancunn_evb/cust.dtsi>
+#include <cancunn_dvt/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
