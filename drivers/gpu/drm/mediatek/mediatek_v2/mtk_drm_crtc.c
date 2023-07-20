@@ -3306,11 +3306,10 @@ static void mtk_crtc_update_hrt_state(struct drm_crtc *crtc,
 		mtk_crtc->force_high_enabled = 0;
 	}
 
-	if (priv->data->mmsys_id == MMSYS_MT6879) {
-		bool has_mml_decouple_layer = false;
-		int i;
+	if (priv->data->mmsys_id == MMSYS_MT6879 && lyeblob_ids) {
+		ovl0_2l_no_compress_num = HRT_GET_NO_COMPRESS_FLAG(lyeblob_ids->hrt_num);
 
-		if (crtc_idx == 0 && frame_weight == 400 * 2) {
+		if (crtc_idx == 0 && frame_weight <= 400 * 2 && ovl0_2l_no_compress_num > 0) {
 			output_comp = mtk_ddp_comp_request_output(mtk_crtc);
 
 			if (output_comp && ((output_comp->id == DDP_COMPONENT_DSI0) ||
@@ -3320,25 +3319,14 @@ static void mtk_crtc_update_hrt_state(struct drm_crtc *crtc,
 					DSI_GET_MODE_BY_MAX_VREFRESH, &mode);
 			if (mode)
 				max_fps = drm_mode_vrefresh(mode);
-		}
 
 		if (max_fps >= 120) {
-			for (i = 0; i < mtk_crtc->layer_nr; i++) {
-				struct drm_plane *plane = &mtk_crtc->planes[i].base;
-				struct mtk_plane_comp_state comp_state;
-
-				mtk_plane_get_comp_state(plane, &comp_state, crtc, 0);
-
-				if (comp_state.layer_caps
-						& MTK_MML_DISP_DECOUPLE_LAYER) {
-					has_mml_decouple_layer = true;
-					break;
-				}
-			}
-			if (has_mml_decouple_layer) {
-				bw = overlap_to_bw(crtc, frame_weight + 400);
-				DDPINFO("%s CRTC%u mml dc recalcute bw:%d, weight:%d max_fps:%d\n",
-						__func__, crtc_idx, bw, frame_weight, max_fps);
+			/* Avoid bw limit of no compress layer with video in one channal */
+			frame_weight = frame_weight < 800 ? 800 : frame_weight;
+			bw = overlap_to_bw(crtc, frame_weight + 400);
+			DDPINFO("%s recalcute bw:%d, weight:%d max_fps:%d no_compr:%d\n",
+						__func__, bw, frame_weight, max_fps,
+						ovl0_2l_no_compress_num);
 			}
 		}
 	}
