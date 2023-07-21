@@ -1922,7 +1922,11 @@ static int runtime_suspend(struct device *dev)
 	}
 
 	mutex_unlock(&core->mutex);
-
+#ifdef CAT_MORE_STATUS
+	dev_info(dev,
+		"[%s] core->refcnt:%d\n",
+		__func__, core->refcnt);
+#endif
 	return 0;
 }
 
@@ -1951,7 +1955,11 @@ static int runtime_resume(struct device *dev)
 	}
 
 	mutex_unlock(&core->mutex);
-
+#ifdef CAT_MORE_STATUS
+	dev_info(dev,
+		"[%s] core->refcnt:%d\n",
+		__func__, core->refcnt);
+#endif
 	return 0;
 }
 

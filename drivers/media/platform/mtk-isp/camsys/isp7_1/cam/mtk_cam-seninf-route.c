@@ -832,11 +832,16 @@ int _mtk_cam_seninf_set_camtg(struct v4l2_subdev *sd,
 				notify_fsync_cammux_usage_with_kthread(ctx);
 			}
 
-			if (!seninf_ca_open_session())
-				dev_info(ctx->dev, "seninf_ca_open_session fail");
+			if (vc->out_pad == PAD_SRC_RAW0 ||
+				vc->out_pad == PAD_SRC_RAW1 ||
+				vc->out_pad == PAD_SRC_RAW2) {
+				if (!seninf_ca_open_session())
+					dev_info(ctx->dev, "seninf_ca_open_session fail\n");
 
-			dev_info(ctx->dev, "Sensor kernel ca_checkpipe");
-			seninf_ca_checkpipe(ctx->SecInfo_addr);
+				dev_info(ctx->dev, "Sensor kernel ca_checkpipe\n");
+				seninf_ca_checkpipe(ctx->SecInfo_addr);
+			} else
+				dev_info(ctx->dev, "not secure path, ignore ca_checkpipe\n");
 		} else {
 #endif
 			if (camtg == 0xff) {
