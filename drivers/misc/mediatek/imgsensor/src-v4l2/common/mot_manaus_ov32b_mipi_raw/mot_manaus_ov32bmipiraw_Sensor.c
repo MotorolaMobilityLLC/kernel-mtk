@@ -52,7 +52,7 @@
 
 /**********************Modify Following Strings for Debug**********************/
 #define PFX "mot_manaus_ov32b"
-static int mot_ov32b_camera_debug = 1;
+static int mot_ov32b_camera_debug = 0;
 module_param(mot_ov32b_camera_debug,int, 0644);
 
 static int mot_ov32b_fusion_talk_en = 0;
