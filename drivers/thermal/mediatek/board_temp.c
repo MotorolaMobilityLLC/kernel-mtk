@@ -473,10 +473,10 @@ static int board_ntc_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	tia_reg = devm_ioremap_resource(&pdev->dev, res);
-/*
+
 	if (IS_ERR(tia_reg))
 		return PTR_ERR(tia_reg);
-*/
+
 	ntc_info->data_reg = tia_reg;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
