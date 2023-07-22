@@ -34,8 +34,9 @@
 //#define BIAS_SM5109
 extern int __attribute__ ((weak)) sm5109_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) sm5109_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
-
+static int tp_esd_recovery_flag = 0;
 static int tp_gesture_flag = 0;
+static BLOCKING_NOTIFIER_HEAD(panel_esd_notifier_list);
 
 struct tianma {
 	struct device *dev;
@@ -138,6 +139,27 @@ static void tianma_panel_get_data(struct tianma *ctx)
 }
 #endif
 
+int panel_esd_register_client(const char *source, struct notifier_block *nb)
+{
+        if (!source)
+                return -EINVAL;
+
+        return blocking_notifier_chain_register(&panel_esd_notifier_list, nb);
+}
+EXPORT_SYMBOL(panel_esd_register_client);
+
+int panel_esd_unregister_client(struct notifier_block *nb)
+{
+        return blocking_notifier_chain_unregister(&panel_esd_notifier_list, nb);
+}
+EXPORT_SYMBOL(panel_esd_unregister_client);
+
+int panel_esd_notifier_call_chain(unsigned long val, void *v)
+{
+        return blocking_notifier_call_chain(&panel_esd_notifier_list, val, v);
+}
+EXPORT_SYMBOL(panel_esd_notifier_call_chain);
+
 static void tianma_dcs_write(struct tianma *ctx, const void *data, size_t len)
 {
 	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
@@ -210,6 +232,14 @@ static void tianma_panel_init(struct tianma *ctx)
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
 
+	if (tp_esd_recovery_flag) {
+		panel_esd_notifier_call_chain(PANEL_ESD_RECOVERY_NOFLASH,NULL);
+		tianma_dcs_write_seq_static(ctx,0XFF,0XC0);
+		tianma_dcs_write_seq_static(ctx,0X4B,0X00);
+		panel_esd_notifier_call_chain(PANEL_ESD_RECOVERY_VDD,NULL);
+		tianma_dcs_write_seq_static(ctx,0XFF,0XC0);
+                tianma_dcs_write_seq_static(ctx,0X4B,0X0E);
+	}
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
 	tianma_dcs_write_seq_static(ctx,0XFF,0XE0);
@@ -284,6 +314,17 @@ static int tianma_set_gesture_flag(int state)
 
 	pr_info("%s:disp:set tp_gesture_flag:%d\n", __func__, tp_gesture_flag);
 	return 0;
+}
+
+static int tianma_set_esd_recovery_flag(int state)
+{
+        if(state == 1)
+                tp_esd_recovery_flag = 1;
+        else
+                tp_esd_recovery_flag = 0;
+
+        pr_info("%s:disp:set tp_esd_recovery_flag:%d\n", __func__, tp_esd_recovery_flag);
+        return 0;
 }
 
 static int tianma_unprepare(struct drm_panel *panel)
@@ -887,6 +928,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ext_param_set = mtk_panel_ext_param_set,
 	.get_lcm_version = nt36672c_get_lcm_version,
 //	.ata_check = panel_ata_check,
+	.set_esd_recovery_flag = tianma_set_esd_recovery_flag,
 	.set_gesture_flag = tianma_set_gesture_flag,
 	.panel_feature_set = panel_feature_set,
 };
