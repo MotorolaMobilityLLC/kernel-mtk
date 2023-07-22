@@ -6,7 +6,8 @@
 #ifndef PANEL_NT36672C_FHDP_DSI_VDO_120HZ_TM_HFP
 #define PANEL_NT36672C_FHDP_DSI_VDO_120HZ_TM_HFP
 
-
+#define PANEL_ESD_RECOVERY_NOFLASH	0x01
+#define PANEL_ESD_RECOVERY_VDD          0x02
 #define REGFLAG_DELAY           0xFFFC
 #define REGFLAG_UDELAY          0xFFFB
 #define REGFLAG_END_OF_TABLE    0xFFFD
@@ -91,4 +92,7 @@
 #define DSC_RC_TGT_OFFSET_HI        3
 #define DSC_RC_TGT_OFFSET_LO        3
 
+int panel_esd_register_client(const char *source, struct notifier_block *nb);
+int panel_esd_unregister_client(struct notifier_block *nb);
+int panel_esd_notifier_call_chain(unsigned long val, void *v);
 #endif //end of PANEL_NT36672C_FHDP_DSI_VDO_120HZ_TM_HFP
