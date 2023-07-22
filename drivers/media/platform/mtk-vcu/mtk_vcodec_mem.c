@@ -68,10 +68,10 @@ void mtk_vcu_mem_release(struct mtk_vcu_queue *vcu_queue)
 	if (vcu_queue->num_buffers != 0) {
 		for (buffer = 0; buffer < vcu_queue->num_buffers; buffer++) {
 			vcu_buffer = &vcu_queue->bufs[buffer];
-			if (vcu_buffer->dbuf == NULL)
-				vcu_queue->mem_ops->put(vcu_buffer->mem_priv);
-			else
+			if (vcu_buffer->dbuf != NULL)
 				fput(vcu_buffer->dbuf->file);
+			else if (vcu_buffer->mem_priv != NULL)
+				vcu_queue->mem_ops->put(vcu_buffer->mem_priv);
 
 			pr_debug("Free %d dbuf = %p size = %d mem_priv = %lx ref_cnt = %d\n",
 				 buffer, vcu_buffer->dbuf,
