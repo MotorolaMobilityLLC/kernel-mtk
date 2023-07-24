@@ -1907,6 +1907,7 @@ out:
 static int mt6375_reset_pe_ta(struct charger_device *chgdev)
 {
 	int ret;
+	u32 regval = 0;
 	struct mt6375_chg_data *ddata = charger_get_data(chgdev);
 
 	mutex_lock(&ddata->pe_lock);
@@ -1914,11 +1915,19 @@ static int mt6375_reset_pe_ta(struct charger_device *chgdev)
 	ret = mt6375_chg_field_set(ddata, F_VMIVR, 4600);
 	if (ret < 0)
 		goto out;
+	ret = mt6375_chg_field_get(ddata, F_IAICR, &regval);
+	if (ret < 0)
+		goto out;
+	mt_dbg(ddata->dev, "aicr = %d\n", regval);
 	ret = mt6375_chg_field_set(ddata, F_IAICR, 100);
 	if (ret < 0)
 		goto out;
 	msleep(250);
 	ret = mt6375_chg_field_set(ddata, F_IAICR, 500);
+	if (regval > 500) {
+		msleep(250);
+		ret = mt6375_chg_field_set(ddata, F_IAICR, regval);
+	}
 out:
 	mutex_unlock(&ddata->pe_lock);
 	return ret;
