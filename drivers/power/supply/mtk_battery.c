@@ -3541,7 +3541,7 @@ static int shutdown_event_handler(struct mtk_battery *gm)
 						bm_debug("normal tmp, battery voltage is low shutdown\n");
 						wakeup_fg_algo(gm,
 							FG_INTR_SHUTDOWN);
-#if CONFIG_MOTO_SELECT_LOW_TMP_BATVOL
+#ifdef CONFIG_MOTO_SELECT_LOW_TMP_BATVOL
 					} else if (sdd->avgvbat <=
 						low_tmp_bat) {
 #else
