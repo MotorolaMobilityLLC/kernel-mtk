@@ -3497,12 +3497,15 @@ static int shutdown_event_handler(struct mtk_battery *gm)
 
 #ifdef CONFIG_MOTO_SELECT_LOW_TMP_BATVOL
 		dev_sn = mmi_get_battery_serialnumber();
-
-		if (strcmp(dev_sn, "SB18D86479")) {
-			low_tmp_bat = 3350;
-		} else {
-			low_tmp_bat = 3300;
+		if (dev_sn != NULL) {
+			if (!strcmp(dev_sn, "SB18D86479")) {
+				low_tmp_bat = 3300;
+			} else {
+				low_tmp_bat = 3350;
+			}
 		}
+		else
+			low_tmp_bat = 3350;
 
 		bm_debug("lbatcheck vbat:%d avgvbat:%d %d,%d tmp:%d,bound:%d,th:%d %d,en:%d\n",
 			vbat,
