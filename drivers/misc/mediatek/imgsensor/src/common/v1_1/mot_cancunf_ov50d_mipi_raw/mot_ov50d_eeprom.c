@@ -42,7 +42,7 @@ static  struct imgsensor_struct *imgsensor;
 #define CANCUNF_OV50D_EEPROM_CRC_PDAF_OUTPUT1_SIZE 496
 #define CANCUNF_OV50D_EEPROM_CRC_PDAF_OUTPUT2_SIZE 1004
 #define CANCUNF_OV50D_EEPROM_CRC_PDC_SIZE 458
-#define CANCUNF_OV50D_EEPROM_CRC_PDC_WRITE_SIZE 446
+#define CANCUNF_OV50D_EEPROM_CRC_PDC_WRITE_SIZE 450
 
 static cancunf_ov_cal_addr_data_t ov_pdc_data[CANCUNF_OV50D_EEPROM_CRC_PDC_WRITE_SIZE] = {{0}};
 
@@ -52,7 +52,7 @@ static uint8_t CANCUNF_OV50D_eeprom[CANCUNF_OV50D_EEPROM_SIZE] = {0};
 static mot_calibration_status_t calibration_status = {CRC_FAILURE};
 static mot_calibration_mnf_t mnf_info = {0};
 
-extern kal_uint16 mot_cancunf_ov50d_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len);
+extern kal_uint16 mot_cancunf_ov50d_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len);
 
 static uint8_t crc_reverse_byte(uint32_t data)
 {
@@ -438,7 +438,7 @@ static void CANCUNF_OV50D_eeprom_get_mnf_data(void *data,
 
 int get_ov_pdc_data(void *data)
 {
-	//int i;
+	int i;
 	struct CANCUNF_OV50D_eeprom_t *eeprom = (struct CANCUNF_OV50D_eeprom_t*)data;
 	if (!eeprom_util_check_crc16(eeprom->ov_pdc_data, CANCUNF_OV50D_EEPROM_CRC_PDC_SIZE,
 		convert_crc(eeprom->ov_pdc_crc)))
@@ -449,14 +449,14 @@ int get_ov_pdc_data(void *data)
 	else
 	{
 		pr_debug("PDC Data CRC Pass");
-		/*
 		pdc_data_valid = 1;
 		for (i = 0; i < CANCUNF_OV50D_EEPROM_CRC_PDC_WRITE_SIZE; i++)
 		{
-			ov_pdc_data[i].addr = 0x5F80 + i;
-			ov_pdc_data[i].data = eeprom->ov_pdc_data[12 + i];
+			ov_pdc_data[i].addr = 0x59F0 + i;
+			ov_pdc_data[i].data = eeprom->ov_pdc_data[8 + i];
 		}
-		*/
+		pr_debug("X");
+
 	}
 	return 1;
 }
@@ -500,7 +500,7 @@ void write_pdc_data(void)
 
 	memcpy(write_table, &ov_pdc_data[0].addr, sizeof(write_table));
 
-	mot_cancunf_ov50d_table_write_cmos_sensor(write_table,
+	mot_cancunf_ov50d_burst_write_cmos_sensor(write_table,
 		sizeof(write_table)/sizeof(uint16_t));
 
 	pr_debug("apply pdc calibration data success.");
