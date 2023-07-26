@@ -181,7 +181,7 @@
 	};
 
 	panel2@0 {
-		compatible = "tm,il77600a,672,vdo,120hz";
+		compatible = "tm,ili7807s,672,vdo,120hz";
 		reg = <1>;
 		1p8-supply = <&mt6369_vtp>;
 		reset-gpios = <&pio 95 0>;
