@@ -60,6 +60,10 @@ ifeq ($(CONFIG_DRM_MEDIATEK_DEBUG_FS),y)
 mediatek-drm-y += mtk_drm_debugfs.o
 endif
 
+ifeq ($(CONFIG_PANEL_TP_ESD_RECOVERY),y)
+ccflags-y += -DPANEL_TP_ESD_RECOVERY
+endif
+
 mediatek-drm-y += mtk_dp_intf.o \
 	mtk_dp.o \
 	mtk_dp_hal.o \
