@@ -423,6 +423,21 @@ int touch_set_state(int state, int panel_idx)
 }
 EXPORT_SYMBOL(touch_set_state);
 
+#ifdef PANEL_TP_ESD_RECOVERY
+static int tp_esd_recovery_flag = 0;
+int touch_set_esd_recovery_state(int state, int panel_idx)
+{
+        if (state == 1) {
+                tp_esd_recovery_flag = 1;
+        } else{
+                tp_esd_recovery_flag = 0;
+        }
+
+        return 0;
+}
+EXPORT_SYMBOL(touch_set_esd_recovery_state);
+#endif
+
 struct mtk_panel_ext *mtk_dsi_get_panel_ext(struct mtk_ddp_comp *comp);
 
 static inline struct mtk_dsi *encoder_to_dsi(struct drm_encoder *e)
@@ -3731,11 +3746,17 @@ static void mtk_output_dsi_enable(struct mtk_dsi *dsi,
 	struct drm_crtc *crtc = dsi->encoder.crtc;
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_crtc_state *mtk_state = to_mtk_crtc_state(crtc->state);
+#ifdef PANEL_TP_ESD_RECOVERY
+	struct mtk_panel_ext *panel_ext = mtk_crtc->panel_ext;
+#endif
 	unsigned int mode_id = mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX];
 	unsigned int mode_chg_index = 0;
 
 	DDPINFO("%s +\n", __func__);
-
+#ifdef PANEL_TP_ESD_RECOVERY
+	if (panel_ext && panel_ext->funcs && panel_ext->funcs->set_esd_recovery_flag)
+                panel_ext->funcs->set_esd_recovery_flag(tp_esd_recovery_flag);
+#endif
 	if (dsi->output_en) {
 		if (mtk_dsi_doze_status_change(dsi)) {
 			mtk_dsi_pre_cmd(dsi, crtc);

@@ -77,3 +77,9 @@ config MTK_DRM_DSI_DPHY_TIMCONFIG_V2
          To invoke mtk_dsi_dphy_timconfig_v2 when needed.
          Some project need use mtk_dsi_dphy_timconfig_v2 to solve frame rate differ between LK and kernel.
          If unsure, set N.
+
+config PANEL_TP_ESD_RECOVERY
+       bool "enable to esd recovery"
+       default n
+       help
+	 If lcm is error,need to recovery it
