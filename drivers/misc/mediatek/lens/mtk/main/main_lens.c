@@ -641,7 +641,11 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 	spin_lock(&g_AF_SpinLock);
 #ifdef CONFIG_AF_NOISE_ELIMINATION
 	Close_holder = NO_HOLD;
-	if(g_s4AF_Opened  == 1){
+#if defined(CONFIG_MACH_MT6768)
+	if(g_s4AF_Opened){
+#else
+        if(g_s4AF_Opened  == 1){
+#endif
 		spin_unlock(&g_AF_SpinLock);
 		return 0;
 	}
