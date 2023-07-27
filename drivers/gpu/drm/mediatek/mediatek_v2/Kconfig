@@ -70,3 +70,9 @@ config DISP_ESD_NOTIFY_SUPPORT
           To set display recvy notification support.
           Some panel need LCM send notification for TP recover when LCD reset.
           If unsure, set N.
+
+config PANEL_TP_ESD_RECOVERY
+       bool "enable to esd recovery"
+       default n
+       help
+	 If lcm is error,need to recovery it
