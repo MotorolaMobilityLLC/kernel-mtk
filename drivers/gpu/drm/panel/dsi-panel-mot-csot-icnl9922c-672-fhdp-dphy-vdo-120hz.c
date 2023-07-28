@@ -384,9 +384,9 @@ static const struct drm_display_mode default_mode = {
 #endif
 };
 
-#if 0
+#if 1
 static const struct drm_display_mode performance_mode_30hz = {
-	.clock		= 331198,
+	.clock		= 327130,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_30_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_30_HFP + HSA,
@@ -398,7 +398,7 @@ static const struct drm_display_mode performance_mode_30hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 331198,
+	.clock		= 332237,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -409,23 +409,23 @@ static const struct drm_display_mode performance_mode_90hz = {
 	.vtotal = FRAME_HEIGHT + MODE_90_VFP + VSA + VBP,
 };
 
-static const struct drm_display_mode performance_mode_120hz = {
-	.clock		= 331198,
+static const struct drm_display_mode performance_mode_60hz = {
+	.clock		= 331027,
 	.hdisplay = FRAME_WIDTH,
-	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
-	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
-	.htotal = FRAME_WIDTH + MODE_120_HFP + HSA + HBP,
+	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_60_HFP + HSA + HBP,
 	.vdisplay = FRAME_HEIGHT,
-	.vsync_start = FRAME_HEIGHT + MODE_120_VFP,
-	.vsync_end = FRAME_HEIGHT + MODE_120_VFP + VSA,
-	.vtotal = FRAME_HEIGHT + MODE_120_VFP + VSA + VBP,
+	.vsync_start = FRAME_HEIGHT + MODE_60_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_60_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_60_VFP + VSA + VBP,
 };
 #endif
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 static struct mtk_panel_params ext_params = {
 	.change_fps_by_vfp_send_cmd = 0,
-	.vfp_low_power = 20,
+	//.vfp_low_power = 20,
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
@@ -485,11 +485,11 @@ static struct mtk_panel_params ext_params = {
 	.lfr_enable = 0,
 	.lfr_minimum_fps = MODE_120_FPS,
 	.dyn_fps = {
-		.switch_en = 0,
+		.switch_en = 1,
 		.vact_timing_fps = 120,
-		.dfps_cmd_table[0] = {0, 4, {0xB9, 0x83, 0x10, 0x21} },
-		.dfps_cmd_table[1] = {0, 2, {0xE2, 0x00} },
-		.dfps_cmd_table[2] = {0, 2, {0xB9, 0x00} },
+		//.dfps_cmd_table[0] = {0, 4, {0xB9, 0x83, 0x10, 0x21} },
+		//.dfps_cmd_table[1] = {0, 2, {0xE2, 0x00} },
+		//.dfps_cmd_table[2] = {0, 2, {0xB9, 0x00} },
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
@@ -498,10 +498,10 @@ static struct mtk_panel_params ext_params = {
 	},
 };
 
-#if 0
+#if 1
 static struct mtk_panel_params ext_params_mode_30 = {
 //	.vfp_low_power = 7476,//30hz
-	.data_rate = 824,
+	.data_rate = 836,
 	.cust_esd_check = 0,
 	.esd_check_enable = 0,
 	.lcm_esd_check_table[0] = {
@@ -561,7 +561,7 @@ static struct mtk_panel_params ext_params_mode_30 = {
 
 static struct mtk_panel_params ext_params_mode_90 = {
 //	.vfp_low_power = 7476,//30hz
-	.data_rate = 824,
+	.data_rate = 836,
 	.cust_esd_check = 0,
 	.esd_check_enable = 0,
 	.lcm_esd_check_table[0] = {
@@ -621,9 +621,9 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	.lfr_minimum_fps = MODE_60_FPS,
 };
 
-static struct mtk_panel_params ext_params_mode_120 = {
+static struct mtk_panel_params ext_params_mode_60 = {
 //	.vfp_low_power = 7476,//30hz
-	.data_rate = 824,
+	.data_rate = 836,
 	.cust_esd_check = 0,
 	.esd_check_enable = 0,
 	.lcm_esd_check_table[0] = {
@@ -730,11 +730,11 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 
 	if (!m)
 		return ret;
-
+	printk("[lcd_info][%s] switch fps to %d\n",__func__,drm_mode_vrefresh(m));
 	pr_info("%s:disp: mode fps=%d", __func__, drm_mode_vrefresh(m));
 	if (drm_mode_vrefresh(m) == MODE_120_FPS)
 		ext->params = &ext_params;
-#if 0
+#if 1
 	else if (drm_mode_vrefresh(m) == MODE_30_FPS)
 		ext->params = &ext_params_mode_30;
 	else if (drm_mode_vrefresh(m) == MODE_90_FPS)
@@ -896,9 +896,9 @@ static int csot_get_modes(struct drm_panel *panel,
 						struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
-//	struct drm_display_mode *mode_1;
-//	struct drm_display_mode *mode_2;
-//	struct drm_display_mode *mode_3;
+	struct drm_display_mode *mode_1;
+	struct drm_display_mode *mode_2;
+	struct drm_display_mode *mode_3;
 
 	mode = drm_mode_duplicate(connector->dev, &default_mode);
 	printk("[%d  %s]disp: mode:\n",__LINE__, __FUNCTION__,mode);
@@ -913,7 +913,7 @@ static int csot_get_modes(struct drm_panel *panel,
 	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
 	drm_mode_probed_add(connector, mode);
 
-#if 0
+#if 1
 	mode_1 = drm_mode_duplicate(connector->dev, &performance_mode_30hz);
 	printk("[%d  %s]disp mode:%d\n",__LINE__, __FUNCTION__,mode_1);
 	if (!mode_1) {
