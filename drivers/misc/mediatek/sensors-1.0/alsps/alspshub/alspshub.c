@@ -31,6 +31,9 @@ struct alspshub_ipi_data {
 	atomic_t	als_cali;
 	atomic_t	ps_thd_val_high;
 	atomic_t	ps_thd_val_low;
+	atomic_t	ps_cover;
+	atomic_t	ps_uncover;
+	atomic_t	ps_cali_result;
 	ulong		enable;
 	ulong		pending_intr;
 	bool als_factory_enable;
@@ -38,6 +41,8 @@ struct alspshub_ipi_data {
 	bool als_android_enable;
 	bool ps_android_enable;
 	struct wakeup_source *ps_wake_lock;
+	struct completion als_cali_done;/*moto add for als cali sync*/
+	struct completion ps_cali_done;/*moto add for ps cali sync*/
 };
 
 static struct alspshub_ipi_data *obj_ipi_data;
@@ -277,7 +282,7 @@ static void alspshub_init_done_work(struct work_struct *work)
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 	int err = 0;
 #ifndef MTK_OLD_FACTORY_CALIBRATION
-	int32_t cfg_data[2] = {0};
+	int32_t cfg_data[5] = {0};
 #endif
 
 	if (atomic_read(&obj->scp_init_done) == 0) {
@@ -294,8 +299,11 @@ static void alspshub_init_done_work(struct work_struct *work)
 			ID_PROXIMITY, CUST_ACTION_SET_CALI);
 #else
 	spin_lock(&calibration_lock);
-	cfg_data[0] = atomic_read(&obj->ps_thd_val_high);
-	cfg_data[1] = atomic_read(&obj->ps_thd_val_low);
+	cfg_data[0] = 0;
+	cfg_data[1] = atomic_read(&obj->ps_thd_val_high);
+	cfg_data[2] = atomic_read(&obj->ps_thd_val_low);
+	cfg_data[3] = atomic_read(&obj->ps_cover);
+	cfg_data[4] = atomic_read(&obj->ps_uncover);
 	spin_unlock(&calibration_lock);
 	err = sensor_cfg_to_hub(ID_PROXIMITY,
 		(uint8_t *)cfg_data, sizeof(cfg_data));
@@ -303,7 +311,8 @@ static void alspshub_init_done_work(struct work_struct *work)
 		pr_err("sensor_cfg_to_hub ps fail\n");
 
 	spin_lock(&calibration_lock);
-	cfg_data[0] = atomic_read(&obj->als_cali);
+	cfg_data[0] = 0;
+	cfg_data[1] = atomic_read(&obj->als_cali);
 	spin_unlock(&calibration_lock);
 	err = sensor_cfg_to_hub(ID_LIGHT,
 		(uint8_t *)cfg_data, sizeof(cfg_data));
@@ -329,10 +338,24 @@ static int ps_recv_data(struct data_unit_t *event, void *reserved)
 			(int64_t)event->time_stamp);
 	} else if (event->flush_action == CALI_ACTION) {
 		spin_lock(&calibration_lock);
-		atomic_set(&obj->ps_thd_val_high, event->data[0]);
-		atomic_set(&obj->ps_thd_val_low, event->data[1]);
-		spin_unlock(&calibration_lock);
-		err = ps_cali_report(event->data);
+		//cali type 0:ct, 1:factory threshold, 2:irq line, 3:undo calibration
+		if (event->data[0] == 0) {
+			atomic_set(&obj->ps_cali_result, event->data[1]);
+			spin_unlock(&calibration_lock);
+		} else if ((event->data[0] == 1) || (event->data[0] == 3)) {
+			atomic_set(&obj->ps_cali_result, event->data[1]);
+			atomic_set(&obj->ps_thd_val_high, event->data[2]);
+			atomic_set(&obj->ps_thd_val_low, event->data[3]);
+			atomic_set(&obj->ps_cover, event->data[4]);
+			atomic_set(&obj->ps_uncover, event->data[5]);
+			spin_unlock(&calibration_lock);
+			err = ps_cali_report(&event->data[2]);
+		} else if (event->data[0] == 2) {
+			atomic_set(&obj->ps_cali_result, event->data[1]);
+			spin_unlock(&calibration_lock);
+		} else
+			spin_unlock(&calibration_lock);
+		complete(&obj->ps_cali_done);
 	}
 	return err;
 }
@@ -356,6 +379,8 @@ static int als_recv_data(struct data_unit_t *event, void *reserved)
 		atomic_set(&obj->als_cali, event->data[0]);
 		spin_unlock(&calibration_lock);
 		err = als_cali_report(event->data);
+		//moto add
+		complete(&obj->als_cali_done);
 	}
 	return err;
 }
@@ -383,6 +408,10 @@ static int alshub_factory_enable_sensor(bool enable_disable,
 	else
 		WRITE_ONCE(obj->als_factory_enable, false);
 
+	/* Do not actually disable sensor if android is using it */
+	if (!enable_disable && obj->als_android_enable)
+		return 0;
+
 	if (enable_disable == true) {
 		err = sensor_set_delay_to_hub(ID_LIGHT, sample_periods_ms);
 		if (err) {
@@ -403,7 +432,23 @@ static int alshub_factory_enable_sensor(bool enable_disable,
 	mutex_unlock(&alspshub_mutex);
 	return 0;
 }
+
+//moto modify
 static int alshub_factory_get_data(int32_t *data)
+{
+	int err = 0;
+	struct data_unit_t data_t;
+
+	err = sensor_get_data_from_hub(ID_LIGHT, &data_t);
+	if (err < 0)
+		return -1;
+	data[0] = data_t.data[0];
+	data[1] = data_t.data[1];
+	data[2] = data_t.data[2];
+	pr_err("als get data[0]=%d data[1]=%d data[2]=%d \n",data[0],data[1],data[2]);
+	return 0;
+}
+static int alshub_factory_get_raw_data(int32_t *data)
 {
 	int err = 0;
 	struct data_unit_t data_t;
@@ -414,13 +459,20 @@ static int alshub_factory_get_data(int32_t *data)
 	*data = data_t.light;
 	return 0;
 }
-static int alshub_factory_get_raw_data(int32_t *data)
-{
-	return alshub_factory_get_data(data);
-}
+
+//moto modify
 static int alshub_factory_enable_calibration(void)
 {
-	return sensor_calibration_to_hub(ID_LIGHT);
+	int ret = 0;
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+	ret = sensor_calibration_to_hub(ID_LIGHT);
+	if (ret < 0)
+		return -1;
+	 ret = wait_for_completion_timeout(&obj->als_cali_done,
+					  msecs_to_jiffies(3000));
+	if (!ret)
+		return -1;
+	return 0;
 }
 static int alshub_factory_clear_cali(void)
 {
@@ -430,15 +482,16 @@ static int alshub_factory_set_cali(int32_t offset)
 {
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 	int err = 0;
-	int32_t cfg_data;
+	int32_t cfg_data[2];
 
-	cfg_data = offset;
+	cfg_data[0] = 0;
+	cfg_data[1] = offset;
 	err = sensor_cfg_to_hub(ID_LIGHT,
 		(uint8_t *)&cfg_data, sizeof(cfg_data));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub fail\n");
 	atomic_set(&obj->als_cali, offset);
-	als_cali_report(&cfg_data);
+	als_cali_report(&cfg_data[1]);
 
 	return err;
 
@@ -450,11 +503,39 @@ static int alshub_factory_get_cali(int32_t *offset)
 	*offset = atomic_read(&obj->als_cali);
 	return 0;
 }
+
+static int alshub_factory_get_data_mot(int32_t data[8])
+{
+	int err = 0, i;
+	struct data_unit_t data_t;
+
+	err = sensor_get_data_from_hub(ID_LIGHT, &data_t);
+	if (err < 0)
+		return err;
+	for (i = 0; i < 8; i ++)
+		data[i] = data_t.data[i];
+	return 0;
+}
+
+static int alshub_factory_set_data_mot(int32_t data[3])
+{
+	return sensor_cfg_to_hub(ID_LIGHT, (uint8_t *)data, 3*sizeof(int32_t));
+}
+
 static int pshub_factory_enable_sensor(bool enable_disable,
 			int64_t sample_periods_ms)
 {
 	int err = 0;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
+
+	if (enable_disable == true)
+		WRITE_ONCE(obj->ps_factory_enable, true);
+	else
+		WRITE_ONCE(obj->ps_factory_enable, false);
+
+	/* Do not actually disable sensor if android is using it */
+	if (!enable_disable && obj->ps_android_enable)
+		return 0;
 
 	if (enable_disable == true) {
 		err = sensor_set_delay_to_hub(ID_PROXIMITY, sample_periods_ms);
@@ -498,7 +579,16 @@ static int pshub_factory_get_raw_data(int32_t *data)
 }
 static int pshub_factory_enable_calibration(void)
 {
-	return sensor_calibration_to_hub(ID_PROXIMITY);
+	int ret = 0;
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+	ret = sensor_calibration_to_hub(ID_PROXIMITY);
+	if (ret < 0)
+		return -1;
+	 ret = wait_for_completion_timeout(&obj->ps_cali_done,
+					  msecs_to_jiffies(3000));
+	if (!ret)
+		return -1;
+	return atomic_read(&obj->ps_cali_result);
 }
 static int pshub_factory_clear_cali(void)
 {
@@ -559,15 +649,16 @@ static int pshub_factory_set_threshold(int32_t threshold[2])
 			ID_PROXIMITY, CUST_ACTION_SET_PS_THRESHOLD);
 #else
 	spin_lock(&calibration_lock);
-	cfg_data[0] = atomic_read(&obj->ps_thd_val_high);
-	cfg_data[1] = atomic_read(&obj->ps_thd_val_low);
+	cfg_data[0] = 0;
+	cfg_data[1] = atomic_read(&obj->ps_thd_val_high);
+	cfg_data[2] = atomic_read(&obj->ps_thd_val_low);
 	spin_unlock(&calibration_lock);
 	err = sensor_cfg_to_hub(ID_PROXIMITY,
 		(uint8_t *)cfg_data, sizeof(cfg_data));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub fail\n");
 
-	ps_cali_report(cfg_data);
+	ps_cali_report(&cfg_data[1]);
 #endif
 	return err;
 }
@@ -582,6 +673,28 @@ static int pshub_factory_get_threshold(int32_t threshold[2])
 	spin_unlock(&calibration_lock);
 	return 0;
 }
+static int pshub_factory_do_self_test(void)
+{
+	return sensor_selftest_to_hub(ID_PROXIMITY);
+}
+
+static int pshub_factory_get_data_mot(int32_t data[8])
+{
+	int err = 0, i;
+	struct data_unit_t data_t;
+
+	err = sensor_get_data_from_hub(ID_PROXIMITY, &data_t);
+	if (err < 0)
+		return err;
+	for (i = 0; i < 8; i ++)
+		data[i] = data_t.data[i];
+	return 0;
+}
+
+static int pshub_factory_set_data_mot(int32_t data[3])
+{
+	return sensor_cfg_to_hub(ID_PROXIMITY, (uint8_t *)data, 3*sizeof(int32_t));
+}
 
 static struct alsps_factory_fops alspshub_factory_fops = {
 	.als_enable_sensor = alshub_factory_enable_sensor,
@@ -591,6 +704,8 @@ static struct alsps_factory_fops alspshub_factory_fops = {
 	.als_clear_cali = alshub_factory_clear_cali,
 	.als_set_cali = alshub_factory_set_cali,
 	.als_get_cali = alshub_factory_get_cali,
+	.als_set_data_mot = alshub_factory_set_data_mot,
+	.als_get_data_mot = alshub_factory_get_data_mot,
 
 	.ps_enable_sensor = pshub_factory_enable_sensor,
 	.ps_get_data = pshub_factory_get_data,
@@ -601,6 +716,9 @@ static struct alsps_factory_fops alspshub_factory_fops = {
 	.ps_get_cali = pshub_factory_get_cali,
 	.ps_set_threshold = pshub_factory_set_threshold,
 	.ps_get_threshold = pshub_factory_get_threshold,
+	.do_self_test = pshub_factory_do_self_test,
+	.ps_set_data_mot = pshub_factory_set_data_mot,
+	.ps_get_data_mot = pshub_factory_get_data_mot,
 };
 
 static struct alsps_factory_public alspshub_factory_device = {
@@ -678,13 +796,23 @@ static int als_flush(void)
 
 static int als_set_cali(uint8_t *data, uint8_t count)
 {
-	int32_t *buf = (int32_t *)data;
+	int32_t *buf;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
+	int ret = 0;
+
+	buf = (int32_t *)kzalloc(sizeof(uint8_t)*(count+sizeof(int32_t)), GFP_KERNEL);
+	if (!buf) {
+		return -ENOMEM;
+	}
+	memcpy((void*)(buf + 1), (void*)data, count);
+	buf[0] = 0;
 
 	spin_lock(&calibration_lock);
-	atomic_set(&obj->als_cali, buf[0]);
+	atomic_set(&obj->als_cali, buf[1]);
 	spin_unlock(&calibration_lock);
-	return sensor_cfg_to_hub(ID_LIGHT, data, count);
+	ret = sensor_cfg_to_hub(ID_LIGHT, (uint8_t *)buf, (count+sizeof(int32_t)));
+	kfree(buf);
+	return ret;
 }
 
 static int rgbw_enable(int en)
@@ -740,6 +868,7 @@ static int ps_enable_nodata(int en)
 {
 	int res = 0;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
+	int32_t cfg_data[2];
 
 	pr_debug("obj_ipi_data als enable value = %d\n", en);
 	if (en == true)
@@ -748,6 +877,12 @@ static int ps_enable_nodata(int en)
 		WRITE_ONCE(obj->ps_android_enable, false);
 
 	res = sensor_enable_to_hub(ID_PROXIMITY, en);
+
+	cfg_data[0] = 6;
+	cfg_data[1] = en;
+	res |= sensor_cfg_to_hub(ID_PROXIMITY,
+		(uint8_t *)cfg_data, sizeof(cfg_data));
+
 	if (res < 0) {
 		pr_err("als_enable_nodata is failed!!\n");
 		return -1;
@@ -826,14 +961,25 @@ static int ps_get_data(int *value, int *status)
 
 static int ps_set_cali(uint8_t *data, uint8_t count)
 {
-	int32_t *buf = (int32_t *)data;
+	int32_t *buf;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
+	int ret = 0;
 
+	buf = (int32_t *)kzalloc(sizeof(uint8_t)*(count+sizeof(int32_t)), GFP_KERNEL);
+	if (!buf) {
+		return -ENOMEM;
+	}
+	memcpy((void*)(buf + 1), (void*)data, count);
+	buf[0] = 0;
 	spin_lock(&calibration_lock);
 	atomic_set(&obj->ps_thd_val_high, buf[0]);
 	atomic_set(&obj->ps_thd_val_low, buf[1]);
+	atomic_set(&obj->ps_cover, buf[2]);
+	atomic_set(&obj->ps_uncover, buf[3]);
 	spin_unlock(&calibration_lock);
-	return sensor_cfg_to_hub(ID_PROXIMITY, data, count);
+	ret =  sensor_cfg_to_hub(ID_PROXIMITY, (uint8_t *)buf, (count+sizeof(int32_t)));
+	kfree(buf);
+	return ret;
 }
 
 static int scp_ready_event(uint8_t event, void *ptr)
@@ -897,6 +1043,9 @@ static int alspshub_probe(struct platform_device *pdev)
 	WRITE_ONCE(obj->als_android_enable, false);
 	WRITE_ONCE(obj->ps_factory_enable, false);
 	WRITE_ONCE(obj->ps_android_enable, false);
+	//moto add
+	init_completion(&obj->als_cali_done);
+	init_completion(&obj->ps_cali_done);
 
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);

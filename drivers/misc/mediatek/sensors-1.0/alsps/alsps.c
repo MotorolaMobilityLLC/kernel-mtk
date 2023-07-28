@@ -155,6 +155,8 @@ int ps_cali_report(int *value)
 	event.flush_action = CALI_ACTION;
 	event.word[0] = value[0];
 	event.word[1] = value[1];
+	event.word[2] = value[2];
+	event.word[3] = value[3];
 	err = sensor_input_event(alsps_context_obj->ps_mdev.minor, &event);
 	return err;
 }
