@@ -1,0 +1,6 @@
+
+config MOTO_LTS
+	bool "lts for moto package"
+	default n
+	help
+	  Put the device lie on the table.
