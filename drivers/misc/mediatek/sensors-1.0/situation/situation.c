@@ -6,6 +6,11 @@
 #define pr_fmt(fmt) "<SITUATION> " fmt
 
 #include "situation.h"
+/*moto add for sensor algo*/
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+#include <SCP_sensorHub.h>
+#include "SCP_power_monitor.h"
+#endif
 
 static struct situation_context *situation_context_obj;
 
@@ -71,6 +76,38 @@ static int handle_to_index(int handle)
 		break;
 	case ID_SAR:
 		index = sar;
+		break;
+			break;
+/*new add for moto sensor algo*/
+	case ID_STOWED:
+		index = stowed;
+		break;
+	case ID_FLATUP:
+		index = flatup;
+		break;
+	case ID_FLATDOWN:
+		index = flatdown;
+		break;
+	case ID_CAMGEST:
+		index = camgest;
+		break;
+	case ID_CHOPCHOP:
+		index = chopchop;
+		break;
+	case ID_MOT_GLANCE:
+		index = mot_glance;
+		break;
+	case ID_LTV:
+		index = ltv;
+		break;
+	case ID_FTM:
+		index = ftm;
+		break;
+	case ID_OFFBODY:
+		index = offbody;
+		break;
+	case ID_LTS:
+		index = lts;
 		break;
 	default:
 		index = -1;
@@ -142,6 +179,59 @@ int sar_data_report(int32_t value[3])
 {
 	return sar_data_report_t(value, 0);
 }
+
+int mot_camgest_data_report(int32_t value[3])
+{
+	int err = 0, index = -1;
+	struct sensor_event event;
+	struct situation_context *cxt = situation_context_obj;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	index = handle_to_index(ID_CAMGEST);
+	if (index < 0) {
+		pr_err("[%s] invalid index\n", __func__);
+		return -1;
+	}
+	event.handle = ID_CAMGEST;
+	event.flush_action = DATA_ACTION;
+	event.word[0] = value[0];
+	event.word[1] = value[1];
+	event.word[2] = value[2];
+	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
+	if (cxt->ctl_context[index].situation_ctl.open_report_data != NULL &&
+		cxt->ctl_context[index].situation_ctl.is_support_wake_lock)
+		__pm_wakeup_event(cxt->ws[index], 250);
+
+	return err;
+}
+
+int mot_ltv_data_report(int32_t value[3])
+{
+	int err = 0, index = -1;
+	struct sensor_event event;
+	struct situation_context *cxt = situation_context_obj;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	index = handle_to_index(ID_LTV);
+	if (index < 0) {
+		pr_err("[%s] invalid index\n", __func__);
+		return -1;
+	}
+	event.handle = ID_LTV;
+	event.flush_action = DATA_ACTION;
+	event.word[0] = value[0];
+	event.word[1] = value[1];
+	event.word[2] = value[2];
+	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
+	if (cxt->ctl_context[index].situation_ctl.open_report_data != NULL &&
+		cxt->ctl_context[index].situation_ctl.is_support_wake_lock)
+		__pm_wakeup_event(cxt->ws[index], 250);
+
+	return err;
+}
+
 int situation_notify_t(int handle, int64_t time_stamp)
 {
 	return situation_data_report_t(handle, 1, time_stamp);
@@ -422,6 +512,66 @@ static ssize_t situdevnum_show(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);	/* TODO: why +5? */
 }
 
+/*moto add for senosr algo transfer params to scp*/
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+static ssize_t situparams_store(struct device *dev, struct device_attribute *attr,
+			       const char *buf, size_t count) {
+	struct situation_context *cxt = situation_context_obj;
+	int err = 0;
+	//SITUATION_PR_ERR("situation_store_params count=%d\n", count);
+
+	memcpy(&cxt->motparams, buf, sizeof(struct mot_params));
+	
+#ifdef CONFIG_MOTO_CHOPCHOP
+	err = sensor_cfg_to_hub(ID_CHOPCHOP, (uint8_t *)&cxt->motparams.chopchop_params, sizeof(struct mot_chopchop));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub CHOPCHOP fail\n");
+#endif
+#ifdef CONFIG_MOTO_CAMGEST
+	err = sensor_cfg_to_hub(ID_CAMGEST, (uint8_t *)&cxt->motparams.camgest_params, sizeof(struct mot_camgest));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub CAMGEST fail\n");
+#endif
+#ifdef CONFIG_MOTO_GLANCE
+	err = sensor_cfg_to_hub(ID_MOT_GLANCE, (uint8_t *)&cxt->motparams.glance_params, sizeof(struct mot_glance));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub GLANCE fail\n");
+#endif
+#ifdef CONFIG_MOTO_LTV
+	err = sensor_cfg_to_hub(ID_LTV, (uint8_t *)&cxt->motparams.ltv_params, sizeof(struct mot_ltv));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub LTV fail\n");
+#endif
+#ifdef CONFIG_MOTO_OFFBODY
+	err = sensor_cfg_to_hub(ID_OFFBODY, (uint8_t *)&cxt->motparams.offbody_params, sizeof(struct mot_offbody));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub OFFBODY fail\n");
+#endif
+#ifdef CONFIG_MOTO_ALSPS
+	pr_err("[WiSL] sensor_cfg_to_hub PROX cfgtype = %d\n", (int)&cxt->motparams.alsps_params.cfg_type);
+	err = sensor_cfg_to_hub(ID_PROXIMITY, (uint8_t *)&cxt->motparams.alsps_params, sizeof(struct MotAlspsCfgData));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub PROXIMITY fail\n");
+#endif
+
+	//SITUATION_PR_ERR("situation_store_params done\n");
+
+	return count;
+}
+#endif
+
+//moto prox cal
+static ssize_t situproxcal_store(struct device *dev, struct device_attribute *attr,
+			       const char *buf, size_t count) {
+	int err = 0;
+	uint8_t type = (uint8_t)buf[0];
+	pr_err("sensor_cfg_to_hub proxcal type = %d\n",type);
+	err = sensor_cfg_to_hub(ID_PROXCAL, (uint8_t *)&type, sizeof(uint8_t));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub proxcal fail\n");
+
+	return count;
+}
 
 static int situation_real_driver_init(void)
 {
@@ -516,12 +666,22 @@ DEVICE_ATTR_RW(situactive);
 DEVICE_ATTR_RW(situbatch);
 DEVICE_ATTR_RW(situflush);
 DEVICE_ATTR_RO(situdevnum);
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+DEVICE_ATTR_WO(situparams);
+#endif
+//moto add for prox sensor cal
+DEVICE_ATTR_WO(situproxcal);
 
 static struct attribute *situation_attributes[] = {
 	&dev_attr_situactive.attr,
 	&dev_attr_situbatch.attr,
 	&dev_attr_situflush.attr,
 	&dev_attr_situdevnum.attr,
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+	&dev_attr_situparams.attr,
+#endif
+//moto add for prox sensor cal
+	&dev_attr_situproxcal.attr,
 	NULL
 };
 
@@ -594,6 +754,65 @@ int situation_register_control_path(struct situation_control_path *ctl,
 }
 EXPORT_SYMBOL_GPL(situation_register_control_path);
 
+/*moto add for sensor algo transfer params to scp*/
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+static void scp_init_work_done(struct work_struct *work)
+{
+	int err = 0;
+	struct situation_context *cxt = situation_context_obj;
+    //SITUATION_PR_ERR("into scp_init_work_done\n");
+	if (atomic_read(&cxt->scp_init_done) == 0) {
+		pr_err("scp is not ready to send cmd\n");
+		return;
+	}
+
+	if (atomic_xchg(&cxt->first_ready_after_boot, 1) == 0)
+		return;
+
+#ifdef CONFIG_MOTO_CHOPCHOP
+	err = sensor_cfg_to_hub(ID_CHOPCHOP, (uint8_t *)&cxt->motparams.chopchop_params, sizeof(struct mot_chopchop));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub CHOPCHOP fail\n");
+#endif
+#ifdef CONFIG_MOTO_GLANCE
+	err = sensor_cfg_to_hub(ID_MOT_GLANCE, (uint8_t *)&cxt->motparams.glance_params, sizeof(struct mot_glance));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub GLANCE fail\n");
+#endif
+#ifdef CONFIG_MOTO_LTV
+	err = sensor_cfg_to_hub(ID_LTV, (uint8_t *)&cxt->motparams.ltv_params, sizeof(struct mot_ltv));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub LTV fail\n");
+#endif
+#ifdef CONFIG_MOTO_OFFBODY
+	err = sensor_cfg_to_hub(ID_OFFBODY, (uint8_t *)&cxt->motparams.offbody_params, sizeof(struct mot_offbody));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub OFFBODY fail\n");
+#endif
+}
+
+static int scp_ready_event(uint8_t event, void *ptr)
+{
+	struct situation_context *obj = situation_context_obj;
+
+	switch (event) {
+	case SENSOR_POWER_UP:
+		atomic_set(&obj->scp_init_done, 1);
+		schedule_work(&obj->init_done_work);
+		break;
+	case SENSOR_POWER_DOWN:
+		atomic_set(&obj->scp_init_done, 0);
+		break;
+	}
+	return 0;
+}
+
+static struct scp_power_monitor scp_ready_notifier = {
+	.name = "situation",
+	.notifier_call = scp_ready_event,
+};
+#endif
+
 int situation_probe(void)
 {
 	int err;
@@ -628,6 +847,13 @@ int situation_probe(void)
 	kobject_uevent(&situation_context_obj->mdev.this_device->kobj,
 		KOBJ_ADD);
 
+/*moto add for sensor algo transfer params to scp*/
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+	atomic_set(&situation_context_obj->first_ready_after_boot, 0);
+	INIT_WORK(&situation_context_obj->init_done_work, scp_init_work_done);
+	atomic_set(&situation_context_obj->scp_init_done, 0);
+	scp_power_monitor_register(&scp_ready_notifier);
+#endif
 
 	pr_debug("%s OK !!\n", __func__);
 	return 0;
