@@ -68,8 +68,22 @@
 #define SENSOR_TYPE_RGBW                               70
 #define SENSOR_TYPE_GYRO_TEMPERATURE                   71
 #define SENSOR_TYPE_SAR                                72
+
+/*moto algo sensor type*/
+#define SENSOR_TYPE_STOWED                             73
+#define SENSOR_TYPE_FLAT_UP                            74
+#define SENSOR_TYPE_FLAT_DOWN                          75
+#define SENSOR_TYPE_CAMERA_ACTIVATE                    76
+#define SENSOR_TYPE_CHOPCHOP_GESTURE                   77
+#define SENSOR_TYPE_MOTO_GLANCE_GESTURE                78
+#define SENSOR_TYPE_LTV                                79
+#define SENSOR_TYPE_FTM                                80
+#define SENSOR_TYPE_OFFBODY                            81
+#define SENSOR_TYPE_LTS                                82
+#define SENSOR_TYPE_PROXCAL                            83
+
 /* end sensor type */
-#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_SAR
+#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_PROXCAL
 #define SENSOR_TYPE_MAX_NUM_PLUS_ONE                   (SENSOR_TYPE_MAX_NUM + 1)
 
 /*---------------------------------------------------------------------------*/
@@ -141,8 +155,22 @@
 #define ID_RGBW                 (ID_BASE + SENSOR_TYPE_RGBW - 1)
 #define ID_GYRO_TEMPERATURE     (ID_BASE + SENSOR_TYPE_GYRO_TEMPERATURE - 1)
 #define ID_SAR                  (ID_BASE + SENSOR_TYPE_SAR - 1)
+
+/*moto sensor algo ID*/
+#define ID_STOWED                   (ID_BASE + SENSOR_TYPE_STOWED - 1)
+#define ID_FLATUP                   (ID_BASE + SENSOR_TYPE_FLAT_UP - 1)
+#define ID_FLATDOWN                 (ID_BASE + SENSOR_TYPE_FLAT_DOWN - 1)
+#define ID_CAMGEST                  (ID_BASE + SENSOR_TYPE_CAMERA_ACTIVATE - 1)
+#define ID_CHOPCHOP                 (ID_BASE + SENSOR_TYPE_CHOPCHOP_GESTURE - 1)
+#define ID_MOT_GLANCE               (ID_BASE + SENSOR_TYPE_MOTO_GLANCE_GESTURE  - 1)
+#define ID_LTV                      (ID_BASE + SENSOR_TYPE_LTV - 1)
+#define ID_FTM                      (ID_BASE + SENSOR_TYPE_FTM - 1)
+#define ID_OFFBODY                  (ID_BASE + SENSOR_TYPE_OFFBODY - 1)
+#define ID_LTS                      (ID_BASE + SENSOR_TYPE_LTS - 1)
+#define ID_PROXCAL                  (ID_BASE + SENSOR_TYPE_PROXCAL - 1)
+
 /* end sensor ID */
-#define ID_SENSOR_MAX_HANDLE    (ID_SAR)
+#define ID_SENSOR_MAX_HANDLE    (ID_PROXCAL)
 #define ID_SENSOR_MAX_HANDLE_PLUS_ONE    (ID_SENSOR_MAX_HANDLE + 1)
 
 #if (ID_SENSOR_MAX_HANDLE_PLUS_ONE != SENSOR_TYPE_MAX_NUM)
