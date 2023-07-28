@@ -25,6 +25,7 @@ enum {
 	CONFIG_CMD_CFG_DATA     = 3,
 	CONFIG_CMD_CALIBRATE    = 4,
 	CONFIG_CMD_SELF_TEST    = 5,
+	CONFIG_CMD_CALI_DATA     = 6,
 };
 
 struct ConfigCmd {
@@ -544,6 +545,7 @@ int sensor_batch_to_hub(uint8_t sensorType,
 	int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
 int sensor_flush_to_hub(uint8_t sensorType);
 int sensor_cfg_to_hub(uint8_t sensorType, uint8_t *data, uint8_t count);
+int sensor_cali_data_to_hub(uint8_t handle, uint8_t *data, uint8_t count);//moto add
 int sensor_calibration_to_hub(uint8_t sensorType);
 int sensor_selftest_to_hub(uint8_t sensorType);
 
