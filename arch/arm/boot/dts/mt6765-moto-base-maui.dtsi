@@ -20,3 +20,9 @@
              /delete-property/ enable_dynamic_mivr;
         };
 };
+
+/* Trustonic Mobicore real driver */
+&mobicore {
+	trustonic,real-drv = <1>;
+};
+
