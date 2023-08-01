@@ -1254,6 +1254,12 @@ config GATEIC_OCP2138
 	help
 	  Say Y here if you want to enable this gate driver.
 
+config GATEIC_SM5109
+	tristate "GATEIC SM5109"
+	default n
+	help
+	  Say Y here if you want to enable this gate driver.
+
 config DRM_PANEL_CSOT_VTDR6115_655_FHDP_DPHY_VDO_144HZ_C7
 	tristate "TIANMA 1080*2400 DSC DPHY VDO MODE 144HZ C7 PANEL"
 	depends on OF
