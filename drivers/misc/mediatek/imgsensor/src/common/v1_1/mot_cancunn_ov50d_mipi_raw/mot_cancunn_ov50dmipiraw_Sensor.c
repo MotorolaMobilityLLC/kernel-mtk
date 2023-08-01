@@ -685,28 +685,27 @@ kal_uint16 mot_cancunn_ov50d_table_write_cmos_sensor(kal_uint16 *para, kal_uint3
 static void sensor_init(void)
 {
 	pr_debug("MOT CANCUNN OV50D init start\n");
-	/*
+	mot_cancunn_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part1,
+		sizeof(addr_data_pair_init_mot_cancunn_ov50d_part1)/sizeof(kal_uint16));
 	if (pdc_data_valid == 1) {
-		mot_cancunn_ov50d_table_write_cmos_sensor(addr_data_pair_init_with_cal_mot_cancunn_ov50d,
-			sizeof(addr_data_pair_init_with_cal_mot_cancunn_ov50d)/sizeof(kal_uint16));
+		write_pdc_data();
 	}
-	else */
+	else
 	{
-		mot_cancunn_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part1,
-			sizeof(addr_data_pair_init_mot_cancunn_ov50d_part1)/sizeof(kal_uint16));
 		mot_cancunn_ov50d_burst_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part2,
 			sizeof(addr_data_pair_init_mot_cancunn_ov50d_part2)/sizeof(kal_uint16));
-		mot_cancunn_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part3,
-			sizeof(addr_data_pair_init_mot_cancunn_ov50d_part3)/sizeof(kal_uint16));
-		mot_cancunn_ov50d_burst_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part4,
-			sizeof(addr_data_pair_init_mot_cancunn_ov50d_part4)/sizeof(kal_uint16));
-		mot_cancunn_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part5,
-			sizeof(addr_data_pair_init_mot_cancunn_ov50d_part5)/sizeof(kal_uint16));
-		mot_cancunn_ov50d_burst_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part6,
-			sizeof(addr_data_pair_init_mot_cancunn_ov50d_part6)/sizeof(kal_uint16));
-		mot_cancunn_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part7,
-			sizeof(addr_data_pair_init_mot_cancunn_ov50d_part7)/sizeof(kal_uint16));
 	}
+	mot_cancunn_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part3,
+		sizeof(addr_data_pair_init_mot_cancunn_ov50d_part3)/sizeof(kal_uint16));
+	mot_cancunn_ov50d_burst_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part4,
+		sizeof(addr_data_pair_init_mot_cancunn_ov50d_part4)/sizeof(kal_uint16));
+	mot_cancunn_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part5,
+		sizeof(addr_data_pair_init_mot_cancunn_ov50d_part5)/sizeof(kal_uint16));
+	mot_cancunn_ov50d_burst_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part6,
+		sizeof(addr_data_pair_init_mot_cancunn_ov50d_part6)/sizeof(kal_uint16));
+	mot_cancunn_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunn_ov50d_part7,
+		sizeof(addr_data_pair_init_mot_cancunn_ov50d_part7)/sizeof(kal_uint16));
+
 	pr_debug("MOT CANCUNN OV50D end\n");
 
 }	/*	  sensor_init  */
