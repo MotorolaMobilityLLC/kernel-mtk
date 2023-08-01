@@ -136,6 +136,8 @@ obj-$(CONFIG_DRM_PANEL_TM_ICNL9911C_652_HDP_DPHY_VDO_90HZ) += dsi-panel-mot-tm-i
 obj-$(CONFIG_DRM_PANEL_HLT_FT8006S_652_HDP_DPHY_VDO_90HZ) += dsi-panel-mot-hlt-ft8006s-652-hdp-dphy-video-90hz.o
 
 obj-$(CONFIG_GATEIC_OCP2138) += ocp2138.o
+obj-$(CONFIG_GATEIC_SM5109) += sm5109.o
+
 mediatek-drm-gateic-y := mtk_drm_panel_i2c.o \
 		  mtk_drm_gateic_rt4801h.o \
 		  mtk_drm_gateic_rt4831a.o \
