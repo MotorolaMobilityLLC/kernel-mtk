@@ -727,6 +727,7 @@
       <elf-symbol name='__traceiter_android_vh_thermal_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc9b6b745'/>
       <elf-symbol name='__traceiter_android_vh_thermal_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x11150fce'/>
       <elf-symbol name='__traceiter_android_vh_timer_calc_index' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x110d6b1e'/>
+      <elf-symbol name='__traceiter_android_vh_try_cma_fallback' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8348fb40'/>
       <elf-symbol name='__traceiter_android_vh_try_to_freeze_todo' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd1146850'/>
       <elf-symbol name='__traceiter_android_vh_try_to_freeze_todo_logging' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7632c0b1'/>
       <elf-symbol name='__traceiter_android_vh_try_to_freeze_todo_unfrozen' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc521cf0b'/>
@@ -7361,6 +7362,7 @@
       <elf-symbol name='__tracepoint_android_vh_thermal_register' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x52c84ba9'/>
       <elf-symbol name='__tracepoint_android_vh_thermal_unregister' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5ba0a594'/>
       <elf-symbol name='__tracepoint_android_vh_timer_calc_index' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8c419ab6'/>
+      <elf-symbol name='__tracepoint_android_vh_try_cma_fallback' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6fea66e8'/>
       <elf-symbol name='__tracepoint_android_vh_try_to_freeze_todo' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7736a58d'/>
       <elf-symbol name='__tracepoint_android_vh_try_to_freeze_todo_logging' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xebf22921'/>
       <elf-symbol name='__tracepoint_android_vh_try_to_freeze_todo_unfrozen' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x420e27e1'/>
@@ -7973,14 +7975,6 @@
       </class-decl>
       <pointer-type-def type-id='30913582' size-in-bits='64' id='0112fb3c'/>
       <pointer-type-def type-id='46c85660' size-in-bits='64' id='011c3e5a'/>
-      <class-decl name='param_attribute' size-in-bits='512' is-struct='yes' visibility='default' filepath='kernel/params.c' line='541' column='1' id='0120aad5'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='mattr' type-id='8f90cd2a' visibility='default' filepath='kernel/params.c' line='543' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='448'>
-          <var-decl name='param' type-id='edcbd723' visibility='default' filepath='kernel/params.c' line='544' column='1'/>
-        </data-member>
-      </class-decl>
       <pointer-type-def type-id='e1d380a7' size-in-bits='64' id='0123907b'/>
       <function-type size-in-bits='64' id='0124a2d0'>
         <parameter type-id='b88dd945'/>
@@ -26068,9 +26062,6 @@
         <parameter type-id='67acad02'/>
         <return type-id='95e97e5e'/>
       </function-type>
-      <array-type-def dimensions='1' type-id='0120aad5' size-in-bits='infinite' id='2d2c12ad'>
-        <subrange length='infinite' type-id='7ff19f0f' id='031f2035'/>
-      </array-type-def>
       <function-type size-in-bits='64' id='2d2d4460'>
         <parameter type-id='1b0e1d00'/>
         <parameter type-id='809cdefc'/>
@@ -74793,17 +74784,7 @@
           <var-decl name='notify_next' type-id='150efd3f' visibility='default' filepath='include/linux/kernfs.h' line='117' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='module_param_attrs' size-in-bits='384' is-struct='yes' visibility='default' filepath='kernel/params.c' line='547' column='1' id='9e045430'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='num' type-id='f0981eeb' visibility='default' filepath='kernel/params.c' line='549' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='grp' type-id='e4af473b' visibility='default' filepath='kernel/params.c' line='550' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='attrs' type-id='2d2c12ad' visibility='default' filepath='kernel/params.c' line='551' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='module_param_attrs' is-struct='yes' visibility='default' is-declaration-only='yes' id='9e045430'/>
       <class-decl name='rhashtable' size-in-bits='1344' is-struct='yes' visibility='default' filepath='include/linux/rhashtable-types.h' line='81' column='1' id='9e095f93'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='tbl' type-id='35e7a722' visibility='default' filepath='include/linux/rhashtable-types.h' line='82' column='1'/>
@@ -127409,7 +127390,7 @@
       <pointer-type-def type-id='46f53066' size-in-bits='64' id='fffb07a4'/>
       <qualified-type-def type-id='55efd1a3' const='yes' id='fffdaf52'/>
       <var-decl name='GKI_struct_blk_mq_alloc_data' type-id='17c43c95' mangled-name='GKI_struct_blk_mq_alloc_data' visibility='default' filepath='block/vendor_hooks.c' line='23' column='1' elf-symbol-id='GKI_struct_blk_mq_alloc_data'/>
-      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='458' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
+      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='459' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
       <var-decl name='GKI_struct_selinux_state' type-id='4ae52763' mangled-name='GKI_struct_selinux_state' visibility='default' filepath='security/selinux/vendor_hooks.c' line='21' column='1' elf-symbol-id='GKI_struct_selinux_state'/>
       <function-decl name='I_BDEV' mangled-name='I_BDEV' filepath='block/bdev.c' line='42' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='I_BDEV'>
         <parameter type-id='7e666abe' name='inode' filepath='block/bdev.c' line='42' column='1'/>
@@ -127536,11 +127517,11 @@
         <parameter type-id='a57283f9' name='lkclass' filepath='block/genhd.c' line='1281' column='1'/>
         <return type-id='33c599da'/>
       </function-decl>
-      <function-decl name='__alloc_pages' mangled-name='__alloc_pages' filepath='mm/page_alloc.c' line='5730' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__alloc_pages'>
-        <parameter type-id='3eb7c31c' name='gfp' filepath='mm/page_alloc.c' line='5730' column='1'/>
-        <parameter type-id='f0981eeb' name='order' filepath='mm/page_alloc.c' line='5730' column='1'/>
-        <parameter type-id='95e97e5e' name='preferred_nid' filepath='mm/page_alloc.c' line='5730' column='1'/>
-        <parameter type-id='f461c050' name='nodemask' filepath='mm/page_alloc.c' line='5731' column='1'/>
+      <function-decl name='__alloc_pages' mangled-name='__alloc_pages' filepath='mm/page_alloc.c' line='5735' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__alloc_pages'>
+        <parameter type-id='3eb7c31c' name='gfp' filepath='mm/page_alloc.c' line='5735' column='1'/>
+        <parameter type-id='f0981eeb' name='order' filepath='mm/page_alloc.c' line='5735' column='1'/>
+        <parameter type-id='95e97e5e' name='preferred_nid' filepath='mm/page_alloc.c' line='5735' column='1'/>
+        <parameter type-id='f461c050' name='nodemask' filepath='mm/page_alloc.c' line='5736' column='1'/>
         <return type-id='02f11ed4'/>
       </function-decl>
       <function-decl name='__alloc_percpu' mangled-name='__alloc_percpu' filepath='mm/percpu.c' line='1948' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__alloc_percpu'>
@@ -128322,9 +128303,9 @@
         <parameter type-id='b2ea0a72' name='iova' filepath='drivers/iommu/iova.c' line='544' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='__free_pages' mangled-name='__free_pages' filepath='mm/page_alloc.c' line='5838' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__free_pages'>
-        <parameter type-id='02f11ed4' name='page' filepath='mm/page_alloc.c' line='5838' column='1'/>
-        <parameter type-id='f0981eeb' name='order' filepath='mm/page_alloc.c' line='5838' column='1'/>
+      <function-decl name='__free_pages' mangled-name='__free_pages' filepath='mm/page_alloc.c' line='5843' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__free_pages'>
+        <parameter type-id='02f11ed4' name='page' filepath='mm/page_alloc.c' line='5843' column='1'/>
+        <parameter type-id='f0981eeb' name='order' filepath='mm/page_alloc.c' line='5843' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='__fs_parse' mangled-name='__fs_parse' filepath='fs/fs_parser.c' line='103' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__fs_parse'>
@@ -128384,9 +128365,9 @@
         <parameter type-id='b50a4934' name='changed' filepath='drivers/net/phy/phy_device.c' line='2167' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__get_free_pages' mangled-name='__get_free_pages' filepath='mm/page_alloc.c' line='5801' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__get_free_pages'>
-        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/page_alloc.c' line='5801' column='1'/>
-        <parameter type-id='f0981eeb' name='order' filepath='mm/page_alloc.c' line='5801' column='1'/>
+      <function-decl name='__get_free_pages' mangled-name='__get_free_pages' filepath='mm/page_alloc.c' line='5806' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__get_free_pages'>
+        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/page_alloc.c' line='5806' column='1'/>
+        <parameter type-id='f0981eeb' name='order' filepath='mm/page_alloc.c' line='5806' column='1'/>
         <return type-id='7359adad'/>
       </function-decl>
       <function-decl name='__get_task_comm' mangled-name='__get_task_comm' filepath='fs/exec.c' line='1220' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__get_task_comm'>
@@ -128972,9 +128953,9 @@
         <parameter type-id='02f11ed4' name='page' filepath='mm/swapfile.c' line='3552' column='1'/>
         <return type-id='f57039f0'/>
       </function-decl>
-      <function-decl name='__page_frag_cache_drain' mangled-name='__page_frag_cache_drain' filepath='mm/page_alloc.c' line='5893' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__page_frag_cache_drain'>
-        <parameter type-id='02f11ed4' name='page' filepath='mm/page_alloc.c' line='5893' column='1'/>
-        <parameter type-id='f0981eeb' name='count' filepath='mm/page_alloc.c' line='5893' column='1'/>
+      <function-decl name='__page_frag_cache_drain' mangled-name='__page_frag_cache_drain' filepath='mm/page_alloc.c' line='5898' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__page_frag_cache_drain'>
+        <parameter type-id='02f11ed4' name='page' filepath='mm/page_alloc.c' line='5898' column='1'/>
+        <parameter type-id='f0981eeb' name='count' filepath='mm/page_alloc.c' line='5898' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='__page_mapcount' mangled-name='__page_mapcount' filepath='mm/util.c' line='828' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__page_mapcount'>
@@ -131890,6 +131871,13 @@
         <parameter type-id='1d2c2b85' name='expires' filepath='include/trace/hooks/timer.h' line='12' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_try_cma_fallback' mangled-name='__traceiter_android_vh_try_cma_fallback' filepath='include/trace/hooks/mm.h' line='243' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_try_cma_fallback'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/mm.h' line='243' column='1'/>
+        <parameter type-id='0a0aff97' name='zone' filepath='include/trace/hooks/mm.h' line='243' column='1'/>
+        <parameter type-id='f0981eeb' name='order' filepath='include/trace/hooks/mm.h' line='243' column='1'/>
+        <parameter type-id='d8e6b335' name='try_cma' filepath='include/trace/hooks/mm.h' line='243' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_try_to_freeze_todo' mangled-name='__traceiter_android_vh_try_to_freeze_todo' filepath='include/trace/hooks/power.h' line='19' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_try_to_freeze_todo'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/power.h' line='19' column='1'/>
         <parameter type-id='f0981eeb' name='todo' filepath='include/trace/hooks/power.h' line='19' column='1'/>
@@ -132970,6 +132958,7 @@
       <var-decl name='__tracepoint_android_vh_thermal_register' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_thermal_register' visibility='default' filepath='include/trace/hooks/thermal.h' line='29' column='1' elf-symbol-id='__tracepoint_android_vh_thermal_register'/>
       <var-decl name='__tracepoint_android_vh_thermal_unregister' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_thermal_unregister' visibility='default' filepath='include/trace/hooks/thermal.h' line='33' column='1' elf-symbol-id='__tracepoint_android_vh_thermal_unregister'/>
       <var-decl name='__tracepoint_android_vh_timer_calc_index' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_timer_calc_index' visibility='default' filepath='include/trace/hooks/timer.h' line='12' column='1' elf-symbol-id='__tracepoint_android_vh_timer_calc_index'/>
+      <var-decl name='__tracepoint_android_vh_try_cma_fallback' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_cma_fallback' visibility='default' filepath='include/trace/hooks/mm.h' line='243' column='1' elf-symbol-id='__tracepoint_android_vh_try_cma_fallback'/>
       <var-decl name='__tracepoint_android_vh_try_to_freeze_todo' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_to_freeze_todo' visibility='default' filepath='include/trace/hooks/power.h' line='19' column='1' elf-symbol-id='__tracepoint_android_vh_try_to_freeze_todo'/>
       <var-decl name='__tracepoint_android_vh_try_to_freeze_todo_logging' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_to_freeze_todo_logging' visibility='default' filepath='include/trace/hooks/power.h' line='23' column='1' elf-symbol-id='__tracepoint_android_vh_try_to_freeze_todo_logging'/>
       <var-decl name='__tracepoint_android_vh_try_to_freeze_todo_unfrozen' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_to_freeze_todo_unfrozen' visibility='default' filepath='include/trace/hooks/power.h' line='27' column='1' elf-symbol-id='__tracepoint_android_vh_try_to_freeze_todo_unfrozen'/>
@@ -133676,9 +133665,9 @@
         <parameter type-id='f57039f0' name='mapping' filepath='fs/inode.c' line='381' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='adjust_managed_page_count' mangled-name='adjust_managed_page_count' filepath='mm/page_alloc.c' line='8521' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='adjust_managed_page_count'>
-        <parameter type-id='02f11ed4' name='page' filepath='mm/page_alloc.c' line='8521' column='1'/>
-        <parameter type-id='bd54fe1a' name='count' filepath='mm/page_alloc.c' line='8521' column='1'/>
+      <function-decl name='adjust_managed_page_count' mangled-name='adjust_managed_page_count' filepath='mm/page_alloc.c' line='8526' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='adjust_managed_page_count'>
+        <parameter type-id='02f11ed4' name='page' filepath='mm/page_alloc.c' line='8526' column='1'/>
+        <parameter type-id='bd54fe1a' name='count' filepath='mm/page_alloc.c' line='8526' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='aead_register_instance' mangled-name='aead_register_instance' filepath='crypto/aead.c' line='286' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='aead_register_instance'>
@@ -133784,11 +133773,11 @@
         <parameter type-id='80f4b756' name='name' filepath='fs/char_dev.c' line='237' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='alloc_contig_range' mangled-name='alloc_contig_range' filepath='mm/page_alloc.c' line='9467' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='alloc_contig_range'>
-        <parameter type-id='7359adad' name='start' filepath='mm/page_alloc.c' line='9467' column='1'/>
-        <parameter type-id='7359adad' name='end' filepath='mm/page_alloc.c' line='9467' column='1'/>
-        <parameter type-id='f0981eeb' name='migratetype' filepath='mm/page_alloc.c' line='9468' column='1'/>
-        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/page_alloc.c' line='9468' column='1'/>
+      <function-decl name='alloc_contig_range' mangled-name='alloc_contig_range' filepath='mm/page_alloc.c' line='9472' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='alloc_contig_range'>
+        <parameter type-id='7359adad' name='start' filepath='mm/page_alloc.c' line='9472' column='1'/>
+        <parameter type-id='7359adad' name='end' filepath='mm/page_alloc.c' line='9472' column='1'/>
+        <parameter type-id='f0981eeb' name='migratetype' filepath='mm/page_alloc.c' line='9473' column='1'/>
+        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/page_alloc.c' line='9473' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='alloc_etherdev_mqs' mangled-name='alloc_etherdev_mqs' filepath='net/ethernet/eth.c' line='390' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='alloc_etherdev_mqs'>
@@ -133825,9 +133814,9 @@
         <parameter type-id='b50a4934' name='retry' filepath='fs/buffer.c' line='815' column='1'/>
         <return type-id='c485c22c'/>
       </function-decl>
-      <function-decl name='alloc_pages_exact' mangled-name='alloc_pages_exact' filepath='mm/page_alloc.c' line='6018' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='alloc_pages_exact'>
-        <parameter type-id='b59d7dce' name='size' filepath='mm/page_alloc.c' line='6018' column='1'/>
-        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/page_alloc.c' line='6018' column='1'/>
+      <function-decl name='alloc_pages_exact' mangled-name='alloc_pages_exact' filepath='mm/page_alloc.c' line='6023' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='alloc_pages_exact'>
+        <parameter type-id='b59d7dce' name='size' filepath='mm/page_alloc.c' line='6023' column='1'/>
+        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/page_alloc.c' line='6023' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
       <function-decl name='alloc_skb_with_frags' mangled-name='alloc_skb_with_frags' filepath='net/core/skbuff.c' line='6125' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='alloc_skb_with_frags'>
@@ -143563,9 +143552,9 @@
         <parameter type-id='68a2d05b' name='dev' filepath='drivers/net/can/dev/dev.c' line='293' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='free_contig_range' mangled-name='free_contig_range' filepath='mm/page_alloc.c' line='9701' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='free_contig_range'>
-        <parameter type-id='7359adad' name='pfn' filepath='mm/page_alloc.c' line='9701' column='1'/>
-        <parameter type-id='7359adad' name='nr_pages' filepath='mm/page_alloc.c' line='9701' column='1'/>
+      <function-decl name='free_contig_range' mangled-name='free_contig_range' filepath='mm/page_alloc.c' line='9706' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='free_contig_range'>
+        <parameter type-id='7359adad' name='pfn' filepath='mm/page_alloc.c' line='9706' column='1'/>
+        <parameter type-id='7359adad' name='nr_pages' filepath='mm/page_alloc.c' line='9706' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='free_io_pgtable_ops' mangled-name='free_io_pgtable_ops' filepath='drivers/iommu/io-pgtable.c' line='63' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='free_io_pgtable_ops'>
@@ -143581,14 +143570,14 @@
         <parameter type-id='68a2d05b' name='dev' filepath='net/core/dev.c' line='10928' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='free_pages' mangled-name='free_pages' filepath='mm/page_alloc.c' line='5851' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='free_pages'>
-        <parameter type-id='7359adad' name='addr' filepath='mm/page_alloc.c' line='5851' column='1'/>
-        <parameter type-id='f0981eeb' name='order' filepath='mm/page_alloc.c' line='5851' column='1'/>
+      <function-decl name='free_pages' mangled-name='free_pages' filepath='mm/page_alloc.c' line='5856' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='free_pages'>
+        <parameter type-id='7359adad' name='addr' filepath='mm/page_alloc.c' line='5856' column='1'/>
+        <parameter type-id='f0981eeb' name='order' filepath='mm/page_alloc.c' line='5856' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='free_pages_exact' mangled-name='free_pages_exact' filepath='mm/page_alloc.c' line='6064' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='free_pages_exact'>
-        <parameter type-id='eaa32e2f' name='virt' filepath='mm/page_alloc.c' line='6064' column='1'/>
-        <parameter type-id='b59d7dce' name='size' filepath='mm/page_alloc.c' line='6064' column='1'/>
+      <function-decl name='free_pages_exact' mangled-name='free_pages_exact' filepath='mm/page_alloc.c' line='6069' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='free_pages_exact'>
+        <parameter type-id='eaa32e2f' name='virt' filepath='mm/page_alloc.c' line='6069' column='1'/>
+        <parameter type-id='b59d7dce' name='size' filepath='mm/page_alloc.c' line='6069' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='free_percpu' mangled-name='free_percpu' filepath='mm/percpu.c' line='2264' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='free_percpu'>
@@ -144808,8 +144797,8 @@
         <parameter type-id='f23e2572' name='p' filepath='arch/arm64/kernel/process.c' line='534' column='1'/>
         <return type-id='7359adad'/>
       </function-decl>
-      <function-decl name='get_zeroed_page' mangled-name='get_zeroed_page' filepath='mm/page_alloc.c' line='5812' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='get_zeroed_page'>
-        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/page_alloc.c' line='5812' column='1'/>
+      <function-decl name='get_zeroed_page' mangled-name='get_zeroed_page' filepath='mm/page_alloc.c' line='5817' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='get_zeroed_page'>
+        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/page_alloc.c' line='5817' column='1'/>
         <return type-id='7359adad'/>
       </function-decl>
       <function-decl name='getboottime64' mangled-name='getboottime64' filepath='kernel/time/timekeeping.c' line='2232' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='getboottime64'>
@@ -144894,17 +144883,17 @@
         <parameter type-id='2a82ed9c' name='b' filepath='crypto/gf128mul.c' line='170' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='gic_cpu_init' mangled-name='gic_cpu_init' filepath='drivers/irqchip/irq-gic-v3.c' line='1140' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_cpu_init'>
+      <function-decl name='gic_cpu_init' mangled-name='gic_cpu_init' filepath='drivers/irqchip/irq-gic-v3.c' line='1175' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_cpu_init'>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='gic_dist_init' mangled-name='gic_dist_init' filepath='drivers/irqchip/irq-gic-v3.c' line='796' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_dist_init'>
+      <function-decl name='gic_dist_init' mangled-name='gic_dist_init' filepath='drivers/irqchip/irq-gic-v3.c' line='831' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_dist_init'>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='gic_dist_wait_for_rwp' mangled-name='gic_dist_wait_for_rwp' filepath='drivers/irqchip/irq-gic-v3.c' line='218' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_dist_wait_for_rwp'>
+      <function-decl name='gic_dist_wait_for_rwp' mangled-name='gic_dist_wait_for_rwp' filepath='drivers/irqchip/irq-gic-v3.c' line='220' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_dist_wait_for_rwp'>
         <return type-id='48b5725f'/>
       </function-decl>
-      <var-decl name='gic_nonsecure_priorities' type-id='237c0d27' mangled-name='gic_nonsecure_priorities' visibility='default' filepath='drivers/irqchip/irq-gic-v3.c' line='93' column='1' elf-symbol-id='gic_nonsecure_priorities'/>
-      <function-decl name='gic_resume' mangled-name='gic_resume' filepath='drivers/irqchip/irq-gic-v3.c' line='1364' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_resume'>
+      <var-decl name='gic_nonsecure_priorities' type-id='237c0d27' mangled-name='gic_nonsecure_priorities' visibility='default' filepath='drivers/irqchip/irq-gic-v3.c' line='95' column='1' elf-symbol-id='gic_nonsecure_priorities'/>
+      <function-decl name='gic_resume' mangled-name='gic_resume' filepath='drivers/irqchip/irq-gic-v3.c' line='1399' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_resume'>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='gic_v2_resume' mangled-name='gic_v2_resume' filepath='drivers/irqchip/irq-gic.c' line='403' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_v2_resume'>
@@ -148286,8 +148275,8 @@
         <parameter type-id='a0c47697' name='res' filepath='lib/kstrtox.c' line='406' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='kswapd' mangled-name='kswapd' filepath='mm/vmscan.c' line='7085' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kswapd'>
-        <parameter type-id='eaa32e2f' name='p' filepath='mm/vmscan.c' line='7085' column='1'/>
+      <function-decl name='kswapd' mangled-name='kswapd' filepath='mm/vmscan.c' line='7103' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kswapd'>
+        <parameter type-id='eaa32e2f' name='p' filepath='mm/vmscan.c' line='7103' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='ksys_sync_helper' mangled-name='ksys_sync_helper' filepath='kernel/power/main.c' line='54' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ksys_sync_helper'>
@@ -150422,7 +150411,7 @@
         <return type-id='95e97e5e'/>
       </function-decl>
       <var-decl name='nr_cpu_ids' type-id='f0981eeb' mangled-name='nr_cpu_ids' visibility='default' filepath='kernel/smp.c' line='1073' column='1' elf-symbol-id='nr_cpu_ids'/>
-      <function-decl name='nr_free_buffer_pages' mangled-name='nr_free_buffer_pages' filepath='mm/page_alloc.c' line='6117' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='nr_free_buffer_pages'>
+      <function-decl name='nr_free_buffer_pages' mangled-name='nr_free_buffer_pages' filepath='mm/page_alloc.c' line='6122' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='nr_free_buffer_pages'>
         <return type-id='7359adad'/>
       </function-decl>
       <function-decl name='nr_ipi_get' mangled-name='nr_ipi_get' filepath='arch/arm64/kernel/smp.c' line='1146' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='nr_ipi_get'>
@@ -151437,15 +151426,15 @@
         <parameter type-id='95e97e5e' name='err' filepath='mm/filemap.c' line='1616' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='page_frag_alloc_align' mangled-name='page_frag_alloc_align' filepath='mm/page_alloc.c' line='5902' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='page_frag_alloc_align'>
-        <parameter type-id='34e4f518' name='nc' filepath='mm/page_alloc.c' line='5902' column='1'/>
-        <parameter type-id='f0981eeb' name='fragsz' filepath='mm/page_alloc.c' line='5903' column='1'/>
-        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/page_alloc.c' line='5903' column='1'/>
-        <parameter type-id='f0981eeb' name='align_mask' filepath='mm/page_alloc.c' line='5904' column='1'/>
+      <function-decl name='page_frag_alloc_align' mangled-name='page_frag_alloc_align' filepath='mm/page_alloc.c' line='5907' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='page_frag_alloc_align'>
+        <parameter type-id='34e4f518' name='nc' filepath='mm/page_alloc.c' line='5907' column='1'/>
+        <parameter type-id='f0981eeb' name='fragsz' filepath='mm/page_alloc.c' line='5908' column='1'/>
+        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/page_alloc.c' line='5908' column='1'/>
+        <parameter type-id='f0981eeb' name='align_mask' filepath='mm/page_alloc.c' line='5909' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
-      <function-decl name='page_frag_free' mangled-name='page_frag_free' filepath='mm/page_alloc.c' line='5978' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='page_frag_free'>
-        <parameter type-id='eaa32e2f' name='addr' filepath='mm/page_alloc.c' line='5978' column='1'/>
+      <function-decl name='page_frag_free' mangled-name='page_frag_free' filepath='mm/page_alloc.c' line='5983' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='page_frag_free'>
+        <parameter type-id='eaa32e2f' name='addr' filepath='mm/page_alloc.c' line='5983' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='page_get_link' mangled-name='page_get_link' filepath='fs/namei.c' line='5019' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='page_get_link'>
@@ -157041,11 +157030,11 @@
         <parameter type-id='95e97e5e' name='priority' filepath='mm/vmscan.c' line='911' column='1'/>
         <return type-id='7359adad'/>
       </function-decl>
-      <function-decl name='si_mem_available' mangled-name='si_mem_available' filepath='mm/page_alloc.c' line='6129' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='si_mem_available'>
+      <function-decl name='si_mem_available' mangled-name='si_mem_available' filepath='mm/page_alloc.c' line='6134' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='si_mem_available'>
         <return type-id='bd54fe1a'/>
       </function-decl>
-      <function-decl name='si_meminfo' mangled-name='si_meminfo' filepath='mm/page_alloc.c' line='6175' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='si_meminfo'>
-        <parameter type-id='0f561784' name='val' filepath='mm/page_alloc.c' line='6175' column='1'/>
+      <function-decl name='si_meminfo' mangled-name='si_meminfo' filepath='mm/page_alloc.c' line='6180' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='si_meminfo'>
+        <parameter type-id='0f561784' name='val' filepath='mm/page_alloc.c' line='6180' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='si_swapinfo' mangled-name='si_swapinfo' filepath='mm/swapfile.c' line='3408' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='si_swapinfo'>
@@ -159108,9 +159097,9 @@
         <parameter type-id='f0981eeb' name='n_rx' filepath='drivers/spi/spi.c' line='4109' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='split_page' mangled-name='split_page' filepath='mm/page_alloc.c' line='3734' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='split_page'>
-        <parameter type-id='02f11ed4' name='page' filepath='mm/page_alloc.c' line='3734' column='1'/>
-        <parameter type-id='f0981eeb' name='order' filepath='mm/page_alloc.c' line='3734' column='1'/>
+      <function-decl name='split_page' mangled-name='split_page' filepath='mm/page_alloc.c' line='3739' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='split_page'>
+        <parameter type-id='02f11ed4' name='page' filepath='mm/page_alloc.c' line='3739' column='1'/>
+        <parameter type-id='f0981eeb' name='order' filepath='mm/page_alloc.c' line='3739' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='spmi_controller_add' mangled-name='spmi_controller_add' filepath='drivers/spmi/spmi.c' line='519' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='spmi_controller_add'>
@@ -160344,11 +160333,11 @@
         <parameter type-id='9248e67f' name='timer' filepath='kernel/time/timer.c' line='1229' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='try_to_free_mem_cgroup_pages' mangled-name='try_to_free_mem_cgroup_pages' filepath='mm/vmscan.c' line='6502' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='try_to_free_mem_cgroup_pages'>
-        <parameter type-id='223696fb' name='memcg' filepath='mm/vmscan.c' line='6502' column='1'/>
-        <parameter type-id='7359adad' name='nr_pages' filepath='mm/vmscan.c' line='6503' column='1'/>
-        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/vmscan.c' line='6504' column='1'/>
-        <parameter type-id='b50a4934' name='may_swap' filepath='mm/vmscan.c' line='6505' column='1'/>
+      <function-decl name='try_to_free_mem_cgroup_pages' mangled-name='try_to_free_mem_cgroup_pages' filepath='mm/vmscan.c' line='6520' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='try_to_free_mem_cgroup_pages'>
+        <parameter type-id='223696fb' name='memcg' filepath='mm/vmscan.c' line='6520' column='1'/>
+        <parameter type-id='7359adad' name='nr_pages' filepath='mm/vmscan.c' line='6521' column='1'/>
+        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/vmscan.c' line='6522' column='1'/>
+        <parameter type-id='b50a4934' name='may_swap' filepath='mm/vmscan.c' line='6523' column='1'/>
         <return type-id='7359adad'/>
       </function-decl>
       <function-decl name='try_to_release_page' mangled-name='try_to_release_page' filepath='mm/filemap.c' line='4018' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='try_to_release_page'>
