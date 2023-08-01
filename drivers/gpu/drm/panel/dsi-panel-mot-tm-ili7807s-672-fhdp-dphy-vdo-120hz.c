@@ -323,7 +323,6 @@ static int tianma_disable(struct drm_panel *panel)
 	return 0;
 }
 
-#if 0
 static int panel_set_gesture_flag(int state)
 {
 	if(state == 1)
@@ -334,7 +333,6 @@ static int panel_set_gesture_flag(int state)
 	pr_info("%s:disp:set tp_gesture_flag:%d\n", __func__, tp_gesture_flag);
 	return 0;
 }
-#endif
 
 static int tianma_unprepare(struct drm_panel *panel)
 {
@@ -360,22 +358,12 @@ static int tianma_unprepare(struct drm_panel *panel)
 		pr_info("%s: sm5109_BiasPower_disable\n", __func__);
 		sm5109_BiasPower_disable(5);
 #endif
-	}
-        ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->reset_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
-			__func__, PTR_ERR(ctx->reset_gpio));
-	}
-    else {
-		//#ifdef IOVCC_IS_LOW
-		gpiod_set_value(ctx->reset_gpio, 0);
-		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-		usleep_range(3 * 1000, 8 * 1000);
-   }
+
 #ifdef PANEL_LDO_VTP_EN
-	usleep_range(5 * 1000, 8 * 1000);
-	lcm_enable_reg_vtp_1p8(0);
+		usleep_range(5 * 1000, 8 * 1000);
+		lcm_enable_reg_vtp_1p8(0);
 #endif
+	}
 
 	ctx->error = 0;
 	return 0;
@@ -973,7 +961,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ext_param_set = mtk_panel_ext_param_set,
 	.get_lcm_version = panel_get_lcm_version,
 //	.ata_check = panel_ata_check,
-//	.set_gesture_flag = panel_set_gesture_flag,
+	.set_gesture_flag = panel_set_gesture_flag,
 	.panel_feature_set = panel_feature_set,
 };
 #endif
