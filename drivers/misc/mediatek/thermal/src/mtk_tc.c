@@ -1027,7 +1027,10 @@ static void set_tc_trigger_hw_protect
 	__u32 offset;
 
 	offset = tscpu_g_tc[tc_num].tc_offset;
-
+	/* set temp offset to 0x3FF to avoid interrupt false triggered */
+	mt_reg_sync_writel(
+			readl(offset + TEMPPROTCTL) | 0x3FF,
+				offset + TEMPPROTCTL);
 	/* temperature2=80000;  test only */
 	tscpu_dprintk("%s  t1=%d t2=%d\n",
 					__func__, temperature, temperature2);
@@ -1053,8 +1056,8 @@ static void set_tc_trigger_hw_protect
 
 	/* set offset to 0x3FFF to avoid interrupt false triggered */
 	/* large offset can guarantee temp check is always false */
-	temp = readl(offset + TEMPPROTCTL);
-	mt_reg_sync_writel(temp | 0x3FFF, offset + TEMPPROTCTL);
+	//temp = readl(offset + TEMPPROTCTL);
+	//mt_reg_sync_writel(temp | 0x3FFF, offset + TEMPPROTCTL);
 
 	temp = readl(offset + TEMPMONINT);
 	/* disable trigger SPM interrupt */
@@ -1074,8 +1077,10 @@ static void set_tc_trigger_hw_protect
 
 	/* clear offset after HW reset are configured. */
 	/* make sure thermal controller uses latest sensor value to compare */
+
 	mt_reg_sync_writel(
-			readl(offset + TEMPPROTCTL) & ~PROTOFFSET, offset + TEMPPROTCTL);
+			readl(offset + TEMPPROTCTL) & ~0xFFF,
+				offset + TEMPPROTCTL);
 }
 
 static int read_tc_raw_and_temp(
