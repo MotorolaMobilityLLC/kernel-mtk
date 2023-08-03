@@ -20,10 +20,10 @@
 	i2c_lcd_bias_mtk:i2c_lcd_bias@3e {
 		compatible = "sm,bias_sm5109";
 		reg = <0x3e>;
-		sm,lcd-bias-enn-gpio = <&pio 134 0>;
-		sm,lcd-bias-enp-gpio = <&pio 182 0>;
-		biasp_en_pin = <182>;
-		biasn_en_pin = <134>;
+		sm,lcd-bias-enn-gpio = <&pio 182 0>;
+		sm,lcd-bias-enp-gpio = <&pio 134 0>;
+		biasp_en_pin = <134>;
+		biasn_en_pin = <182>;
 		status = "okay";
 	};
 
@@ -114,7 +114,7 @@
 &pio {
 	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO182__FUNC_GPIO182>;
+			pinmux = <PINMUX_GPIO134__FUNC_GPIO134>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -122,7 +122,7 @@
 
 	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO134__FUNC_GPIO134>;
+			pinmux = <PINMUX_GPIO182__FUNC_GPIO182>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -185,8 +185,8 @@
 		reg = <1>;
 		1p8-supply = <&mt6369_vtp>;
 		reset-gpios = <&pio 95 0>;
-		bias_n-gpios = <&pio 134 0>;
-		bias_p-gpios = <&pio 182 0>;
+		bias_n-gpios = <&pio 182 0>;
+		bias_p-gpios = <&pio 134 0>;
 		pinctrl-names = "default";
 		port {
 			panel_in2: endpoint {
@@ -201,8 +201,8 @@
                 reg = <2>;
 		1p8-supply = <&mt6369_vtp>;
                 reset-gpios = <&pio 95 0>;
-                bias_n-gpios = <&pio 134 0>;
-                bias_p-gpios = <&pio 182 0>;
+                bias_n-gpios = <&pio 182 0>;
+                bias_p-gpios = <&pio 134 0>;
                 pinctrl-names = "default";
                 port {
                         panel_in3: endpoint {
@@ -217,8 +217,8 @@
 		reg = <3>;
 		1p8-supply = <&mt6369_vtp>;
 		reset-gpios = <&pio 95 0>;
-		bias_n-gpios = <&pio 134 0>;
-		bias_p-gpios = <&pio 182 0>;
+		bias_n-gpios = <&pio 182 0>;
+		bias_p-gpios = <&pio 134 0>;
 		pinctrl-names = "default";
 		port {
 			panel_in4: endpoint {
