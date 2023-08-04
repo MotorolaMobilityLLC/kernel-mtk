@@ -497,7 +497,11 @@ static int aw36518_ioctl(unsigned int cmd, unsigned long arg)
 		break;
 
 	case FLASH_IOC_GET_DUTY_NUMBER:
+#if defined(CONFIG_MOT_CANCUNN_CAMERA_PROJECT)
+		fl_arg->arg = AW36518_LEVEL_NUM - 6;
+#else
 		fl_arg->arg = AW36518_LEVEL_NUM;
+#endif
 		pr_info("%s. FLASH_IOC_GET_DUTY_NUMBER(%d): %d\n",
 				__func__, channel, (int)fl_arg->arg);
 		break;
