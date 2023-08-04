@@ -74,6 +74,7 @@
 	chipone,touch-charger-detect-psy-name = "mtk-master-charger"; /* usb */
 	chipone,touch-charger-detect-psp = "POWER_SUPPLY_PROP_ONLINE";
 	chipone,touch-charger-detect-psp-poll-interval = <1000>;
+	chipone,supported_gesture_type = <0x06>;
     };
 };
 
