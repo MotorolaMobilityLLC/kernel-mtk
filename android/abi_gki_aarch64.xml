@@ -7699,6 +7699,7 @@
       <elf-symbol name='vm_node_stat' size='320' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcf1a72df'/>
       <elf-symbol name='vm_zone_stat' size='88' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xba0676e2'/>
       <elf-symbol name='xt_tee_enabled' size='16' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd3fcc511'/>
+      <elf-symbol name='zero_pfn' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x85efc7e0'/>
     </elf-variable-symbols>
     <abi-instr address-size='64' language='LANG_C89' path='various'>
       <class-decl name='mmpin' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/linux/skbuff.h' line='528' column='1' id='0009269e'>
@@ -164970,6 +164971,7 @@
         <parameter type-id='7359adad' name='size' filepath='mm/memory.c' line='1769' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <var-decl name='zero_pfn' type-id='7359adad' mangled-name='zero_pfn' visibility='default' filepath='mm/memory.c' line='144' column='1' elf-symbol-id='zero_pfn'/>
       <function-decl name='zlib_deflate' mangled-name='zlib_deflate' filepath='lib/zlib_deflate/deflate.c' line='329' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='zlib_deflate'>
         <parameter type-id='fb4f8c25' name='strm' filepath='lib/zlib_deflate/deflate.c' line='330' column='1'/>
         <parameter type-id='95e97e5e' name='flush' filepath='lib/zlib_deflate/deflate.c' line='331' column='1'/>
@@ -165088,7 +165090,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
