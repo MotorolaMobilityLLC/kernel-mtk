@@ -254,7 +254,6 @@ static int csot_disable(struct drm_panel *panel)
 	return 0;
 }
 
-#if 0
 static int panel_set_gesture_flag(int state)
 {
 	if(state == 1)
@@ -265,7 +264,6 @@ static int panel_set_gesture_flag(int state)
 	pr_info("%s:disp:set tp_gesture_flag:%d\n", __func__, tp_gesture_flag);
 	return 0;
 }
-#endif
 
 static int csot_unprepare(struct drm_panel *panel)
 {
@@ -292,11 +290,11 @@ static int csot_unprepare(struct drm_panel *panel)
 #ifdef BIAS_SM5109
 		sm5109_BiasPower_disable(5);
 #endif
-	}
 
 #ifdef PANEL_LDO_VTP_EN
-	lcm_enable_reg_vtp_1p8(0);
+		lcm_enable_reg_vtp_1p8(0);
 #endif
+	}
 
 	ctx->error = 0;
 	ctx->prepared = false;
@@ -887,7 +885,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ext_param_set = mtk_panel_ext_param_set,
 	.get_lcm_version = panel_get_lcm_version,
 //	.ata_check = panel_ata_check,
-//	.set_gesture_flag = panel_set_gesture_flag,
+	.set_gesture_flag = panel_set_gesture_flag,
 	.panel_feature_set = panel_feature_set,
 };
 #endif
