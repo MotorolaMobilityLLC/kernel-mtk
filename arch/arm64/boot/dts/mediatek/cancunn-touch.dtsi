@@ -58,15 +58,22 @@
     };
 
     chipone_tddi@2 {
-                compatible = "chipone-tddi";
-                reg = <2>;
-                spi-max-frequency = <9600000>;
-                interrupt-parent = <&pio>;
-                interrupts = <22 0x2008>;
-                chipone,rst-gpio = <&pio 3 0x00>;
-                chipone,irq-gpio = <&pio 22 0x00>;
-                chipone,x-res = <1080>;
-                chipone,y-res = <2400>;
+        compatible = "chipone-tddi";
+        reg = <2>;
+        spi-max-frequency = <9600000>;
+        interrupt-parent = <&pio>;
+        interrupts = <22 0x2008>;
+        chipone,rst-gpio = <&pio 3 0x00>;
+        chipone,irq-gpio = <&pio 22 0x00>;
+        chipone,x-res = <1080>;
+        chipone,y-res = <2400>;
+
+	/* Charger detect*/
+	chipone,touch-charger-detect-enable;
+	chipone,touch-charger-detect-type = "notify"; /* notify, poll */
+	chipone,touch-charger-detect-psy-name = "mtk-master-charger"; /* usb */
+	chipone,touch-charger-detect-psp = "POWER_SUPPLY_PROP_ONLINE";
+	chipone,touch-charger-detect-psp-poll-interval = <1000>;
     };
 };
 
