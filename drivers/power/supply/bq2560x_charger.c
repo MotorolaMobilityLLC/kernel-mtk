@@ -437,7 +437,7 @@ int bq2560x_get_hiz_mode(struct bq2560x *bq, u8 *state)
 }
 EXPORT_SYMBOL_GPL(bq2560x_get_hiz_mode);
 
-static int bq2560x_enable_term(struct bq2560x *bq, bool enable)
+int bq2560x_enable_term(struct bq2560x *bq, bool enable)
 {
 	u8 val;
 	int ret;
@@ -494,7 +494,7 @@ int bq2560x_set_boost_voltage(struct bq2560x *bq, int volt)
 }
 EXPORT_SYMBOL_GPL(bq2560x_set_boost_voltage);
 
-static int bq2560x_set_acovp_threshold(struct bq2560x *bq, int volt)
+int bq2560x_set_acovp_threshold(struct bq2560x *bq, int volt)
 {
 	u8 val;
 
@@ -542,7 +542,7 @@ static int bq2560x_set_int_mask(struct bq2560x *bq, int mask)
 				   val << REG0A_INT_MASK_SHIFT);
 }
 
-static int bq2560x_enable_batfet(struct bq2560x *bq)
+int bq2560x_enable_batfet(struct bq2560x *bq)
 {
 	const u8 val = REG07_BATFET_ON << REG07_BATFET_DIS_SHIFT;
 
@@ -551,7 +551,7 @@ static int bq2560x_enable_batfet(struct bq2560x *bq)
 }
 EXPORT_SYMBOL_GPL(bq2560x_enable_batfet);
 
-static int bq2560x_disable_batfet(struct bq2560x *bq)
+int bq2560x_disable_batfet(struct bq2560x *bq)
 {
 	const u8 val = REG07_BATFET_OFF << REG07_BATFET_DIS_SHIFT;
 
@@ -560,7 +560,7 @@ static int bq2560x_disable_batfet(struct bq2560x *bq)
 }
 EXPORT_SYMBOL_GPL(bq2560x_disable_batfet);
 
-static int bq2560x_set_batfet_delay(struct bq2560x *bq, uint8_t delay)
+int bq2560x_set_batfet_delay(struct bq2560x *bq, uint8_t delay)
 {
 	u8 val;
 
@@ -576,7 +576,7 @@ static int bq2560x_set_batfet_delay(struct bq2560x *bq, uint8_t delay)
 }
 EXPORT_SYMBOL_GPL(bq2560x_set_batfet_delay);
 
-static int bq2560x_enable_safety_timer(struct bq2560x *bq)
+int bq2560x_enable_safety_timer(struct bq2560x *bq)
 {
 	const u8 val = REG05_CHG_TIMER_ENABLE << REG05_EN_TIMER_SHIFT;
 
@@ -587,7 +587,7 @@ static int bq2560x_enable_safety_timer(struct bq2560x *bq)
 }
 EXPORT_SYMBOL_GPL(bq2560x_enable_safety_timer);
 
-static int bq2560x_disable_safety_timer(struct bq2560x *bq)
+int bq2560x_disable_safety_timer(struct bq2560x *bq)
 {
 	const u8 val = REG05_CHG_TIMER_DISABLE << REG05_EN_TIMER_SHIFT;
 
