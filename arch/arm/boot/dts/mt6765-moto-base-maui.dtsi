@@ -21,6 +21,15 @@
         };
 };
 
+&mtk_charger_type {
+	/delete-property/ charger;
+};
+
+&extcon_usb {
+	/delete-property/ vbus-supply;
+	/delete-property/ charger;
+};
+
 /* Trustonic Mobicore real driver */
 &mobicore {
 	trustonic,real-drv = <1>;
