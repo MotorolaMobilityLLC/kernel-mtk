@@ -113,9 +113,7 @@ struct bq2560x {
 
 	struct bq2560x_platform_data *platform_data;
 	struct charger_device *chg_dev;
-//+EXTR ROG-1485,lishuwen.wt,2020.11.10,modify,insert OTG then reboot phone that first boot up can not detect OTG
-//	struct regulator_dev *otg_rdev;
-//-EXTR ROG-1485,lishuwen.wt,2020.11.10,modify,insert OTG then reboot phone that first boot up can not detect OTG
+	struct regulator_dev *otg_rdev;
 //+BUG 605310,lishuwen.wt,2020.12.05,modify,status for charger current nod
 	struct power_supply_desc psy_desc;
 	struct power_supply_config psy_cfg;
@@ -1017,10 +1015,6 @@ static const struct attribute_group bq2560x_attr_group = {
 	.attrs = bq2560x_attributes,
 };
 
-static char *bq2560x_charger_supplied_to[] = {
-	"battery",
-};
-
 static int bq2560x_charging(struct charger_device *chg_dev, bool enable)
 {
 
@@ -1414,7 +1408,7 @@ static int bq2560x_set_boost_ilmt(struct charger_device *chg_dev, u32 curr)
 	return ret;
 }
 //+EXTR ROG-1485,lishuwen.wt,2020.11.10,modify,insert OTG then reboot phone that first boot up can not detect OTG
-/*
+
 static int bq2560x_boost_enable_otg(struct regulator_dev *rdev)
 {
 	int ret;
@@ -1474,20 +1468,20 @@ static int bq2560x_is_enabled_vbus(struct regulator_dev *rdev)
 	struct bq2560x *bq = rdev_get_drvdata(rdev);
 	return bq2560x_get_otg_config(bq);
 }
-static int bq2560x_otg_set_boost_vlmt(struct regulator_dev *rdev,
-					unsigned int sel)
-{
-	struct bq2560x *bq = rdev_get_drvdata(rdev);
-	int ret;
-
-	pr_err("force vboost at %dmV\n", bq->platform_data->boostv);
-
-	ret = bq2560x_set_boost_voltage(bq, bq->platform_data->boostv);
-	if (ret)
-		pr_err("Failed to set boost voltage, ret = %d\n", ret);
-
-	return ret;
-}
+//static int bq2560x_otg_set_boost_vlmt(struct regulator_dev *rdev,
+//					unsigned int sel)
+//{
+//	struct bq2560x *bq = rdev_get_drvdata(rdev);
+//	int ret;
+//
+//	pr_err("force vboost at %dmV\n", bq->platform_data->boostv);
+//
+//	ret = bq2560x_set_boost_voltage(bq, bq->platform_data->boostv);
+//	if (ret)
+//		pr_err("Failed to set boost voltage, ret = %d\n", ret);
+//
+//	return ret;
+//}
 static const struct regulator_ops bq2560x_chg_otg_ops = {
 //	.list_voltage = regulator_list_voltage_linear,
 	.enable = bq2560x_boost_enable_otg,
@@ -1515,7 +1509,160 @@ static const struct regulator_desc bq2560x_otg_rdesc = {
 //	.csel_mask = MT6370_MASK_BOOST_OC,
 
 };
-*/
+
+static int bq2560x_psy_gauge_get_property(struct power_supply *psy,
+	enum power_supply_property psp, union power_supply_propval *val)
+{
+	struct bq2560x *bq;
+	int ret;
+	u8 status;
+	u8 hiz_mode;
+	union power_supply_propval online = {0};
+
+	bq = (struct bq2560x *)power_supply_get_drvdata(psy);
+
+	switch (psp) {
+	case POWER_SUPPLY_PROP_ONLINE:
+		mutex_lock(&bq->attach_lock);
+		val->intval = bq->attach;
+		mutex_unlock(&bq->attach_lock);
+		break;
+	case POWER_SUPPLY_PROP_STATUS:
+		val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
+		ret = bq2560x_get_hiz_mode(bq, &hiz_mode);
+		if (ret)
+			return -EINVAL;
+		hiz_mode = !!hiz_mode;
+
+		ret = bq2560x_read_byte(bq, BQ2560X_REG_08, &status);
+		pr_info("status:0x%x, ret:%d", status, ret);
+		if (ret)
+			return -EINVAL;
+
+		if (bq->chg_psy == NULL) {
+			bq->chg_psy = power_supply_get_by_name("mtk_charger_type");
+		}
+		if (IS_ERR_OR_NULL(bq->chg_psy)) {
+			pr_err("%s Couldn't get chg_psy\n", __func__);
+			return -EINVAL;
+		} else {
+			ret = power_supply_get_property(bq->chg_psy,
+						POWER_SUPPLY_PROP_ONLINE, &online);
+			if (ret)
+				return -EINVAL;
+		}
+
+		if (!online.intval)
+			bq->mmi_charging_full = false;
+
+		if (!online.intval || (online.intval && hiz_mode)) {
+			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
+			break;
+		}
+
+		status = status & REG08_CHRG_STAT_MASK;
+		status = status >> REG08_CHRG_STAT_SHIFT;
+		if (status == 0) /* Ready */
+			if (bq->charge_enabled)
+				val->intval = POWER_SUPPLY_STATUS_CHARGING;
+			else
+				val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		else if ((status == 1) || (status == 2)) /* Charge in progress */
+			val->intval = POWER_SUPPLY_STATUS_CHARGING;
+		else if (status == 3) /* Charge done */
+			val->intval = POWER_SUPPLY_STATUS_FULL;
+		else
+			val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
+
+		if (bq->mmi_charging_full == true)
+			val->intval = POWER_SUPPLY_STATUS_FULL;
+
+		pr_info("bat_status:%d\n", val->intval);
+		break;
+	case POWER_SUPPLY_PROP_TYPE:
+		val->intval = bq->psy_desc.type;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int bq2560x_psy_gauge_set_property(struct power_supply *psy,
+	enum power_supply_property psp, const union power_supply_propval *val)
+{
+	int ret = 0;
+	struct bq2560x *bq;
+
+	bq = (struct bq2560x *)power_supply_get_drvdata(psy);
+
+	switch (psp) {
+	case POWER_SUPPLY_PROP_STATUS:
+		ret = -EINVAL;
+		break;
+	default:
+		ret = -EINVAL;
+		break;
+		}
+
+	pr_info("%s psp:%d ret:%d val:%d", __func__, psp, ret, val->intval);
+
+	return ret;
+}
+//-BUG 605310,lishuwen.wt,2020.12.05,modify,status for charger current nod
+
+static int bq2560x_chg_property_is_writeable(struct power_supply *psy,
+						enum power_supply_property psp)
+{
+	return 0;
+}
+
+static enum power_supply_usb_type bq2560x_chg_psy_usb_types[] = {
+	POWER_SUPPLY_USB_TYPE_UNKNOWN,
+//	POWER_SUPPLY_USB_TYPE_SDP,
+//	POWER_SUPPLY_USB_TYPE_CDP,
+//	POWER_SUPPLY_USB_TYPE_DCP,
+};
+
+static enum power_supply_property bq2560x_chg_psy_properties[] = {
+	POWER_SUPPLY_PROP_STATUS,
+	POWER_SUPPLY_PROP_ONLINE,
+	POWER_SUPPLY_PROP_TYPE,
+};
+
+static char *bq2560x_psy_supplied_to[] = {
+	"battery",
+};
+
+static const struct power_supply_desc bq2560x_psy_desc = {
+	.type = POWER_SUPPLY_TYPE_USB,
+	.usb_types = bq2560x_chg_psy_usb_types,
+	.num_usb_types = ARRAY_SIZE(bq2560x_chg_psy_usb_types),
+	.properties = bq2560x_chg_psy_properties,
+	.num_properties = ARRAY_SIZE(bq2560x_chg_psy_properties),
+	.property_is_writeable = bq2560x_chg_property_is_writeable,
+	.get_property = bq2560x_psy_gauge_get_property,
+	.set_property = bq2560x_psy_gauge_set_property,
+};
+
+static int bq2560x_chg_init_psy(struct bq2560x *bq)
+{
+	struct power_supply_config cfg = {
+		.drv_data = bq,
+		.of_node = bq->dev->of_node,
+		.supplied_to = bq2560x_psy_supplied_to,
+		.num_supplicants = ARRAY_SIZE(bq2560x_psy_supplied_to),
+	};
+	pr_info("bq2560x_chg_init_psy!\n");
+	//pr_info(bq->dev, "%s\n", __func__);
+	memcpy(&bq->psy_desc, &bq2560x_psy_desc, sizeof(bq->psy_desc));
+	bq->psy_desc.name = "bq2560x-charger";
+	bq->psy = devm_power_supply_register(bq->dev, &bq->psy_desc, &cfg);
+
+	return IS_ERR(bq->psy) ? PTR_ERR(bq->psy) : 0;
+}
+
 //-EXTR ROG-1485,lishuwen.wt,2020.11.10,modify,insert OTG then reboot phone that first boot up can not detect OTG
 static struct charger_ops bq2560x_chg_ops = {
 	/* Normal charging */
@@ -1592,112 +1739,6 @@ static struct of_device_id bq2560x_charger_match_table[] = {
 };
 MODULE_DEVICE_TABLE(of, bq2560x_charger_match_table);
 
-//+BUG 605310,lishuwen.wt,2020.12.05,modify,status for charger current nod
-static enum power_supply_property bq2560x_gauge_properties[] = {
-	POWER_SUPPLY_PROP_STATUS,
-	POWER_SUPPLY_PROP_ONLINE,
-//	POWER_SUPPLY_PROP_CURRENT_NOW,
-};
-
-static int bq2560x_psy_gauge_get_property(struct power_supply *psy,
-	enum power_supply_property psp, union power_supply_propval *val)
-{
-	struct bq2560x *bq;
-	int ret;
-	u8 status;
-	u8 hiz_mode;
-	union power_supply_propval online = {0};
-
-	bq = (struct bq2560x *)power_supply_get_drvdata(psy);
-
-	switch (psp) {
-	case POWER_SUPPLY_PROP_ONLINE:
-		mutex_lock(&bq->attach_lock);
-		val->intval = bq->attach;
-		mutex_unlock(&bq->attach_lock);
-		break;
-	case POWER_SUPPLY_PROP_STATUS:
-		val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
-		ret = bq2560x_get_hiz_mode(bq, &hiz_mode);
-		if (ret)
-			return -EINVAL;
-		hiz_mode = !!hiz_mode;
-
-		ret = bq2560x_read_byte(bq, BQ2560X_REG_08, &status);
-		pr_info("status:0x%x, ret:%d", status, ret);
-		if (ret)
-			return -EINVAL;
-
-		if (bq->chg_psy == NULL) {
-			bq->chg_psy = power_supply_get_by_name("mtk_charger_type");
-		}
-		if (IS_ERR_OR_NULL(bq->chg_psy)) {
-			pr_err("%s Couldn't get chg_psy\n", __func__);
-			return -EINVAL;
-		} else {
-			ret = power_supply_get_property(bq->chg_psy,
-						POWER_SUPPLY_PROP_ONLINE, &online);
-			if (ret)
-				return -EINVAL;
-		}
-
-		if (!online.intval)
-			bq->mmi_charging_full = false;
-
-		if (!online.intval || (online.intval && hiz_mode)) {
-			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
-			break;
-		}
-
-		status = status & REG08_CHRG_STAT_MASK;
-		status = status >> REG08_CHRG_STAT_SHIFT;
-		if (status == 0) /* Ready */
-			if (bq->charge_enabled)
-				val->intval = POWER_SUPPLY_STATUS_CHARGING;
-			else
-				val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
-		else if ((status == 1) || (status == 2)) /* Charge in progress */
-			val->intval = POWER_SUPPLY_STATUS_CHARGING;
-		else if (status == 3) /* Charge done */
-			val->intval = POWER_SUPPLY_STATUS_FULL;
-		else
-			val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
-
-		if (bq->mmi_charging_full == true)
-			val->intval = POWER_SUPPLY_STATUS_FULL;
-
-		pr_info("bat_status:%d\n", val->intval);
-		break;
-	default:
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
-static int bq2560x_psy_gauge_set_property(struct power_supply *psy,
-	enum power_supply_property psp, const union power_supply_propval *val)
-{
-	int ret = 0;
-	struct bq2560x *bq;
-
-	bq = (struct bq2560x *)power_supply_get_drvdata(psy);
-
-	switch (psp) {
-	case POWER_SUPPLY_PROP_STATUS:
-		ret = -EINVAL;
-		break;
-	default:
-		ret = -EINVAL;
-		break;
-		}
-
-	pr_info("%s psp:%d ret:%d val:%d", __func__, psp, ret, val->intval);
-
-	return ret;
-}
-//-BUG 605310,lishuwen.wt,2020.12.05,modify,status for charger current nod
-
 static void handle_typec_attach(struct bq2560x *bq,
 				bool en)
 {
@@ -1753,9 +1794,7 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 	struct bq2560x *bq;
 	const struct of_device_id *match;
 	struct device_node *node = client->dev.of_node;
-//+EXTR ROG-1485,lishuwen.wt,2020.11.10,modify,insert OTG then reboot phone that first boot up can not detect OTG
-//	struct regulator_config config = { };
-//-EXTR ROG-1485,lishuwen.wt,2020.11.10,modify,insert OTG then reboot phone that first boot up can not detect OTG
+	struct regulator_config config = { };
 	int ret = 0;
 
 	bq = devm_kzalloc(&client->dev, sizeof(struct bq2560x), GFP_KERNEL);
@@ -1834,8 +1873,7 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 		ret = -EINVAL;
 		return ret;
 	}
-//+EXTR ROG-1485,lishuwen.wt,2020.11.10,modify,insert OTG then reboot phone that first boot up can not detect OTG
-/*
+
 	config.dev = bq->dev;
 	config.driver_data = bq;
 	bq->otg_rdev = devm_regulator_register(bq->dev,
@@ -1846,20 +1884,20 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 	}
 
 	pr_err("Found charger ic %d\n", charger_ic_type);
-*/
-//-EXTR ROG-1485,lishuwen.wt,2020.11.10,modify,insert OTG then reboot phone that first boot up can not detect OTG
+
+	bq2560x_chg_init_psy(bq);
 
 //+BUG 605310,lishuwen.wt,2020.12.05,modify,status for charger current nod
-	bq->psy_desc.name = "bq2560x-gauge";
-	bq->psy_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
-	bq->psy_desc.properties = bq2560x_gauge_properties;
-	bq->psy_desc.num_properties = ARRAY_SIZE(bq2560x_gauge_properties);
-	bq->psy_desc.get_property = bq2560x_psy_gauge_get_property;
-	bq->psy_desc.set_property = bq2560x_psy_gauge_set_property;
-	bq->psy_cfg.drv_data = bq;
-	bq->psy_cfg.supplied_to = bq2560x_charger_supplied_to;
-	bq->psy_cfg.num_supplicants = ARRAY_SIZE(bq2560x_charger_supplied_to);
-	bq->psy = power_supply_register(bq->dev, &bq->psy_desc, &bq->psy_cfg);
+//	bq->psy_desc.name = "bq2560x-gauge";
+//	bq->psy_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
+//	bq->psy_desc.properties = bq2560x_gauge_properties;
+//	bq->psy_desc.num_properties = ARRAY_SIZE(bq2560x_gauge_properties);
+//	bq->psy_desc.get_property = bq2560x_psy_gauge_get_property;
+//	bq->psy_desc.set_property = bq2560x_psy_gauge_set_property;
+//	bq->psy_cfg.drv_data = bq;
+//	bq->psy_cfg.supplied_to = bq2560x_charger_supplied_to;
+//	bq->psy_cfg.num_supplicants = ARRAY_SIZE(bq2560x_charger_supplied_to);
+//	bq->psy = power_supply_register(bq->dev, &bq->psy_desc, &bq->psy_cfg);
 //-BUG 605310,lishuwen.wt,2020.12.05,modify,status for charger current nod
 
 //+EXTR ROG-1709,lishuwen.wt,2020.11.21,modify,plug out OTG then reboot phone that OTG REG error config case vbus always on
