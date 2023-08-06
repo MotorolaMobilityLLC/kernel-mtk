@@ -196,6 +196,8 @@ static int mtk_usb_extcon_psy_init(struct mtk_extcon_info *extcon)
 	struct device *dev = extcon->dev;
 	#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 	extcon->usb_psy = power_supply_get_by_name("sgm4154x-charger");
+	#elif defined(CONFIG_MTK_BQ2560x_SUPPORT)
+	extcon->usb_psy = power_supply_get_by_name("bq2560x-charger");
 	#else
 	extcon->usb_psy = devm_power_supply_get_by_phandle(dev, "charger");
 	#endif
@@ -591,7 +593,7 @@ static int mtk_usb_extcon_probe(struct platform_device *pdev)
 		extcon->c_role = USB_ROLE_NONE;
 
 	/* vbus */
-	#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	#if defined(CONFIG_MOTO_CHARGER_SGM415XX) || defined(CONFIG_MTK_BQ2560x_SUPPORT)
 	extcon->vbus = devm_regulator_get(dev, "usb-otg-vbus");
 	#else
 	extcon->vbus = devm_regulator_get(dev, "vbus");
