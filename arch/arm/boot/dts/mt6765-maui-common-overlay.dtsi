@@ -373,7 +373,7 @@
 };
 
 &mtk_charger_type {
-	bc12_active = <0>;
+	bc12_active = <1>;
 };
 
 &mt6370_chg {
