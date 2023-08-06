@@ -401,6 +401,10 @@
 	status = "disable";
 };
 
+&mt6370 {
+	status = "disable";
+};
+
 &i2c5 {
 	bq2560x_charger:bq25601@6B {
 		compatible = "ti,bq25601";
