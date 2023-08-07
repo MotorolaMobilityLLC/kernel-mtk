@@ -3761,7 +3761,10 @@ int battery_psy_init(struct platform_device *pdev)
 		}
 	}
 
+#ifndef CONFIG_MTK_BQ2560x_SUPPORT
 	bm_err("%s charger psy name: %s\n", __func__, gm->bs_data.chg_psy->desc->name);
+#endif // CONFIG_MTK_BQ2560x_SUPPORT
+
 	gm->disable_bs_psy = of_property_read_bool(
 		pdev->dev.of_node, "disable-bspsy");
 
