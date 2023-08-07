@@ -150,12 +150,12 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.custom2 = {
 		.pclk = 75000000,
-		.linelength = 600,
-		.framelength = 2080,
+		.linelength = 450,
+		.framelength = 2776,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2048,
-		.grabwindow_height = 1152,
+		.grabwindow_width = 4096,
+		.grabwindow_height = 2304,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 600,
 		.mipi_pixel_rate = 1316016000,
@@ -288,7 +288,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[12] = {
 	/* custom1 */
 	{8192, 6144,    0,    0, 8192, 6144, 8192, 6144,  0,   0, 8192, 6144, 0, 0, 8192, 6144},
 	/* custom2 */
-	{8192, 6144,    0,    768, 8192, 4608, 2048, 1152,  0,   0, 2048, 1152, 0, 0, 2048, 1152},
+	{8192, 6144,    0,    768, 8192, 4608, 4096, 2304,  0,   0, 4096, 2304, 0, 0, 4096, 2304},
 	/* custom3 */
 	{8192, 6144,    256, 912, 7680, 4320, 1920, 1080,  0,   0, 1920, 1080, 0, 0, 1920, 1080},
 	/* custom4 */
@@ -326,7 +326,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4LeFirst = 0,
 	.i4Crop = {
 		{0, 0}, {0, 0}, {0, 384}, {0, 192}, {0, 0},
-		{0, 0}, {0, 192}, {64, 228}, {0, 384}, {2048, 1536},{0, 0},{0,0},
+		{0, 384}, {0, 192}, {64, 228}, {0, 384}, {2048, 1536},{0, 0},{0,0},
 	},
 	.iMirrorFlip = 0,
 };
@@ -572,8 +572,9 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 	}
 	if(crop_remosaic_mode == 1)
 	{
-		max_gain = 64*BASEGAIN;
+		max_gain = 65280;  //63.75xBASEGAIN;
 	}
+
 	if (gain < imgsensor_info.min_gain || gain > max_gain) {
 		LOG_INF_N("Error gain setting\n");
 
@@ -1029,7 +1030,7 @@ static void custom2_setting(struct subdrv_ctx *ctx)
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
 	full_remosaic_mode =0;
-	crop_remosaic_mode =0;
+	crop_remosaic_mode =1;
 	_length = sizeof(addr_data_pair_custom2) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -3004,13 +3005,13 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
 		},
 	},
 };
-static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = { //2048x1152@60fps
+static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = { //4096x2304@60fps
 	{
 		.bus.csi2 = {
 			.channel = 0,
 			.data_type = 0x2b,
-			.hsize = 0x800,
-			.vsize = 0x480,
+			.hsize = 0x1000,
+			.vsize = 0x900,
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
@@ -3018,7 +3019,7 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = { //2048x1152@60fps
 		.bus.csi2 = {
 			.channel = 1,
 			.data_type = 0x2b,
-			.hsize = 0x800,
+			.hsize = 0x1000,
 			.vsize = 0x240,
 			.user_data_desc = VC_PDAF_STATS,
 		},
