@@ -676,6 +676,9 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 	
 	struct power_supply *chg_psy = NULL, *wl_psy = NULL;
 	struct power_supply *dv2_chg_psy = NULL;
+#ifdef CONFIG_MTK_BQ2560x_SUPPORT
+	struct power_supply *extern_charger = NULL;
+#endif // CONFIG_MTK_BQ2560x_SUPPORT
 	int ret;
 
 	gm = psy->drv_data;
@@ -711,8 +714,31 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 			POWER_SUPPLY_PROP_ONLINE, &online);
 		online.intval =online.intval || wls_online.intval;
 
+#ifdef CONFIG_MTK_BQ2560x_SUPPORT
+		extern_charger = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,
+						       "extern_charger");
+		if (IS_ERR_OR_NULL(extern_charger)) {
+			bm_err("%s Couldn't get extern_charger bq2560x\n", __func__);
+			extern_charger = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,
+					"extern_charger_sgm41513");
+			if (IS_ERR_OR_NULL(extern_charger)) {
+				bm_err("%s Couldn't get extern_charger_sgm41513\n", __func__);
+				ret = power_supply_get_property(chg_psy,
+					POWER_SUPPLY_PROP_STATUS, &status);
+			} else {
+				bm_err("found the extern_charger_sgm41513\n");
+				ret = power_supply_get_property(extern_charger,
+					POWER_SUPPLY_PROP_STATUS, &status);
+			}
+		} else {
+			bm_err("%s Found get extern_charger bq2560x\n", __func__);
+			ret = power_supply_get_property(extern_charger,
+				POWER_SUPPLY_PROP_STATUS, &status);
+		}
+#else // CONFIG_MTK_BQ2560x_SUPPORT
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_STATUS, &status);
+#endif
 
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_ENERGY_EMPTY, &vbat0);
