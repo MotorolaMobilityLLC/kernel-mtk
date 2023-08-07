@@ -1287,4 +1287,13 @@ config DRM_PANEL_TM_ICNL9911C_652_HDP_DPHY_VDO_90HZ
 	  Say Y here if you want to enable support for DRM_PANEL_TM_ICNL9911C_652_HDP_DPHY_VDO_90HZ
 	  panel. It provides a MIPI DSI interface to host.
 
+config DRM_PANEL_HLT_FT8006S_652_HDP_DPHY_VDO_90HZ
+	tristate "HLT FT8006S 652 HDP DPHY VDO 90HZ panel"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  Say Y here if you want to enable support for DRM_PANEL_HLT_FT8006S_652_HDP_DPHY_VDO_90HZ
+	  panel. It provides a MIPI DSI interface to host.
+
 endmenu
