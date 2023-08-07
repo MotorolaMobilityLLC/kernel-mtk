@@ -127,7 +127,6 @@ static void tianma_dcs_write(struct tianma *ctx, const void *data, size_t len)
 
 static void tianma_panel_init(struct tianma *ctx)
 {
-	/*
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
 		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
@@ -142,7 +141,7 @@ static void tianma_panel_init(struct tianma *ctx)
 	usleep_range(20000,20001);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	*/
+
 	tianma_dcs_write_seq_static(ctx, 0x35, 0x00);
 	tianma_dcs_write_seq_static(ctx, 0x53, 0x24);
 	tianma_dcs_write_seq_static(ctx, 0x55, 0x01);
