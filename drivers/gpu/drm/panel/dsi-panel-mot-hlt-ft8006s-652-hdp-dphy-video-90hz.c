@@ -127,7 +127,6 @@ static void hlt_dcs_write(struct hlt *ctx, const void *data, size_t len)
 
 static void hlt_panel_init(struct hlt *ctx)
 {
-	/*
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
 		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
