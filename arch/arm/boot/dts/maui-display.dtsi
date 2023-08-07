@@ -99,6 +99,9 @@
 &dsi0 {
 	status = "okay";
 
+	#address-cells = <1>;
+	#size-cells = <0>;
+
 	panel1@0 {
 		/delete-property/ compatible;
 		/delete-property/ pm-enable-gpios;
@@ -106,11 +109,28 @@
 		/delete-property/ gate-ic;
 
 		compatible = "tm,icnl9911c,vdo,90hz";
-		reg = <0>;
+		reg = <1>;
 		reset-gpios = <&pio 45 0>;
 		pinctrl-names = "default";
 		port {
 			panel_in1: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+
+	panel2@0 {
+		/delete-property/ compatible;
+		/delete-property/ pm-enable-gpios;
+		/delete-property/ reset-gpios;
+		/delete-property/ gate-ic;
+
+		compatible = "hlt,ft8006s,vdo,90hz";
+		reg = <2>;
+		reset-gpios = <&pio 45 0>;
+		pinctrl-names = "default";
+		port {
+			panel_in2: endpoint {
 				remote-endpoint = <&dsi_out>;
 			};
 		};
