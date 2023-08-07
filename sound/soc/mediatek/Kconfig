@@ -496,3 +496,9 @@ config MTK_HAC_SGM3715_SUPPORT
 	help
 	 Select Y if you have such device.
 	 If unsure select "N".
+
+config SND_SOC_FS16XX
+	tristate "Support fs16xx/fs16xx"
+	depends on I2C
+	help
+	  FourSemi Smart Amplifier Driver.
