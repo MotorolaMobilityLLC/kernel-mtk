@@ -3181,13 +3181,13 @@ static bool mmi_has_current_tapered(struct mtk_charger *info,
 	return change_state;
 }
 
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 #define TURBO_POWER_THRSH 15000000 /*15W*/
 #else
 #define TURBO_POWER_THRSH 12000000 /*12W*/
 #endif
 #define WEAK_CHRG_THRSH 450
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 #define TURBO_CHRG_THRSH 3000
 #else
 #define TURBO_CHRG_THRSH 2500
@@ -3200,7 +3200,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 	int vbus = 0;
 	static struct chg_alg_device *pe2_alg = NULL;
 
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 	struct chg_alg_device *alg = NULL;
 	int i = 0;
 	int ibus = get_ibus(info); /* mA */
@@ -3270,16 +3270,13 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 
 	vbus = get_vbus(info);
 
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
-//#ifndef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 	if ((icl * vbus >= TURBO_POWER_THRSH) && (icl < TURBO_CHRG_THRSH)) {
 		pr_err("[%s]Charging power = %d, it's Turbo \n", __func__, icl * vbus);
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 		goto end_rate_check;
 	}
-#endif
 
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	if(get_uisoc(info) == 100)
 		goto end_rate_check;
 	// Check if fast charge is running
@@ -3297,7 +3294,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 #endif
 
 	if (icl >= TURBO_CHRG_THRSH)
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 	{
 		if(info->mmi.charge_rate != POWER_SUPPLY_CHARGE_RATE_TURBO){
 	              if (ibus * vbus >= TURBO_POWER_THRSH)
@@ -3311,7 +3308,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 #endif
 	else if (icl < WEAK_CHRG_THRSH)
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 	else if ((info->mmi.charge_rate != POWER_SUPPLY_CHARGE_RATE_TURBO) &&
 		 (ibus * vbus >= TURBO_POWER_THRSH))
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
@@ -3337,6 +3334,9 @@ end_rate_check:
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	pr_info("%s ICL:%d, aicl_lmt:%d, vbus: %d, ibus: %d, Rp:%d, PD:%d, chg_type: %d, Charger Detected: %s\n",
 		__func__, icl, aicl_lmt, vbus, ibus, rp_level, info->pd_type, m_chg_type, charge_rate[info->mmi.charge_rate]);
+#elif defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
+	pr_info("%s ICL:%d, aicl_lmt:%d, vbus: %d, ibus: %d, Rp:%d, PD:%d, Charger Detected: %s\n",
+		__func__, icl, aicl_lmt, vbus, ibus, rp_level, info->pd_type, charge_rate[info->mmi.charge_rate]);
 #else
 	pr_info("%s ICL:%d, Rp:%d, PD:%d, Charger Detected: %s\n",
 		__func__, icl, rp_level, info->pd_type, charge_rate[info->mmi.charge_rate]);
@@ -3597,7 +3597,7 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 		power_watt = mmi_get_pdc_power(info, force) / 1000;
 
 	} else {
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 	    if(info->mmi.charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO){
 		power_watt = 5 * 3;
 	    }
@@ -3627,6 +3627,7 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
                 }
 
 		if(!is_fast_charging && (get_uisoc(info) < 100)){
+#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	            pr_info("[%s] icl = %d, aicl_lmt = %d, chg_type = %d, ibus = %d, power_type = %d, pd = %d\n", __func__, icl, aicl_lmt, m_chg_type, ibus, info->mmi.charge_rate, info->pd_type);
 		    if(icl >= 3000) {
                         // QC2, QC3 and Qc3+ all support max power more than 15w, should show trubo power
@@ -3644,6 +3645,23 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 		    else {
 		        power_watt = 5 * icl /1000;
 		    }
+#else
+	            pr_info("[%s] icl = %d, aicl_lmt = %d, ibus = %d, power_type = %d, pd = %d\n", __func__, icl, aicl_lmt, ibus, info->mmi.charge_rate, info->pd_type);
+                    if(icl >= 3000) {
+                        // Max power more than 15w, should show trubo power
+                        if (ibus * vbus >= 15000000) {
+                            power_watt = 5 * icl /1000;
+                        }
+                        else {
+                            // for 10w chargers, charging current can't exceed 2.3A,
+                            // report normal charger
+                            power_watt = 5 * 2;
+                        }
+                    }
+                    else {
+                        power_watt = 5 * icl /1000;
+                    }
+#endif
 		}
 	    }
 #else
