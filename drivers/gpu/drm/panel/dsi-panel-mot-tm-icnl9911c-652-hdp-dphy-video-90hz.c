@@ -381,7 +381,7 @@ static int tianma_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	return 0;
 }
 #endif
-struct drm_display_mode *get_mode_by_id(struct drm_connector *connector,
+static struct drm_display_mode *get_mode_by_id(struct drm_connector *connector,
 	unsigned int mode)
 {
 	struct drm_display_mode *m;
