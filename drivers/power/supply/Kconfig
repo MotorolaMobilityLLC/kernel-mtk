@@ -839,6 +839,13 @@ config MOTO_SELECT_LOW_TMP_BATVOL
 	help
 		This is to select low temperature battery voltage low bound.
 
+config MOTO_CHARGER_10W_3A_SUPPORT
+        bool "Configure max charing current to 3A for 10W charger"
+        default n
+        help
+                This is to support config max charing current to 3A
+                for 10w charger.
+
 config CHARGER_CROS_USBPD
 	tristate "ChromeOS EC based USBPD charger"
 	depends on CROS_USBPD_NOTIFY
