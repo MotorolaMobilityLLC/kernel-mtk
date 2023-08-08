@@ -26,3 +26,7 @@
 	trustonic,real-drv = <1>;
 };
 
+/* regulator_vibrator needs label at kernel 5.10*/
+&regulator_vibrator {
+	label = "vibrator";
+};
