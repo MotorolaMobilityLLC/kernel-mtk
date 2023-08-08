@@ -3300,7 +3300,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	{
 		if(info->mmi.charge_rate != POWER_SUPPLY_CHARGE_RATE_TURBO){
-	              if ((ibus >= 2500) || ((get_uisoc(info) > 85) && (ibus > 2100)))
+	              if (ibus * vbus >= TURBO_POWER_THRSH)
 		         info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 		      else
 		         info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
@@ -3313,7 +3313,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	else if ((info->mmi.charge_rate != POWER_SUPPLY_CHARGE_RATE_TURBO) &&
-		 ((ibus >= 2500) || ((get_uisoc(info) > 85) && (ibus > 2100))))
+		 (ibus * vbus >= TURBO_POWER_THRSH))
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 	else if (info->mmi.charge_rate != POWER_SUPPLY_CHARGE_RATE_TURBO)
 #else
@@ -3606,6 +3606,7 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 		bool is_fast_charging = false;
 		int i = 0;
                 int ibus = get_ibus(info); /* mA */
+	        int vbus = get_vbus(info);
                 int aicl_lmt = info->chg_data[CHG1_SETTING].input_current_limit_by_aicl; /* uA */
 
 		if(get_uisoc(info) == 100){
@@ -3631,7 +3632,7 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
                         // QC2, QC3 and Qc3+ all support max power more than 15w, should show trubo power
                         if ((m_chg_type == 0x05) || (m_chg_type == 0x06) ||
                             (m_chg_type == 0x08) || (m_chg_type == 0x09) ||
-                            ((ibus > 2300) || ((get_uisoc(info) > 85) && (ibus > 2100)))) {
+                            (ibus * vbus >= 15000000)) {
                             power_watt = 5 * icl /1000;
                         }
 		        else {
