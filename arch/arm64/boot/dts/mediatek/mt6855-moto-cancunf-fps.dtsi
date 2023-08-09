@@ -2,7 +2,6 @@
 &mt6369_vfp {
 	regulator-min-microvolt = <3300000>;
 	regulator-max-microvolt = <3300000>;
-	regulator-always-on;
 };
 
 &pio {
