@@ -212,8 +212,8 @@ static void dijing_panel_init(struct dijing *ctx)
 	dijing_dcs_write_seq_static(ctx, 0xFF, 0x00, 0x00, 0x00);
 	dijing_dcs_write_seq_static(ctx, 0x00, 0x80);
 	dijing_dcs_write_seq_static(ctx, 0xFF, 0x00, 0x00);
-        dijing_dcs_write_seq_static(ctx, 0x35, 0x00,0x00);
-	dijing_dcs_write_seq_static(ctx, 0x51, 0xCC,0x0C);
+	dijing_dcs_write_seq_static(ctx, 0x35, 0x00, 0x00);
+	dijing_dcs_write_seq_static(ctx, 0x51, 0xCC, 0x0C);
 	dijing_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	dijing_dcs_write_seq_static(ctx, 0x55, 0x01);
 
@@ -283,25 +283,6 @@ static int dijing_unprepare(struct drm_panel *panel)
 
 	ctx->prepared = false;
 
-	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->reset_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
-			__func__, PTR_ERR(ctx->reset_gpio));
-	}
-    else {
-#if 1 //#ifdef IOVCC_IS_LOW
-	    gpiod_set_value(ctx->reset_gpio, 0);
-	    devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-
-		usleep_range(3 * 1000, 8 * 1000);
-#else
-	   //reset keep high
-	    gpiod_set_value(ctx->reset_gpio, 1);
-	    msleep(5);
-	    devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-#endif
-    }
-
 	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
 	if(!tp_gesture_flag) {
 #ifdef BIAS_SM5109
@@ -309,7 +290,7 @@ static int dijing_unprepare(struct drm_panel *panel)
 #endif
 
 #ifdef PANEL_LDO_VTP_EN
-		lcm_enable_reg_vtp_1p8(0);
+		//lcm_enable_reg_vtp_1p8(0);
 #endif
 	}
 
@@ -695,7 +676,6 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	},
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
-
 };
 #endif
 
