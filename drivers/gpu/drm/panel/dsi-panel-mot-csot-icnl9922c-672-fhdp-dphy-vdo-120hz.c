@@ -292,7 +292,7 @@ static int csot_unprepare(struct drm_panel *panel)
 #endif
 
 #ifdef PANEL_LDO_VTP_EN
-		lcm_enable_reg_vtp_1p8(0);
+		//lcm_enable_reg_vtp_1p8(0);
 #endif
 	}
 
