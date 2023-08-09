@@ -15,7 +15,9 @@
 unsigned int ov50a_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsigned int *pGetSensorCalData);
 
 #define OV50A_MOT_EEPROM_ADDR 0x00
-#define OV50A_MOT_EEPROM_DATA_SIZE 0x2327
+//BEGIN OF IKSWT-185759
+#define OV50A_MOT_EEPROM_DATA_SIZE 0x23E9
+//END OF IKSWT-185759
 #define OV50A_MOT_SERIAL_NUMBER_ADDR 0x15
 #define OV50A_MOT_MNF_ADDR 0x00
 #define OV50A_MOT_MNF_DATA_SIZE 37
