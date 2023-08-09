@@ -19,7 +19,7 @@
 #define PHYSICAL_WIDTH              70081
 #define PHYSICAL_HEIGHT            155736
 
-#define DATA_RATE                   808
+#define DATA_RATE                   832
 #define HSA                         10
 #define HBP                         12
 #define VSA                         10
@@ -28,30 +28,30 @@
 /*Parameter setting for mode 0 Start*/
 #define MODE_60_FPS                  60
 #define MODE_60_VFP                  2470
-#define MODE_60_HFP                  12
-#define MODE_60_DATA_RATE            808
+#define MODE_60_HFP                  22
+#define MODE_60_DATA_RATE            832
 /*Parameter setting for mode 0 End*/
 
 /*Parameter setting for mode 1 Start*/
 #define MODE_90_FPS                  90
 #define MODE_90_VFP                  840
-#define MODE_90_HFP                  12
-#define MODE_90_DATA_RATE            808
+#define MODE_90_HFP                  22
+#define MODE_90_DATA_RATE            832
 /*Parameter setting for mode 1 End*/
 
 /*Parameter setting for mode 2 Start*/
 #define MODE_120_FPS                  120
 #define MODE_120_VFP                  20
-#define MODE_120_HFP                  12
-#define MODE_120_DATA_RATE            808
+#define MODE_120_HFP                  22
+#define MODE_120_DATA_RATE            832
 /*Parameter setting for mode 2 End*/
 
 /*Parameter setting for mode 3 Start*/
 #define MODE_30_FPS                  30
 #define MODE_30_VFP                  7380
-#define MODE_30_HFP                  12
+#define MODE_30_HFP                  22
 
-#define MODE_30_DATA_RATE            808
+#define MODE_30_DATA_RATE            832
 /*Parameter setting for mode 3 End*/
 #define LFR_EN                      0
 /* DSC RELATED */
