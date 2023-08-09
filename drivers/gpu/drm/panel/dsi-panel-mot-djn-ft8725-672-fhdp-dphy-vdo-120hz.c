@@ -379,7 +379,7 @@ static int dijing_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-	.clock = 327516,
+	.clock = 330456,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
@@ -401,7 +401,7 @@ static const struct drm_display_mode default_mode = {
 
 #if 1
 static const struct drm_display_mode performance_mode_30hz = {
-	.clock		= 327850,
+	.clock = 330793,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_30_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_30_HFP + HSA,
@@ -413,7 +413,7 @@ static const struct drm_display_mode performance_mode_30hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 327850,
+	.clock = 330793,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -425,7 +425,7 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 static const struct drm_display_mode performance_mode_60hz = {
-	.clock		= 327516,
+	.clock = 330861,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -441,7 +441,6 @@ static const struct drm_display_mode performance_mode_60hz = {
 static struct mtk_panel_params ext_params = {
 	.change_fps_by_vfp_send_cmd = 0,
 	//.vfp_low_power = 20,
-	.phy_timcon.lpx = 8,
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
@@ -497,7 +496,7 @@ static struct mtk_panel_params ext_params = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 	//.data_rate_khz = 808000,
-	.data_rate = 808,
+	.data_rate = DATA_RATE,
 	.lfr_enable = 0,
 	.lfr_minimum_fps = MODE_120_FPS,
 	.dyn_fps = {
@@ -509,15 +508,16 @@ static struct mtk_panel_params ext_params = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.vfp = 198,
+		.switch_en = 1,
+		.hfp = 174,
+		.data_rate = 1124,
 	},
 };
 
 #if 1
 static struct mtk_panel_params ext_params_mode_30 = {
 //	.vfp_low_power = 7476,//30hz
-	.data_rate = 808,
+	.data_rate = DATA_RATE,
 	.cust_esd_check = 0,
 	.esd_check_enable = 0,
 	.lcm_esd_check_table[0] = {
@@ -582,14 +582,15 @@ static struct mtk_panel_params ext_params_mode_30 = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.vfp = 198,
+		.switch_en = 1,
+		.hfp = 174,
+		.data_rate = 1124,
 	},
 };
 
 static struct mtk_panel_params ext_params_mode_90 = {
 //	.vfp_low_power = 7476,//30hz
-	.data_rate = 808,
+	.data_rate = DATA_RATE,
 	.cust_esd_check = 0,
 	.esd_check_enable = 0,
 	.lcm_esd_check_table[0] = {
@@ -656,14 +657,15 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.vfp = 198,
+		.switch_en = 1,
+		.hfp = 174,
+		.data_rate = 1124,
 	},
 };
 
 static struct mtk_panel_params ext_params_mode_60 = {
 //	.vfp_low_power = 7476,//30hz
-	.data_rate = 808,
+	.data_rate = DATA_RATE,
 	.cust_esd_check = 0,
 	.esd_check_enable = 0,
 	.lcm_esd_check_table[0] = {
@@ -730,8 +732,9 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.vfp = 198,
+		.switch_en = 1,
+		.hfp = 174,
+		.data_rate = 1124,
 	},
 };
 #endif

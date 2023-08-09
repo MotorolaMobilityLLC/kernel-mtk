@@ -432,7 +432,7 @@ static int tianma_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-	.clock		= 334963,
+	.clock		= 333790,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
@@ -454,7 +454,7 @@ static const struct drm_display_mode default_mode = {
 
 #if 1
 static const struct drm_display_mode performance_mode_30hz = {
-	.clock		= 335908,
+	.clock		= 333522,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_30_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_30_HFP + HSA,
@@ -466,7 +466,7 @@ static const struct drm_display_mode performance_mode_30hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 333814,
+	.clock		= 333455,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -478,7 +478,7 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 static const struct drm_display_mode performance_mode_60hz = {
-	.clock		= 334017,
+	.clock		= 332985,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -561,8 +561,10 @@ static struct mtk_panel_params ext_params = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.vfp = 198,
+		.switch_en = 1,
+		.hfp = 54,
+		.hbp = 130,
+		.data_rate = 1124,
 	},
 };
 
@@ -634,8 +636,10 @@ static struct mtk_panel_params ext_params_mode_30 = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.vfp = 198,
+		.switch_en = 1,
+		.hfp = 54,
+		.hbp = 130,
+		.data_rate = 1124,
 	},
 };
 
@@ -708,8 +712,10 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.vfp = 198,
+		.switch_en = 1,
+		.hfp = 54,
+		.hbp = 130,
+		.data_rate = 1124,
 	},
 };
 
@@ -782,8 +788,10 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.vfp = 198,
+		.switch_en = 1,
+		.hfp = 54,
+		.hbp = 130,
+		.data_rate = 1124,
 	},
 };
 #endif
