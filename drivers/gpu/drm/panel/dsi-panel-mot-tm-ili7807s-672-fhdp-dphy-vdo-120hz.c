@@ -291,7 +291,7 @@ static void tianma_panel_init(struct tianma *ctx)
 		tianma_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x00);
 	}
 
-	tianma_dcs_write_seq_static(ctx, 0x51, 0x0C,0xCC);
+	tianma_dcs_write_seq_static(ctx, 0x51, 0x0C, 0xCC);
 	tianma_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	tianma_dcs_write_seq_static(ctx, 0x55, 0x01);
 
@@ -360,8 +360,8 @@ static int tianma_unprepare(struct drm_panel *panel)
 #endif
 
 #ifdef PANEL_LDO_VTP_EN
-		usleep_range(5 * 1000, 8 * 1000);
-		lcm_enable_reg_vtp_1p8(0);
+		//usleep_range(5 * 1000, 8 * 1000);
+		//lcm_enable_reg_vtp_1p8(0);
 #endif
 	}
 
@@ -432,7 +432,7 @@ static int tianma_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-	.clock		= 336179,
+	.clock		= 334963,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
@@ -454,7 +454,7 @@ static const struct drm_display_mode default_mode = {
 
 #if 1
 static const struct drm_display_mode performance_mode_30hz = {
-	.clock		= 335604,
+	.clock		= 335908,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_30_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_30_HFP + HSA,
@@ -466,7 +466,7 @@ static const struct drm_display_mode performance_mode_30hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 335638,
+	.clock		= 333814,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -478,7 +478,7 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 static const struct drm_display_mode performance_mode_60hz = {
-	.clock		= 335638,
+	.clock		= 334017,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -749,7 +749,6 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	},
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
-
 };
 #endif
 
