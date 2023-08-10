@@ -115,6 +115,7 @@ struct JpegDeviceStruct {
 	struct device *larbjpeg;
 	struct notifier_block pm_notifier;
 	bool is_suspending;
+	bool is_dec_started[HW_CORE_NUMBER];
 };
 
 const long jpeg_dev_get_encoder_base_VA(void);
