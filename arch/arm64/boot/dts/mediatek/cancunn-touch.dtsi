@@ -65,8 +65,8 @@
         interrupts = <22 0x2008>;
         chipone,rst-gpio = <&pio 3 0x00>;
         chipone,irq-gpio = <&pio 22 0x00>;
-        chipone,x-res = <1080>;
-        chipone,y-res = <2400>;
+        chipone,x-res = <4320>;
+        chipone,y-res = <9600>;
 
 	/* Charger detect*/
 	chipone,touch-charger-detect-enable;
