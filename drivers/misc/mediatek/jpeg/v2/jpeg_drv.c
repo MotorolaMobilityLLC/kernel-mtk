@@ -816,6 +816,7 @@ static void jpeg_drv_hybrid_dec_unlock(int hwid)
 		JPEG_LOG(1, "jpeg dec HW core %d is unlocked", hwid);
 		jpeg_drv_hybrid_dec_power_off(hwid);
 		disable_irq(gJpegqDev.hybriddecIrqId[hwid]);
+		gJpegqDev.is_dec_started[hwid] = false;
 	}
 	mutex_unlock(&jpeg_hybrid_dec_lock);
 }
@@ -1603,22 +1604,27 @@ static int jpeg_hybrid_dec_ioctl(unsigned int cmd, unsigned long arg,
 			JPEG_LOG(0, "jpeg_drv_hybrid_dec_lock failed (hw busy)\n");
 			return -EBUSY;
 		}
-
+		mutex_lock(&jpeg_hybrid_dec_lock);
 		if (jpeg_drv_hybrid_dec_start(taskParams.data, hwid, &index_buf_fd) == 0) {
 			JPEG_LOG(1, "jpeg_drv_hybrid_dec_start success %u index buffer fd:%d\n",
 				hwid, index_buf_fd);
 			if (copy_to_user(
 				taskParams.hwid, &hwid, sizeof(int))) {
 				JPEG_LOG(0, "Copy to user error\n");
+				mutex_unlock(&jpeg_hybrid_dec_lock);
 				return -EFAULT;
 			}
 			if (copy_to_user(
 				taskParams.index_buf_fd, &index_buf_fd, sizeof(int))) {
 				JPEG_LOG(0, "Copy to user error\n");
+				mutex_unlock(&jpeg_hybrid_dec_lock);
 				return -EFAULT;
 			}
+			gJpegqDev.is_dec_started[hwid] = true;
+			mutex_unlock(&jpeg_hybrid_dec_lock);
 		} else {
 			JPEG_LOG(0, "jpeg_drv_dec_hybrid_start failed\n");
+			mutex_unlock(&jpeg_hybrid_dec_lock);
 			jpeg_drv_hybrid_dec_unlock(hwid);
 			return -EFAULT;
 		}
@@ -1644,10 +1650,17 @@ static int jpeg_hybrid_dec_ioctl(unsigned int cmd, unsigned long arg,
 		JPEG_LOG(1, "JPEG Hybrid Decoder Wait Resume Time: %ld\n",
 				timeout_jiff);
 		hwid = pnsParmas.hwid;
-		if (hwid < 0) {
+		if (hwid < 0 || hwid >= HW_CORE_NUMBER) {
 			JPEG_LOG(0, "get hybrid dec id failed\n");
 			return -EFAULT;
 		}
+		mutex_lock(&jpeg_hybrid_dec_lock);
+		if (!gJpegqDev.is_dec_started[hwid]) {
+			JPEG_LOG(0, "Wait before decode get started");
+			mutex_unlock(&jpeg_hybrid_dec_lock);
+			return -EFAULT;
+		}
+		mutex_unlock(&jpeg_hybrid_dec_lock);
 	#ifdef FPGA_VERSION
 		JPEG_LOG(1, "Polling JPEG Hybrid Dec Status hwpa: 0x%x\n",
 				hwpa);
@@ -1718,6 +1731,10 @@ static int jpeg_hybrid_dec_ioctl(unsigned int cmd, unsigned long arg,
 		}
 
 		hwid = pnsParmas.hwid;
+		if (hwid < 0 || hwid >= HW_CORE_NUMBER) {
+			JPEG_LOG(0, "get P_N_S hwid invalid");
+			return -EFAULT;
+		}
 		progress_n_status = jpeg_drv_hybrid_dec_get_status(hwid);
 
 		if (copy_to_user(
