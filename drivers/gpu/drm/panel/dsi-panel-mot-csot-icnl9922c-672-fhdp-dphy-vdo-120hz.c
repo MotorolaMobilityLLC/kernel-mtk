@@ -555,6 +555,15 @@ static struct mtk_panel_params ext_params_mode_30 = {
 		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
+	.dyn_fps = {
+		.switch_en = 1,
+		.vact_timing_fps = 30,
+	},
+	/* following MIPI hopping parameter might cause screen mess */
+	.dyn = {
+		.switch_en = 0,
+		.vfp = 198,
+	},
 };
 
 static struct mtk_panel_params ext_params_mode_90 = {
@@ -616,7 +625,16 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
+	.lfr_minimum_fps = MODE_90_FPS,
+	.dyn_fps = {
+		.switch_en = 1,
+		.vact_timing_fps = 90,
+	},
+	/* following MIPI hopping parameter might cause screen mess */
+	.dyn = {
+		.switch_en = 0,
+		.vfp = 198,
+	},
 };
 
 static struct mtk_panel_params ext_params_mode_60 = {
@@ -679,7 +697,15 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	},
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
-
+	.dyn_fps = {
+		.switch_en = 1,
+		.vact_timing_fps = 60,
+	},
+	/* following MIPI hopping parameter might cause screen mess */
+	.dyn = {
+		.switch_en = 0,
+		.vfp = 198,
+	},
 };
 #endif
 
