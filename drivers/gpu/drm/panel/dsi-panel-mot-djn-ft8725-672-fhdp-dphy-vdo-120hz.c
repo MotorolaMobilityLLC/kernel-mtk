@@ -419,7 +419,7 @@ static const struct drm_display_mode performance_mode_60hz = {
 #if defined(CONFIG_MTK_PANEL_EXT)
 static struct mtk_panel_params ext_params = {
 	.change_fps_by_vfp_send_cmd = 0,
-	.vfp_low_power = 20,
+	//.vfp_low_power = 20,
 	.phy_timcon.lpx = 8,
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
@@ -552,6 +552,18 @@ static struct mtk_panel_params ext_params_mode_30 = {
 		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
+	.dyn_fps = {
+		.switch_en = 1,
+		.vact_timing_fps = 30,
+		//.dfps_cmd_table[0] = {0, 4, {0xB9, 0x83, 0x10, 0x21} },
+		//.dfps_cmd_table[1] = {0, 2, {0xE2, 0x00} },
+		//.dfps_cmd_table[2] = {0, 2, {0xB9, 0x00} },
+	},
+	/* following MIPI hopping parameter might cause screen mess */
+	.dyn = {
+		.switch_en = 0,
+		.vfp = 198,
+	},
 };
 
 static struct mtk_panel_params ext_params_mode_90 = {
@@ -613,7 +625,19 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
+	.lfr_minimum_fps = MODE_90_FPS,
+	.dyn_fps = {
+		.switch_en = 1,
+		.vact_timing_fps = 90,
+		//.dfps_cmd_table[0] = {0, 4, {0xB9, 0x83, 0x10, 0x21} },
+		//.dfps_cmd_table[1] = {0, 2, {0xE2, 0x00} },
+		//.dfps_cmd_table[2] = {0, 2, {0xB9, 0x00} },
+	},
+	/* following MIPI hopping parameter might cause screen mess */
+	.dyn = {
+		.switch_en = 0,
+		.vfp = 198,
+	},
 };
 
 static struct mtk_panel_params ext_params_mode_60 = {
@@ -676,6 +700,18 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	},
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
+	.dyn_fps = {
+		.switch_en = 1,
+		.vact_timing_fps = 60,
+		//.dfps_cmd_table[0] = {0, 4, {0xB9, 0x83, 0x10, 0x21} },
+		//.dfps_cmd_table[1] = {0, 2, {0xE2, 0x00} },
+		//.dfps_cmd_table[2] = {0, 2, {0xB9, 0x00} },
+	},
+	/* following MIPI hopping parameter might cause screen mess */
+	.dyn = {
+		.switch_en = 0,
+		.vfp = 198,
+	},
 };
 #endif
 
