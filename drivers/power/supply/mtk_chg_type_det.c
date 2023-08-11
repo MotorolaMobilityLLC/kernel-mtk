@@ -258,7 +258,7 @@ static int wireless_get_charger_type(struct mtk_ctd_info *mci)
 		pr_err("%s:get vmos adc fail\n", __func__);
 		return -EINVAL;
 	}
-	if (((adc_vol > VBUS_VAC1_ONLINE_VOLTAGE) && wireless_online) || (!wireless_online)) {
+	if (((adc_vol == true) && wireless_online) || (!wireless_online)) {
 		mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, true);
 		handle_typec_pd_attach(mci, ATTACH_TYPE_TYPEC);
 	}
