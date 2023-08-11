@@ -29,6 +29,7 @@ static int debug_resolution_level;
 static struct layering_rule_info_t *l_rule_info;
 static struct layering_rule_ops *l_rule_ops;
 static int ext_id_tuning(struct disp_layer_info *disp_info, int disp_idx);
+#define DISP_LAYER_RULE_MAX_NUM 1024
 
 bool is_ext_path(struct disp_layer_info *disp_info)
 {
@@ -1588,6 +1589,12 @@ int check_disp_info(struct disp_layer_info *disp_info)
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
 
 		layer_num = disp_info->layer_num[disp_idx];
+
+		if (layer_num < 0 || layer_num > DISP_LAYER_RULE_MAX_NUM) {
+			DISPERR("[HRT] disp_idx %d, invalid layer num %d\n", disp_idx, layer_num);
+			return -1;
+		}
+
 		if (layer_num > 0 &&
 			disp_info->input_config[disp_idx] == NULL) {
 			DISPERR("[HRT]input config is empty,disp:%d,l_num:%d\n",
