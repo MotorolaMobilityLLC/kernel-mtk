@@ -10,6 +10,18 @@
  * GNU General Public License for more details.
  */
 
+&i2c0 {
+	id = <0x0>;
+
+	i2c_lcd_bias@3e {
+		compatible = "sm,bias_sm5109";
+		reg = <0x3e>;
+		sm,lcd-bias-enn-gpio = <&pio 13 0>;
+		sm,lcd-bias-enp-gpio = <&pio 16 0>;
+		status = "okay";
+	};
+};
+
 &mtkfb {
 	pinctrl-names = "dispdefault", "lcm_rst_out0_gpio", "lcm_rst_out1_gpio",
 			"lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio",

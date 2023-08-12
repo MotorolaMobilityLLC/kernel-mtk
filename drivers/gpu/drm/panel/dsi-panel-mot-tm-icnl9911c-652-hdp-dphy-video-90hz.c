@@ -33,8 +33,8 @@
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
-extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
-extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
+extern int __attribute__ ((weak)) sm5109_bias_power_disable(u32 pwrdown_delay);
+extern int __attribute__ ((weak)) sm5109_bias_power_enable(u32 avdd, u32 avee,u32 pwrup_delay);
 static int tp_gesture_flag=0;
 
 struct tianma {
@@ -210,7 +210,7 @@ static int tianma_unprepare(struct drm_panel *panel)
 	msleep(5);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
-	ret = ocp2138_BiasPower_disable(5);
+	ret = sm5109_bias_power_disable(5);
 	}
 
 
@@ -230,7 +230,7 @@ static int tianma_prepare(struct drm_panel *panel)
 
 	gpiod_set_value(ctx->reset_gpio, 0);
 	msleep(3);
-	ret = ocp2138_BiasPower_enable(15,15,5);
+	ret = sm5109_bias_power_enable(15,15,5);
 
 	//lcm_power_enable();
 	tianma_panel_init(ctx);
