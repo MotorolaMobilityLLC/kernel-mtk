@@ -134,7 +134,7 @@ static void tianma_panel_init(struct tianma *ctx)
 		return;
 	}
 	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(5000,5001);
+	usleep_range(10000,10001);
 	gpiod_set_value(ctx->reset_gpio, 0);
 	usleep_range(5000,5001);
 	gpiod_set_value(ctx->reset_gpio, 1);
@@ -142,13 +142,14 @@ static void tianma_panel_init(struct tianma *ctx)
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
-	tianma_dcs_write_seq_static(ctx, 0x35, 0x00);
-	tianma_dcs_write_seq_static(ctx, 0x53, 0x24);
-	tianma_dcs_write_seq_static(ctx, 0x55, 0x01);
-	tianma_dcs_write_seq_static(ctx, 0x11, 0x00);
-	usleep_range(120000,120001);
-	tianma_dcs_write_seq_static(ctx, 0x29, 0x00);
-	usleep_range(2000,2001);
+	tianma_dcs_write_seq_static(ctx, 0x35, 0x00);           // MIPI_DCS_SET_TEAR_ON
+	tianma_dcs_write_seq_static(ctx, 0x55, 0x01);           // MIPI_DCS_WRITE_POWER_SAVE
+	tianma_dcs_write_seq_static(ctx, 0x53, 0x2C);           // MIPI_DCS_WRITE_CONTROL_DISPLAY
+	tianma_dcs_write_seq_static(ctx, 0x11, 0x00);           // MIPI_DCS_EXIT_SLEEP_MODE
+	usleep_range(20000,20001);
+	tianma_dcs_write_seq_static(ctx, 0x29, 0x00);           // MIPI_DCS_SET_DISPLAY_ON
+	usleep_range(80000,80001);
+	tianma_dcs_write_seq_static(ctx, 0x26, 0x02);           // MIPI_DCS_SET_GAMMA_CURVE
 }
 
 static int tianma_disable(struct drm_panel *panel)
@@ -191,12 +192,11 @@ static int tianma_unprepare(struct drm_panel *panel)
 		return 0;
 	pr_info("%s\n", __func__);
 
-	tianma_dcs_write_seq_static(ctx, 0x28);
-	msleep(50);
-	tianma_dcs_write_seq_static(ctx, 0x10);
-	msleep(120);
-	tianma_dcs_write_seq_static(ctx, 0x17, 0x5A);//cmd2 enable
-	tianma_dcs_write_seq_static(ctx, 0x18, 0x5A);
+	tianma_dcs_write_seq_static(ctx, 0x26, 0x08);     // MIPI_DCS_SET_GAMMA_CURVE
+	tianma_dcs_write_seq_static(ctx, 0x28);           // MIPI_DCS_SET_DISPLAY_OFF
+	msleep(20);
+	tianma_dcs_write_seq_static(ctx, 0x10);           // MIPI_DCS_ENTER_SLEEP_MODE
+	msleep(100);
 
 	if(tp_gesture_flag == 0)
 	{
@@ -615,18 +615,6 @@ static void __exit __tianma_panel_driver_exit(void)
 }
 module_init(__tianma_panel_driver_init);
 module_exit(__tianma_panel_driver_exit);
-
-//static int __init __dummy_panel_driver_init(void)
-//{
-//	return mipi_dsi_driver_register_full(&(dummy_panel_driver), THIS_MODULE);
-//}
-//rootfs_initcall(__dummy_panel_driver_init);
-//static void __exit __dummy_panel_driver_exit(void)
-//{
-//	mipi_dsi_driver_unregister(&(dummy_panel_driver));
-//}
-//rootfs_initcall(__dummy_panel_driver_exit);
-//module_mipi_dsi_driver(dummy_panel_driver);
 
 MODULE_AUTHOR("MEDIATEK");
 MODULE_DESCRIPTION("tianma nt37701 AMOLED CMD LCD Panel Driver");
