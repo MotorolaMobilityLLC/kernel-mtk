@@ -16,18 +16,18 @@
 #define FRAME_WIDTH                 720
 #define FRAME_HEIGHT                1600
 
-#define PHYSICAL_WIDTH              70081
-#define PHYSICAL_HEIGHT            155736
+#define PHYSICAL_WIDTH              68040
+#define PHYSICAL_HEIGHT            151200
 
 #define DATA_RATE                   900
-#define HSA                         10
-#define HBP                         10
-#define VSA                         10
-#define VBP                         170
+#define HSA                         4
+#define HBP                         22
+#define VSA                         4
+#define VBP                         32
 
 /*Parameter setting for mode 0 Start*/
 #define MODE_60_FPS                  60
-#define MODE_60_VFP                  1213
+#define MODE_60_VFP                  1040
 #define MODE_60_HFP                  24
 #define MODE_60_DATA_RATE            900
 /*Parameter setting for mode 0 End*/
