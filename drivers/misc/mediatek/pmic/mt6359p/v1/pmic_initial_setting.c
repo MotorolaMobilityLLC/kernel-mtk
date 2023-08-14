@@ -113,7 +113,9 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_buck_vgpu11_lp(SRCLKEN0, 1, 1, HW_LP);
 	pmic_buck_vgpu12_lp(SW, 1, 1, SW_OFF);
 	pmic_buck_vmodem_lp(SRCLKEN1, 0, 1, HW_OFF);
+#ifndef CONFIG_MOTO_DISABLE_VIO18_LPM_LYRIQ
 	pmic_buck_vs1_lp(SRCLKEN0, 1, 1, HW_LP);
+#endif
 	pmic_buck_vs2_lp(SRCLKEN0, 1, 1, HW_LP);
 	pmic_buck_vpa_lp(SW, 1, 1, SW_OFF);
 	pmic_ldo_vsram_proc1_lp(SW, 1, 1, SW_OFF);
@@ -125,7 +127,9 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_ldo_vcn18_lp(SW, 1, 1, SW_OFF);
 	pmic_ldo_vcn13_lp(SW, 1, 1, SW_OFF);
 	pmic_ldo_vrf18_lp(SRCLKEN1, 0, 1, HW_OFF);
+#ifndef CONFIG_MOTO_DISABLE_VIO18_LPM_LYRIQ
 	pmic_ldo_vio18_lp(SW, 1, 1, SW_ON);
+#endif
 	pmic_ldo_vefuse_lp(SW, 1, 1, SW_OFF);
 	pmic_ldo_vrf12_lp(SW, 1, 1, SW_ON);
 	pmic_ldo_vrfck_lp(SRCLKEN14, 1, 1, HW_OFF);
@@ -155,7 +159,9 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_buck_vgpu11_lp(SRCLKEN2, 1, 1, HW_LP);
 	pmic_buck_vgpu12_lp(SW, 1, 1, SW_OFF);
 	pmic_buck_vmodem_lp(SRCLKEN1, 0, 1, HW_OFF);
+#ifndef CONFIG_MOTO_DISABLE_VIO18_LPM_LYRIQ
 	pmic_buck_vs1_lp(SRCLKEN2, 1, 1, HW_LP);
+#endif
 	pmic_buck_vs2_lp(SRCLKEN2, 1, 1, HW_LP);
 	pmic_buck_vpa_lp(SW, 1, 1, SW_OFF);
 	pmic_ldo_vsram_proc1_lp(SW, 1, 1, SW_OFF);
@@ -167,7 +173,9 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_ldo_vcn18_lp(SW, 1, 1, SW_OFF);
 	pmic_ldo_vcn13_lp(SW, 1, 1, SW_OFF);
 	pmic_ldo_vrf18_lp(SRCLKEN1, 0, 1, HW_OFF);
+#ifndef CONFIG_MOTO_DISABLE_VIO18_LPM_LYRIQ
 	pmic_ldo_vio18_lp(SW, 1, 1, SW_ON);
+#endif
 	pmic_ldo_vefuse_lp(SW, 1, 1, SW_OFF);
 	pmic_ldo_vrf12_lp(SW, 1, 1, SW_ON);
 	pmic_ldo_vrfck_lp(SRCLKEN14, 1, 1, HW_OFF);
