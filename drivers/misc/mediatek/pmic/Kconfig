@@ -194,6 +194,14 @@ config MTK_EXTERNAL_CHARGER_TYPE_DETECT
 	  Set y to enable it.
 	  Set n to disable it.
 
+config MOTO_DISABLE_VIO18_LPM_LYRIQ
+	bool "Disable VIO18 LPM on Lyriq"
+	default n
+	---help---
+	  Disable VIO18 and VS1 LPM on Lyriq
+	  Say Y to enable it.
+	  Say N to disable it.
+
 source "drivers/misc/mediatek/pmic/mt6370/Kconfig"
 source "drivers/misc/mediatek/pmic/mt6360/Kconfig"
 source "drivers/misc/mediatek/pmic/mt6397/Kconfig"

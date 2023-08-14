@@ -450,6 +450,10 @@ int pmic_ldo_vio18_lp(
 		unsigned char op_en,
 		unsigned char op_cfg)
 {
+#ifdef CONFIG_MOTO_DISABLE_VIO18_LPM_LYRIQ
+	PMICLOG("Never set VIO18 to LPM. user=%d, op en = %d, op cfg=%d\n", user, op_en, op_cfg);
+	return 0;
+#else
 	if (user <= SRCLKEN2)
 		pmic_set_ldo_op_mode(user,
 				     PMIC_RG_LDO_VIO18_OP_MODE_ADDR,
@@ -457,6 +461,7 @@ int pmic_ldo_vio18_lp(
 				     PMIC_RG_LDO_VIO18_OP_MODE_SHIFT);
 	return pmic_lp_type_set(MT6359_LDO_VIO18_OP_EN,
 				VIO18, user, op_en, op_cfg);
+#endif
 }
 
 int pmic_ldo_vefuse_lp(
