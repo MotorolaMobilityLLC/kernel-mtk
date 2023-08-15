@@ -1016,6 +1016,7 @@ long fuse_backing_ioctl(struct file *file, unsigned int command, unsigned long a
 
 	return ret;
 }
+#endif
 
 int fuse_file_flock_backing(struct file *file, int cmd, struct file_lock *fl)
 {
@@ -1030,7 +1031,6 @@ int fuse_file_flock_backing(struct file *file, int cmd, struct file_lock *fl)
 		error = locks_lock_file_wait(backing_file, fl);
 	return error;
 }
-#endif
 
 ssize_t fuse_backing_mmap(struct file *file, struct vm_area_struct *vma)
 {

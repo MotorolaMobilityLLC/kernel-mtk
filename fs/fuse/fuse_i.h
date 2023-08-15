@@ -1676,9 +1676,9 @@ void *fuse_file_write_iter_finalize(struct fuse_bpf_args *fa,
 
 #if IS_ENABLED(CONFIG_MTK_FUSE_UPSTREAM_BUILD)
 long fuse_backing_ioctl(struct file *file, unsigned int command, unsigned long arg, int flags);
+#endif
 
 int fuse_file_flock_backing(struct file *file, int cmd, struct file_lock *fl);
-#endif
 ssize_t fuse_backing_mmap(struct file *file, struct vm_area_struct *vma);
 
 int fuse_file_fallocate_initialize(struct fuse_bpf_args *fa,
