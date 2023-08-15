@@ -4713,8 +4713,8 @@ static signed int __init DPE_Init(void)
 	void *tmp;
 	/* FIX-ME: linux-3.10 procfs API changed */
 	/* use proc_create */
-	struct proc_dir_entry *proc_entry;
-	struct proc_dir_entry *isp_dpe_dir;
+	/* struct proc_dir_entry *proc_entry; */
+	/* struct proc_dir_entry *isp_dpe_dir; */
 
 
 	int i;
@@ -4727,23 +4727,25 @@ static signed int __init DPE_Init(void)
 		return Ret;
 	}
 
-	isp_dpe_dir = proc_mkdir("dpe", NULL);
-	if (!isp_dpe_dir) {
-		LOG_INF("[%s]: fail to mkdir /proc/dpe\n", __func__);
-		return 0;
-	}
+	/*isp_dpe_dir = proc_mkdir("dpe", NULL);
+	 *if (!isp_dpe_dir) {
+	 *	LOG_INF("[%s]: fail to mkdir /proc/dpe\n", __func__);
+	 *	return 0;
+	 *}
+	 */
 
 	/* proc_entry = */
 	/* proc_create("pll_test", S_IRUGO | */
 	/* S_IWUSR, isp_dpe_dir, &pll_test_proc_fops); */
 
-	proc_entry =
-		proc_create("dpe_dump", 0444, isp_dpe_dir,
-		&dpe_dump_proc_fops);
-
-	proc_entry =
-		proc_create("dpe_reg", 0644, isp_dpe_dir,
-		&dpe_reg_proc_fops);
+	/*
+	 *proc_entry =
+	 *	proc_create("dpe_dump", 0444, isp_dpe_dir,
+	 *	&dpe_dump_proc_fops);
+	 *	proc_entry =
+	 *	proc_create("dpe_reg", 0644, isp_dpe_dir,
+	 *	&dpe_reg_proc_fops);
+	 */
 
 
 	/* isr log */
@@ -4793,10 +4795,12 @@ static signed int __init DPE_Init(void)
 
 	/* Cmdq */
 	/* Register DPE callback */
-	log_dbg("register dpe callback for CMDQ");
-	cmdqCoreRegisterCB(CMDQ_GROUP_DPE,
-		DPE_ClockOnCallback,
-		DPE_DumpCallback, DPE_ResetCallback, DPE_ClockOffCallback);
+	/*
+	 * log_dbg("register dpe callback for CMDQ");
+	 * cmdqCoreRegisterCB(CMDQ_GROUP_DPE,
+	 *	DPE_ClockOnCallback,
+	 *	DPE_DumpCallback, DPE_ResetCallback, DPE_ClockOffCallback);
+	 */
 
 	log_dbg("- X. Ret: %d.", Ret);
 	return Ret;
@@ -4812,7 +4816,7 @@ static void __exit DPE_Exit(void)
 	/*  */
 	/* Cmdq */
 	/* Unregister DPE callback */
-	cmdqCoreRegisterCB(CMDQ_GROUP_DPE, NULL, NULL, NULL, NULL);
+	/* cmdqCoreRegisterCB(CMDQ_GROUP_DPE, NULL, NULL, NULL, NULL); */
 
 	kfree(pLog_kmalloc);
 
