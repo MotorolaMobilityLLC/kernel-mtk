@@ -115,6 +115,9 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_buck_vmodem_lp(SRCLKEN1, 0, 1, HW_OFF);
 #ifndef CONFIG_MOTO_DISABLE_VIO18_LPM_LYRIQ
 	pmic_buck_vs1_lp(SRCLKEN0, 1, 1, HW_LP);
+#else
+	pmic_buck_vs1_lp(SRCLKEN0, 0, 1, HW_OFF);
+	pmic_buck_vs1_lp(SRCLKEN2, 0, 1, HW_OFF);
 #endif
 	pmic_buck_vs2_lp(SRCLKEN0, 1, 1, HW_LP);
 	pmic_buck_vpa_lp(SW, 1, 1, SW_OFF);
