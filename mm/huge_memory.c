@@ -3156,6 +3156,13 @@ static ssize_t split_huge_pages_write(struct file *file, const char __user *buf,
 			goto out;
 		}
 
+#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
+		if (!buf) {
+			ret = -EINVAL;
+			goto out;
+		}
+#endif
+
 		ret = sscanf(buf, "0x%lx,0x%lx", &off_start, &off_end);
 		if (ret != 2) {
 			ret = -EINVAL;
