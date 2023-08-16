@@ -1312,6 +1312,24 @@ static ssize_t BatteryNotify_store(struct device *dev,
 
 static DEVICE_ATTR_RW(BatteryNotify);
 
+static ssize_t BatteryNotify2_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct mtk_charger *pinfo = dev->driver_data;
+
+	chr_info("%s: 0x%x\n", __func__, pinfo->notify_code);
+
+	return sprintf(buf, "%u\n", pinfo->notify_code);
+}
+
+static ssize_t BatteryNotify2_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	return BatteryNotify_store(dev, attr, buf, size);
+}
+
+static DEVICE_ATTR_RW(BatteryNotify2);
+
 /* procfs */
 static int mtk_chg_set_cv_show(struct seq_file *m, void *data)
 {
@@ -5375,6 +5393,10 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 
 	/* Battery warning */
 	ret = device_create_file(&(pdev->dev), &dev_attr_BatteryNotify);
+	if (ret)
+		goto _out;
+
+	ret = device_create_file(&(pdev->dev), &dev_attr_BatteryNotify2);
 	if (ret)
 		goto _out;
 
