@@ -1354,6 +1354,7 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_ddp_comp *comp = mtk_ddp_comp_request_output(mtk_crtc);
 	struct cmdq_pkt *cmdq_handle;
+	struct cmdq_client *client;
 	bool is_frame_mode;
 	int ret = 0;
 
@@ -1376,8 +1377,11 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 	mtk_drm_idlemgr_kick(__func__, crtc, 0);
 
 	is_frame_mode = mtk_crtc_is_frame_trigger_mode(&mtk_crtc->base);
+
+	client = (is_frame_mode) ? mtk_crtc->gce_obj.client[CLIENT_CFG] :
+				mtk_crtc->gce_obj.client[CLIENT_DSI_CFG];
 	cmdq_handle =
-		cmdq_pkt_create(mtk_crtc->gce_obj.client[CLIENT_DSI_CFG]);
+		cmdq_pkt_create(client);
 
 	mtk_crtc_wait_frame_done(mtk_crtc, cmdq_handle, DDP_FIRST_PATH, 0);
 
@@ -1386,8 +1390,6 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 				mtk_crtc->gce_obj.event[EVENT_STREAM_BLOCK]);
 		cmdq_pkt_wfe(cmdq_handle,
 				mtk_crtc->gce_obj.event[EVENT_CABC_EOF]);
-		cmdq_pkt_clear_event(cmdq_handle,
-				mtk_crtc->gce_obj.event[EVENT_STREAM_DIRTY]);
 	}
 
 	ret = comp->funcs->io_cmd(comp, cmdq_handle, DSI_PANEL_FEATURE_SET, &param_info);
