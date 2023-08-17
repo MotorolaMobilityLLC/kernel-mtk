@@ -927,6 +927,7 @@ static struct mtk_panel_para_table panel_lhbm_on[] = {
 };
 
 static struct mtk_panel_para_table panel_lhbm_off[] = {
+	{3, {0x51, 0x0F, 0xFF}},
 	{3, {0x87, 0x0F, 0xFF}},
 	{2, {0x88, 0x01}},
 	{2, {0x86, 0x01}},
@@ -967,6 +968,8 @@ static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, ui
 		para_count = sizeof(panel_lhbm_on) / sizeof(struct mtk_panel_para_table);
 		pTable = panel_lhbm_on;
 	} else {
+		panel_lhbm_off[0].para_list[1] = (bl_level >> 8) & 0x0F;
+		panel_lhbm_off[0].para_list[2] = bl_level & 0x0FF;
 		para_count = sizeof(panel_lhbm_off) / sizeof(struct mtk_panel_para_table);
 		pTable = panel_lhbm_off;
 	}
