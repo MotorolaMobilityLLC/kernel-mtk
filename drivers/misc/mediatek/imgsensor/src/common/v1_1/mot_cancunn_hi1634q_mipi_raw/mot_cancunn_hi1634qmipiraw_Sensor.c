@@ -84,7 +84,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 339200000//848*4/10
+		.mipi_pixel_rate = 332800000//832*4/10
 	},
 	.cap = {
 		.pclk = 640000000,
@@ -96,12 +96,12 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1740,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 339200000//848*4/10
+		.mipi_pixel_rate = 332800000//832*4/10
 	},
 	.normal_video = {
 		.pclk = 640000000,				//record different mode's pclk
-		.linelength =  5680, 			//record different mode's linelength
-		.framelength = 3754,  			//record different mode's framelength
+		.linelength =  5840, 			//record different mode's linelength
+		.framelength = 3651,  			//record different mode's framelength
 		.startx = 0,				    //record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
 		.grabwindow_width = 2320, 		//record different mode's width of grabwindow
@@ -110,12 +110,12 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 339200000//848*4/10
+		.mipi_pixel_rate = 332800000//832*4/10
 	},
 	.hs_video = {
 		.pclk = 640000000,				//record different mode's pclk
-		.linelength =  5680, 			//record different mode's linelength
-		.framelength = 3754, 			//record different mode's framelength
+		.linelength =  5840, 			//record different mode's linelength
+		.framelength = 3651, 			//record different mode's framelength
 		.startx = 0,				    //record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
 		.grabwindow_width = 2320,		//record different mode's width of grabwindow
@@ -124,7 +124,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 339200000//848*4/10
+		.mipi_pixel_rate = 332800000//832*4/10
 	},
     .slim_video = {
 		.pclk = 640000000,
@@ -136,7 +136,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1740,
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		.max_framerate = 300,
-		.mipi_pixel_rate = 339200000//848*4/10 - temp
+		.mipi_pixel_rate = 332800000//832*4/10 - temp
 	},
 
 	.margin = 4,		/* sensor framelength & shutter margin */
