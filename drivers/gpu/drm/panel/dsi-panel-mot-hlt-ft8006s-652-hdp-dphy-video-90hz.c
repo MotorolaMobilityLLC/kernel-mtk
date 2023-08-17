@@ -52,8 +52,6 @@ struct hlt {
 	unsigned int cabc_mode;
 };
 
-//static char bl_tb0[] = { 0x51, 0xff };
-
 #define hlt_dcs_write_seq(ctx, seq...)                                     \
 	({                                                                     \
 		const u8 d[] = {seq};                                          \
@@ -365,14 +363,14 @@ static struct mtk_panel_params ext_params = {
 #endif
 };
 
-
-
-#if 0
 static int hlt_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
-	pr_info("%s backlight = -%d\n", __func__, level);
-	bl_tb0[1] = (u8)level;
+	char bl_tb0[] = {0x51, 0x0f, 0xff};
+
+	//for 11bit
+	bl_tb0[1] = (u8)((level & 0x07F8) >> 3);
+	bl_tb0[2] = (u8)((level & 0x07) << 1);
 
 	if (!cb)
 		return -1;
@@ -380,7 +378,7 @@ static int hlt_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
 	return 0;
 }
-#endif
+
 static struct drm_display_mode *get_mode_by_id(struct drm_connector *connector,
 	unsigned int mode)
 {
@@ -427,18 +425,12 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 	return 0;
 }
 
-static enum mtk_lcm_version mtk_panel_get_lcm_version(void)
-{
-	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
-}
-
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
 //	.ata_check = panel_ata_check,
 	.set_gesture_flag = hlt_set_gesture_flag,
-	.get_lcm_version = mtk_panel_get_lcm_version,
-	//.panel_feature_set = panel_feature_set,
+	.set_backlight_cmdq = hlt_setbacklight_cmdq,
 };
 #endif
 
