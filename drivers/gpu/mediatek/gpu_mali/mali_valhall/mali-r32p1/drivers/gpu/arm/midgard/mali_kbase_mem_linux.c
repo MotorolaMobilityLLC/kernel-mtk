@@ -1777,7 +1777,7 @@ KERNEL_VERSION(4, 5, 0) > LINUX_VERSION_CODE
 			min = MIN(PAGE_SIZE - offset, local_size);
 			dma_addr = dma_map_page(dev, pages[i],
 					offset, min,
-					DMA_BIDIRECTIONAL);
+					write ? DMA_BIDIRECTIONAL : DMA_TO_DEVICE);
 			if (dma_mapping_error(dev, dma_addr))
 				goto unwind_dma_map;
 
@@ -1797,7 +1797,7 @@ unwind_dma_map:
 	while (i--) {
 		dma_unmap_page(kctx->kbdev->dev,
 				user_buf->dma_addrs[i],
-				PAGE_SIZE, DMA_BIDIRECTIONAL);
+				PAGE_SIZE, write ? DMA_BIDIRECTIONAL : DMA_TO_DEVICE);
 	}
 fault_mismatch:
 	if (pages) {

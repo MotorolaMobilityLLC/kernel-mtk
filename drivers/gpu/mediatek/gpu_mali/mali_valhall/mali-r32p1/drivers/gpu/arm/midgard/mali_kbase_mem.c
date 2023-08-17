@@ -4718,6 +4718,7 @@ static int kbase_jd_user_buf_map(struct kbase_context *kctx,
 	unsigned long offset;
 	unsigned long local_size;
 	unsigned long gwt_mask = ~0;
+	bool writable = (reg->flags & (KBASE_REG_CPU_WR | KBASE_REG_GPU_WR));
 
 	lockdep_assert_held(&kctx->reg_lock);
 
@@ -4742,7 +4743,7 @@ static int kbase_jd_user_buf_map(struct kbase_context *kctx,
 		min = MIN(PAGE_SIZE - offset, local_size);
 		dma_addr = dma_map_page(dev, pages[i],
 				offset, min,
-				DMA_BIDIRECTIONAL);
+				writable ? DMA_BIDIRECTIONAL : DMA_TO_DEVICE);
 		err = dma_mapping_error(dev, dma_addr);
 		if (err)
 			goto unwind;
@@ -4772,7 +4773,7 @@ unwind:
 	while (i--) {
 		dma_unmap_page(kctx->kbdev->dev,
 				alloc->imported.user_buf.dma_addrs[i],
-				PAGE_SIZE, DMA_BIDIRECTIONAL);
+				PAGE_SIZE, writable ? DMA_BIDIRECTIONAL : DMA_TO_DEVICE);
 	}
 
 	/* The user buffer could already have been previously pinned before
@@ -4817,7 +4818,7 @@ static void kbase_jd_user_buf_unmap(struct kbase_context *kctx, struct kbase_mem
 
 		local_size = MIN(size, PAGE_SIZE - (dma_addr & ~PAGE_MASK));
 		dma_unmap_page(kctx->kbdev->dev, dma_addr, local_size,
-				DMA_BIDIRECTIONAL);
+				writeable ? DMA_BIDIRECTIONAL : DMA_TO_DEVICE);
 		if (writeable)
 			set_page_dirty_lock(pages[i]);
 #if !MALI_USE_CSF
