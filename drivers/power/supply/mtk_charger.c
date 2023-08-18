@@ -3379,25 +3379,24 @@ static DEVICE_ATTR(charge_rate, S_IRUGO, charge_rate_show, NULL);
 
 static mmi_get_battery_age(void)
 {
-#ifdef CONFIG_MOTO_REMOVE_MTK_GAUGE
 	union power_supply_propval val = {0};
-
-	if (!mmi_info) {
-		pr_err("SMBMMI: mmi_info is not initialized\n");
-		return 100;
-	}
-
-	mmi_get_prop_from_battery(mmi_info, POWER_SUPPLY_PROP_SCOPE, &val);
-
-	return val.intval;
-#else
 	struct mtk_gauge *gauge;
 	struct power_supply *psy;
+	int rc = 0;
 
 	psy = power_supply_get_by_name("mtk-gauge");
 	if (psy == NULL) {
 		pr_err("[%s]psy is not rdy\n", __func__);
-		return 100;
+		if (!mmi_info) {
+			pr_err("SMBMMI: mmi_info is not initialized\n");
+			return 100;
+		}
+
+		rc = mmi_get_prop_from_battery(mmi_info, POWER_SUPPLY_PROP_SCOPE, &val);
+		if (rc < 0)
+			return 100;
+
+		return val.intval;
 	}
 
 	gauge = (struct mtk_gauge *)power_supply_get_drvdata(psy);
@@ -3411,7 +3410,6 @@ static mmi_get_battery_age(void)
 	pr_info("[%s]battery age is %d\n", __func__, gauge->gm->aging_factor);
 
 	return gauge->gm->aging_factor /100;
-#endif
 }
 
 static ssize_t age_show(struct device *dev,
@@ -4994,7 +4992,6 @@ static void charger_status_check(struct mtk_charger *info)
 }
 #endif
 
-#ifdef CONFIG_MOTO_REMOVE_MTK_GAUGE
 int mmi_charger_get_batt_status(void)
 {
 	struct power_supply *chg_psy = NULL;
@@ -5067,7 +5064,6 @@ int mmi_charger_update_batt_status(void)
 	return mmi_info->mmi.batt_statues;
 }
 EXPORT_SYMBOL(mmi_charger_update_batt_status);
-#endif
 
 static char *dump_charger_type(int chg_type, int usb_type)
 {
@@ -5139,9 +5135,8 @@ static int charger_routine_thread(void *arg)
 		spin_unlock_irqrestore(&info->slock, flags);
 		info->charger_thread_timeout = false;
 
-		#ifdef CONFIG_MOTO_REMOVE_MTK_GAUGE
 		info->mmi.batt_statues = mmi_charger_get_batt_status();
-		#endif
+
 		info->battery_temp = get_battery_temperature(info);
 		ret = charger_dev_get_adc(info->chg1_dev,
 			ADC_CHANNEL_VBAT, &vbat_min, &vbat_max);
