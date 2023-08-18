@@ -1359,18 +1359,33 @@ const struct gpufreq_opp_info *gpufreq_get_working_table(enum gpufreq_target tar
 	const struct gpufreq_opp_info *opp_table = NULL;
 	int ret = GPUFREQ_SUCCESS;
 
-	if (gpufreq_validate_target(&target))
+	if (gpufreq_validate_target(&target)){
+#ifdef CONFIG_MOTO_GPU_CANCUNN_DEBUGGING
+                GPUFREQ_LOGE("No need init opp table, direct go to done");
+#endif
 		goto done;
+        }
 
 	/* implement on EB */
 	if (g_gpueb_support) {
 		send_msg.cmd_id = CMD_GET_WORKING_TABLE;
 		send_msg.target = target;
 
-		if (!gpufreq_ipi_to_gpueb(send_msg))
+		if (!gpufreq_ipi_to_gpueb(send_msg)){
 			ret = g_recv_msg.u.return_value;
-		if (!ret)
+#ifdef CONFIG_MOTO_GPU_CANCUNN_DEBUGGING
+                        GPUFREQ_LOGE("gpufreq_ipi_to_gpueb ret is %d",ret);
+                }else{
+                        GPUFREQ_LOGE("gpufreq_ipi_to_gpueb ret is fail");
+#endif
+                }
+		if (!ret){
 			opp_table = (struct gpufreq_opp_info *)(uintptr_t)g_debug_shared_mem_va;
+#ifdef CONFIG_MOTO_GPU_CANCUNN_DEBUGGING
+                }else{
+                        GPUFREQ_LOGE("g_recv_msg return value is fail");
+#endif
+                }
 		goto done;
 	}
 
@@ -1397,33 +1412,18 @@ const struct gpufreq_opp_info *gpufreq_get_signed_table(enum gpufreq_target targ
 	const struct gpufreq_opp_info *opp_table = NULL;
 	int ret = GPUFREQ_SUCCESS;
 
-	if (gpufreq_validate_target(&target)){
-#ifdef CONFIG_MOTO_GPU_CANCUNN_DEBUGGING
-                GPUFREQ_LOGE("No need init opp table, direct go to done");
-#endif
+	if (gpufreq_validate_target(&target))
 		goto done;
-        }
 
 	/* implement on EB */
 	if (g_gpueb_support) {
 		send_msg.cmd_id = CMD_GET_SIGNED_TABLE;
 		send_msg.target = target;
 
-		if (!gpufreq_ipi_to_gpueb(send_msg)){
+		if (!gpufreq_ipi_to_gpueb(send_msg))
 			ret = g_recv_msg.u.return_value;
-#ifdef CONFIG_MOTO_GPU_CANCUNN_DEBUGGING
-                        GPUFREQ_LOGE("gpufreq_ipi_to_gpueb ret is %d",ret);
-                }else{
-                        GPUFREQ_LOGE("gpufreq_ipi_to_gpueb ret is fail");
-#endif
-                }
-		if (!ret){
+		if (!ret)
 			opp_table = (struct gpufreq_opp_info *)(uintptr_t)g_debug_shared_mem_va;
-#ifdef CONFIG_MOTO_GPU_CANCUNN_DEBUGGING
-                }else{
-                        GPUFREQ_LOGE("g_recv_msg return value is fail");
-#endif
-                }
 		goto done;
 	}
 
