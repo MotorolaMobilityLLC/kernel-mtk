@@ -761,12 +761,6 @@ config MOTO_CHARGER_SGM415XX
         help
           This is to enable MOTO supports of IC SGM415xx.
 
-config MOTO_REMOVE_MTK_GAUGE
-        bool "Romve mtk gauge and use 3rd FG"
-        default n
-        help
-          Mtk gauge already be replaced by 3rd FG.
-
 config MOTO_CHG_WT6670F_SUPPORT
         bool "Enable WT6670F charger protocol IC for Moto"
         default n
