@@ -17,6 +17,7 @@
 #include <dt-bindings/pinctrl/mt6765-pinfunc.h>
 #include <dt-bindings/clock/mt6765-clk.h>
 #include <dt-bindings/mmc/mt6765-msdc.h>
+#include <dt-bindings/gpio/gpio.h>
 #include "maui-display.dtsi"
 
 /* chosen */
@@ -554,7 +555,8 @@
 };
 
 &mmc1 {
-        cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+	cd-gpios = <&pio 1 GPIO_ACTIVE_HIGH>;
 };
 
 &keypad {
