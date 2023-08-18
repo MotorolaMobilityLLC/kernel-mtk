@@ -1417,9 +1417,16 @@ static void ufshcd_clk_scaling_suspend_work(struct work_struct *work)
 		return;
 	}
 	hba->clk_scaling.is_suspended = true;
+#if IS_ENABLED(CONFIG_MTK_UFS_DEBUG)
+	hba->clk_scaling.window_start_t = 0;
+#endif
 	spin_unlock_irqrestore(hba->host->host_lock, irq_flags);
 
+#if IS_ENABLED(CONFIG_MTK_UFS_DEBUG)
+	devfreq_suspend_device(hba->devfreq);
+#else
 	__ufshcd_suspend_clkscaling(hba);
+#endif
 }
 
 static void ufshcd_clk_scaling_resume_work(struct work_struct *work)
