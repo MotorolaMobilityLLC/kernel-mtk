@@ -29,6 +29,10 @@
 &gate_ic {
 	status = "disabled";
 };
+
+&mtk_gauge {
+	status = "disabled";
+};
 /*Remove unused i2c device end*/
 
 &i2c6 {
