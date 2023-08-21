@@ -21,6 +21,7 @@
 	/* sw jeita */
 	enable_vbat_mon = <0>;
 	disable_aicl;
+        enable_dynamic_mivr;
 
 	/*pe5 && pdc && pe2*/
 	fast_charging_indicator = <0x36>;
@@ -233,6 +234,7 @@
 	/* If ui_soc shows 1% more than X minites, system will shutdown */
 
 	CHARGER_IEOC = <(243)>;
+        mmi,tbat-filter-enable;
 	/* battery prop */
 	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
 	g_FG_PSEUDO100 = <99 99 100 100
