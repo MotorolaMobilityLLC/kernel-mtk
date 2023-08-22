@@ -76,7 +76,14 @@ static int kbase_kcpu_map_import_prepare(
 		 * on the physical pages tracking object. When the last
 		 * reference to the tracking object is dropped the pages
 		 * would be unpinned if they weren't unpinned before.
+		 *
+		 * Region should be CPU cached: abort if it isn't.
 		 */
+		if (WARN_ON(!(reg->flags & KBASE_REG_CPU_CACHED))) {
+			ret = -EINVAL;
+			goto out;
+		}
+
 		ret = kbase_jd_user_buf_pin_pages(kctx, reg);
 		if (ret)
 			goto out;

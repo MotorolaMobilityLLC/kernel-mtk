@@ -1846,6 +1846,7 @@ void kbase_sync_single(struct kbase_context *kctx,
 			src = ((unsigned char *)kmap(gpu_page)) + offset;
 			dst = ((unsigned char *)kmap(cpu_page)) + offset;
 		}
+
 		memcpy(dst, src, size);
 		kunmap(gpu_page);
 		kunmap(cpu_page);
@@ -4712,11 +4713,8 @@ static int kbase_jd_user_buf_map(struct kbase_context *kctx,
 	struct kbase_mem_phy_alloc *alloc;
 	struct page **pages;
 	struct tagged_addr *pa;
-	long i;
-	unsigned long address;
+	long i, dma_mapped_pages;
 	struct device *dev;
-	unsigned long offset;
-	unsigned long local_size;
 	unsigned long gwt_mask = ~0;
 	bool writable = (reg->flags & (KBASE_REG_CPU_WR | KBASE_REG_GPU_WR));
 
@@ -4729,21 +4727,31 @@ static int kbase_jd_user_buf_map(struct kbase_context *kctx,
 
 	alloc = reg->gpu_alloc;
 	pa = kbase_get_gpu_phy_pages(reg);
-	address = alloc->imported.user_buf.address;
 	pinned_pages = alloc->nents;
 	pages = alloc->imported.user_buf.pages;
 	dev = kctx->kbdev->dev;
-	offset = address & ~PAGE_MASK;
-	local_size = alloc->imported.user_buf.size;
 
+	/* Manual CPU cache synchronization.
+	 *
+	 * The driver disables automatic CPU cache synchronization because the
+	 * memory pages that enclose the imported region may also contain
+	 * sub-regions which are not imported and that are allocated and used
+	 * by the user process. This may be the case of memory at the beginning
+	 * of the first page and at the end of the last page. Automatic CPU cache
+	 * synchronization would force some operations on those memory allocations,
+	 * unbeknown to the user process: in particular, a CPU cache invalidate
+	 * upon unmapping would destroy the content of dirty CPU caches and cause
+	 * the user process to lose CPU writes to the non-imported sub-regions.
+	 *
+	 * When the GPU claims ownership of the imported memory buffer, it shall
+	 * commit CPU writes for the whole of all pages that enclose the imported
+	 * region, otherwise the initial content of memory would be wrong.
+	 */
 	for (i = 0; i < pinned_pages; i++) {
-		dma_addr_t dma_addr;
-		unsigned long min;
+		dma_addr_t dma_addr = dma_map_page_attrs(dev, pages[i], 0, PAGE_SIZE,
+							 writable ? DMA_BIDIRECTIONAL : DMA_TO_DEVICE,
+							 DMA_ATTR_SKIP_CPU_SYNC);
 
-		min = MIN(PAGE_SIZE - offset, local_size);
-		dma_addr = dma_map_page(dev, pages[i],
-				offset, min,
-				writable ? DMA_BIDIRECTIONAL : DMA_TO_DEVICE);
 		err = dma_mapping_error(dev, dma_addr);
 		if (err)
 			goto unwind;
@@ -4751,8 +4759,7 @@ static int kbase_jd_user_buf_map(struct kbase_context *kctx,
 		alloc->imported.user_buf.dma_addrs[i] = dma_addr;
 		pa[i] = as_tagged(page_to_phys(pages[i]));
 
-		local_size -= min;
-		offset = 0;
+		dma_sync_single_for_device(dev, dma_addr, PAGE_SIZE, DMA_BIDIRECTIONAL);
 	}
 
 #ifdef CONFIG_MALI_CINSTR_GWT
@@ -4769,11 +4776,24 @@ static int kbase_jd_user_buf_map(struct kbase_context *kctx,
 
 	/* fall down */
 unwind:
-	alloc->nents = 0;
-	while (i--) {
-		dma_unmap_page(kctx->kbdev->dev,
-				alloc->imported.user_buf.dma_addrs[i],
-				PAGE_SIZE, writable ? DMA_BIDIRECTIONAL : DMA_TO_DEVICE);
+
+	dma_mapped_pages = i;
+	/* Run the unmap loop in the same order as map loop, and perform again
+	 * CPU cache synchronization to re-write the content of dirty CPU caches
+	 * to memory. This is precautionary measure in case a GPU job has taken
+	 * advantage of a partially GPU-mapped range to write and corrupt the
+	 * content of memory, either inside or outside the imported region.
+	 *
+	 * Notice that this error recovery path doesn't try to be optimal and just
+	 * flushes the entire page range.
+	 */
+	for (i = 0; i < dma_mapped_pages; i++) {
+		dma_addr_t dma_addr = alloc->imported.user_buf.dma_addrs[i];
+
+		dma_sync_single_for_device(dev, dma_addr, PAGE_SIZE, DMA_BIDIRECTIONAL);
+		dma_unmap_page_attrs(dev, dma_addr, PAGE_SIZE,
+				     writable ? DMA_BIDIRECTIONAL : DMA_TO_DEVICE,
+				     DMA_ATTR_SKIP_CPU_SYNC);
 	}
 
 	/* The user buffer could already have been previously pinned before
@@ -4782,7 +4802,7 @@ unwind:
 	 */
 	kbase_mem_shrink_cpu_mapping(kctx, reg, 0, pinned_pages);
 
-	while (++i < pinned_pages) {
+	for (i = 0; i < pinned_pages; i++) {
 		put_page(pages[i]);
 		pages[i] = NULL;
 	}
@@ -4799,7 +4819,8 @@ static void kbase_jd_user_buf_unmap(struct kbase_context *kctx, struct kbase_mem
 {
 	long i;
 	struct page **pages;
-	unsigned long size = alloc->imported.user_buf.size;
+	unsigned long offset_within_page = alloc->imported.user_buf.address & ~PAGE_MASK;
+	unsigned long remaining_size = alloc->imported.user_buf.size;
 
 	lockdep_assert_held(&kctx->reg_lock);
 
@@ -4813,12 +4834,86 @@ static void kbase_jd_user_buf_unmap(struct kbase_context *kctx, struct kbase_mem
 #endif
 
 	for (i = 0; i < alloc->imported.user_buf.nr_pages; i++) {
-		unsigned long local_size;
+		unsigned long imported_size = MIN(remaining_size, PAGE_SIZE - offset_within_page);
+		/* Notice: this is a temporary variable that is used for DMA sync
+		 * operations, and that could be incremented by an offset if the
+		 * current page contains both imported and non-imported memory
+		 * sub-regions.
+		 *
+		 * It is valid to add an offset to this value, because the offset
+		 * is always kept within the physically contiguous dma-mapped range
+		 * and there's no need to translate to physical address to offset it.
+		 *
+		 * This variable is not going to be used for the actual DMA unmap
+		 * operation, that shall always use the original DMA address of the
+		 * whole memory page.
+		 */
 		dma_addr_t dma_addr = alloc->imported.user_buf.dma_addrs[i];
 
-		local_size = MIN(size, PAGE_SIZE - (dma_addr & ~PAGE_MASK));
-		dma_unmap_page(kctx->kbdev->dev, dma_addr, local_size,
-				writeable ? DMA_BIDIRECTIONAL : DMA_TO_DEVICE);
+		/* Manual CPU cache synchronization.
+		 *
+		 * When the GPU returns ownership of the buffer to the CPU, the driver
+		 * needs to treat imported and non-imported memory differently.
+		 *
+		 * The first case to consider is non-imported sub-regions at the
+		 * beginning of the first page and at the end of last page. For these
+		 * sub-regions: CPU cache shall be committed with a clean+invalidate,
+		 * in order to keep the last CPU write.
+		 *
+		 * Imported region prefers the opposite treatment: this memory has been
+		 * legitimately mapped and used by the GPU, hence GPU writes shall be
+		 * committed to memory, while CPU cache shall be invalidated to make
+		 * sure that CPU reads the correct memory content.
+		 *
+		 * The following diagram shows the expect value of the variables
+		 * used in this loop in the corner case of an imported region encloed
+		 * by a single memory page:
+		 *
+		 * page boundary ->|---------- | <- dma_addr (initial value)
+		 *                 |           |
+		 *                 | - - - - - | <- offset_within_page
+		 *                 |XXXXXXXXXXX|\
+		 *                 |XXXXXXXXXXX| \
+		 *                 |XXXXXXXXXXX|  }- imported_size
+		 *                 |XXXXXXXXXXX| /
+		 *                 |XXXXXXXXXXX|/
+		 *                 | - - - - - | <- offset_within_page + imported_size
+		 *                 |           |\
+		 *                 |           | }- PAGE_SIZE - imported_size - offset_within_page
+		 *                 |           |/
+		 * page boundary ->|-----------|
+		 *
+		 * If the imported region is enclosed by more than one page, then
+		 * offset_within_page = 0 for any page after the first.
+		 */
+
+		/* Only for first page: handle non-imported range at the beginning. */
+		if (offset_within_page > 0) {
+			dma_sync_single_for_device(kctx->kbdev->dev, dma_addr, offset_within_page,
+						   DMA_BIDIRECTIONAL);
+			dma_addr += offset_within_page;
+		}
+
+		/* For every page: handle imported range. */
+		if (imported_size > 0)
+			dma_sync_single_for_cpu(kctx->kbdev->dev, dma_addr, imported_size,
+						DMA_BIDIRECTIONAL);
+
+		/* Only for last page (that may coincide with first page):
+		 * handle non-imported range at the end.
+		 */
+		if ((imported_size + offset_within_page) < PAGE_SIZE) {
+			dma_addr += imported_size;
+			dma_sync_single_for_device(kctx->kbdev->dev, dma_addr,
+						   PAGE_SIZE - imported_size - offset_within_page,
+						   DMA_BIDIRECTIONAL);
+		}
+
+		/* Notice: use the original DMA address to unmap the whole memory page. */
+		dma_unmap_page_attrs(kctx->kbdev->dev, alloc->imported.user_buf.dma_addrs[i],
+				     PAGE_SIZE, writeable ? DMA_BIDIRECTIONAL : DMA_TO_DEVICE,
+				     DMA_ATTR_SKIP_CPU_SYNC);
+
 		if (writeable)
 			set_page_dirty_lock(pages[i]);
 #if !MALI_USE_CSF
@@ -4826,7 +4921,8 @@ static void kbase_jd_user_buf_unmap(struct kbase_context *kctx, struct kbase_mem
 		pages[i] = NULL;
 #endif
 
-		size -= local_size;
+		remaining_size -= imported_size;
+		offset_within_page = 0;
 	}
 #if !MALI_USE_CSF
 	alloc->nents = 0;
