@@ -29,6 +29,14 @@
 
 #include <linux/irq.h>
 #include <linux/uaccess.h>
+#if IS_ENABLED(CONFIG_MTK_SERIAL_8250_DEBUG_LOG)
+#include <linux/sched.h>
+#include <linux/sched/clock.h>
+#endif
+
+#if IS_ENABLED(CONFIG_MTK_SERIAL_8250_DEBUG_LOG)
+u64 THRESHOLD = 200 * 1000 * 1000;
+#endif
 
 /*
  * This is used to lock changes in serial line configuration.
@@ -569,6 +577,9 @@ static int uart_write(struct tty_struct *tty,
 	unsigned long flags;
 	int c, ret = 0;
 
+#if IS_ENABLED(CONFIG_MTK_SERIAL_8250_DEBUG_LOG)
+	u64 ts[4] = {0};
+#endif
 	/*
 	 * This means you called this function _after_ the port was
 	 * closed.  No cookie for you.
@@ -577,7 +588,9 @@ static int uart_write(struct tty_struct *tty,
 		WARN_ON(1);
 		return -EL3HLT;
 	}
-
+#if IS_ENABLED(CONFIG_MTK_SERIAL_8250_DEBUG_LOG)
+	ts[0] = sched_clock();
+#endif
 	port = uart_port_lock(state, flags);
 	circ = &state->xmit;
 	if (!circ->buf) {
@@ -597,9 +610,22 @@ static int uart_write(struct tty_struct *tty,
 		count -= c;
 		ret += c;
 	}
-
+#if IS_ENABLED(CONFIG_MTK_SERIAL_8250_DEBUG_LOG)
+	ts[1] = sched_clock();
+#endif
 	__uart_start(tty);
+#if IS_ENABLED(CONFIG_MTK_SERIAL_8250_DEBUG_LOG)
+	ts[2] = sched_clock();
+#endif
 	uart_port_unlock(port, flags);
+#if IS_ENABLED(CONFIG_MTK_SERIAL_8250_DEBUG_LOG)
+	ts[3] = sched_clock();
+	if ((ts[3] - ts[0]) > THRESHOLD) {
+		pr_info("[%s]: ts[3-0][%llu]ns, ts[2-1][%llu]ns, ts[1-0][%llu]ns, ts[3-2][%llu]ns\n"
+			,__func__, ts[3] - ts[0], ts[2] - ts[1], ts[1] - ts[0],
+			ts[3] - ts[2]);
+	}
+#endif
 	return ret;
 }
 

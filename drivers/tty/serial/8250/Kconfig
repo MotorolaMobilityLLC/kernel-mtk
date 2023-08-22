@@ -547,3 +547,11 @@ config SERIAL_OF_PLATFORM
 	  are probed through devicetree, including Open Firmware based
 	  PowerPC systems and embedded systems on architectures using the
 	  flattened device tree format.
+
+config MTK_SERIAL_8250_DEBUG_LOG
+	tristate "Enable debug log"
+	help
+	  Say Y here if you want to debug 8250 GKI flow
+	  This option is used to debug the uart_write
+	  function performace issue
+	  if unsure, say N.
