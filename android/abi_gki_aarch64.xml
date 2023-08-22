@@ -323,6 +323,7 @@
       <elf-symbol name='__serio_register_port' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x424f77a9'/>
       <elf-symbol name='__set_page_dirty_buffers' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x99138a1e'/>
       <elf-symbol name='__set_page_dirty_nobuffers' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x34f0c79d'/>
+      <elf-symbol name='__set_page_owner' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6445c38'/>
       <elf-symbol name='__sg_page_iter_dma_next' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcc445ceb'/>
       <elf-symbol name='__sg_page_iter_next' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7c9ca58f'/>
       <elf-symbol name='__sg_page_iter_start' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xccd4c999'/>
@@ -7626,6 +7627,7 @@
       <elf-symbol name='oops_in_progress' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb1c3a01a'/>
       <elf-symbol name='overflowgid' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7171121c'/>
       <elf-symbol name='overflowuid' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8b618d08'/>
+      <elf-symbol name='page_owner_inited' size='16' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xda1512e5'/>
       <elf-symbol name='panic_notifier_list' size='16' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7ceeac9'/>
       <elf-symbol name='panic_timeout' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1f8544b8'/>
       <elf-symbol name='param_array_ops' size='32' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x42541bac'/>
@@ -129325,6 +129327,12 @@
         <parameter type-id='02f11ed4' name='page' filepath='mm/page-writeback.c' line='2521' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__set_page_owner' mangled-name='__set_page_owner' filepath='mm/page_owner.c' line='194' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__set_page_owner'>
+        <parameter type-id='02f11ed4' name='page' filepath='mm/page_owner.c' line='194' column='1'/>
+        <parameter type-id='f0981eeb' name='order' filepath='mm/page_owner.c' line='194' column='1'/>
+        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/page_owner.c' line='195' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='__sg_page_iter_dma_next' mangled-name='__sg_page_iter_dma_next' filepath='lib/scatterlist.c' line='753' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__sg_page_iter_dma_next'>
         <parameter type-id='f1397bef' name='dma_iter' filepath='lib/scatterlist.c' line='753' column='1'/>
         <return type-id='b50a4934'/>
@@ -144727,9 +144735,9 @@
         <parameter type-id='7292109c' name='ints' filepath='lib/cmdline.c' line='107' column='1'/>
         <return type-id='26a90f95'/>
       </function-decl>
-      <function-decl name='get_page_owner_handle' mangled-name='get_page_owner_handle' filepath='mm/page_owner.c' line='101' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='get_page_owner_handle'>
-        <parameter type-id='459ae684' name='page_ext' filepath='mm/page_owner.c' line='101' column='1'/>
-        <parameter type-id='7359adad' name='pfn' filepath='mm/page_owner.c' line='101' column='1'/>
+      <function-decl name='get_page_owner_handle' mangled-name='get_page_owner_handle' filepath='mm/page_owner.c' line='102' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='get_page_owner_handle'>
+        <parameter type-id='459ae684' name='page_ext' filepath='mm/page_owner.c' line='102' column='1'/>
+        <parameter type-id='7359adad' name='pfn' filepath='mm/page_owner.c' line='102' column='1'/>
         <return type-id='613ae993'/>
       </function-decl>
       <function-decl name='get_pfnblock_flags_mask' mangled-name='get_pfnblock_flags_mask' filepath='mm/page_alloc.c' line='591' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='get_pfnblock_flags_mask'>
@@ -151541,6 +151549,7 @@
         <parameter type-id='02f11ed4' name='page' filepath='mm/util.c' line='802' column='1'/>
         <return type-id='f57039f0'/>
       </function-decl>
+      <var-decl name='page_owner_inited' type-id='237c0d27' mangled-name='page_owner_inited' visibility='default' filepath='mm/page_owner.c' line='35' column='1' elf-symbol-id='page_owner_inited'/>
       <function-decl name='page_pool_alloc_pages' mangled-name='page_pool_alloc_pages' filepath='net/core/page_pool.c' line='333' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='page_pool_alloc_pages'>
         <parameter type-id='a832c6b9' name='pool' filepath='net/core/page_pool.c' line='333' column='1'/>
         <parameter type-id='3eb7c31c' name='gfp' filepath='net/core/page_pool.c' line='333' column='1'/>
