@@ -1509,8 +1509,11 @@ int fuse_mknod_backing(
 #if IS_ENABLED(CONFIG_MTK_FUSE_DEBUG)
 	trace_mtk_fuse_iget_backing(__func__, __LINE__, &fuse_inode->inode,
 			fuse_inode->nodeid, backing_inode);
-#endif
+	inode = fuse_iget_backing(dir->i_sb, 0, backing_path.dentry->d_inode);
+#else
 	inode = fuse_iget_backing(dir->i_sb, fuse_inode->nodeid, backing_inode);
+#endif
+
 	if (IS_ERR(inode)) {
 		err = PTR_ERR(inode);
 		goto out;
@@ -1591,8 +1594,10 @@ int fuse_mkdir_backing(
 #if IS_ENABLED(CONFIG_MTK_FUSE_DEBUG)
 	trace_mtk_fuse_iget_backing(__func__, __LINE__, &fuse_inode->inode,
 			fuse_inode->nodeid, backing_inode);
-#endif
+	inode = fuse_iget_backing(dir->i_sb, 0, backing_path.dentry->d_inode);
+#else
 	inode = fuse_iget_backing(dir->i_sb, fuse_inode->nodeid, backing_inode);
+#endif
 	if (IS_ERR(inode)) {
 		err = PTR_ERR(inode);
 		goto out;
