@@ -1148,4 +1148,10 @@ config MTK_BQ2560x_SUPPORT
 	help
 	  BQ 2560x.
 
+config OPT_FACTORY_IBUS_LIMIT
+	bool "This is config cancunn factorymode set icl support"
+	default n
+	help
+	  This is config cancunn factorymode set icl support
+
 endif # POWER_SUPPLY
