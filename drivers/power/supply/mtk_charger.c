@@ -85,7 +85,7 @@ bool pdc_type = false;
 bool typecotp_charger;
 #endif
 
-#ifdef CONFIG_CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT
+#if defined(CONFIG_CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT) || defined(CONFIG_OPT_FACTORY_IBUS_LIMIT)
 bool plugout_flag = false;
 #endif
 
@@ -2438,7 +2438,7 @@ stop_charging:
 		mtk_charger_force_disable_power_path(info, CHG1_SETTING, false);
 		pr_info("[%s] force disable power path false\n", __func__);
 	}
-#ifdef CONFIG_CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT
+#if defined(CONFIG_CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT) || defined(CONFIG_OPT_FACTORY_IBUS_LIMIT)
 	chr_err("yyatm_enabled:%d plugout_flag:%d\n", info->atm_enabled,plugout_flag);
 	if (info->atm_enabled && (info->can_charging == false) && (plugout_flag == true)) {
 		chr_err("yySET_ICL in\n");
@@ -2675,7 +2675,7 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 	memset(&info->mmi.apdo_cap, 0, sizeof(struct adapter_auth_data));
 	info->mmi.pd_cap_max_watt = 0;
 	info->mmi.charger_watt = 0;
-	#ifdef CONFIG_CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT
+	#if defined(CONFIG_CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT) || defined(CONFIG_OPT_FACTORY_IBUS_LIMIT)
 	plugout_flag = true;
 	#endif
 	power_supply_changed(info->psy1);
