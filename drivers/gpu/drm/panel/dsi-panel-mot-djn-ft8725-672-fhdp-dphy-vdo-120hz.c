@@ -270,6 +270,8 @@ static void dijing_panel_off(struct dijing *ctx)
 	msleep(20);
 	dijing_dcs_write_seq_static(ctx, MIPI_DCS_ENTER_SLEEP_MODE);
 	msleep(100);
+
+	dijing_dcs_write_seq_static(ctx, 0x00, 0x00);
 	dijing_dcs_write_seq_static(ctx, 0xff, 0x87, 0x25, 0x01);
 	dijing_dcs_write_seq_static(ctx, 0x00, 0x80);
 	dijing_dcs_write_seq_static(ctx, 0xff, 0x87, 0x25);
@@ -442,12 +444,17 @@ static struct mtk_panel_params ext_params = {
 	.change_fps_by_vfp_send_cmd = 0,
 	//.vfp_low_power = 20,
 	.phy_timcon.lpx = 8,
-	.cust_esd_check = 0,
+	.cust_esd_check = 1,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
 		.para_list[0] = 0x9c,
+	},
+	.lcm_esd_check_table[1] = {
+		.cmd = 0x1D,
+		.count = 1,
+		.para_list[0] = 0x00,
 	},
 	.panel_ver = 1,
 	.panel_id = 0x01050a91,
@@ -520,12 +527,17 @@ static struct mtk_panel_params ext_params_mode_30 = {
 //	.vfp_low_power = 7476,//30hz
 	.data_rate = DATA_RATE,
 	.phy_timcon.lpx = 8,
-	.cust_esd_check = 0,
-	.esd_check_enable = 0,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
 		.para_list[0] = 0x9c,
+	},
+	.lcm_esd_check_table[1] = {
+		.cmd = 0x1D,
+		.count = 1,
+		.para_list[0] = 0x00,
 	},
 	.panel_ver = 1,
 	.panel_id = 0x10050753,
@@ -594,12 +606,17 @@ static struct mtk_panel_params ext_params_mode_90 = {
 //	.vfp_low_power = 7476,//30hz
 	.data_rate = DATA_RATE,
 	.phy_timcon.lpx = 8,
-	.cust_esd_check = 0,
-	.esd_check_enable = 0,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
 		.para_list[0] = 0x9c,
+	},
+	.lcm_esd_check_table[1] = {
+		.cmd = 0x1D,
+		.count = 1,
+		.para_list[0] = 0x00,
 	},
 	.panel_ver = 1,
 	.panel_id = 0x10050753,
@@ -670,12 +687,17 @@ static struct mtk_panel_params ext_params_mode_60 = {
 //	.vfp_low_power = 7476,//30hz
 	.data_rate = DATA_RATE,
 	.phy_timcon.lpx = 8,
-	.cust_esd_check = 0,
-	.esd_check_enable = 0,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
 		.para_list[0] = 0x9c,
+	},
+	.lcm_esd_check_table[1] = {
+		.cmd = 0x1D,
+		.count = 1,
+		.para_list[0] = 0x00,
 	},
 	.panel_ver = 1,
 	.panel_id = 0x10050753,
