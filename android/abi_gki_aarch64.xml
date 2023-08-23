@@ -1225,7 +1225,7 @@
       <elf-symbol name='btbcm_set_bdaddr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x730ab115'/>
       <elf-symbol name='btbcm_setup_apple' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x61f110a7'/>
       <elf-symbol name='btbcm_setup_patchram' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x393b71ce'/>
-      <elf-symbol name='buffer_migrate_page' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7951f1db'/>
+      <elf-symbol name='buffer_migrate_page' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcdeca50f'/>
       <elf-symbol name='build_skb' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xff5522b'/>
       <elf-symbol name='bus_find_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x467a1371'/>
       <elf-symbol name='bus_for_each_dev' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x58f4e904'/>
@@ -3927,10 +3927,10 @@
       <elf-symbol name='memunmap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9e9fdd9d'/>
       <elf-symbol name='mfd_add_devices' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd68a3b1'/>
       <elf-symbol name='mfd_remove_devices' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x35c8a608'/>
-      <elf-symbol name='migrate_page_copy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb3b9058d'/>
-      <elf-symbol name='migrate_page_move_mapping' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x74bd3238'/>
-      <elf-symbol name='migrate_page_states' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x32ac080e'/>
-      <elf-symbol name='migrate_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe0b25d16'/>
+      <elf-symbol name='migrate_page_copy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe97d88f0'/>
+      <elf-symbol name='migrate_page_move_mapping' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb7809eee'/>
+      <elf-symbol name='migrate_page_states' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8caf3272'/>
+      <elf-symbol name='migrate_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x90f84eaa'/>
       <elf-symbol name='migrate_swap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x86c6d1b9'/>
       <elf-symbol name='mii_check_media' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa0eb9154'/>
       <elf-symbol name='mii_ethtool_get_link_ksettings' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x41c03553'/>
