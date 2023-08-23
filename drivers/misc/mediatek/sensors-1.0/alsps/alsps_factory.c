@@ -39,13 +39,12 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 	int als_cali = 0;
 	MOT_ALSPS_DATA_GET mot_alsps_data_get;
 	MOT_ALSPS_DATA_SET mot_alsps_data_set;
-	//MMI_STOPSHIP WiSL - Sensors: remove verify_write to fix build error
-	//if (_IOC_DIR(cmd) & _IOC_READ)
-	//	err = !access_ok(VERIFY_WRITE, (void __user *)arg,
-	// 			 _IOC_SIZE(cmd));
-	//else if (_IOC_DIR(cmd) & _IOC_WRITE)
-	//	err = !access_ok(VERIFY_READ, (void __user *)arg,
-	//			_IOC_SIZE(cmd));
+	if (_IOC_DIR(cmd) & _IOC_READ)
+		err = !access_ok((void __user *)arg,
+                                _IOC_SIZE(cmd));
+	else if (_IOC_DIR(cmd) & _IOC_WRITE)
+		err = !access_ok((void __user *)arg,
+				_IOC_SIZE(cmd));
 	if (err) {
 		pr_debug("access error: %08X, (%2d, %2d)\n", cmd,
 			  _IOC_DIR(cmd), _IOC_SIZE(cmd));
