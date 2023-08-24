@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, Motorola Mobility Inc. All rights reserved.
+/* Copyright (c) 2023, Motorola Mobility Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -10,22 +10,4 @@
  * GNU General Public License for more details.
  */
 
-/dts-v1/;
-/plugin/;
-
-#include "mediatek/mt6879-manaus-row-common-overlay.dtsi"
-
-/* Board match root node */
-/ {
-	fragment@model {
-		target-path = "/";
-		__overlay__ {
-			mot,model = "manaus";
-			mot,board-id = <0x47 0xB100>;
-		};
-	};
-};
-
-#include <manaus_dvt1/cust.dtsi>
-#include "mediatek/cust_mt6879_camera_v4l2_manaus.dtsi"
-/*End of this file, DO NOT ADD ANYTHING HERE*/
+#include "mediatek/mt6879-manaus-common-overlay.dtsi"
