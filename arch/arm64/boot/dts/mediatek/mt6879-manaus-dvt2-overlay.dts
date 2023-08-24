@@ -13,7 +13,7 @@
 /dts-v1/;
 /plugin/;
 
-#include "mediatek/mt6879-manaus-common-overlay.dtsi"
+#include "mediatek/mt6879-manaus-row-common-overlay.dtsi"
 
 /* Board match root node */
 / {
