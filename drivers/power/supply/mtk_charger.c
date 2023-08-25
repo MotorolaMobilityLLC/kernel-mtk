@@ -319,7 +319,16 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 		chr_err("use default V_CHARGER_MIN:%d\n", V_CHARGER_MIN);
 		info->data.min_charger_voltage = V_CHARGER_MIN;
 	}
+#ifdef CONFIG_MOTO_SELECT_ENABLE_VBAT_MON
+	if (of_property_read_u32(np, "enable_vbat_mon", &val) >= 0)
+		info->enable_vbat_mon = val;
+	else {
+		chr_err("use default vbat_mon:%d\n", true);
+                info->enable_vbat_mon = true;
+	}
+#else
 	info->enable_vbat_mon = of_property_read_bool(np, "enable_vbat_mon");
+#endif
 	if (info->enable_vbat_mon == true)
 		info->setting.vbat_mon_en = true;
 	chr_err("use 6pin bat, enable_vbat_mon:%d\n", info->enable_vbat_mon);
