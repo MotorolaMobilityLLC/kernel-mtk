@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  *
- * (C) COPYRIGHT 2019-2021 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2019-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -186,6 +186,8 @@
 #define GPU_COMMAND_FLUSH_PAYLOAD_CLEAN            0x01 /* Clean the caches */
 #define GPU_COMMAND_FLUSH_PAYLOAD_INVALIDATE       0x02 /* Invalidate the caches */
 #define GPU_COMMAND_FLUSH_PAYLOAD_CLEAN_INVALIDATE 0x03 /* Clean and invalidate the caches */
+#define GPU_COMMAND_FLUSH_PAYLOAD_LSC_CLEAN_INVALIDATE 0x030 /* CLN + INV */
+#define GPU_COMMAND_FLUSH_PAYLOAD_OTHER_INVALIDATE 0x200 /* INV only */
 
 /* GPU_COMMAND command + payload */
 #define GPU_COMMAND_CODE_PAYLOAD(opcode, payload) \
@@ -225,8 +227,27 @@
 	GPU_COMMAND_CODE_PAYLOAD(GPU_COMMAND_CODE_FLUSH_CACHES, GPU_COMMAND_FLUSH_PAYLOAD_CLEAN)
 
 /* Clean and invalidate all caches */
-#define GPU_COMMAND_CLEAN_INV_CACHES \
-	GPU_COMMAND_CODE_PAYLOAD(GPU_COMMAND_CODE_FLUSH_CACHES, GPU_COMMAND_FLUSH_PAYLOAD_CLEAN_INVALIDATE)
+#define GPU_COMMAND_CACHE_CLN_INV_L2                                           \
+	GPU_COMMAND_CODE_PAYLOAD(GPU_COMMAND_CODE_FLUSH_CACHES,                \
+				 GPU_COMMAND_FLUSH_PAYLOAD_CLEAN_INVALIDATE)
+
+/* Clean and invalidate L2 and LSC caches (Equivalent to FLUSH_MEM) */
+#define GPU_COMMAND_CACHE_CLN_INV_L2_LSC                                       \
+	GPU_COMMAND_CODE_PAYLOAD(                                              \
+		GPU_COMMAND_CODE_FLUSH_CACHES,                                 \
+		(GPU_COMMAND_FLUSH_PAYLOAD_CLEAN_INVALIDATE |                  \
+		 GPU_COMMAND_FLUSH_PAYLOAD_LSC_CLEAN_INVALIDATE))
+
+/* Clean and invalidate L2, LSC, and Other caches */
+#define GPU_COMMAND_CACHE_CLN_INV_FULL                                         \
+	GPU_COMMAND_CODE_PAYLOAD(                                              \
+		GPU_COMMAND_CODE_FLUSH_CACHES,                                 \
+		(GPU_COMMAND_FLUSH_PAYLOAD_L2_CLEAN_INVALIDATE |               \
+		 GPU_COMMAND_FLUSH_PAYLOAD_LSC_CLEAN_INVALIDATE |              \
+		 GPU_COMMAND_FLUSH_PAYLOAD_OTHER_INVALIDATE))
+
+/* Merge cache flush commands */
+#define GPU_COMMAND_FLUSH_CACHE_MERGE(cmd1, cmd2) ((cmd1) | (cmd2))
 
 /* Places the GPU in protected mode */
 #define GPU_COMMAND_SET_PROTECTED_MODE \

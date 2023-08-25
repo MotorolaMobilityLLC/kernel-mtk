@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2014-2015, 2018-2021 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2014-2015, 2018-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -81,6 +81,22 @@ void kbase_mmu_hw_configure(struct kbase_device *kbdev,
 int kbase_mmu_hw_do_operation(struct kbase_device *kbdev, struct kbase_as *as,
 		u64 vpfn, u32 nr, u32 type,
 		unsigned int handling_irq);
+
+/**
+ * kbase_mmu_hw_do_lock_op - Issue a lock/unlock operation to the MMU .
+ * @kbdev:         kbase device to issue the MMU operation on.
+ * @as:            address space to issue the MMU operation on.
+ * @vpfn:          MMU Virtual Page Frame Number to start the operation on.
+ * @nr:            Number of pages to work on.
+ * @op_lock:       True for lock operation, otherwise unlock.
+ *
+ * Issue a lock/unlock operation on the address space that is associated
+ * with the provided kbase_context over the specified range
+ *
+ * Return: Zero if the operation was successful, non-zero otherwise.
+ */
+int kbase_mmu_hw_do_lock_op(struct kbase_device *kbdev, struct kbase_as *as,
+			    u64 vpfn, u32 nr, bool op_lock);
 
 /**
  * kbase_mmu_hw_clear_fault - Clear a fault that has been previously reported by

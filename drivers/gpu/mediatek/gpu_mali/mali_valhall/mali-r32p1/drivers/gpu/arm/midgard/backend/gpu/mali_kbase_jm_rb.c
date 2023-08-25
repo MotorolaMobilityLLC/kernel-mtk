@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
- * (C) COPYRIGHT 2014-2021 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2014-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -1673,7 +1673,8 @@ void kbase_backend_cache_clean(struct kbase_device *kbdev,
 		struct kbase_jd_atom *katom)
 {
 	if (katom->need_cache_flush_cores_retained) {
-		kbase_gpu_start_cache_clean(kbdev);
+		kbase_gpu_start_cache_clean(kbdev,
+					    GPU_COMMAND_CLEAN_INV_CACHES);
 		kbase_gpu_wait_cache_clean(kbdev);
 
 		katom->need_cache_flush_cores_retained = false;

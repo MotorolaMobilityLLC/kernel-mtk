@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2011-2021 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2011-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -777,8 +777,8 @@ struct kbase_process {
  * @cache_clean_in_progress: Set when a cache clean has been started, and
  *                         cleared when it has finished. This prevents multiple
  *                         cache cleans being done simultaneously.
- * @cache_clean_queued:    Set if a cache clean is invoked while another is in
- *                         progress. If this happens, another cache clean needs
+ * @cache_clean_queued:    Pended cache clean operations invoked while another is
+ *                         in progress. If this is not 0, another cache clean needs
  *                         to be triggered immediately after completion of the
  *                         current one.
  * @cache_clean_wait:      Signalled when a cache clean has finished.
@@ -1039,7 +1039,7 @@ struct kbase_device {
 	u32 reset_timeout_ms;
 
 	bool cache_clean_in_progress;
-	bool cache_clean_queued;
+	u32 cache_clean_queued;
 	wait_queue_head_t cache_clean_wait;
 
 	void *platform_context;
