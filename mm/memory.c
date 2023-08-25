@@ -3043,8 +3043,8 @@ static vm_fault_t do_wp_page(struct vm_fault *vmf)
 		 * page count reference, and the page is locked,
 		 * it's dark out, and we're wearing sunglasses. Hit it.
 		 */
-		unlock_page(page);
 		wp_page_reuse(vmf);
+		unlock_page(page);
 		return VM_FAULT_WRITE;
 	} else if (unlikely((vmf->vma_flags & (VM_WRITE|VM_SHARED)) ==
 					(VM_WRITE|VM_SHARED))) {
