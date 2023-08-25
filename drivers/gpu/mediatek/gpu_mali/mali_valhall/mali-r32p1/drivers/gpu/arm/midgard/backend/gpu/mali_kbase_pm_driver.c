@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
- * (C) COPYRIGHT 2010-2021 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2010-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -268,9 +268,8 @@ static void mali_cci_flush_l2(struct kbase_device *kbdev)
 	 * to be called from.
 	 */
 
-	kbase_reg_write(kbdev,
-			GPU_CONTROL_REG(GPU_COMMAND),
-			GPU_COMMAND_CLEAN_INV_CACHES);
+	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND),
+			GPU_COMMAND_CACHE_CLN_INV_L2);
 
 	raw = kbase_reg_read(kbdev,
 		GPU_CONTROL_REG(GPU_IRQ_RAWSTAT));
@@ -1201,7 +1200,7 @@ static int kbase_pm_l2_update_state(struct kbase_device *kbdev)
 				 * powered off.
 				 */
 				kbase_gpu_start_cache_clean_nolock(
-						kbdev);
+						kbdev, GPU_COMMAND_CACHE_CLN_INV_L2);
 #if !MALI_USE_CSF
 			KBASE_KTRACE_ADD(kbdev, PM_CORES_CHANGE_AVAILABLE_TILER, NULL, 0u);
 #else
@@ -1581,7 +1580,8 @@ static int kbase_pm_shaders_update_state(struct kbase_device *kbdev)
 			shader_poweroff_timer_queue_cancel(kbdev);
 
 			if (kbase_hw_has_issue(kbdev, BASE_HW_ISSUE_TTRX_921)) {
-				kbase_gpu_start_cache_clean_nolock(kbdev);
+				kbase_gpu_start_cache_clean_nolock(
+					kbdev, GPU_COMMAND_CACHE_CLN_INV_L2);
 				backend->shaders_state =
 					KBASE_SHADERS_L2_FLUSHING_CORESTACK_ON;
 			} else {

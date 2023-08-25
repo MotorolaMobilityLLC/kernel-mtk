@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
- * (C) COPYRIGHT 2014-2021 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2014-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -127,22 +127,18 @@ static int wait_ready(struct kbase_device *kbdev,
 		unsigned int as_nr)
 {
 	unsigned int max_loops = KBASE_AS_INACTIVE_MAX_LOOPS;
-	u32 val = kbase_reg_read(kbdev, MMU_AS_REG(as_nr, AS_STATUS));
 
-	/* Wait for the MMU status to indicate there is no active command, in
-	 * case one is pending. Do not log remaining register accesses.
-	 */
-	while (--max_loops && (val & AS_STATUS_AS_ACTIVE))
-		val = kbase_reg_read(kbdev, MMU_AS_REG(as_nr, AS_STATUS));
+	/* Wait for the MMU status to indicate there is no active command. */
+	while (--max_loops &&
+	       kbase_reg_read(kbdev, MMU_AS_REG(as_nr, AS_STATUS)) &
+		       AS_STATUS_AS_ACTIVE) {
+		;
+	}
 
 	if (max_loops == 0) {
 		dev_err(kbdev->dev, "AS_ACTIVE bit stuck, might be caused by slow/unstable GPU clock or possible faulty FPGA connector\n");
 		return -1;
 	}
-
-	/* If waiting in loop was performed, log last read value. */
-	if (KBASE_AS_INACTIVE_MAX_LOOPS - 1 > max_loops)
-		kbase_reg_read(kbdev, MMU_AS_REG(as_nr, AS_STATUS));
 
 	return 0;
 }
@@ -209,20 +205,14 @@ void kbase_mmu_hw_configure(struct kbase_device *kbdev, struct kbase_as *as)
 	write_cmd(kbdev, as->number, AS_COMMAND_UPDATE);
 }
 
-int kbase_mmu_hw_do_operation(struct kbase_device *kbdev, struct kbase_as *as,
-		u64 vpfn, u32 nr, u32 op,
-		unsigned int handling_irq)
+static int mmu_hw_lock_op_no_wait(struct kbase_device *kbdev,
+				  struct kbase_as *as, u64 vpfn, u32 nr,
+				  bool op_lock)
 {
 	int ret;
+	u64 lock_addr = 0;
 
-	lockdep_assert_held(&kbdev->mmu_hw_mutex);
-
-	if (op == AS_COMMAND_UNLOCK) {
-		/* Unlock doesn't require a lock first */
-		ret = write_cmd(kbdev, as->number, AS_COMMAND_UNLOCK);
-	} else {
-		u64 lock_addr;
-
+	if (op_lock) {
 		ret = lock_region(vpfn, nr, &lock_addr);
 
 		if (!ret) {
@@ -233,15 +223,52 @@ int kbase_mmu_hw_do_operation(struct kbase_device *kbdev, struct kbase_as *as,
 			kbase_reg_write(kbdev,
 				MMU_AS_REG(as->number, AS_LOCKADDR_HI),
 				(lock_addr >> 32) & 0xFFFFFFFFUL);
-			write_cmd(kbdev, as->number, AS_COMMAND_LOCK);
+			ret = write_cmd(kbdev, as->number, AS_COMMAND_LOCK);
+		}
+	} else {
+		/* Unlock doesn't require a lock first */
+		ret = write_cmd(kbdev, as->number, AS_COMMAND_UNLOCK);
+	}
 
-			/* Run the MMU operation */
+	return ret;
+}
+
+int kbase_mmu_hw_do_operation(struct kbase_device *kbdev, struct kbase_as *as,
+			      u64 vpfn, u32 nr, u32 op,
+			      unsigned int handling_irq)
+{
+	int ret;
+
+	lockdep_assert_held(&kbdev->mmu_hw_mutex);
+
+	if (op == AS_COMMAND_UNLOCK) {
+		ret = mmu_hw_lock_op_no_wait(kbdev, as, vpfn, nr, false);
+	} else {
+		ret = mmu_hw_lock_op_no_wait(kbdev, as, vpfn, nr, true);
+
+		if (!ret) {
+			/* Lock succeeded, run the MMU operation */
 			write_cmd(kbdev, as->number, op);
 
 			/* Wait for the flush to complete */
 			ret = wait_ready(kbdev, as->number);
 		}
 	}
+
+	return ret;
+}
+
+int kbase_mmu_hw_do_lock_op(struct kbase_device *kbdev, struct kbase_as *as,
+			    u64 vpfn, u32 nr, bool op_lock)
+{
+	int ret;
+
+	lockdep_assert_held(&kbdev->hwaccess_lock);
+
+	ret = mmu_hw_lock_op_no_wait(kbdev, as, vpfn, nr, op_lock);
+
+	if (!ret)
+		ret = wait_ready(kbdev, as->number);
 
 	return ret;
 }
