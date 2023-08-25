@@ -26,6 +26,9 @@
 };
 
 &charger {
+	/* sw jeita */
+	enable_vbat_mon = <0>;
+
 	/* common */
         boot_battery_voltage = <3560000>;
 	battery_cv = <4500000>;
