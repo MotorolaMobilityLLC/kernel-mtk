@@ -840,6 +840,12 @@ config MOTO_CHARGER_10W_3A_SUPPORT
                 This is to support config max charing current to 3A
                 for 10w charger.
 
+config MOTO_SELECT_ENABLE_VBAT_MON
+	bool "Select enable vbat mon"
+	default n
+	help
+		This is to select enable vbat mon.
+
 config CHARGER_CROS_USBPD
 	tristate "ChromeOS EC based USBPD charger"
 	depends on CROS_USBPD_NOTIFY
