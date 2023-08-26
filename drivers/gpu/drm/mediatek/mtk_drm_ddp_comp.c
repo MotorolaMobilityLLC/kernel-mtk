@@ -166,6 +166,15 @@ void mtk_ddp_write_mask_cpu(struct mtk_ddp_comp *comp,
 	writel(tmp, comp->regs + offset);
 }
 
+static void mtk_write_cpu_relaxed(void __iomem *addr,
+	unsigned int value, unsigned int mask)
+{
+	unsigned int tmp = readl(addr);
+
+	tmp = (tmp & ~mask) | (value & mask);
+	writel_relaxed(tmp, addr);
+}
+
 void mtk_dither_set(struct mtk_ddp_comp *comp, unsigned int bpc,
 		    unsigned int CFG, struct cmdq_pkt *handle)
 {
@@ -1098,7 +1107,7 @@ void mt6833_mtk_sodi_config(struct drm_device *drm, enum mtk_ddp_comp_id id,
 
 	if (priv->data->bypass_infra_ddr_control)
 		SET_VAL_MASK(infra_req_val, infra_req_mask,
-				0xf, MT6833_INFRA_FLD_DDR_MASK);
+				0x0, MT6833_INFRA_FLD_DDR_MASK);
 
 	if (handle == NULL) {
 		unsigned int v;
@@ -1113,11 +1122,11 @@ void mt6833_mtk_sodi_config(struct drm_device *drm, enum mtk_ddp_comp_id id,
 		v += (emi_req_val & emi_req_mask);
 		writel_relaxed(v, priv->config_regs +  MMSYS_EMI_REQ_CTL);
 		if (priv->data->bypass_infra_ddr_control) {
-			if (!IS_ERR(priv->infra_regs)) {
-				v = (readl(priv->infra_regs + MT6833_INFRA_DISP_DDR_CTL)
-					| infra_req_mask);
-				writel_relaxed(v, priv->infra_regs + MT6833_INFRA_DISP_DDR_CTL);
-			} else
+			if (!IS_ERR(priv->infra_regs))
+				mtk_write_cpu_relaxed(
+					priv->infra_regs + MT6833_INFRA_DISP_DDR_CTL,
+					infra_req_val, infra_req_mask);
+			else
 				DDPINFO("%s: failed to disable infra ddr control\n", __func__);
 		}
 	} else {
