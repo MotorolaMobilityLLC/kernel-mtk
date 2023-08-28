@@ -11,5 +11,6 @@
  */
 
 #include "mediatek/mt6879-manaus-common-overlay.dtsi"
+#include "mediatek/manaus-docomo-charger.dtsi"
 
 #define MANAUS_DOCOMO_RADIO 4
