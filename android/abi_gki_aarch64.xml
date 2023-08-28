@@ -577,11 +577,14 @@
       <elf-symbol name='__traceiter_android_vh_dup_task_struct' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd1d3561a'/>
       <elf-symbol name='__traceiter_android_vh_enable_thermal_power_throttle' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5e711538'/>
       <elf-symbol name='__traceiter_android_vh_encrypt_page' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x472c69c4'/>
+      <elf-symbol name='__traceiter_android_vh_exit_check' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x67c11a40'/>
       <elf-symbol name='__traceiter_android_vh_exit_mm' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7b07be57'/>
       <elf-symbol name='__traceiter_android_vh_exit_signal' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2b1b3e7'/>
+      <elf-symbol name='__traceiter_android_vh_exit_signal_whether_wake' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x18058f31'/>
       <elf-symbol name='__traceiter_android_vh_free_one_page_bypass' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8026915b'/>
       <elf-symbol name='__traceiter_android_vh_free_task' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xff390d42'/>
       <elf-symbol name='__traceiter_android_vh_free_unref_page_bypass' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x25995a6'/>
+      <elf-symbol name='__traceiter_android_vh_freeze_whether_wake' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc3d9cd7a'/>
       <elf-symbol name='__traceiter_android_vh_freq_qos_add_request' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2337c613'/>
       <elf-symbol name='__traceiter_android_vh_freq_qos_remove_request' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x332e571d'/>
       <elf-symbol name='__traceiter_android_vh_freq_qos_update_request' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe802443d'/>
@@ -3659,6 +3662,7 @@
       <elf-symbol name='kfree_skb_list' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3323e7aa'/>
       <elf-symbol name='kfree_skb_reason' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfbbf66a3'/>
       <elf-symbol name='kick_all_cpus_sync' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa6e1a69d'/>
+      <elf-symbol name='kick_process' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf0e13cfd'/>
       <elf-symbol name='kill_anon_super' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x62289ff3'/>
       <elf-symbol name='kill_block_super' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbcc4f9f4'/>
       <elf-symbol name='kill_fasync' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcc3c831e'/>
@@ -4157,6 +4161,7 @@
       <elf-symbol name='notify_change' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9ef55a3e'/>
       <elf-symbol name='nr_free_buffer_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x27fa66e1'/>
       <elf-symbol name='nr_ipi_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x215054f8'/>
+      <elf-symbol name='nr_running' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x909a8abf'/>
       <elf-symbol name='ns_capable' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb88f6031'/>
       <elf-symbol name='ns_to_kernel_old_timeval' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6b853d06'/>
       <elf-symbol name='ns_to_timespec64' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1e1e140e'/>
@@ -6863,6 +6868,7 @@
       <elf-symbol name='wake_up_bit' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa0fbac79'/>
       <elf-symbol name='wake_up_if_idle' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf6abaae1'/>
       <elf-symbol name='wake_up_process' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4addd462'/>
+      <elf-symbol name='wake_up_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3dc5669'/>
       <elf-symbol name='wakeup_source_add' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa61eb541'/>
       <elf-symbol name='wakeup_source_create' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x58748c6b'/>
       <elf-symbol name='wakeup_source_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x35f1acc8'/>
@@ -7224,11 +7230,14 @@
       <elf-symbol name='__tracepoint_android_vh_dup_task_struct' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x14fff0cf'/>
       <elf-symbol name='__tracepoint_android_vh_enable_thermal_power_throttle' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x13db5a5d'/>
       <elf-symbol name='__tracepoint_android_vh_encrypt_page' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa94f7016'/>
+      <elf-symbol name='__tracepoint_android_vh_exit_check' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x49c49792'/>
       <elf-symbol name='__tracepoint_android_vh_exit_mm' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xff76cd99'/>
       <elf-symbol name='__tracepoint_android_vh_exit_signal' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf144058'/>
+      <elf-symbol name='__tracepoint_android_vh_exit_signal_whether_wake' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfc31d092'/>
       <elf-symbol name='__tracepoint_android_vh_free_one_page_bypass' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb8e1bbb2'/>
       <elf-symbol name='__tracepoint_android_vh_free_task' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x25db8da7'/>
       <elf-symbol name='__tracepoint_android_vh_free_unref_page_bypass' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf31d0b7d'/>
+      <elf-symbol name='__tracepoint_android_vh_freeze_whether_wake' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8e4434ef'/>
       <elf-symbol name='__tracepoint_android_vh_freq_qos_add_request' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa4d7652'/>
       <elf-symbol name='__tracepoint_android_vh_freq_qos_remove_request' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6fef5880'/>
       <elf-symbol name='__tracepoint_android_vh_freq_qos_update_request' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2e0fffb6'/>
@@ -42357,186 +42366,186 @@
       </array-type-def>
       <pointer-type-def type-id='42c66597' size-in-bits='64' id='55d37973'/>
       <pointer-type-def type-id='cfdbff8a' size-in-bits='64' id='55e2a83c'/>
-      <class-decl name='ipv6_devconf' size-in-bits='2240' is-struct='yes' visibility='default' filepath='include/linux/ipv6.h' line='13' column='1' id='55e8af82'>
+      <class-decl name='ipv6_devconf' size-in-bits='2240' is-struct='yes' visibility='default' filepath='include/linux/ipv6.h' line='14' column='1' id='55e8af82'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='forwarding' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='14' column='1'/>
+          <var-decl name='forwarding' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='15' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='hop_limit' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='15' column='1'/>
+          <var-decl name='hop_limit' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='16' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='mtu6' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='16' column='1'/>
+          <var-decl name='mtu6' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='17' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='96'>
-          <var-decl name='accept_ra' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='17' column='1'/>
+          <var-decl name='accept_ra' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='18' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='accept_redirects' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='18' column='1'/>
+          <var-decl name='accept_redirects' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='19' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='160'>
-          <var-decl name='autoconf' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='19' column='1'/>
+          <var-decl name='autoconf' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='20' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='dad_transmits' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='20' column='1'/>
+          <var-decl name='dad_transmits' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='21' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='224'>
-          <var-decl name='rtr_solicits' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='21' column='1'/>
+          <var-decl name='rtr_solicits' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='22' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='rtr_solicit_interval' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='22' column='1'/>
+          <var-decl name='rtr_solicit_interval' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='23' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='288'>
-          <var-decl name='rtr_solicit_max_interval' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='23' column='1'/>
+          <var-decl name='rtr_solicit_max_interval' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='24' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='320'>
-          <var-decl name='rtr_solicit_delay' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='24' column='1'/>
+          <var-decl name='rtr_solicit_delay' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='25' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='352'>
-          <var-decl name='force_mld_version' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='25' column='1'/>
+          <var-decl name='force_mld_version' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='26' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='mldv1_unsolicited_report_interval' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='26' column='1'/>
+          <var-decl name='mldv1_unsolicited_report_interval' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='27' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='416'>
-          <var-decl name='mldv2_unsolicited_report_interval' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='27' column='1'/>
+          <var-decl name='mldv2_unsolicited_report_interval' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='28' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='448'>
-          <var-decl name='use_tempaddr' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='28' column='1'/>
+          <var-decl name='use_tempaddr' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='29' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='480'>
-          <var-decl name='temp_valid_lft' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='29' column='1'/>
+          <var-decl name='temp_valid_lft' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='30' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='512'>
-          <var-decl name='temp_prefered_lft' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='30' column='1'/>
+          <var-decl name='temp_prefered_lft' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='31' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='544'>
-          <var-decl name='regen_max_retry' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='31' column='1'/>
+          <var-decl name='regen_max_retry' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='32' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='576'>
-          <var-decl name='max_desync_factor' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='32' column='1'/>
+          <var-decl name='max_desync_factor' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='33' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='608'>
-          <var-decl name='max_addresses' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='33' column='1'/>
+          <var-decl name='max_addresses' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='34' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='640'>
-          <var-decl name='accept_ra_defrtr' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='34' column='1'/>
+          <var-decl name='accept_ra_defrtr' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='35' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='672'>
-          <var-decl name='ra_defrtr_metric' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='35' column='1'/>
+          <var-decl name='ra_defrtr_metric' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='36' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='704'>
-          <var-decl name='accept_ra_min_hop_limit' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='36' column='1'/>
+          <var-decl name='accept_ra_min_hop_limit' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='37' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='736'>
-          <var-decl name='accept_ra_pinfo' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='37' column='1'/>
+          <var-decl name='accept_ra_pinfo' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='38' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='768'>
-          <var-decl name='ignore_routes_with_linkdown' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='38' column='1'/>
+          <var-decl name='ignore_routes_with_linkdown' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='39' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='800'>
-          <var-decl name='accept_ra_rtr_pref' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='40' column='1'/>
+          <var-decl name='accept_ra_rtr_pref' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='41' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='832'>
-          <var-decl name='rtr_probe_interval' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='41' column='1'/>
+          <var-decl name='rtr_probe_interval' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='42' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='864'>
-          <var-decl name='accept_ra_rt_info_min_plen' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='43' column='1'/>
+          <var-decl name='accept_ra_rt_info_min_plen' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='44' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='896'>
-          <var-decl name='accept_ra_rt_info_max_plen' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='44' column='1'/>
+          <var-decl name='accept_ra_rt_info_max_plen' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='45' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='928'>
-          <var-decl name='accept_ra_rt_table' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='47' column='1'/>
+          <var-decl name='accept_ra_rt_table' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='48' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='960'>
-          <var-decl name='proxy_ndp' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='48' column='1'/>
+          <var-decl name='proxy_ndp' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='49' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='992'>
-          <var-decl name='accept_source_route' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='49' column='1'/>
+          <var-decl name='accept_source_route' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='50' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1024'>
-          <var-decl name='accept_ra_from_local' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='50' column='1'/>
+          <var-decl name='accept_ra_from_local' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='51' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1056'>
-          <var-decl name='optimistic_dad' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='52' column='1'/>
+          <var-decl name='optimistic_dad' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='53' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1088'>
-          <var-decl name='use_optimistic' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='53' column='1'/>
+          <var-decl name='use_optimistic' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='54' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1120'>
-          <var-decl name='disable_ipv6' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='58' column='1'/>
+          <var-decl name='disable_ipv6' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='59' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1152'>
-          <var-decl name='drop_unicast_in_l2_multicast' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='59' column='1'/>
+          <var-decl name='drop_unicast_in_l2_multicast' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='60' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1184'>
-          <var-decl name='accept_dad' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='60' column='1'/>
+          <var-decl name='accept_dad' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='61' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1216'>
-          <var-decl name='force_tllao' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='61' column='1'/>
+          <var-decl name='force_tllao' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='62' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1248'>
-          <var-decl name='ndisc_notify' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='62' column='1'/>
+          <var-decl name='ndisc_notify' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='63' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1280'>
-          <var-decl name='suppress_frag_ndisc' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='63' column='1'/>
+          <var-decl name='suppress_frag_ndisc' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='64' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1312'>
-          <var-decl name='accept_ra_mtu' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='64' column='1'/>
+          <var-decl name='accept_ra_mtu' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='65' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1344'>
-          <var-decl name='drop_unsolicited_na' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='65' column='1'/>
+          <var-decl name='drop_unsolicited_na' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='66' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1376'>
-          <var-decl name='stable_secret' type-id='b2fc06b3' visibility='default' filepath='include/linux/ipv6.h' line='69' column='1'/>
+          <var-decl name='stable_secret' type-id='b2fc06b3' visibility='default' filepath='include/linux/ipv6.h' line='70' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1536'>
-          <var-decl name='use_oif_addrs_only' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='70' column='1'/>
+          <var-decl name='use_oif_addrs_only' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='71' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1568'>
-          <var-decl name='keep_addr_on_down' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='71' column='1'/>
+          <var-decl name='keep_addr_on_down' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='72' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1600'>
-          <var-decl name='seg6_enabled' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='72' column='1'/>
+          <var-decl name='seg6_enabled' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='73' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1632'>
-          <var-decl name='enhanced_dad' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='76' column='1'/>
+          <var-decl name='enhanced_dad' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='77' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1664'>
-          <var-decl name='addr_gen_mode' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='77' column='1'/>
+          <var-decl name='addr_gen_mode' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='78' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1696'>
-          <var-decl name='disable_policy' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='78' column='1'/>
+          <var-decl name='disable_policy' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='79' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1728'>
-          <var-decl name='ndisc_tclass' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='79' column='1'/>
+          <var-decl name='ndisc_tclass' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='80' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1760'>
-          <var-decl name='rpl_seg_enabled' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='80' column='1'/>
+          <var-decl name='rpl_seg_enabled' type-id='3158a266' visibility='default' filepath='include/linux/ipv6.h' line='81' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1792'>
-          <var-decl name='ioam6_id' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='81' column='1'/>
+          <var-decl name='ioam6_id' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='82' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1824'>
-          <var-decl name='ioam6_id_wide' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='82' column='1'/>
+          <var-decl name='ioam6_id_wide' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='83' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1856'>
-          <var-decl name='ioam6_enabled' type-id='8f048e17' visibility='default' filepath='include/linux/ipv6.h' line='83' column='1'/>
+          <var-decl name='ioam6_enabled' type-id='8f048e17' visibility='default' filepath='include/linux/ipv6.h' line='84' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1920'>
-          <var-decl name='sysctl_header' type-id='11b101bb' visibility='default' filepath='include/linux/ipv6.h' line='85' column='1'/>
+          <var-decl name='sysctl_header' type-id='11b101bb' visibility='default' filepath='include/linux/ipv6.h' line='87' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1984'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/ipv6.h' line='87' column='1'/>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/ipv6.h' line='89' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2048'>
-          <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/linux/ipv6.h' line='88' column='1'/>
+          <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/linux/ipv6.h' line='90' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2112'>
-          <var-decl name='android_kabi_reserved3' type-id='91ce1af9' visibility='default' filepath='include/linux/ipv6.h' line='89' column='1'/>
+          <var-decl name='android_kabi_reserved3' type-id='91ce1af9' visibility='default' filepath='include/linux/ipv6.h' line='91' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2176'>
-          <var-decl name='android_kabi_reserved4' type-id='91ce1af9' visibility='default' filepath='include/linux/ipv6.h' line='90' column='1'/>
+          <var-decl name='android_kabi_reserved4' type-id='91ce1af9' visibility='default' filepath='include/linux/ipv6.h' line='92' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='blkg_policy_data' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/linux/blk-cgroup.h' line='91' column='1' id='55eaf925'>
@@ -58184,15 +58193,15 @@
         <return type-id='95e97e5e'/>
       </function-type>
       <pointer-type-def type-id='d800b1bf' size-in-bits='64' id='79dbccfb'/>
-      <class-decl name='inet6_cork' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/linux/ipv6.h' line='200' column='1' id='79e3d9fd'>
+      <class-decl name='inet6_cork' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/linux/ipv6.h' line='213' column='1' id='79e3d9fd'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='opt' type-id='d4145729' visibility='default' filepath='include/linux/ipv6.h' line='201' column='1'/>
+          <var-decl name='opt' type-id='d4145729' visibility='default' filepath='include/linux/ipv6.h' line='214' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='hop_limit' type-id='f9b06939' visibility='default' filepath='include/linux/ipv6.h' line='202' column='1'/>
+          <var-decl name='hop_limit' type-id='f9b06939' visibility='default' filepath='include/linux/ipv6.h' line='215' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='72'>
-          <var-decl name='tclass' type-id='f9b06939' visibility='default' filepath='include/linux/ipv6.h' line='203' column='1'/>
+          <var-decl name='tclass' type-id='f9b06939' visibility='default' filepath='include/linux/ipv6.h' line='216' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='9bea5a22' size-in-bits='64' id='79ebba98'/>
@@ -84123,12 +84132,12 @@
           <var-decl name='pppoe' type-id='e7f44066' visibility='default' filepath='include/net/flow_offload.h' line='280' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='16' is-anonymous='yes' visibility='default' filepath='include/linux/ipv6.h' line='251' column='1' id='ac5ab6a1'>
+      <union-decl name='__anonymous_union__' size-in-bits='16' is-anonymous='yes' visibility='default' filepath='include/linux/ipv6.h' line='264' column='1' id='ac5ab6a1'>
         <data-member access='public'>
-          <var-decl name='bits' type-id='e7f44067' visibility='default' filepath='include/linux/ipv6.h' line='269' column='1'/>
+          <var-decl name='bits' type-id='e7f44067' visibility='default' filepath='include/linux/ipv6.h' line='282' column='1'/>
         </data-member>
         <data-member access='public'>
-          <var-decl name='all' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='270' column='1'/>
+          <var-decl name='all' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='283' column='1'/>
         </data-member>
       </union-decl>
       <union-decl name='__anonymous_union__' size-in-bits='128' is-anonymous='yes' visibility='default' filepath='include/linux/skbuff.h' line='513' column='1' id='ac5ab6a2'>
@@ -87259,12 +87268,12 @@
         <return type-id='95e97e5e'/>
       </function-type>
       <pointer-type-def type-id='7f2104b8' size-in-bits='64' id='b2fa31d6'/>
-      <class-decl name='ipv6_stable_secret' size-in-bits='160' is-struct='yes' visibility='default' filepath='include/linux/ipv6.h' line='66' column='1' id='b2fc06b3'>
+      <class-decl name='ipv6_stable_secret' size-in-bits='160' is-struct='yes' visibility='default' filepath='include/linux/ipv6.h' line='67' column='1' id='b2fc06b3'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='initialized' type-id='b50a4934' visibility='default' filepath='include/linux/ipv6.h' line='67' column='1'/>
+          <var-decl name='initialized' type-id='b50a4934' visibility='default' filepath='include/linux/ipv6.h' line='68' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='secret' type-id='f6ed712a' visibility='default' filepath='include/linux/ipv6.h' line='68' column='1'/>
+          <var-decl name='secret' type-id='f6ed712a' visibility='default' filepath='include/linux/ipv6.h' line='69' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='3ad2f92f' size-in-bits='64' id='b3002d4b'/>
@@ -92818,114 +92827,114 @@
         <return type-id='95e97e5e'/>
       </function-type>
       <qualified-type-def type-id='6739dd09' const='yes' id='bca91994'/>
-      <class-decl name='ipv6_pinfo' size-in-bits='1216' is-struct='yes' visibility='default' filepath='include/linux/ipv6.h' line='214' column='1' id='bcad3f73'>
+      <class-decl name='ipv6_pinfo' size-in-bits='1216' is-struct='yes' visibility='default' filepath='include/linux/ipv6.h' line='227' column='1' id='bcad3f73'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='saddr' type-id='f6ed712a' visibility='default' filepath='include/linux/ipv6.h' line='215' column='1'/>
+          <var-decl name='saddr' type-id='f6ed712a' visibility='default' filepath='include/linux/ipv6.h' line='228' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='sticky_pktinfo' type-id='91b426fc' visibility='default' filepath='include/linux/ipv6.h' line='216' column='1'/>
+          <var-decl name='sticky_pktinfo' type-id='91b426fc' visibility='default' filepath='include/linux/ipv6.h' line='229' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='320'>
-          <var-decl name='daddr_cache' type-id='fea9c20b' visibility='default' filepath='include/linux/ipv6.h' line='217' column='1'/>
+          <var-decl name='daddr_cache' type-id='fea9c20b' visibility='default' filepath='include/linux/ipv6.h' line='230' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='flow_label' type-id='78a133c2' visibility='default' filepath='include/linux/ipv6.h' line='222' column='1'/>
+          <var-decl name='flow_label' type-id='78a133c2' visibility='default' filepath='include/linux/ipv6.h' line='235' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='416'>
-          <var-decl name='frag_size' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='223' column='1'/>
+          <var-decl name='frag_size' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='236' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='448'>
-          <var-decl name='__unused_1' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='233' column='1'/>
+          <var-decl name='__unused_1' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='246' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='455'>
-          <var-decl name='hop_limit' type-id='b55def60' visibility='default' filepath='include/linux/ipv6.h' line='234' column='1'/>
+          <var-decl name='hop_limit' type-id='b55def60' visibility='default' filepath='include/linux/ipv6.h' line='247' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='464'>
-          <var-decl name='mc_loop' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='243' column='1'/>
+          <var-decl name='mc_loop' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='256' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='465'>
-          <var-decl name='__unused_2' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='244' column='1'/>
+          <var-decl name='__unused_2' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='257' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='471'>
-          <var-decl name='mcast_hops' type-id='b55def60' visibility='default' filepath='include/linux/ipv6.h' line='245' column='1'/>
+          <var-decl name='mcast_hops' type-id='b55def60' visibility='default' filepath='include/linux/ipv6.h' line='258' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='480'>
-          <var-decl name='ucast_oif' type-id='95e97e5e' visibility='default' filepath='include/linux/ipv6.h' line='247' column='1'/>
+          <var-decl name='ucast_oif' type-id='95e97e5e' visibility='default' filepath='include/linux/ipv6.h' line='260' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='512'>
-          <var-decl name='mcast_oif' type-id='95e97e5e' visibility='default' filepath='include/linux/ipv6.h' line='248' column='1'/>
+          <var-decl name='mcast_oif' type-id='95e97e5e' visibility='default' filepath='include/linux/ipv6.h' line='261' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='544'>
-          <var-decl name='rxopt' type-id='ac5ab6a1' visibility='default' filepath='include/linux/ipv6.h' line='271' column='1'/>
+          <var-decl name='rxopt' type-id='ac5ab6a1' visibility='default' filepath='include/linux/ipv6.h' line='284' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='560'>
-          <var-decl name='recverr' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='274' column='1'/>
+          <var-decl name='recverr' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='287' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='561'>
-          <var-decl name='sndflow' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='275' column='1'/>
+          <var-decl name='sndflow' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='288' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='562'>
-          <var-decl name='repflow' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='276' column='1'/>
+          <var-decl name='repflow' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='289' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='563'>
-          <var-decl name='pmtudisc' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='277' column='1'/>
+          <var-decl name='pmtudisc' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='290' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='566'>
-          <var-decl name='padding' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='278' column='1'/>
+          <var-decl name='padding' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='291' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='567'>
-          <var-decl name='srcprefs' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='279' column='1'/>
+          <var-decl name='srcprefs' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='292' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='570'>
-          <var-decl name='dontfrag' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='283' column='1'/>
+          <var-decl name='dontfrag' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='296' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='571'>
-          <var-decl name='autoflowlabel' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='284' column='1'/>
+          <var-decl name='autoflowlabel' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='297' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='572'>
-          <var-decl name='autoflowlabel_set' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='285' column='1'/>
+          <var-decl name='autoflowlabel_set' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='298' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='573'>
-          <var-decl name='mc_all' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='286' column='1'/>
+          <var-decl name='mc_all' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='299' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='574'>
-          <var-decl name='recverr_rfc4884' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='287' column='1'/>
+          <var-decl name='recverr_rfc4884' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='300' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='575'>
-          <var-decl name='rtalert_isolate' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='288' column='1'/>
+          <var-decl name='rtalert_isolate' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='301' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='576'>
-          <var-decl name='min_hopcount' type-id='8f048e17' visibility='default' filepath='include/linux/ipv6.h' line='289' column='1'/>
+          <var-decl name='min_hopcount' type-id='8f048e17' visibility='default' filepath='include/linux/ipv6.h' line='302' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='584'>
-          <var-decl name='tclass' type-id='8f048e17' visibility='default' filepath='include/linux/ipv6.h' line='290' column='1'/>
+          <var-decl name='tclass' type-id='8f048e17' visibility='default' filepath='include/linux/ipv6.h' line='303' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='608'>
-          <var-decl name='rcv_flowinfo' type-id='78a133c2' visibility='default' filepath='include/linux/ipv6.h' line='291' column='1'/>
+          <var-decl name='rcv_flowinfo' type-id='78a133c2' visibility='default' filepath='include/linux/ipv6.h' line='304' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='640'>
-          <var-decl name='dst_cookie' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='293' column='1'/>
+          <var-decl name='dst_cookie' type-id='3f1a6b60' visibility='default' filepath='include/linux/ipv6.h' line='306' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='704'>
-          <var-decl name='ipv6_mc_list' type-id='3d802c7c' visibility='default' filepath='include/linux/ipv6.h' line='295' column='1'/>
+          <var-decl name='ipv6_mc_list' type-id='3d802c7c' visibility='default' filepath='include/linux/ipv6.h' line='308' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='768'>
-          <var-decl name='ipv6_ac_list' type-id='0d2afef8' visibility='default' filepath='include/linux/ipv6.h' line='296' column='1'/>
+          <var-decl name='ipv6_ac_list' type-id='0d2afef8' visibility='default' filepath='include/linux/ipv6.h' line='309' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='832'>
-          <var-decl name='ipv6_fl_list' type-id='3a14a5ee' visibility='default' filepath='include/linux/ipv6.h' line='297' column='1'/>
+          <var-decl name='ipv6_fl_list' type-id='3a14a5ee' visibility='default' filepath='include/linux/ipv6.h' line='310' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='896'>
-          <var-decl name='opt' type-id='d4145729' visibility='default' filepath='include/linux/ipv6.h' line='299' column='1'/>
+          <var-decl name='opt' type-id='d4145729' visibility='default' filepath='include/linux/ipv6.h' line='312' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='960'>
-          <var-decl name='pktoptions' type-id='0fbf3cfd' visibility='default' filepath='include/linux/ipv6.h' line='300' column='1'/>
+          <var-decl name='pktoptions' type-id='0fbf3cfd' visibility='default' filepath='include/linux/ipv6.h' line='313' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1024'>
-          <var-decl name='rxpmtu' type-id='0fbf3cfd' visibility='default' filepath='include/linux/ipv6.h' line='301' column='1'/>
+          <var-decl name='rxpmtu' type-id='0fbf3cfd' visibility='default' filepath='include/linux/ipv6.h' line='314' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1088'>
-          <var-decl name='cork' type-id='79e3d9fd' visibility='default' filepath='include/linux/ipv6.h' line='302' column='1'/>
+          <var-decl name='cork' type-id='79e3d9fd' visibility='default' filepath='include/linux/ipv6.h' line='315' column='1'/>
         </data-member>
       </class-decl>
       <function-type size-in-bits='64' id='bcb69272'>
@@ -96540,39 +96549,39 @@
           <var-decl name='u' type-id='ac5ab6a5' visibility='default' filepath='include/net/netfilter/nf_log.h' line='36' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='inet6_skb_parm' size-in-bits='192' is-struct='yes' visibility='default' filepath='include/linux/ipv6.h' line='129' column='1' id='c4d0818f'>
+      <class-decl name='inet6_skb_parm' size-in-bits='192' is-struct='yes' visibility='default' filepath='include/linux/ipv6.h' line='142' column='1' id='c4d0818f'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='iif' type-id='95e97e5e' visibility='default' filepath='include/linux/ipv6.h' line='130' column='1'/>
+          <var-decl name='iif' type-id='95e97e5e' visibility='default' filepath='include/linux/ipv6.h' line='143' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='ra' type-id='84a5c3d4' visibility='default' filepath='include/linux/ipv6.h' line='131' column='1'/>
+          <var-decl name='ra' type-id='84a5c3d4' visibility='default' filepath='include/linux/ipv6.h' line='144' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='48'>
-          <var-decl name='dst0' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='132' column='1'/>
+          <var-decl name='dst0' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='145' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='srcrt' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='133' column='1'/>
+          <var-decl name='srcrt' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='146' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='80'>
-          <var-decl name='dst1' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='134' column='1'/>
+          <var-decl name='dst1' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='147' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='96'>
-          <var-decl name='lastopt' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='135' column='1'/>
+          <var-decl name='lastopt' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='148' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='112'>
-          <var-decl name='nhoff' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='136' column='1'/>
+          <var-decl name='nhoff' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='149' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='flags' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='137' column='1'/>
+          <var-decl name='flags' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='150' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='144'>
-          <var-decl name='dsthao' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='139' column='1'/>
+          <var-decl name='dsthao' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='152' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='160'>
-          <var-decl name='frag_max_size' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='141' column='1'/>
+          <var-decl name='frag_max_size' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='154' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='176'>
-          <var-decl name='srhoff' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='142' column='1'/>
+          <var-decl name='srhoff' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='155' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='snd_jack' size-in-bits='1600' is-struct='yes' visibility='default' filepath='include/sound/jack.h' line='60' column='1' id='c4d4ddea'>
@@ -116574,51 +116583,51 @@
           <var-decl name='sid' type-id='1dc6a898' visibility='default' filepath='include/net/flow_offload.h' line='279' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='16' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/linux/ipv6.h' line='252' column='1' id='e7f44067'>
+      <class-decl name='__anonymous_struct__' size-in-bits='16' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/linux/ipv6.h' line='265' column='1' id='e7f44067'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='srcrt' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='253' column='1'/>
+          <var-decl name='srcrt' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='266' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1'>
-          <var-decl name='osrcrt' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='254' column='1'/>
+          <var-decl name='osrcrt' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='267' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='2'>
-          <var-decl name='rxinfo' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='255' column='1'/>
+          <var-decl name='rxinfo' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='268' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3'>
-          <var-decl name='rxoinfo' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='256' column='1'/>
+          <var-decl name='rxoinfo' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='269' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='4'>
-          <var-decl name='rxhlim' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='257' column='1'/>
+          <var-decl name='rxhlim' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='270' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='5'>
-          <var-decl name='rxohlim' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='258' column='1'/>
+          <var-decl name='rxohlim' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='271' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='6'>
-          <var-decl name='hopopts' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='259' column='1'/>
+          <var-decl name='hopopts' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='272' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='7'>
-          <var-decl name='ohopopts' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='260' column='1'/>
+          <var-decl name='ohopopts' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='273' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='8'>
-          <var-decl name='dstopts' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='261' column='1'/>
+          <var-decl name='dstopts' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='274' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='9'>
-          <var-decl name='odstopts' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='262' column='1'/>
+          <var-decl name='odstopts' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='275' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='10'>
-          <var-decl name='rxflow' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='263' column='1'/>
+          <var-decl name='rxflow' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='276' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11'>
-          <var-decl name='rxtclass' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='264' column='1'/>
+          <var-decl name='rxtclass' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='277' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12'>
-          <var-decl name='rxpmtu' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='265' column='1'/>
+          <var-decl name='rxpmtu' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='278' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='13'>
-          <var-decl name='rxorigdstaddr' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='266' column='1'/>
+          <var-decl name='rxorigdstaddr' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='279' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14'>
-          <var-decl name='recvfragsize' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='267' column='1'/>
+          <var-decl name='recvfragsize' type-id='d315442e' visibility='default' filepath='include/linux/ipv6.h' line='280' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='__anonymous_struct__' size-in-bits='128' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/linux/skbuff.h' line='514' column='1' id='e7f44068'>
@@ -127606,8 +127615,8 @@
         <parameter type-id='95e97e5e' name='node' filepath='net/core/skbuff.c' line='398' column='1'/>
         <return type-id='0fbf3cfd'/>
       </function-decl>
-      <function-decl name='__balance_callbacks' mangled-name='__balance_callbacks' filepath='kernel/sched/core.c' line='4839' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__balance_callbacks'>
-        <parameter type-id='6ed6b432' name='rq' filepath='kernel/sched/core.c' line='4839' column='1'/>
+      <function-decl name='__balance_callbacks' mangled-name='__balance_callbacks' filepath='kernel/sched/core.c' line='4840' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__balance_callbacks'>
+        <parameter type-id='6ed6b432' name='rq' filepath='kernel/sched/core.c' line='4840' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='__bforget' mangled-name='__bforget' filepath='fs/buffer.c' line='1156' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__bforget'>
@@ -131022,6 +131031,11 @@
         <parameter type-id='eaa32e2f' name='buf' filepath='include/trace/hooks/bl_hib.h' line='26' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_exit_check' mangled-name='__traceiter_android_vh_exit_check' filepath='include/trace/hooks/dtask.h' line='116' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_exit_check'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/dtask.h' line='116' column='1'/>
+        <parameter type-id='f23e2572' name='p' filepath='include/trace/hooks/dtask.h' line='116' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_exit_mm' mangled-name='__traceiter_android_vh_exit_mm' filepath='include/trace/hooks/mm.h' line='53' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_exit_mm'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/mm.h' line='53' column='1'/>
         <parameter type-id='df4b7819' name='mm' filepath='include/trace/hooks/mm.h' line='53' column='1'/>
@@ -131030,6 +131044,12 @@
       <function-decl name='__traceiter_android_vh_exit_signal' mangled-name='__traceiter_android_vh_exit_signal' filepath='include/trace/hooks/signal.h' line='18' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_exit_signal'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/signal.h' line='18' column='1'/>
         <parameter type-id='f23e2572' name='task' filepath='include/trace/hooks/signal.h' line='18' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_exit_signal_whether_wake' mangled-name='__traceiter_android_vh_exit_signal_whether_wake' filepath='include/trace/hooks/dtask.h' line='112' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_exit_signal_whether_wake'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/dtask.h' line='112' column='1'/>
+        <parameter type-id='f23e2572' name='p' filepath='include/trace/hooks/dtask.h' line='112' column='1'/>
+        <parameter type-id='d8e6b335' name='wake' filepath='include/trace/hooks/dtask.h' line='112' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_free_one_page_bypass' mangled-name='__traceiter_android_vh_free_one_page_bypass' filepath='include/trace/hooks/mm.h' line='202' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_free_one_page_bypass'>
@@ -131053,6 +131073,12 @@
         <parameter type-id='95e97e5e' name='order' filepath='include/trace/hooks/mm.h' line='90' column='1'/>
         <parameter type-id='95e97e5e' name='migratetype' filepath='include/trace/hooks/mm.h' line='90' column='1'/>
         <parameter type-id='d8e6b335' name='bypass' filepath='include/trace/hooks/mm.h' line='90' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_freeze_whether_wake' mangled-name='__traceiter_android_vh_freeze_whether_wake' filepath='include/trace/hooks/dtask.h' line='120' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_freeze_whether_wake'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/dtask.h' line='120' column='1'/>
+        <parameter type-id='f23e2572' name='t' filepath='include/trace/hooks/dtask.h' line='120' column='1'/>
+        <parameter type-id='d8e6b335' name='wake' filepath='include/trace/hooks/dtask.h' line='120' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_freq_qos_add_request' mangled-name='__traceiter_android_vh_freq_qos_add_request' filepath='include/trace/hooks/power.h' line='35' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_freq_qos_add_request'>
@@ -132897,11 +132923,14 @@
       <var-decl name='__tracepoint_android_vh_dup_task_struct' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_dup_task_struct' visibility='default' filepath='include/trace/hooks/sched.h' line='415' column='1' elf-symbol-id='__tracepoint_android_vh_dup_task_struct'/>
       <var-decl name='__tracepoint_android_vh_enable_thermal_power_throttle' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_enable_thermal_power_throttle' visibility='default' filepath='include/trace/hooks/thermal.h' line='37' column='1' elf-symbol-id='__tracepoint_android_vh_enable_thermal_power_throttle'/>
       <var-decl name='__tracepoint_android_vh_encrypt_page' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_encrypt_page' visibility='default' filepath='include/trace/hooks/bl_hib.h' line='26' column='1' elf-symbol-id='__tracepoint_android_vh_encrypt_page'/>
+      <var-decl name='__tracepoint_android_vh_exit_check' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_exit_check' visibility='default' filepath='include/trace/hooks/dtask.h' line='116' column='1' elf-symbol-id='__tracepoint_android_vh_exit_check'/>
       <var-decl name='__tracepoint_android_vh_exit_mm' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_exit_mm' visibility='default' filepath='include/trace/hooks/mm.h' line='53' column='1' elf-symbol-id='__tracepoint_android_vh_exit_mm'/>
       <var-decl name='__tracepoint_android_vh_exit_signal' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_exit_signal' visibility='default' filepath='include/trace/hooks/signal.h' line='18' column='1' elf-symbol-id='__tracepoint_android_vh_exit_signal'/>
+      <var-decl name='__tracepoint_android_vh_exit_signal_whether_wake' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_exit_signal_whether_wake' visibility='default' filepath='include/trace/hooks/dtask.h' line='112' column='1' elf-symbol-id='__tracepoint_android_vh_exit_signal_whether_wake'/>
       <var-decl name='__tracepoint_android_vh_free_one_page_bypass' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_free_one_page_bypass' visibility='default' filepath='include/trace/hooks/mm.h' line='202' column='1' elf-symbol-id='__tracepoint_android_vh_free_one_page_bypass'/>
       <var-decl name='__tracepoint_android_vh_free_task' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_free_task' visibility='default' filepath='include/trace/hooks/sched.h' line='321' column='1' elf-symbol-id='__tracepoint_android_vh_free_task'/>
       <var-decl name='__tracepoint_android_vh_free_unref_page_bypass' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_free_unref_page_bypass' visibility='default' filepath='include/trace/hooks/mm.h' line='90' column='1' elf-symbol-id='__tracepoint_android_vh_free_unref_page_bypass'/>
+      <var-decl name='__tracepoint_android_vh_freeze_whether_wake' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_freeze_whether_wake' visibility='default' filepath='include/trace/hooks/dtask.h' line='120' column='1' elf-symbol-id='__tracepoint_android_vh_freeze_whether_wake'/>
       <var-decl name='__tracepoint_android_vh_freq_qos_add_request' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_freq_qos_add_request' visibility='default' filepath='include/trace/hooks/power.h' line='35' column='1' elf-symbol-id='__tracepoint_android_vh_freq_qos_add_request'/>
       <var-decl name='__tracepoint_android_vh_freq_qos_remove_request' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_freq_qos_remove_request' visibility='default' filepath='include/trace/hooks/power.h' line='44' column='1' elf-symbol-id='__tracepoint_android_vh_freq_qos_remove_request'/>
       <var-decl name='__tracepoint_android_vh_freq_qos_update_request' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_freq_qos_update_request' visibility='default' filepath='include/trace/hooks/power.h' line='40' column='1' elf-symbol-id='__tracepoint_android_vh_freq_qos_update_request'/>
@@ -134073,8 +134102,8 @@
         <parameter type-id='eaa32e2f' name='key' filepath='kernel/sched/wait.c' line='419' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='available_idle_cpu' mangled-name='available_idle_cpu' filepath='kernel/sched/core.c' line='7244' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='available_idle_cpu'>
-        <parameter type-id='95e97e5e' name='cpu' filepath='kernel/sched/core.c' line='7244' column='1'/>
+      <function-decl name='available_idle_cpu' mangled-name='available_idle_cpu' filepath='kernel/sched/core.c' line='7246' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='available_idle_cpu'>
+        <parameter type-id='95e97e5e' name='cpu' filepath='kernel/sched/core.c' line='7246' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='backlight_device_get_by_type' mangled-name='backlight_device_get_by_type' filepath='drivers/video/backlight/backlight.c' line='468' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='backlight_device_get_by_type'>
@@ -134137,7 +134166,7 @@
         <parameter type-id='f57039f0' name='mapping' filepath='mm/page-writeback.c' line='1878' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <var-decl name='balance_push_callback' type-id='e3d8ce29' mangled-name='balance_push_callback' visibility='default' filepath='kernel/sched/core.c' line='4803' column='1' elf-symbol-id='balance_push_callback'/>
+      <var-decl name='balance_push_callback' type-id='e3d8ce29' mangled-name='balance_push_callback' visibility='default' filepath='kernel/sched/core.c' line='4804' column='1' elf-symbol-id='balance_push_callback'/>
       <var-decl name='balloon_aops' type-id='38ce7f2c' mangled-name='balloon_aops' visibility='default' filepath='mm/balloon_compaction.c' line='253' column='1' elf-symbol-id='balloon_aops'/>
       <function-decl name='balloon_page_alloc' mangled-name='balloon_page_alloc' filepath='mm/balloon_compaction.c' line='124' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='balloon_page_alloc'>
         <return type-id='02f11ed4'/>
@@ -135261,11 +135290,11 @@
         <parameter type-id='9ad862e7' name='hdev' filepath='drivers/bluetooth/btbcm.c' line='652' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='buffer_migrate_page' mangled-name='buffer_migrate_page' filepath='mm/migrate.c' line='790' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='buffer_migrate_page'>
-        <parameter type-id='f57039f0' name='mapping' filepath='mm/migrate.c' line='790' column='1'/>
-        <parameter type-id='02f11ed4' name='newpage' filepath='mm/migrate.c' line='791' column='1'/>
-        <parameter type-id='02f11ed4' name='page' filepath='mm/migrate.c' line='791' column='1'/>
-        <parameter type-id='157252dd' name='mode' filepath='mm/migrate.c' line='791' column='1'/>
+      <function-decl name='buffer_migrate_page' mangled-name='buffer_migrate_page' filepath='mm/migrate.c' line='792' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='buffer_migrate_page'>
+        <parameter type-id='f57039f0' name='mapping' filepath='mm/migrate.c' line='792' column='1'/>
+        <parameter type-id='02f11ed4' name='newpage' filepath='mm/migrate.c' line='793' column='1'/>
+        <parameter type-id='02f11ed4' name='page' filepath='mm/migrate.c' line='793' column='1'/>
+        <parameter type-id='157252dd' name='mode' filepath='mm/migrate.c' line='793' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='build_skb' mangled-name='build_skb' filepath='net/core/skbuff.c' line='257' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='build_skb'>
@@ -136124,9 +136153,9 @@
         <parameter type-id='389faaf7' name='x' filepath='kernel/sched/completion.c' line='57' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='complete_and_exit' mangled-name='complete_and_exit' filepath='kernel/exit.c' line='955' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='complete_and_exit'>
-        <parameter type-id='389faaf7' name='comp' filepath='kernel/exit.c' line='955' column='1'/>
-        <parameter type-id='bd54fe1a' name='code' filepath='kernel/exit.c' line='955' column='1'/>
+      <function-decl name='complete_and_exit' mangled-name='complete_and_exit' filepath='kernel/exit.c' line='958' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='complete_and_exit'>
+        <parameter type-id='389faaf7' name='comp' filepath='kernel/exit.c' line='958' column='1'/>
+        <parameter type-id='bd54fe1a' name='code' filepath='kernel/exit.c' line='958' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='completion_done' mangled-name='completion_done' filepath='kernel/sched/completion.c' line='315' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='completion_done'>
@@ -137453,11 +137482,11 @@
         <parameter type-id='95e97e5e' name='whence' filepath='fs/read_write.c' line='236' column='1'/>
         <return type-id='69bf7bee'/>
       </function-decl>
-      <function-decl name='default_wake_function' mangled-name='default_wake_function' filepath='kernel/sched/core.c' line='6918' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='default_wake_function'>
-        <parameter type-id='ba9aa326' name='curr' filepath='kernel/sched/core.c' line='6918' column='1'/>
-        <parameter type-id='f0981eeb' name='mode' filepath='kernel/sched/core.c' line='6918' column='1'/>
-        <parameter type-id='95e97e5e' name='wake_flags' filepath='kernel/sched/core.c' line='6918' column='1'/>
-        <parameter type-id='eaa32e2f' name='key' filepath='kernel/sched/core.c' line='6919' column='1'/>
+      <function-decl name='default_wake_function' mangled-name='default_wake_function' filepath='kernel/sched/core.c' line='6920' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='default_wake_function'>
+        <parameter type-id='ba9aa326' name='curr' filepath='kernel/sched/core.c' line='6920' column='1'/>
+        <parameter type-id='f0981eeb' name='mode' filepath='kernel/sched/core.c' line='6920' column='1'/>
+        <parameter type-id='95e97e5e' name='wake_flags' filepath='kernel/sched/core.c' line='6920' column='1'/>
+        <parameter type-id='eaa32e2f' name='key' filepath='kernel/sched/core.c' line='6921' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='deferred_free' mangled-name='deferred_free' filepath='drivers/dma-buf/heaps/deferred-free-helper.c' line='25' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='deferred_free'>
@@ -140100,8 +140129,8 @@
         <parameter type-id='572fbdca' name='tty' filepath='drivers/tty/tty_io.c' line='3095' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='do_exit' mangled-name='do_exit' filepath='kernel/exit.c' line='777' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='do_exit'>
-        <parameter type-id='bd54fe1a' name='code' filepath='kernel/exit.c' line='777' column='1'/>
+      <function-decl name='do_exit' mangled-name='do_exit' filepath='kernel/exit.c' line='778' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='do_exit'>
+        <parameter type-id='bd54fe1a' name='code' filepath='kernel/exit.c' line='778' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='do_trace_netlink_extack' mangled-name='do_trace_netlink_extack' filepath='net/netlink/af_netlink.c' line='152' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='do_trace_netlink_extack'>
@@ -143612,8 +143641,8 @@
         <parameter type-id='1a7ee447' name='dwork' filepath='kernel/workqueue.c' line='3237' column='1'/>
         <return type-id='b50a4934'/>
       </function-decl>
-      <function-decl name='flush_signals' mangled-name='flush_signals' filepath='kernel/signal.c' line='479' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='flush_signals'>
-        <parameter type-id='f23e2572' name='t' filepath='kernel/signal.c' line='479' column='1'/>
+      <function-decl name='flush_signals' mangled-name='flush_signals' filepath='kernel/signal.c' line='480' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='flush_signals'>
+        <parameter type-id='f23e2572' name='t' filepath='kernel/signal.c' line='480' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='flush_work' mangled-name='flush_work' filepath='kernel/workqueue.c' line='3117' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='flush_work'>
@@ -146821,11 +146850,11 @@
         <return type-id='7359adad'/>
       </function-decl>
       <var-decl name='io_cgrp_subsys_on_dfl_key' type-id='49a0ad34' mangled-name='io_cgrp_subsys_on_dfl_key' visibility='default' filepath='include/linux/cgroup_subsys.h' line='25' column='1' elf-symbol-id='io_cgrp_subsys_on_dfl_key'/>
-      <function-decl name='io_schedule' mangled-name='io_schedule' filepath='kernel/sched/core.c' line='8630' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='io_schedule'>
+      <function-decl name='io_schedule' mangled-name='io_schedule' filepath='kernel/sched/core.c' line='8632' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='io_schedule'>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='io_schedule_timeout' mangled-name='io_schedule_timeout' filepath='kernel/sched/core.c' line='8617' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='io_schedule_timeout'>
-        <parameter type-id='bd54fe1a' name='timeout' filepath='kernel/sched/core.c' line='8617' column='1'/>
+      <function-decl name='io_schedule_timeout' mangled-name='io_schedule_timeout' filepath='kernel/sched/core.c' line='8619' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='io_schedule_timeout'>
+        <parameter type-id='bd54fe1a' name='timeout' filepath='kernel/sched/core.c' line='8619' column='1'/>
         <return type-id='bd54fe1a'/>
       </function-decl>
       <function-decl name='ioc_lookup_icq' mangled-name='ioc_lookup_icq' filepath='block/blk-ioc.c' line='333' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ioc_lookup_icq'>
@@ -147870,7 +147899,7 @@
         <parameter type-id='95e97e5e' name='flags' filepath='net/socket.c' line='3454' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <var-decl name='kernel_cpustat' type-id='7b5f27b3' mangled-name='kernel_cpustat' visibility='default' filepath='kernel/sched/core.c' line='5287' column='1' elf-symbol-id='kernel_cpustat'/>
+      <var-decl name='kernel_cpustat' type-id='7b5f27b3' mangled-name='kernel_cpustat' visibility='default' filepath='kernel/sched/core.c' line='5289' column='1' elf-symbol-id='kernel_cpustat'/>
       <function-decl name='kernel_getsockname' mangled-name='kernel_getsockname' filepath='net/socket.c' line='3469' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernel_getsockname'>
         <parameter type-id='13103032' name='sock' filepath='net/socket.c' line='3469' column='1'/>
         <parameter type-id='5c0abad8' name='addr' filepath='net/socket.c' line='3469' column='1'/>
@@ -147915,9 +147944,9 @@
         <parameter type-id='b59d7dce' name='size' filepath='net/socket.c' line='741' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='kernel_sigaction' mangled-name='kernel_sigaction' filepath='kernel/signal.c' line='4093' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernel_sigaction'>
-        <parameter type-id='95e97e5e' name='sig' filepath='kernel/signal.c' line='4093' column='1'/>
-        <parameter type-id='8cdd9566' name='action' filepath='kernel/signal.c' line='4093' column='1'/>
+      <function-decl name='kernel_sigaction' mangled-name='kernel_sigaction' filepath='kernel/signal.c' line='4098' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernel_sigaction'>
+        <parameter type-id='95e97e5e' name='sig' filepath='kernel/signal.c' line='4098' column='1'/>
+        <parameter type-id='8cdd9566' name='action' filepath='kernel/signal.c' line='4098' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='kernel_sock_shutdown' mangled-name='kernel_sock_shutdown' filepath='net/socket.c' line='3546' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernel_sock_shutdown'>
@@ -148019,6 +148048,10 @@
       <function-decl name='kick_all_cpus_sync' mangled-name='kick_all_cpus_sync' filepath='kernel/smp.c' line='1155' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kick_all_cpus_sync'>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='kick_process' mangled-name='kick_process' filepath='kernel/sched/core.c' line='3389' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kick_process'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='3389' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='kill_anon_super' mangled-name='kill_anon_super' filepath='fs/super.c' line='1064' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kill_anon_super'>
         <parameter type-id='42c8f564' name='sb' filepath='fs/super.c' line='1064' column='1'/>
         <return type-id='48b5725f'/>
@@ -148037,10 +148070,10 @@
         <parameter type-id='42c8f564' name='sb' filepath='fs/super.c' line='1072' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='kill_pid' mangled-name='kill_pid' filepath='kernel/signal.c' line='1915' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kill_pid'>
-        <parameter type-id='b94e5398' name='pid' filepath='kernel/signal.c' line='1915' column='1'/>
-        <parameter type-id='95e97e5e' name='sig' filepath='kernel/signal.c' line='1915' column='1'/>
-        <parameter type-id='95e97e5e' name='priv' filepath='kernel/signal.c' line='1915' column='1'/>
+      <function-decl name='kill_pid' mangled-name='kill_pid' filepath='kernel/signal.c' line='1920' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kill_pid'>
+        <parameter type-id='b94e5398' name='pid' filepath='kernel/signal.c' line='1920' column='1'/>
+        <parameter type-id='95e97e5e' name='sig' filepath='kernel/signal.c' line='1920' column='1'/>
+        <parameter type-id='95e97e5e' name='priv' filepath='kernel/signal.c' line='1920' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <var-decl name='kimage_voffset' type-id='91ce1af9' mangled-name='kimage_voffset' visibility='default' filepath='arch/arm64/mm/mmu.c' line='51' column='1' elf-symbol-id='kimage_voffset'/>
@@ -148242,7 +148275,7 @@
         <return type-id='b59d7dce'/>
       </function-decl>
       <var-decl name='ksoftirqd' type-id='f23e2572' mangled-name='ksoftirqd' visibility='default' filepath='kernel/softirq.c' line='64' column='1' elf-symbol-id='ksoftirqd'/>
-      <var-decl name='kstat' type-id='153750ef' mangled-name='kstat' visibility='default' filepath='kernel/sched/core.c' line='5286' column='1' elf-symbol-id='kstat'/>
+      <var-decl name='kstat' type-id='153750ef' mangled-name='kstat' visibility='default' filepath='kernel/sched/core.c' line='5288' column='1' elf-symbol-id='kstat'/>
       <function-decl name='kstat_irqs_cpu' mangled-name='kstat_irqs_cpu' filepath='kernel/irq/irqdesc.c' line='939' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kstat_irqs_cpu'>
         <parameter type-id='f0981eeb' name='irq' filepath='kernel/irq/irqdesc.c' line='939' column='1'/>
         <parameter type-id='95e97e5e' name='cpu' filepath='kernel/irq/irqdesc.c' line='939' column='1'/>
@@ -148568,8 +148601,8 @@
         <parameter type-id='95e97e5e' name='node' filepath='mm/util.c' line='598' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
-      <function-decl name='l2cap_is_socket' mangled-name='l2cap_is_socket' filepath='net/bluetooth/l2cap_sock.c' line='49' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='l2cap_is_socket'>
-        <parameter type-id='13103032' name='sock' filepath='net/bluetooth/l2cap_sock.c' line='49' column='1'/>
+      <function-decl name='l2cap_is_socket' mangled-name='l2cap_is_socket' filepath='net/bluetooth/l2cap_sock.c' line='50' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='l2cap_is_socket'>
+        <parameter type-id='13103032' name='sock' filepath='net/bluetooth/l2cap_sock.c' line='50' column='1'/>
         <return type-id='b50a4934'/>
       </function-decl>
       <function-decl name='l2tp_session_create' mangled-name='l2tp_session_create' filepath='net/l2tp/l2tp_core.c' line='1583' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='l2tp_session_create'>
@@ -149374,31 +149407,31 @@
         <parameter type-id='fa0b179b' name='parent' filepath='drivers/mfd/mfd-core.c' line='383' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='migrate_page_copy' mangled-name='migrate_page_copy' filepath='mm/migrate.c' line='625' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='migrate_page_copy'>
-        <parameter type-id='02f11ed4' name='newpage' filepath='mm/migrate.c' line='625' column='1'/>
-        <parameter type-id='02f11ed4' name='page' filepath='mm/migrate.c' line='625' column='1'/>
+      <function-decl name='migrate_page_copy' mangled-name='migrate_page_copy' filepath='mm/migrate.c' line='627' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='migrate_page_copy'>
+        <parameter type-id='02f11ed4' name='newpage' filepath='mm/migrate.c' line='627' column='1'/>
+        <parameter type-id='02f11ed4' name='page' filepath='mm/migrate.c' line='627' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='migrate_page_move_mapping' mangled-name='migrate_page_move_mapping' filepath='mm/migrate.c' line='388' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='migrate_page_move_mapping'>
-        <parameter type-id='f57039f0' name='mapping' filepath='mm/migrate.c' line='388' column='1'/>
-        <parameter type-id='02f11ed4' name='newpage' filepath='mm/migrate.c' line='389' column='1'/>
-        <parameter type-id='02f11ed4' name='page' filepath='mm/migrate.c' line='389' column='1'/>
-        <parameter type-id='95e97e5e' name='extra_count' filepath='mm/migrate.c' line='389' column='1'/>
+      <function-decl name='migrate_page_move_mapping' mangled-name='migrate_page_move_mapping' filepath='mm/migrate.c' line='390' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='migrate_page_move_mapping'>
+        <parameter type-id='f57039f0' name='mapping' filepath='mm/migrate.c' line='390' column='1'/>
+        <parameter type-id='02f11ed4' name='newpage' filepath='mm/migrate.c' line='391' column='1'/>
+        <parameter type-id='02f11ed4' name='page' filepath='mm/migrate.c' line='391' column='1'/>
+        <parameter type-id='95e97e5e' name='extra_count' filepath='mm/migrate.c' line='391' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='migrate_page_states' mangled-name='migrate_page_states' filepath='mm/migrate.c' line='551' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='migrate_page_states'>
-        <parameter type-id='02f11ed4' name='newpage' filepath='mm/migrate.c' line='551' column='1'/>
-        <parameter type-id='02f11ed4' name='page' filepath='mm/migrate.c' line='551' column='1'/>
+      <function-decl name='migrate_page_states' mangled-name='migrate_page_states' filepath='mm/migrate.c' line='553' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='migrate_page_states'>
+        <parameter type-id='02f11ed4' name='newpage' filepath='mm/migrate.c' line='553' column='1'/>
+        <parameter type-id='02f11ed4' name='page' filepath='mm/migrate.c' line='553' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='migrate_pages' mangled-name='migrate_pages' filepath='mm/migrate.c' line='1454' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='migrate_pages'>
-        <parameter type-id='e84b031a' name='from' filepath='mm/migrate.c' line='1454' column='1'/>
-        <parameter type-id='355404d0' name='get_new_page' filepath='mm/migrate.c' line='1454' column='1'/>
-        <parameter type-id='7d2f2ada' name='put_new_page' filepath='mm/migrate.c' line='1455' column='1'/>
-        <parameter type-id='7359adad' name='private' filepath='mm/migrate.c' line='1455' column='1'/>
-        <parameter type-id='157252dd' name='mode' filepath='mm/migrate.c' line='1456' column='1'/>
-        <parameter type-id='95e97e5e' name='reason' filepath='mm/migrate.c' line='1456' column='1'/>
-        <parameter type-id='807869d3' name='ret_succeeded' filepath='mm/migrate.c' line='1456' column='1'/>
+      <function-decl name='migrate_pages' mangled-name='migrate_pages' filepath='mm/migrate.c' line='1456' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='migrate_pages'>
+        <parameter type-id='e84b031a' name='from' filepath='mm/migrate.c' line='1456' column='1'/>
+        <parameter type-id='355404d0' name='get_new_page' filepath='mm/migrate.c' line='1456' column='1'/>
+        <parameter type-id='7d2f2ada' name='put_new_page' filepath='mm/migrate.c' line='1457' column='1'/>
+        <parameter type-id='7359adad' name='private' filepath='mm/migrate.c' line='1457' column='1'/>
+        <parameter type-id='157252dd' name='mode' filepath='mm/migrate.c' line='1458' column='1'/>
+        <parameter type-id='95e97e5e' name='reason' filepath='mm/migrate.c' line='1458' column='1'/>
+        <parameter type-id='807869d3' name='ret_succeeded' filepath='mm/migrate.c' line='1458' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='migrate_swap' mangled-name='migrate_swap' filepath='kernel/sched/core.c' line='3231' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='migrate_swap'>
@@ -150540,6 +150573,9 @@
         <return type-id='95e97e5e'/>
       </function-decl>
       <var-decl name='nr_irqs' type-id='95e97e5e' mangled-name='nr_irqs' visibility='default' filepath='kernel/irq/irqdesc.c' line='130' column='1' elf-symbol-id='nr_irqs'/>
+      <function-decl name='nr_running' mangled-name='nr_running' filepath='kernel/sched/core.c' line='5160' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='nr_running'>
+        <return type-id='f0981eeb'/>
+      </function-decl>
       <var-decl name='nr_swap_pages' type-id='f22a8abb' mangled-name='nr_swap_pages' visibility='default' filepath='mm/swapfile.c' line='55' column='1' elf-symbol-id='nr_swap_pages'/>
       <function-decl name='ns_capable' mangled-name='ns_capable' filepath='kernel/capability.c' line='394' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ns_capable'>
         <parameter type-id='c0ced320' name='ns' filepath='kernel/capability.c' line='394' column='1'/>
@@ -153128,8 +153164,8 @@
         <parameter type-id='95e97e5e' name='cpu' filepath='kernel/sched/rt.c' line='1795' column='1'/>
         <return type-id='f23e2572'/>
       </function-decl>
-      <function-decl name='pick_migrate_task' mangled-name='pick_migrate_task' filepath='kernel/sched/core.c' line='9037' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pick_migrate_task'>
-        <parameter type-id='6ed6b432' name='rq' filepath='kernel/sched/core.c' line='9037' column='1'/>
+      <function-decl name='pick_migrate_task' mangled-name='pick_migrate_task' filepath='kernel/sched/core.c' line='9039' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pick_migrate_task'>
+        <parameter type-id='6ed6b432' name='rq' filepath='kernel/sched/core.c' line='9039' column='1'/>
         <return type-id='f23e2572'/>
       </function-decl>
       <function-decl name='pid_nr_ns' mangled-name='pid_nr_ns' filepath='kernel/pid.c' line='473' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pid_nr_ns'>
@@ -153953,10 +153989,10 @@
       <function-decl name='prandom_u32' mangled-name='prandom_u32' filepath='lib/random32.c' line='385' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='prandom_u32'>
         <return type-id='19c2251e'/>
       </function-decl>
-      <function-decl name='preempt_schedule' mangled-name='preempt_schedule' filepath='kernel/sched/core.c' line='6698' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='preempt_schedule'>
+      <function-decl name='preempt_schedule' mangled-name='preempt_schedule' filepath='kernel/sched/core.c' line='6700' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='preempt_schedule'>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='preempt_schedule_notrace' mangled-name='preempt_schedule_notrace' filepath='kernel/sched/core.c' line='6732' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='preempt_schedule_notrace'>
+      <function-decl name='preempt_schedule_notrace' mangled-name='preempt_schedule_notrace' filepath='kernel/sched/core.c' line='6734' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='preempt_schedule_notrace'>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='prepare_kernel_cred' mangled-name='prepare_kernel_cred' filepath='kernel/cred.c' line='718' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='prepare_kernel_cred'>
@@ -154254,8 +154290,8 @@
         <parameter type-id='d9fbdc06' name='vec' filepath='drivers/media/common/videobuf2/frame_vector.c' line='74' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='putback_movable_pages' mangled-name='putback_movable_pages' filepath='mm/migrate.c' line='142' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='putback_movable_pages'>
-        <parameter type-id='e84b031a' name='l' filepath='mm/migrate.c' line='142' column='1'/>
+      <function-decl name='putback_movable_pages' mangled-name='putback_movable_pages' filepath='mm/migrate.c' line='144' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='putback_movable_pages'>
+        <parameter type-id='e84b031a' name='l' filepath='mm/migrate.c' line='144' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='pwm_adjust_config' mangled-name='pwm_adjust_config' filepath='drivers/pwm/core.c' line='652' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pwm_adjust_config'>
@@ -154620,8 +154656,8 @@
         <parameter type-id='1d2c2b85' name='gp_seq' filepath='kernel/rcu/tree.c' line='588' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='rcuwait_wake_up' mangled-name='rcuwait_wake_up' filepath='kernel/exit.c' line='280' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rcuwait_wake_up'>
-        <parameter type-id='9b25216e' name='w' filepath='kernel/exit.c' line='280' column='1'/>
+      <function-decl name='rcuwait_wake_up' mangled-name='rcuwait_wake_up' filepath='kernel/exit.c' line='281' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rcuwait_wake_up'>
+        <parameter type-id='9b25216e' name='w' filepath='kernel/exit.c' line='281' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='rdev_get_dev' mangled-name='rdev_get_dev' filepath='drivers/regulator/core.c' line='5840' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rdev_get_dev'>
@@ -155583,7 +155619,7 @@
         <return type-id='b50a4934'/>
       </function-decl>
       <var-decl name='root_mem_cgroup' type-id='223696fb' mangled-name='root_mem_cgroup' visibility='default' filepath='mm/memcontrol.c' line='80' column='1' elf-symbol-id='root_mem_cgroup'/>
-      <var-decl name='root_task_group' type-id='2d863538' mangled-name='root_task_group' visibility='default' filepath='kernel/sched/core.c' line='9532' column='1' elf-symbol-id='root_task_group'/>
+      <var-decl name='root_task_group' type-id='2d863538' mangled-name='root_task_group' visibility='default' filepath='kernel/sched/core.c' line='9534' column='1' elf-symbol-id='root_task_group'/>
       <function-decl name='round_jiffies' mangled-name='round_jiffies' filepath='kernel/time/timer.c' line='390' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='round_jiffies'>
         <parameter type-id='7359adad' name='j' filepath='kernel/time/timer.c' line='390' column='1'/>
         <return type-id='7359adad'/>
@@ -156062,43 +156098,43 @@
       </function-decl>
       <var-decl name='sched_feat_keys' type-id='98c5d52c' mangled-name='sched_feat_keys' visibility='default' filepath='kernel/sched/debug.c' line='80' column='1' elf-symbol-id='sched_feat_keys'/>
       <var-decl name='sched_feat_names' type-id='3a06f3b2' mangled-name='sched_feat_names' visibility='default' filepath='kernel/sched/debug.c' line='51' column='1' elf-symbol-id='sched_feat_names'/>
-      <function-decl name='sched_set_fifo' mangled-name='sched_set_fifo' filepath='kernel/sched/core.c' line='7813' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_set_fifo'>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7813' column='1'/>
+      <function-decl name='sched_set_fifo' mangled-name='sched_set_fifo' filepath='kernel/sched/core.c' line='7815' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_set_fifo'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7815' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='sched_set_fifo_low' mangled-name='sched_set_fifo_low' filepath='kernel/sched/core.c' line='7823' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_set_fifo_low'>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7823' column='1'/>
+      <function-decl name='sched_set_fifo_low' mangled-name='sched_set_fifo_low' filepath='kernel/sched/core.c' line='7825' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_set_fifo_low'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7825' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='sched_set_normal' mangled-name='sched_set_normal' filepath='kernel/sched/core.c' line='7830' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_set_normal'>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7830' column='1'/>
-        <parameter type-id='95e97e5e' name='nice' filepath='kernel/sched/core.c' line='7830' column='1'/>
+      <function-decl name='sched_set_normal' mangled-name='sched_set_normal' filepath='kernel/sched/core.c' line='7832' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_set_normal'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7832' column='1'/>
+        <parameter type-id='95e97e5e' name='nice' filepath='kernel/sched/core.c' line='7832' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='sched_setattr' mangled-name='sched_setattr' filepath='kernel/sched/core.c' line='7763' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_setattr'>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7763' column='1'/>
-        <parameter type-id='8abbb6c3' name='attr' filepath='kernel/sched/core.c' line='7763' column='1'/>
+      <function-decl name='sched_setattr' mangled-name='sched_setattr' filepath='kernel/sched/core.c' line='7765' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_setattr'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7765' column='1'/>
+        <parameter type-id='8abbb6c3' name='attr' filepath='kernel/sched/core.c' line='7765' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='sched_setattr_nocheck' mangled-name='sched_setattr_nocheck' filepath='kernel/sched/core.c' line='7769' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_setattr_nocheck'>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7769' column='1'/>
-        <parameter type-id='8abbb6c3' name='attr' filepath='kernel/sched/core.c' line='7769' column='1'/>
+      <function-decl name='sched_setattr_nocheck' mangled-name='sched_setattr_nocheck' filepath='kernel/sched/core.c' line='7771' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_setattr_nocheck'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7771' column='1'/>
+        <parameter type-id='8abbb6c3' name='attr' filepath='kernel/sched/core.c' line='7771' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='sched_setscheduler' mangled-name='sched_setscheduler' filepath='kernel/sched/core.c' line='7756' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_setscheduler'>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7756' column='1'/>
-        <parameter type-id='95e97e5e' name='policy' filepath='kernel/sched/core.c' line='7756' column='1'/>
-        <parameter type-id='36fca399' name='param' filepath='kernel/sched/core.c' line='7757' column='1'/>
+      <function-decl name='sched_setscheduler' mangled-name='sched_setscheduler' filepath='kernel/sched/core.c' line='7758' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_setscheduler'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7758' column='1'/>
+        <parameter type-id='95e97e5e' name='policy' filepath='kernel/sched/core.c' line='7758' column='1'/>
+        <parameter type-id='36fca399' name='param' filepath='kernel/sched/core.c' line='7759' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='sched_setscheduler_nocheck' mangled-name='sched_setscheduler_nocheck' filepath='kernel/sched/core.c' line='7788' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_setscheduler_nocheck'>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7788' column='1'/>
-        <parameter type-id='95e97e5e' name='policy' filepath='kernel/sched/core.c' line='7788' column='1'/>
-        <parameter type-id='36fca399' name='param' filepath='kernel/sched/core.c' line='7789' column='1'/>
+      <function-decl name='sched_setscheduler_nocheck' mangled-name='sched_setscheduler_nocheck' filepath='kernel/sched/core.c' line='7790' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_setscheduler_nocheck'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7790' column='1'/>
+        <parameter type-id='95e97e5e' name='policy' filepath='kernel/sched/core.c' line='7790' column='1'/>
+        <parameter type-id='36fca399' name='param' filepath='kernel/sched/core.c' line='7791' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='sched_show_task' mangled-name='sched_show_task' filepath='kernel/sched/core.c' line='8765' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_show_task'>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='8765' column='1'/>
+      <function-decl name='sched_show_task' mangled-name='sched_show_task' filepath='kernel/sched/core.c' line='8767' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_show_task'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='8767' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='sched_trace_cfs_rq_avg' mangled-name='sched_trace_cfs_rq_avg' filepath='kernel/sched/fair.c' line='12135' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sched_trace_cfs_rq_avg'>
@@ -156136,7 +156172,7 @@
         <return type-id='95e97e5e'/>
       </function-decl>
       <var-decl name='sched_uclamp_used' type-id='237c0d27' mangled-name='sched_uclamp_used' visibility='default' filepath='kernel/sched/core.c' line='1315' column='1' elf-symbol-id='sched_uclamp_used'/>
-      <function-decl name='schedule' mangled-name='schedule' filepath='kernel/sched/core.c' line='6582' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='schedule'>
+      <function-decl name='schedule' mangled-name='schedule' filepath='kernel/sched/core.c' line='6584' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='schedule'>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='schedule_hrtimeout' mangled-name='schedule_hrtimeout' filepath='kernel/time/hrtimer.c' line='2384' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='schedule_hrtimeout'>
@@ -156679,23 +156715,23 @@
         <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='3423' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='send_sig' mangled-name='send_sig' filepath='kernel/signal.c' line='1655' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='send_sig'>
-        <parameter type-id='95e97e5e' name='sig' filepath='kernel/signal.c' line='1655' column='1'/>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/signal.c' line='1655' column='1'/>
-        <parameter type-id='95e97e5e' name='priv' filepath='kernel/signal.c' line='1655' column='1'/>
+      <function-decl name='send_sig' mangled-name='send_sig' filepath='kernel/signal.c' line='1660' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='send_sig'>
+        <parameter type-id='95e97e5e' name='sig' filepath='kernel/signal.c' line='1660' column='1'/>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/signal.c' line='1660' column='1'/>
+        <parameter type-id='95e97e5e' name='priv' filepath='kernel/signal.c' line='1660' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='send_sig_info' mangled-name='send_sig_info' filepath='kernel/signal.c' line='1638' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='send_sig_info'>
-        <parameter type-id='95e97e5e' name='sig' filepath='kernel/signal.c' line='1638' column='1'/>
-        <parameter type-id='0effb5d0' name='info' filepath='kernel/signal.c' line='1638' column='1'/>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/signal.c' line='1638' column='1'/>
+      <function-decl name='send_sig_info' mangled-name='send_sig_info' filepath='kernel/signal.c' line='1643' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='send_sig_info'>
+        <parameter type-id='95e97e5e' name='sig' filepath='kernel/signal.c' line='1643' column='1'/>
+        <parameter type-id='0effb5d0' name='info' filepath='kernel/signal.c' line='1643' column='1'/>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/signal.c' line='1643' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='send_sig_mceerr' mangled-name='send_sig_mceerr' filepath='kernel/signal.c' line='1774' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='send_sig_mceerr'>
-        <parameter type-id='95e97e5e' name='code' filepath='kernel/signal.c' line='1774' column='1'/>
-        <parameter type-id='eaa32e2f' name='addr' filepath='kernel/signal.c' line='1774' column='1'/>
-        <parameter type-id='a2185560' name='lsb' filepath='kernel/signal.c' line='1774' column='1'/>
-        <parameter type-id='f23e2572' name='t' filepath='kernel/signal.c' line='1774' column='1'/>
+      <function-decl name='send_sig_mceerr' mangled-name='send_sig_mceerr' filepath='kernel/signal.c' line='1779' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='send_sig_mceerr'>
+        <parameter type-id='95e97e5e' name='code' filepath='kernel/signal.c' line='1779' column='1'/>
+        <parameter type-id='eaa32e2f' name='addr' filepath='kernel/signal.c' line='1779' column='1'/>
+        <parameter type-id='a2185560' name='lsb' filepath='kernel/signal.c' line='1779' column='1'/>
+        <parameter type-id='f23e2572' name='t' filepath='kernel/signal.c' line='1779' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='seq_buf_printf' mangled-name='seq_buf_printf' filepath='lib/seq_buf.c' line='83' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='seq_buf_printf'>
@@ -156974,9 +157010,9 @@
         <parameter type-id='95e97e5e' name='ioprio' filepath='block/ioprio.c' line='36' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='set_user_nice' mangled-name='set_user_nice' filepath='kernel/sched/core.c' line='7093' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='set_user_nice'>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7093' column='1'/>
-        <parameter type-id='bd54fe1a' name='nice' filepath='kernel/sched/core.c' line='7093' column='1'/>
+      <function-decl name='set_user_nice' mangled-name='set_user_nice' filepath='kernel/sched/core.c' line='7095' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='set_user_nice'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='7095' column='1'/>
+        <parameter type-id='bd54fe1a' name='nice' filepath='kernel/sched/core.c' line='7095' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='setattr_copy' mangled-name='setattr_copy' filepath='fs/attr.c' line='305' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='setattr_copy'>
@@ -157192,10 +157228,10 @@
         <parameter type-id='0f561784' name='val' filepath='mm/swapfile.c' line='3408' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='sigprocmask' mangled-name='sigprocmask' filepath='kernel/signal.c' line='3090' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sigprocmask'>
-        <parameter type-id='95e97e5e' name='how' filepath='kernel/signal.c' line='3090' column='1'/>
-        <parameter type-id='9e80f729' name='set' filepath='kernel/signal.c' line='3090' column='1'/>
-        <parameter type-id='9e80f729' name='oldset' filepath='kernel/signal.c' line='3090' column='1'/>
+      <function-decl name='sigprocmask' mangled-name='sigprocmask' filepath='kernel/signal.c' line='3095' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='sigprocmask'>
+        <parameter type-id='95e97e5e' name='how' filepath='kernel/signal.c' line='3095' column='1'/>
+        <parameter type-id='9e80f729' name='set' filepath='kernel/signal.c' line='3095' column='1'/>
+        <parameter type-id='9e80f729' name='oldset' filepath='kernel/signal.c' line='3095' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='simple_attr_open' mangled-name='simple_attr_open' filepath='fs/libfs.c' line='902' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='simple_attr_open'>
@@ -159929,8 +159965,8 @@
         <parameter type-id='d0163a5e' name='rf' filepath='kernel/sched/core.c' line='586' column='1'/>
         <return type-id='6ed6b432'/>
       </function-decl>
-      <function-decl name='task_sched_runtime' mangled-name='task_sched_runtime' filepath='kernel/sched/core.c' line='5314' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='task_sched_runtime'>
-        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='5314' column='1'/>
+      <function-decl name='task_sched_runtime' mangled-name='task_sched_runtime' filepath='kernel/sched/core.c' line='5316' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='task_sched_runtime'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='5316' column='1'/>
         <return type-id='0d77e947'/>
       </function-decl>
       <function-decl name='tasklet_init' mangled-name='tasklet_init' filepath='kernel/softirq.c' line='840' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tasklet_init'>
@@ -164494,6 +164530,11 @@
         <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='4316' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='wake_up_state' mangled-name='wake_up_state' filepath='kernel/sched/core.c' line='4322' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='wake_up_state'>
+        <parameter type-id='f23e2572' name='p' filepath='kernel/sched/core.c' line='4322' column='1'/>
+        <parameter type-id='f0981eeb' name='state' filepath='kernel/sched/core.c' line='4322' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='wakeup_source_add' mangled-name='wakeup_source_add' filepath='drivers/base/power/wakeup.c' line='175' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='wakeup_source_add'>
         <parameter type-id='1ea237a6' name='ws' filepath='drivers/base/power/wakeup.c' line='175' column='1'/>
         <return type-id='48b5725f'/>
@@ -165079,7 +165120,7 @@
         <parameter type-id='f0981eeb' name='n' filepath='net/netfilter/x_tables.c' line='132' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='yield' mangled-name='yield' filepath='kernel/sched/core.c' line='8517' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='yield'>
+      <function-decl name='yield' mangled-name='yield' filepath='kernel/sched/core.c' line='8519' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='yield'>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='zap_vma_ptes' mangled-name='zap_vma_ptes' filepath='mm/memory.c' line='1768' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='zap_vma_ptes'>
@@ -165207,6 +165248,7 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
+
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
