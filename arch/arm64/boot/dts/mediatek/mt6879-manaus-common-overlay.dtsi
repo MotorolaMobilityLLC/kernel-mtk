@@ -15,7 +15,6 @@
 #include "mediatek/manaus-display.dtsi"
 #include "mediatek/manaus-sensor.dtsi"
 #include "mediatek/manaus-wl2864c.dtsi"
-#include "mediatek/manaus-charger.dtsi"
 
 /*Remove unused i2c device*/
 &rt6160 {
@@ -27,10 +26,6 @@
 };
 
 &gate_ic {
-	status = "disabled";
-};
-
-&mtk_gauge {
 	status = "disabled";
 };
 /*Remove unused i2c device end*/
