@@ -11,3 +11,4 @@
  */
 
 #include "mediatek/mt6879-manaus-common-overlay.dtsi"
+#include "mediatek/manaus-charger.dtsi"

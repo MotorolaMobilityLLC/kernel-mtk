@@ -14,10 +14,6 @@
 #include <dt-bindings/iio/adc/mediatek,mt6375_adc.h>
 #include <dt-bindings/iio/mt635x-auxadc.h>
 
-&mtk_gauge {
-	status = "disabled";
-};
-
 &mt6375_typec {
        tcpc,en_wd;
        tcpc,en_wd_sbu_polling;
@@ -27,6 +23,63 @@
 &mt6375_chg {
 	ircmp_r = <0>;
 	ircmp_v = <0>;
+};
+
+&mtk_gauge {
+	status = "okay";
+	DIFFERENCE_FULLOCV_ITH = <(850)>;
+	R_FG_VALUE = <(5)>;
+	CURR_MEASURE_20A = <(0)>;
+	UNIT_MULTIPLE = <(1)>;
+	EMBEDDED_SEL = <(1)>;   /* embedded battery*/
+	COM_FG_METER_RESISTANCE = <(0)>;
+	CAR_TUNE_VALUE = <(97)>;
+
+	SHUTDOWN_1_TIME = <(15)>;
+	/* If ui_soc shows 1% more than X minites, system will shutdown */
+
+	g_Q_MAX = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		5082 5092 5082 5082/*T0*/
+		5138 5133 5138 5138/*T1*/
+		5135 5100 5135 5135/*T2*/
+		5021 4999 5021 5021/*T3*/
+		4914 4890 4914 4914/*T4*/
+		4914 4890 4914 4914/*T5*/
+		3488 3488 3488 3488/*T6*/
+		3488 3488 3488 3488/*T7*/
+		3488 3488 3488 3488/*T8*/
+		3488 3488 3488 3488/*T9*/
+	>;
+	g_Q_MAX_H_CURRENT = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		5082 5092 5082 5082/*T0*/
+		5138 5133 5138 5138/*T1*/
+		5135 5100 5135 5135/*T2*/
+		5021 4999 5021 5021/*T3*/
+		4914 4890 4914 4914/*T4*/
+		4914 4890 4914 4914/*T5*/
+		3488 3488 3488 3488/*T6*/
+		3488 3488 3488 3488/*T7*/
+		3488 3488 3488 3488/*T8*/
+		3488 3488 3488 3488/*T9*/
+	>;
+	g_FG_PSEUDO100 = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		97 97 97 97/*T0*/
+		97 97 97 97/*T1*/
+		97 97 97 97/*T2*/
+		97 97 97 97/*T3*/
+		97 97 97 97/*T4*/
+		97 97 97 97/*T5*/
+		97 97 97 97/*T6*/
+		97 97 97 97/*T7*/
+		97 97 97 97/*T8*/
+		97 97 97 97/*T9*/
+	>;
+	df-serialnum = "SB18D39674";
+	#include "bat_setting/mt6879_battery_nf50_atl_5000mah.dtsi"
+	#include "bat_setting/mt6879_battery_nf50_sunw_5000mah.dtsi"
 };
 
 &lk_charger {
@@ -50,7 +103,7 @@
 };
 
 &charger {
-	gauge = <&smart_battery>;
+	gauge = <&mtk_gauge>;
 	battery_cv = <4500000>;
 	max_charger_voltage = <14500000>;
 	ac_charger_current = <3000000>;
@@ -59,8 +112,8 @@
 	charging_host_charger_current = <1500000>;
 	/*pe5 && pdc && pe2*/
 	fast_charging_indicator = <0x16>;
-	/*swchg + 2CP*/
-	charger_configuration= <4>;
+	/*swchg + 1CP*/
+	charger_configuration= <3>;
 
 	disable_aicl;
 
@@ -86,11 +139,11 @@
 			<45 4530 1175>,
 			<60 4200 438>;
 	mmi,enable-charging-limit;
-	mmi,upper-limit-capacity = <65>;
-	mmi,lower-limit-capacity = <60>;
-	mmi,min-cp-therm-current-ua = <2000000>;
+	mmi,upper-limit-capacity = <75>;
+	mmi,lower-limit-capacity = <70>;
+	mmi,min-cp-therm-current-ua = <1600000>;
 
-	mmi,pd-pmax-mw = <68000>;
+	mmi,pd-pmax-mw = <30000>;
 	mmi,pd_vbus_low_bound = <5000000>;
 	mmi,pd_vbus_upper_bound = <9000000>;
 };
@@ -113,25 +166,9 @@
 		mmi,adc-channel-vbat = <100>;
 };
 
-&smart_battery {
-		compatible = "mmi,smart-battery";
-		status = "okay";
-		mmi,sync_boardtemp_to_fg;
-		mmi,ui_full_soc = <97>;
-		mmi,shutdown_vol_threshold = <3400>;
-		mmi,soc100_curr_threshod = <1900>;
-};
-
 &pio {
-	bq25960_int_default_master: bq25960_int_default_master {
+	bq25960_int_default: bq25960_int_default {
 		pinmux = <PINMUX_GPIO117__FUNC_GPIO117>;
-		slew-rate= <0>;
-		input-enable;
-		bias-pull-up;
-	};
-
-	bq25960_int_default_slave: bq25960_int_default_slave {
-		pinmux = <PINMUX_GPIO122__FUNC_GPIO122>;
 		slew-rate= <0>;
 		input-enable;
 		bias-pull-up;
@@ -141,55 +178,20 @@
 &i2c0 {
 	status = "okay";
 
-	NFG1000: NFG1000@55 {
-		compatible = "HXZY,nfg1000";
-		reg = <0x55>;
-
-		io-channels = <&mt6375_auxadc MT6375_AUXADC_BATON>,
-			      <&mt6375_auxadc MT6375_AUXADC_VREF>;
-		io-channel-names = "bat_temp", "vref";
-
-		uirbat_pull_up_r_full = <24000>;/*24k*/
-
-		latest_fw_version = [01 02 08 52 34];
-		batt_serialnums = "SB18D87942", "SB18D87943";
-		batt_versions = /bits/ 16 <05>,
-				/bits/ 16 <03>;
-
-	};
-
-	bq25960_master:bq25960-master@66 {
+	bq25960_standalone:bq25960-standalone@65 {
 		status = "okay";
-		compatible = "ti,bq25960-master";
-		reg = <0x66>;
+		compatible = "ti,bq25960-standalone";
+		reg = <0x65>;
 
-		sc8541-addr = <0x6B>;
-		sc8541-name = "sc8541-master";
+		sc8541-addr = <0x6A>;
 
 		interrupt-parent = <&pio>;
 		interrupts = <117 IRQ_TYPE_EDGE_FALLING 117 0>;
-		interrupt-names = "bq25960_irq_master";
+		interrupt-names = "bq25960_irq";
 
 		pinctrl-names = "default";
-		pinctrl-0 = <&bq25960_int_default_master>;
+		pinctrl-0 = <&bq25960_int_default>;
 	};
-
-	bq25960_slave:bq25960-slave@67 {
-		status = "okay";
-		compatible = "ti,bq25960-slave";
-		reg = <0x67>;
-
-		sc8541-addr = <0x6C>;
-		sc8541-name = "sc8541-slave";
-
-		interrupt-parent = <&pio>;
-		interrupts = <122 IRQ_TYPE_EDGE_FALLING 122 0>;
-		interrupt-names = "bq25960_irq_slave";
-
-		pinctrl-names = "default";
-		pinctrl-0 = <&bq25960_int_default_slave>;
-	};
-
 
 };
 
@@ -199,7 +201,7 @@
 
 &pdc {
 	compatible = "mediatek,charger,pd";
-	gauge = <&smart_battery>;
+	gauge = <&mtk_gauge>;
 
 	min_charger_voltage = <4600000>;
 	pd_vbus_low_bound = <5000000>;
@@ -225,16 +227,16 @@
 };
 
 &pe {
-	gauge = <&smart_battery>;
+	gauge = <&mtk_gauge>;
 };
 
 &pe4 {
-	gauge = <&smart_battery>;
+	gauge = <&mtk_gauge>;
 };
 
 &pe2 {
 	compatible = "mediatek,charger,pe2";
-	gauge = <&smart_battery>;
+	gauge = <&mtk_gauge>;
 
 	/* PE 2.0 */
 	pe20_ichg_level_threshold = <1000000>; /* uA */
@@ -265,7 +267,7 @@
 
 &pe5 {
 		compatible = "mediatek,charger,pe5";
-		gauge = <&smart_battery>;
+		gauge = <&mtk_gauge>;
 		polling_interval = <10000>;
 		ta_cv_ss_repeat_tmin = <25>;
 		vbat_cv = <4530>;
@@ -317,7 +319,7 @@
 		mmi_therm_cur_thres = <500>;
 		mmi_therm_vol_thres = <80>;
 		mmi_therm_step = <3>;
-		mmi_max_ibat = <12200>;
+		mmi_max_ibat = <6000>;
 		mmi_max_hrst_cnt = <1>;
 };
 
@@ -342,8 +344,8 @@
 };
 
 &charger_cooler {
-	mmi,thermal-mitigation = <(-1) 8000000 6000000 4000000 3000000
-				2000000 1000000 500000 300000>;
+	mmi,thermal-mitigation = <(-1) 5000000 4000000 3000000 2500000
+				2000000 1600000 800000 500000>;
 };
 
 &extcon_usb {
