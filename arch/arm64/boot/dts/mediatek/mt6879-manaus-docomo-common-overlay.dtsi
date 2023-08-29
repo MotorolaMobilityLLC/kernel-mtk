@@ -10,22 +10,6 @@
  * GNU General Public License for more details.
  */
 
-/dts-v1/;
-/plugin/;
+#include "mediatek/mt6879-manaus-common-overlay.dtsi"
 
-#include "mediatek/mt6879-manaus-decomo-common-overlay.dtsi"
-
-/* Board match root node */
-/ {
-	fragment@model {
-		target-path = "/";
-		__overlay__ {
-			mot,model = "manaus";
-			mot,board-id = <(MANAUS_DECOMO_RADIO << 8 | 0x4B) 0xA100>;
-		};
-	};
-};
-
-#include <manaus_decomo_evt1/cust.dtsi>
-#include "mediatek/cust_mt6879_camera_v4l2_manaus.dtsi"
-/*End of this file, DO NOT ADD ANYTHING HERE*/
+#define MANAUS_DOCOMO_RADIO 4
