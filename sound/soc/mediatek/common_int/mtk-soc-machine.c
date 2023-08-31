@@ -521,10 +521,17 @@ SND_SOC_DAILINK_DEFS(ext_headphone_multimedia,
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()));
+#ifdef CONFIG_SND_SOC_FS16XX
 SND_SOC_DAILINK_DEFS(ext_speaker_multimedia,
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
-	DAILINK_COMP_ARRAY(COMP_DUMMY()),
+	DAILINK_COMP_ARRAY(COMP_CODEC("fs16xx.0-0034", "fs16xx-aif")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()));
+#else
+SND_SOC_DAILINK_DEFS(ext_speaker_multimedia,
+        DAILINK_COMP_ARRAY(COMP_DUMMY()),
+        DAILINK_COMP_ARRAY(COMP_DUMMY()),
+        DAILINK_COMP_ARRAY(COMP_DUMMY()));
+#endif
 SND_SOC_DAILINK_DEFS(i2s1_awb_capture,
 	DAILINK_COMP_ARRAY(COMP_CPU(MT_SOC_I2S2ADC2DAI_NAME)),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
@@ -789,12 +796,14 @@ static int mt_soc_snd_probe(struct platform_device *pdev)
 	int ret;
 	int daiLinkNum = 0;
 
+#ifndef CONFIG_SND_SOC_FS16XX
 	ret = mtk_spk_update_dai_link(mt_soc_extspk_dai, pdev);
 	if (ret) {
 		dev_err(&pdev->dev, "%s(), mtk_spk_update_dai_link error\n",
 			__func__);
 		return -EINVAL;
 	}
+#endif
 
 	/* get_ext_dai_codec_name(); */
 	pr_debug("%s(), dai_link = %p\n",
