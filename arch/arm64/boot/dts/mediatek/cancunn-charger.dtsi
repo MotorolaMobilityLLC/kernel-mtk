@@ -72,20 +72,20 @@
 		pd,source-pdo-data = <0x0001905a>;
 
 		/* 5V, 3A */
-		pd,sink-pdo-size = <2>;
-		pd,sink-pdo-data = <0x0001912c 0x0001912c> ;
+                pd,sink-pdo-size = <4>;
+                pd,sink-pdo-data = <0x000190c8 0x0001912c 0x0002d0c8 0x0002d12c> ;
 	};
 };
 
 &extcon_usb {
 	vbus-current = <1100000>;
 };
-/*
+
 &pdc {
 	pd_vbus_low_bound = <5000000>;
 	pd_vbus_upper_bound = <9000000>;
 
-	sc_input_current = <2000000>;
+	sc_input_current = <3000000>;
 	sc_charger_current = <4000000>;
 };
 
@@ -93,7 +93,6 @@
 	pe40_max_vbus = <6000>;
 	pe40_max_ibus = <3000>;
 };
-*/
 
 &pdc {
 	sc_input_current = <3000000>;
