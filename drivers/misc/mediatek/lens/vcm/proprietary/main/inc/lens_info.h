@@ -73,6 +73,9 @@
 //Begin: Add lens driver name for Devonf
 #define MOT_DEVONF_AFDRV_GT9764 "MOT_DEVONF_GT9764AF"
 //End
+//Begin: Add lens driver name for Maui 
+#define MOT_MAUI_AFDRV_GT9772AF "MOT_MAUI_GT9772AF"
+//End
 //Begin: Add lens driver name for Cancunf
 #define MOT_CANCUNF_AFDRV_AW86006 "MOT_CANCUNF_AW86006AF"
 //End
