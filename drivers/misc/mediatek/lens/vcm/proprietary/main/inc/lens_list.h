@@ -451,4 +451,20 @@ extern int MOT_CANCUNN_AW86006AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 				int *pAF_Opened);
 extern int MOT_CANCUNN_AW86006AF_GetFileName(unsigned char *pFileName);
 extern int aw86006_ois_init(struct i2c_client *pstI2Cclient);
+
+//Begin: Add lens driver interface for MAUI
+#define MOT_MAUI_GT9772AF_SetI2Cclient MOT_MAUI_GT9772AF_SetI2Cclient_Main
+#define MOT_MAUI_GT9772AF_Ioctl MOT_MAUI_GT9772AF_Ioctl_Main
+#define MOT_MAUI_GT9772AF_Release MOT_MAUI_GT9772AF_Release_Main
+#define MOT_MAUI_GT9772AF_PowerDown MOT_MAUI_GT9772AF_PowerDown_Main
+#define MOT_MAUI_GT9772AF_GetFileName MOT_MAUI_GT9772AF_GetFileName_Main
+extern int MOT_MAUI_GT9772AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_MAUI_GT9772AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+				unsigned long a_u4Param);
+extern int MOT_MAUI_GT9772AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_MAUI_GT9772AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int MOT_MAUI_GT9772AF_GetFileName(unsigned char *pFileName);
+//End
 #endif
