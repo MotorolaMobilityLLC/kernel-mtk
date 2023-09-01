@@ -1367,6 +1367,7 @@
       <elf-symbol name='clk_restore_context' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6259d291'/>
       <elf-symbol name='clk_round_rate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x43f81957'/>
       <elf-symbol name='clk_save_context' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa531471e'/>
+      <elf-symbol name='clk_set_min_rate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x25379e73'/>
       <elf-symbol name='clk_set_parent' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2396c7f0'/>
       <elf-symbol name='clk_set_rate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x76d9b876'/>
       <elf-symbol name='clk_sync_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x18f8b3ff'/>
@@ -136069,6 +136070,11 @@
       <function-decl name='clk_save_context' mangled-name='clk_save_context' filepath='drivers/clk/clk.c' line='1125' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='clk_save_context'>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='clk_set_min_rate' mangled-name='clk_set_min_rate' filepath='drivers/clk/clk.c' line='2496' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='clk_set_min_rate'>
+        <parameter type-id='7d0bc0eb' name='clk' filepath='drivers/clk/clk.c' line='2496' column='1'/>
+        <parameter type-id='7359adad' name='rate' filepath='drivers/clk/clk.c' line='2496' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='clk_set_parent' mangled-name='clk_set_parent' filepath='drivers/clk/clk.c' line='2695' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='clk_set_parent'>
         <parameter type-id='7d0bc0eb' name='clk' filepath='drivers/clk/clk.c' line='2695' column='1'/>
         <parameter type-id='7d0bc0eb' name='parent' filepath='drivers/clk/clk.c' line='2695' column='1'/>
@@ -165311,6 +165317,7 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
+
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
