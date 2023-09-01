@@ -196,7 +196,7 @@ static void dijing_panel_init(struct dijing *ctx)
 		gpiod_set_value(ctx->reset_gpio, 1);
 		usleep_range(3 * 1000, 8 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 0);
-		usleep_range(3 * 1000, 5 * 1000);
+		usleep_range(2 * 1000, 3 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
 		usleep_range(10 * 1000, 15 * 1000);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
@@ -239,10 +239,9 @@ static void dijing_panel_init(struct dijing *ctx)
 	dijing_dcs_write_seq_static(ctx, 0x26, 0x02);
 
 	dijing_dcs_write_seq_static(ctx, 0x11, 0x00);
-	msleep(120);
+	msleep(85);
 	dijing_dcs_write_seq_static(ctx, 0x29, 0x00);
-	msleep(20);
-
+        msleep(10);
 	pr_info("disp:init code %s-\n", __func__);
 }
 
