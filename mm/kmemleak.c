@@ -464,9 +464,16 @@ static struct kmemleak_object *mem_pool_alloc(gfp_t gfp)
 		list_del(&object->object_list);
 	else if (mem_pool_free_count)
 		object = &mem_pool[--mem_pool_free_count];
+#if !IS_ENABLED(CONFIG_MTK_VM_DEBUG)
 	else
 		pr_warn_once("Memory pool empty, consider increasing CONFIG_DEBUG_KMEMLEAK_MEM_POOL_SIZE\n");
+#endif
 	raw_spin_unlock_irqrestore(&kmemleak_lock, flags);
+
+#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
+	if (!object)
+		pr_warn_once("Memory pool empty, consider increasing CONFIG_DEBUG_KMEMLEAK_MEM_POOL_SIZE\n");
+#endif
 
 	return object;
 }
