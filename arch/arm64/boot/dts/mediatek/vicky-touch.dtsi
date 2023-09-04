@@ -53,6 +53,7 @@
 		mmi,power-off-suspend;
 		mmi,usb-charger-detection;
 		mmi,charger-psy-name = "battery";
+		mmi,supported_gesture_type = <0x07>;
 	};
 };
 
