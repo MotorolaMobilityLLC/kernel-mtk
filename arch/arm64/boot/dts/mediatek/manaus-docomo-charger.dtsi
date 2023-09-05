@@ -20,7 +20,39 @@
        tcpc,en_wd_polling_only;
 };
 
+&pio {
+	mos_on: mos_on {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO160__FUNC_GPIO160>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	mos_off: mos_off {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO160__FUNC_GPIO160>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
 &mt6375_chg {
+	io-channels = <&mt6375_adc MT6375_ADC_CHGVIN>,
+					<&mt6375_adc MT6375_ADC_VSYS>,
+					<&mt6375_adc MT6375_ADC_VBAT>,
+					<&mt6375_adc MT6375_ADC_IBUS>,
+					<&mt6375_adc MT6375_ADC_IBAT>,
+					<&mt6375_adc MT6375_ADC_TEMPJC>,
+					<&mt6375_adc MT6375_ADC_USBDP>,
+					<&mt6375_adc MT6375_ADC_USBDM>,
+					<&mt6375_adc MT6375_ADC_VREFTS>,
+					<&mt6375_adc MT6375_ADC_TS>;
+	typecotp_chg = <1>;
+	pinctrl-names = "mos_on","mos_off";
+	pinctrl-0 = <&mos_on>;
+	pinctrl-1 = <&mos_off>;
+
 	ircmp_r = <0>;
 	ircmp_v = <0>;
 };
@@ -146,6 +178,9 @@
 	mmi,pd-pmax-mw = <30000>;
 	mmi,pd_vbus_low_bound = <5000000>;
 	mmi,pd_vbus_upper_bound = <9000000>;
+
+	/* typec otp */
+	typecotp_charger = <1>;
 };
 
 &moto_chg_tcmd {
@@ -324,6 +359,9 @@
 };
 
 &mt6375_typec {
+
+	typecotp_tcpc = <1>;
+
 	pd-data {
 		/* 5V, 900ma */
 		pd,source-pdo-data = <0x0001905a>;
