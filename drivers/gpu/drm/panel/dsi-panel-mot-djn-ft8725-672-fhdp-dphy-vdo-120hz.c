@@ -335,10 +335,14 @@ static int dijing_prepare(struct drm_panel *panel)
 	ret = lcm_enable_reg_vtp_1p8(1);
 	usleep_range(4 * 1000, 8 * 1000);
 #endif
+	if(!tp_gesture_flag) {
+		gpiod_set_value(ctx->reset_gpio, 0);
+		msleep(3);
 #ifdef BIAS_SM5109
-	sm5109_BiasPower_enable(15,15,5);
-	msleep(3);
+		sm5109_BiasPower_enable(15,15,5);
+		msleep(3);
 #endif
+	}
 	dijing_panel_init(ctx);
 	ctx->hbm_mode = 0;
 	ctx->cabc_mode = 0;
