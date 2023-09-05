@@ -2967,6 +2967,8 @@ int aw86006_ois_drawcircle_test(int r_um, int step, int cycles, int accuracy_um,
 			}
 			/* read average out */
 			aw86006_i2c_reads(o_ctrl, 0xf44c, AW_SIZE_BYTE_2, data, 8);
+			AW_LOGI("data X: 0x%02x  0x%02x  0x%02x  0x%02x", data[0], data[1], data[2], data[3]);
+			AW_LOGI("data Y: 0x%02x  0x%02x  0x%02x  0x%02x", data[4], data[5], data[6], data[7]);
 			/* 1000000倍 */
 			int32_avgout[0] = aw86006_register_to_int(&data[0]);
 			int32_avgout[1] = aw86006_register_to_int(&data[4]);
