@@ -223,9 +223,9 @@ static void csot_panel_init(struct csot *ctx)
 		gpiod_set_value(ctx->reset_gpio, 1);
 		msleep(2);
 		gpiod_set_value(ctx->reset_gpio, 0);
-		msleep(2);
+		msleep(5);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(20);
+		msleep(15);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -244,7 +244,7 @@ static void csot_panel_init(struct csot *ctx)
 	csot_dcs_write_seq_static(ctx, 0x51, 0x06, 0x66);
 	csot_dcs_write_seq_static(ctx, 0x53, 0x2C, 0x00);
 	csot_dcs_write_seq_static(ctx, 0x11, 0x00, 0x00);
-	msleep(120);
+	msleep(90);
 	csot_dcs_write_seq_static(ctx, 0x29, 0x00, 0x00);
  	msleep(10);
 	csot_dcs_write_seq_static(ctx, 0xAC, 0x05, 0x00);
