@@ -2381,9 +2381,14 @@ void cmdq_buf_cmd_parse(u64 *buf, u32 cmd_nr, dma_addr_t buf_pa,
 
 s32 cmdq_pkt_dump_buf(struct cmdq_pkt *pkt, dma_addr_t curr_pa)
 {
-	struct cmdq_client *client = (struct cmdq_client *)pkt->cl;
+	struct cmdq_client *client;
 	struct cmdq_pkt_buffer *buf;
 	u32 size, cnt = 0;
+	if (!pkt) {
+		cmdq_err("pkt is empty");
+		return -EINVAL;
+	}
+	client = (struct cmdq_client *)pkt->cl;
 
 	list_for_each_entry(buf, &pkt->buf, list_entry) {
 		if (list_is_last(&buf->list_entry, &pkt->buf)) {
