@@ -441,6 +441,12 @@ struct page *__cma_alloc(struct cma *cma, unsigned long count,
 	int num_attempts = 0;
 	int max_retries = 5;
 	const char *name = cma ? cma->name : NULL;
+	bool bypass = false;
+
+	trace_android_vh_cma_alloc_bypass(cma, count, align, gfp_mask,
+				&page, &bypass);
+	if (bypass)
+		return page;
 
 	trace_cma_alloc_start(name, count, align);
 
