@@ -443,6 +443,7 @@
 
 &moto_wlc {
 	compatible = "moto,charger,wlc";
+	gauge = <&mtk_gauge>;
 	min_charger_voltage = <4600000>;
 	wlc_max_charger_current = <3150000>;
 	wlc_max_input_current = <1150000>;
