@@ -22,6 +22,8 @@
 /* I2c address */
 #define AW_SHUTDOWN_I2C_ADDR		(0xC2 >> 1) /* 0x61 */
 #define AW_WAKEUP_I2C_ADDR		(0xD2 >> 1) /* 0x69 */
+#define S5KJNS_EEPROM_I2C_ADDR          (0xA0 >> 1) /* 0x50*/
+#define S5KJNS_EEPROM_ACTUATOR_ID_POSITION 12
 
 /* Register detail */
 #define REG_CHIPID			(0x0000)
