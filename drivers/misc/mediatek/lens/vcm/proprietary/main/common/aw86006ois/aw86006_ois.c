@@ -29,8 +29,9 @@
 #include <linux/workqueue.h>
 #include "aw86006_ois.h"
 
-#define AW86006_DRIVER_VERSION		"v0.4.0.3"
-#define AW86006_FW_NAME			"aw86006.prog"
+#define AW86006_DRIVER_VERSION      "v0.4.0.3"
+#define AW86006_FW_NAME             "aw86006.prog"
+#define AW86006VCMYOVA_FW_NAME      "aw86006vcmyova.prog"
 
 static bool centoron = false;
 const char fw_check_str[] = { 'A', 'W', 'I', 'N', 'I', 'C', 0, 0 };
@@ -1258,6 +1259,32 @@ static int aw86006_checkinfo_analyse(struct cam_ois_ctrl_t *o_ctrl,
 	return OIS_SUCCESS;
 }
 
+static int aw86006_get_eeprom_actuator_id(struct cam_ois_ctrl_t *o_ctrl,
+								uint8_t *pactuator_id)
+{
+	int ret = OIS_ERROR;
+	uint8_t actuator_id = 0;
+	uint8_t temp_addr = 0;
+
+	AW_LOGI("enter");
+
+	temp_addr = o_ctrl->client->addr;
+	o_ctrl->client->addr = S5KJNS_EEPROM_I2C_ADDR;
+	ret = aw86006_i2c_reads(o_ctrl, S5KJNS_EEPROM_ACTUATOR_ID_POSITION-1, AW_SIZE_BYTE_2, &actuator_id,
+								AW_SIZE_BYTE_1);  //eeprom data start is 0
+	o_ctrl->client->addr = temp_addr;
+	if (ret < 0) {
+		AW_LOGE("read standby flag error, ret: %d", ret);
+		return ret;
+	}
+
+	*pactuator_id = actuator_id;
+
+	AW_LOGI("actuator_id: %d", actuator_id);
+
+	return OIS_SUCCESS;
+}
+
 static int aw86006_get_standby_flag(struct cam_ois_ctrl_t *o_ctrl,
 								uint8_t *pflag)
 {
@@ -1440,7 +1467,7 @@ static int aw86006_mem_download(struct cam_ois_ctrl_t *o_ctrl,
 }
 
 static int aw86006_firmware_update(struct cam_ois_ctrl_t *o_ctrl,
-						const struct firmware *fw)
+						const struct firmware *fw, uint8_t actuator_id)
 {
 	int ret = OIS_ERROR;
 	int i = 0;
@@ -1448,41 +1475,84 @@ static int aw86006_firmware_update(struct cam_ois_ctrl_t *o_ctrl,
 
 	AW_LOGI("enter");
 
-	/* fw check */
-	AW_LOGI("Load:%s size:%zu", AW86006_FW_NAME, fw->size);
-	ret = aw86006_firmware_check(o_ctrl, fw);
-	if (ret != OIS_SUCCESS) {
-		AW_LOGE("fw check failed!");
-		goto err_fw_check;
-	}
-	/* reset */
-	ret = aw86006_reset(o_ctrl);
-	if (ret != OIS_SUCCESS) {
-		AW_LOGE("reset failed");
-		goto err_reset;
-	}
-	mdelay(AW_RESET_DELAY); /* run app after reset */
-	/* Get standby flag */
-	for (i = 0; i < AW_ERROR_LOOP; i++) {
-		aw86006_get_standby_flag(o_ctrl, &standby_flag);
-		if (standby_flag == AW_IC_STANDBY)
-			break;
-		mdelay(AW_RESET_DELAY);
+	if ((actuator_id == 0x30) || (actuator_id == 0x31)) {
+		/* fw check */
+		AW_LOGI("Load:%s size:%zu", AW86006_FW_NAME, fw->size);
+
+		ret = aw86006_firmware_check(o_ctrl, fw);
+		if (ret != OIS_SUCCESS) {
+			AW_LOGE("fw check failed!");
+			goto err_fw_check;
+		}
+		/* reset */
+		ret = aw86006_reset(o_ctrl);
+		if (ret != OIS_SUCCESS) {
+			AW_LOGE("reset failed");
+			goto err_reset;
+		}
+		mdelay(AW_RESET_DELAY); /* run app after reset */
+		/* Get standby flag */
+		for (i = 0; i < AW_ERROR_LOOP; i++) {
+			aw86006_get_standby_flag(o_ctrl, &standby_flag);
+			if (standby_flag == AW_IC_STANDBY)
+				break;
+			mdelay(AW_RESET_DELAY);
+		}
+
+		if (standby_flag == AW_IC_STANDBY) {
+			ret = aw86006_runtime_check(o_ctrl);
+			if (ret == OIS_SUCCESS)
+				AW_LOGI("runtime_check pass, no need to update fw!");
+		}
+		/* update flash */
+		if ((standby_flag != AW_IC_STANDBY) || (ret != OIS_SUCCESS)) {
+			/* update flash */
+			ret = aw86006_mem_download(o_ctrl, fw);
+			if (ret == OIS_SUCCESS)
+				AW_LOGI("fw update success!");
+			else
+				AW_LOGE("fw update failed, ret: %d", ret);
+		}
 	}
 
-	if (standby_flag == AW_IC_STANDBY) {
-		ret = aw86006_runtime_check(o_ctrl);
-		if (ret == OIS_SUCCESS)
-			AW_LOGI("runtime_check pass, no need to update fw!");
-	}
-	/* update flash */
-	if ((standby_flag != AW_IC_STANDBY) || (ret != OIS_SUCCESS)) {
+	if (actuator_id == 0x32) {
+		/* fw check */
+		AW_LOGI("Load:%s size:%zu", AW86006VCMYOVA_FW_NAME, fw->size);
+
+		ret = aw86006_firmware_check(o_ctrl, fw);
+		if (ret != OIS_SUCCESS) {
+			AW_LOGE("fw check failed!");
+			goto err_fw_check;
+		}
+		/* reset */
+		ret = aw86006_reset(o_ctrl);
+		if (ret != OIS_SUCCESS) {
+			AW_LOGE("reset failed");
+			goto err_reset;
+		}
+		mdelay(AW_RESET_DELAY); /* run app after reset */
+		/* Get standby flag */
+		for (i = 0; i < AW_ERROR_LOOP; i++) {
+			aw86006_get_standby_flag(o_ctrl, &standby_flag);
+			if (standby_flag == AW_IC_STANDBY)
+				break;
+			mdelay(AW_RESET_DELAY);
+		}
+
+		if (standby_flag == AW_IC_STANDBY) {
+			ret = aw86006_runtime_check(o_ctrl);
+			if (ret == OIS_SUCCESS)
+				AW_LOGI("runtime_check pass, no need to update fw!");
+		}
 		/* update flash */
-		ret = aw86006_mem_download(o_ctrl, fw);
-		if (ret == OIS_SUCCESS)
-			AW_LOGI("fw update success!");
-		else
-			AW_LOGE("fw update failed, ret: %d", ret);
+		if ((standby_flag != AW_IC_STANDBY) || (ret != OIS_SUCCESS)) {
+			/* update flash */
+			ret = aw86006_mem_download(o_ctrl, fw);
+			if (ret == OIS_SUCCESS)
+				AW_LOGI("fw update success!");
+			else
+				AW_LOGE("fw update failed, ret: %d", ret);
+		}
 	}
 
 err_reset:
@@ -1498,21 +1568,36 @@ static void aw86006_firmware_update_work_routine(struct work_struct *work)
 	const struct firmware *fw = NULL;
 	int loop = 0;
 	int ret = OIS_ERROR;
+	uint8_t actuator_id = 0;
 
 	AW_LOGI("enter");
 
+	aw86006_get_eeprom_actuator_id(o_ctrl, &actuator_id);
 	/* load firmware */
-	do {
-		ret = request_firmware(&fw, AW86006_FW_NAME, o_ctrl->dev);
-		if (ret == 0)
-			break;
-	} while ((++loop) < AW_ERROR_LOOP);
-	if (loop >= AW_ERROR_LOOP) {
-		AW_LOGE("request_firmware [%s] failed!", AW86006_FW_NAME);
-		return;
+	if ((actuator_id == 0x30) || (actuator_id == 0x31)) {
+		do {
+			ret = request_firmware(&fw, AW86006_FW_NAME, o_ctrl->dev);
+			if (ret == 0)
+				break;
+		} while ((++loop) < AW_ERROR_LOOP);
+		if (loop >= AW_ERROR_LOOP) {
+			AW_LOGE("request_firmware [%s] failed!", AW86006_FW_NAME);
+			return;
+		}
+	}
+	if (actuator_id == 0x32) {
+		do {
+			ret = request_firmware(&fw, AW86006VCMYOVA_FW_NAME, o_ctrl->dev);
+			if (ret == 0)
+				break;
+		} while ((++loop) < AW_ERROR_LOOP);
+		if (loop >= AW_ERROR_LOOP) {
+			AW_LOGE("request_firmware [%s] failed!", AW86006VCMYOVA_FW_NAME);
+			return;
+		}
 	}
 	mutex_lock(&o_ctrl->aw_ois_mutex);
-	aw86006_firmware_update(o_ctrl, fw);
+	aw86006_firmware_update(o_ctrl, fw, actuator_id);
 	mutex_unlock(&o_ctrl->aw_ois_mutex);
 
 	AW_LOGI("End");
@@ -3309,21 +3394,36 @@ int aw86006_update_fw_sync(void)
 	const struct firmware *fw = NULL;
 	int loop = 0;
 	int ret = OIS_ERROR;
+	uint8_t actuator_id = 0;
 
 	AW_LOGI("enter");
 
+	aw86006_get_eeprom_actuator_id(o_ctrl, &actuator_id);
 	/* load firmware */
-	do {
-		ret = request_firmware(&fw, AW86006_FW_NAME, o_ctrl->dev);
-		if (ret == 0)
-			break;
-	} while ((++loop) < AW_ERROR_LOOP);
-	if (loop >= AW_ERROR_LOOP) {
-		AW_LOGE("request_firmware [%s] failed!", AW86006_FW_NAME);
-		return 0;
+	if ((actuator_id == 0x30) || (actuator_id == 0x31)) {
+		do {
+			ret = request_firmware(&fw, AW86006_FW_NAME, o_ctrl->dev);
+			if (ret == 0)
+				break;
+		} while ((++loop) < AW_ERROR_LOOP);
+		if (loop >= AW_ERROR_LOOP) {
+			AW_LOGE("request_firmware [%s] failed!", AW86006_FW_NAME);
+			return ret;
+		}
+	}
+	if (actuator_id == 0x32) {
+		do {
+			ret = request_firmware(&fw, AW86006VCMYOVA_FW_NAME, o_ctrl->dev);
+			if (ret == 0)
+				break;
+		} while ((++loop) < AW_ERROR_LOOP);
+		if (loop >= AW_ERROR_LOOP) {
+			AW_LOGE("request_firmware [%s] failed!", AW86006VCMYOVA_FW_NAME);
+			return ret;
+		}
 	}
 	mutex_lock(&o_ctrl->aw_ois_mutex);
-	aw86006_firmware_update(o_ctrl, fw);
+	aw86006_firmware_update(o_ctrl, fw, actuator_id);
 	mutex_unlock(&o_ctrl->aw_ois_mutex);
 
 	AW_LOGI("End");

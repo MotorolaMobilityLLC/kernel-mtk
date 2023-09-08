@@ -138,6 +138,21 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(MOT_CANCUNF_S5KJNS_VCM_YOVA)
+	{
+		SENSOR_DRVNAME_MOT_CANCUNF_S5KJNS_VCM_YOVA,
+		{
+			{SensorMCLK, Vol_High,1},
+			{RST, Vol_Low, 1},
+			{DOVDD, Vol_High, 0},
+			{AVDD, Vol_High, 1},
+			{DVDD, Vol_High, 1},
+			{DVDD1, Vol_High, 1},
+			{AFVDD, Vol_High, 1},
+			{RST, Vol_High, 14},
+		},
+	},
+#endif
 #if defined(MOT_CANCUNF_HI1634Q_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_MOT_CANCUNF_HI1634Q_MIPI_RAW,
