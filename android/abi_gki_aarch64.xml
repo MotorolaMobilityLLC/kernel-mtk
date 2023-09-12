@@ -4892,6 +4892,7 @@
       <elf-symbol name='put_user_ifreq' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x38f48af7'/>
       <elf-symbol name='put_vaddr_frames' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1b700d37'/>
       <elf-symbol name='putback_movable_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbd6f03f7'/>
+      <elf-symbol name='pvclock_gtod_register_notifier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb4b97c90'/>
       <elf-symbol name='pwm_adjust_config' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x436f3c8d'/>
       <elf-symbol name='pwm_apply_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x42c24f2f'/>
       <elf-symbol name='pwm_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x94be0d7d'/>
@@ -59673,9 +59674,6 @@
           <var-decl name='pages_compacted' type-id='f22a8abb' visibility='default' filepath='include/linux/zsmalloc.h' line='38' column='1'/>
         </data-member>
       </class-decl>
-      <array-type-def dimensions='1' type-id='d83a2db1' size-in-bits='infinite' id='7cfae8e1'>
-        <subrange length='infinite' type-id='7ff19f0f' id='031f2035'/>
-      </array-type-def>
       <class-decl name='drm_plane_helper_funcs' size-in-bits='448' is-struct='yes' visibility='default' filepath='include/drm/drm_modeset_helper_vtables.h' line='1165' column='1' id='7cfcbd14'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='prepare_fb' type-id='4c74ea47' visibility='default' filepath='include/drm/drm_modeset_helper_vtables.h' line='1200' column='1'/>
@@ -71445,17 +71443,7 @@
           <var-decl name='matchLength' type-id='018f3e38' visibility='default' filepath='lib/zstd/zstd_internal.h' line='185' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='module_notes_attrs' size-in-bits='128' is-struct='yes' visibility='default' filepath='kernel/module.c' line='1609' column='1' id='96b6b914'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='dir' type-id='d30bdc51' visibility='default' filepath='kernel/module.c' line='1610' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='notes' type-id='f0981eeb' visibility='default' filepath='kernel/module.c' line='1611' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='attrs' type-id='7cfae8e1' visibility='default' filepath='kernel/module.c' line='1612' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='module_notes_attrs' is-struct='yes' visibility='default' is-declaration-only='yes' id='96b6b914'/>
       <pointer-type-def type-id='257e5168' size-in-bits='64' id='96b6fff2'/>
       <array-type-def dimensions='1' type-id='7359adad' size-in-bits='1088' id='96b80745'>
         <subrange length='17' type-id='7ff19f0f' id='888ad0ed'/>
@@ -84802,9 +84790,6 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='5a9e3f68' size-in-bits='64' id='ae02292a'/>
-      <array-type-def dimensions='1' type-id='def413c9' size-in-bits='infinite' id='ae08da59'>
-        <subrange length='infinite' type-id='7ff19f0f' id='031f2035'/>
-      </array-type-def>
       <pointer-type-def type-id='4a3a50c4' size-in-bits='64' id='ae0aa6a2'/>
       <class-decl name='devlink_health_reporter' size-in-bits='1344' is-struct='yes' visibility='default' filepath='net/core/devlink.c' line='6644' column='1' id='ae166e71'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -87816,17 +87801,7 @@
         <parameter type-id='807b7702'/>
         <return type-id='48b5725f'/>
       </function-type>
-      <class-decl name='module_sect_attrs' size-in-bits='384' is-struct='yes' visibility='default' filepath='kernel/module.c' line='1494' column='1' id='b43b0dce'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='grp' type-id='e4af473b' visibility='default' filepath='kernel/module.c' line='1495' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='320'>
-          <var-decl name='nsections' type-id='f0981eeb' visibility='default' filepath='kernel/module.c' line='1496' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='attrs' type-id='ae08da59' visibility='default' filepath='kernel/module.c' line='1497' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='module_sect_attrs' is-struct='yes' visibility='default' is-declaration-only='yes' id='b43b0dce'/>
       <class-decl name='pollfd' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/uapi/asm-generic/poll.h' line='36' column='1' id='b440e872'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='fd' type-id='95e97e5e' visibility='default' filepath='include/uapi/asm-generic/poll.h' line='37' column='1'/>
@@ -108105,7 +108080,14 @@
         <parameter type-id='95e97e5e'/>
         <return type-id='95e97e5e'/>
       </function-type>
-      <class-decl name='fscrypt_keyring' is-struct='yes' visibility='default' is-declaration-only='yes' id='dd510bd0'/>
+      <class-decl name='fscrypt_keyring' size-in-bits='8256' is-struct='yes' visibility='default' filepath='fs/crypto/keyring.c' line='30' column='1' id='dd510bd0'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='fs/crypto/keyring.c' line='35' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='key_hashtable' type-id='64f4baeb' visibility='default' filepath='fs/crypto/keyring.c' line='38' column='1'/>
+        </data-member>
+      </class-decl>
       <pointer-type-def type-id='a7d74313' size-in-bits='64' id='dd575c43'/>
       <class-decl name='cstate' size-in-bits='1536' is-struct='yes' visibility='default' filepath='include/net/slhc_vj.h' line='128' column='1' id='dd60e4df'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -109107,14 +109089,6 @@
       <array-type-def dimensions='1' type-id='1c475548' size-in-bits='infinite' id='def29f5c'>
         <subrange length='infinite' type-id='7ff19f0f' id='031f2035'/>
       </array-type-def>
-      <class-decl name='module_sect_attr' size-in-bits='576' is-struct='yes' visibility='default' filepath='kernel/module.c' line='1489' column='1' id='def413c9'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='battr' type-id='d83a2db1' visibility='default' filepath='kernel/module.c' line='1490' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='512'>
-          <var-decl name='address' type-id='7359adad' visibility='default' filepath='kernel/module.c' line='1491' column='1'/>
-        </data-member>
-      </class-decl>
       <class-decl name='hlist_bl_head' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/linux/list_bl.h' line='34' column='1' id='def98e71'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='first' type-id='d09d4bab' visibility='default' filepath='include/linux/list_bl.h' line='35' column='1'/>
@@ -154382,6 +154356,10 @@
         <parameter type-id='e84b031a' name='l' filepath='mm/migrate.c' line='144' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='pvclock_gtod_register_notifier' mangled-name='pvclock_gtod_register_notifier' filepath='kernel/time/timekeeping.c' line='663' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pvclock_gtod_register_notifier'>
+        <parameter type-id='d504f73d' name='nb' filepath='kernel/time/timekeeping.c' line='663' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='pwm_adjust_config' mangled-name='pwm_adjust_config' filepath='drivers/pwm/core.c' line='652' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pwm_adjust_config'>
         <parameter type-id='f06adae0' name='pwm' filepath='drivers/pwm/core.c' line='652' column='1'/>
         <return type-id='95e97e5e'/>
@@ -165361,7 +165339,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
