@@ -94,12 +94,7 @@
 #define CONFIG_TCPC_LPM_CONFIRM		1
 #define CONFIG_TCPC_LPM_POSTPONE	1
 
-// MMI_STOPSHIP <Kernel/BSP>: check if Maui must support tcpc low power
-#if IS_ENABLED(CONFIG_TCPC_SGM7220)
-#define CONFIG_TCPC_LOW_POWER_MODE	0
-#else
 #define CONFIG_TCPC_LOW_POWER_MODE	1
-#endif
 
 #define CONFIG_TCPC_CLOCK_GATING	1
 
