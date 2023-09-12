@@ -360,6 +360,7 @@ int tcpci_set_low_power_mode(
 	int rv = 0;
 
 #if CONFIG_TCPC_LOW_POWER_MODE
+#if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
 	int i = 0;
 	/* [Workaround]
 	 * rx_buffer can't clear, try to reset protocol before disable bmc clock
@@ -373,6 +374,7 @@ int tcpci_set_low_power_mode(
 				TCPC_INFO("%s: %d clear rx event fail\n", __func__, i);
 		}
 	}
+#endif /* CONFIG_USB_POWER_DELIVERY */
 	if (tcpc->ops->set_low_power_mode)
 		rv = tcpc->ops->set_low_power_mode(tcpc, en, pull);
 #endif	/* CONFIG_TCPC_LOW_POWER_MODE */
