@@ -281,6 +281,7 @@ enum Fg_data_type {
 	FG_DATA_TYPE_NUMBER
 };
 
+#define DATA_SIZE 2048
 struct fgd_cmd_param_t_6 {
 	unsigned int type;
 	unsigned int total_size;
