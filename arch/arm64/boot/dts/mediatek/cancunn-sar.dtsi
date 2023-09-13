@@ -52,6 +52,7 @@
 		Semtech,power-supply-type = <2>;
 		Semtech,eldo-gpio = <&pio 78 0>;
 		//cap_vdd-supply = <&mt6363_vio18>;
+		esd-reinit-on = <1>;
 		/*use PH4/5/6 as the reference sensor
 		set it to 0xff if the ref-phases-x is not used*/
 		Semtech,ref-phases-a = <5>;
