@@ -75,27 +75,27 @@ struct tianma {
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
-	{4, {0xFF, 0x5A, 0xA5, 0x00}},
-	{2, {0x55, 0x01}},
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{2, {0x55, 0x02}},
 };
 
 static struct mtk_panel_para_table panel_cabc_mv[] = {
-	{4, {0xFF, 0x5A, 0xA5, 0x00}},
+	{4, {0xFF, 0x78, 0x07, 0x00}},
 	{2, {0x55, 0x03}},
 };
 
 static struct mtk_panel_para_table panel_cabc_disable[] = {
-	{4, {0xFF, 0x5A, 0xA5, 0x00}},
+	{4, {0xFF, 0x78, 0x07, 0x00}},
 	{2, {0x55, 0x00}},
 };
 
 static struct mtk_panel_para_table panel_hbm_on[] = {
-	{4, {0xFF, 0x5A, 0xA5, 0x00}},
+	{4, {0xFF, 0x78, 0x07, 0x00}},
 	{3, {0x51, 0x0F, 0xFF}},
 };
 
 static struct mtk_panel_para_table panel_hbm_off[] = {
-	{4, {0xFF, 0x5A, 0xA5, 0x00}},
+	{4, {0xFF, 0x78, 0x07, 0x00}},
 	{3, {0x51, 0x0C, 0xCC}},
 };
 
@@ -288,12 +288,40 @@ static void tianma_panel_init(struct tianma *ctx)
 		tianma_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x07);
 		tianma_dcs_write_seq_static(ctx, 0x11, 0x16);
 
+		tianma_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x03);
+
+		tianma_dcs_write_seq_static(ctx, 0x8C, 0xD2);
+		tianma_dcs_write_seq_static(ctx, 0x8D, 0xD6);
+		tianma_dcs_write_seq_static(ctx, 0x8E, 0xDA);
+		tianma_dcs_write_seq_static(ctx, 0x8F, 0xDE);
+		tianma_dcs_write_seq_static(ctx, 0x90, 0xDF);
+
+		tianma_dcs_write_seq_static(ctx, 0x91, 0xE6);
+		tianma_dcs_write_seq_static(ctx, 0x92, 0xE9);
+		tianma_dcs_write_seq_static(ctx, 0x93, 0xED);
+		tianma_dcs_write_seq_static(ctx, 0x94, 0xF0);
+		tianma_dcs_write_seq_static(ctx, 0x95, 0xFF);
+
+		tianma_dcs_write_seq_static(ctx, 0x96, 0xB5);
+		tianma_dcs_write_seq_static(ctx, 0x97, 0xBA);
+		tianma_dcs_write_seq_static(ctx, 0x98, 0xBF);
+		tianma_dcs_write_seq_static(ctx, 0x99, 0xC4);
+		tianma_dcs_write_seq_static(ctx, 0x9A, 0xC9);
+
+		tianma_dcs_write_seq_static(ctx, 0x9B, 0xCD);
+		tianma_dcs_write_seq_static(ctx, 0x9C, 0xD5);
+		tianma_dcs_write_seq_static(ctx, 0x9D, 0xE6);
+		tianma_dcs_write_seq_static(ctx, 0x9E, 0xF6);
+		tianma_dcs_write_seq_static(ctx, 0x9F, 0xF7);
+
+		tianma_dcs_write_seq_static(ctx, 0x87, 0x4D);
+
 		tianma_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x00);
 	}
 
 	tianma_dcs_write_seq_static(ctx, 0x51, 0x0C, 0xCC);
 	tianma_dcs_write_seq_static(ctx, 0x53, 0x2C);
-	tianma_dcs_write_seq_static(ctx, 0x55, 0x01);
+	tianma_dcs_write_seq_static(ctx, 0x55, 0x02);
 
 	tianma_dcs_write_seq_static(ctx, 0x11, 0x00);
 	msleep(90);
