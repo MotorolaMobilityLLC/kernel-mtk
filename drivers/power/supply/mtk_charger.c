@@ -75,15 +75,8 @@
 #include "wt6670f.h"
 #endif
 
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
 #include "mtk_battery_table.h"
 #include <tcpm.h>
-
-bool usbotp = false;
-bool dcp_type = false;
-bool pdc_type = false;
-bool typecotp_charger;
-#endif
 
 #if defined(CONFIG_CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT) || defined(CONFIG_OPT_FACTORY_IBUS_LIMIT)
 bool plugout_flag = false;
@@ -96,7 +89,6 @@ struct tag_bootmode {
 	u32 boottype;
 };
 
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
 #define interpolate(x, x1, y1, x2, y2) \
 	((y1) + ((((y2) - (y1)) * ((x) - (x1))) / ((x2) - (x1))));
 
@@ -131,7 +123,6 @@ static int get_typec_temp(struct charger_device *chg_dev)
 	value = value - 1000;
 	return value;
 }
-#endif
 
 #ifdef MTK_BASE
 #ifdef MODULE
@@ -263,9 +254,8 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 		}
 	}
 
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
-	typecotp_charger = of_property_read_bool(np, "typecotp_charger");
-#endif
+	info->typecotp_charger = of_property_read_bool(np, "typecotp_charger");
+
 	if (of_property_read_string(np, "algorithm_name",
 		&info->algorithm_name) < 0) {
 		chr_err("%s: no algorithm_name name\n", __func__);
@@ -2645,11 +2635,11 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 	chr_err("%s\n", __func__);
 	info->chr_type = POWER_SUPPLY_TYPE_UNKNOWN;
 	info->charger_thread_polling = false;
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
-	if ((usbotp == true) && typecotp_charger) {
+
+	if ((info->typec_otp_sts == true) && info->typecotp_charger) {
 		info->charger_thread_polling = true;
 	}
-#endif
+
 	info->pd_reset = false;
 	info->mmi.active_fast_alg = 0;
 
@@ -5095,6 +5085,51 @@ static char *dump_charger_type(int chg_type, int usb_type)
 	}
 }
 
+static void mmi_typec_connecter_otp(struct mtk_charger *info)
+{
+	int ts;
+
+	if (info->typecotp_charger) {
+		ts = get_typec_temp(info->chg1_dev);
+		chr_err("otp_temp:%d\n", ts);
+
+		if ((ts > otp_threshold) && (get_vbus(info) > otpv_threshold)) {
+			info->typec_otp_sts = true;
+			charger_dev_enable_powerpath(info->chg1_dev, 0);//hz
+			charger_dev_enable_hz(info->chg1_dev, 1);
+			chr_err("otph_hz\n");
+			if(get_charger_type(info) == POWER_SUPPLY_TYPE_USB_DCP) {
+				if (info->mmi.active_fast_alg == PDC_ID) {//cc
+					tcpm_typec_disable_function(info->tcpc_dev,true);
+					info->pdc_otp_sts = true;
+					chr_err("otph_cc\n");
+				} else {//short
+					charger_dev_enable_mos_short(info->chg1_dev, true);
+					info->dcp_otp_sts = true;
+					chr_err("otph_short\n");
+				}
+			}
+		} else if (ts < recover_threshold) {
+			if (info->typec_otp_sts == true) {
+				info->typec_otp_sts = false;
+				charger_dev_enable_powerpath(info->chg1_dev, 1);
+				charger_dev_enable_hz(info->chg1_dev, 0);
+				chr_err("otpl_hz\n");
+				if (info->pdc_otp_sts == true) {//cc
+					tcpm_typec_disable_function(info->tcpc_dev,false);
+					info->pdc_otp_sts = false;
+					chr_err("otpl_cc\n");
+				}
+				if (info->dcp_otp_sts == true) {//short
+					charger_dev_enable_mos_short(info->chg1_dev, false);
+					info->dcp_otp_sts = false;
+					chr_err("otpl_short\n");
+				}
+			}
+		}
+	}
+}
+
 static int charger_routine_thread(void *arg)
 {
 	struct mtk_charger *info = arg;
@@ -5106,9 +5141,6 @@ static int charger_routine_thread(void *arg)
 	int vbat_min, vbat_max;
 	u32 chg_cv = 0;
 
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
-	int ts;
-#endif
 	while (1) {
 		ret = wait_event_interruptible(info->wait_que,
 			(info->charger_thread_timeout == true));
@@ -5166,47 +5198,8 @@ static int charger_routine_thread(void *arg)
 			dump_charger_type(get_charger_type(info), get_usb_type(info)),
 			info->pd_type, get_ibat(info), chg_cv);
 
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
-	if (typecotp_charger) {
-		ts = get_typec_temp(info->chg1_dev);
-		chr_err("otp_temp:%d\n", ts);
+		mmi_typec_connecter_otp(info);
 
-		if ((ts > otp_threshold) && (get_vbus(info) > otpv_threshold)) {
-			usbotp = true;
-			charger_dev_enable_powerpath(info->chg1_dev, 0);//hz
-			charger_dev_enable_hz(info->chg1_dev, 1);
-			chr_err("otph_hz\n");
-			if(get_charger_type(info) == POWER_SUPPLY_TYPE_USB_DCP) {
-				if (info->mmi.active_fast_alg == PDC_ID) {//cc
-					ret = tcpm_typec_disable_function(info->tcpc_dev,true);
-					pdc_type = true;
-					chr_err("otph_cc\n");
-				} else {//short
-					charger_dev_enable_mos_short(info->chg1_dev, true);
-					dcp_type = true;
-					chr_err("otph_short\n");
-				}
-			}
-		} else if (ts < recover_threshold) {
-			if (usbotp == true) {
-				usbotp = false;
-				charger_dev_enable_powerpath(info->chg1_dev, 1);
-				charger_dev_enable_hz(info->chg1_dev, 0);
-				chr_err("otpl_hz\n");
-				if (pdc_type == true) {//cc
-					ret = tcpm_typec_disable_function(info->tcpc_dev,false);
-					pdc_type = false;
-					chr_err("otpl_cc\n");
-				}
-				if (dcp_type == true) {//short
-					charger_dev_enable_mos_short(info->chg1_dev, false);
-					dcp_type = false;
-					chr_err("otpl_short\n");
-				}
-			}
-		}
-	}
-#endif
 		is_charger_on = mtk_is_charger_on(info);
 
 		if (info->charger_thread_polling == true)
@@ -6239,12 +6232,11 @@ static int mtk_charger_probe(struct platform_device *pdev)
 #endif
 	spin_lock_init(&info->slock);
 
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
 	info->tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
 	if (!info->tcpc_dev) {
 		chr_err("%s get tcpc device type_c_port0 fail\n", __func__);
 	}
-#endif
+
 	init_waitqueue_head(&info->wait_que);
 	info->polling_interval = CHARGING_INTERVAL;
 
