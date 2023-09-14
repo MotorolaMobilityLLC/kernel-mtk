@@ -21,9 +21,7 @@ enum adc_channel {
 	ADC_CHANNEL_TS,
 	ADC_CHANNEL_TBAT,
 	ADC_CHANNEL_VOUT,
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
 	ADC_CHANNEL_VREFTS,
-#endif
 };
 
 enum mmi_dvchg_mux_channel {
@@ -198,11 +196,11 @@ struct charger_ops {
 	int (*get_tchg_adc)(struct charger_device *dev, int *tchg_min,
 		int *tchg_max);
 	int (*get_zcv)(struct charger_device *dev, u32 *uV);
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+
 	int (*get_vrefts_adc)(struct charger_device *dev, int *uV);
 	int (*get_ts_adc)(struct charger_device *dev, int *uV);
 	int (*enable_mos_short)(struct charger_device *dev, bool en);
-#endif
+
 	/* TypeC */
 	int (*enable_usbid)(struct charger_device *dev, bool en);
 	int (*set_usbid_rup)(struct charger_device *dev, u32 rup);
@@ -324,14 +322,14 @@ extern int charger_dev_set_boost_current_limit(
 	struct charger_device *charger_dev, u32 uA);
 extern int charger_dev_get_zcv(
 	struct charger_device *charger_dev, u32 *uV);
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+
 extern int charger_dev_get_vrefts(
 	struct charger_device *charger_dev, int *uV);
 extern int charger_dev_get_ts(
 	struct charger_device *charger_dev, int *uV);
 extern int charger_dev_enable_mos_short(
 	struct charger_device *charger_dev, bool en);
-#endif
+
 extern int charger_dev_run_aicl(
 	struct charger_device *charger_dev, u32 *uA);
 extern int charger_dev_reset_eoc_state(
