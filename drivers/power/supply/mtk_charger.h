@@ -587,9 +587,13 @@ struct mtk_charger {
 	struct mmi_params	mmi;
 	int wireless_online;
 	struct mutex mmi_mux_lock;
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+
 	struct tcpc_device *tcpc_dev;
-#endif
+	bool typecotp_charger;
+	bool typec_otp_sts;
+	bool dcp_otp_sts;
+	bool pdc_otp_sts;
+
 };
 
 static inline int mtk_chg_alg_notify_call(struct mtk_charger *info,
