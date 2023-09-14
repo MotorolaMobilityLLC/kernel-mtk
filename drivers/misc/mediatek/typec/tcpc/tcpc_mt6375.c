@@ -140,9 +140,9 @@
 #define MT6375_MSK_BMCIOOSC_EN	BIT(0)
 #define MT6375_MSK_VBUSDET_EN	BIT(1)
 #define MT6375_MSK_LPWR_EN	BIT(3)
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+
 #define MT6375_MSK_BG_ITRIM_EN	BIT(4)
-#endif
+
 
 /* MT6375_REG_MTINT1: 0x98 */
 #define MT6375_MSK_WAKEUP	BIT(0)
@@ -206,10 +206,10 @@
 #define MT6375_MSK_RPDET_AUTO	BIT(7)
 /* MT6375_REG_TYPECOTPCTRL: 0xCD */
 #define MT6375_MSK_TYPECOTP_FWEN	BIT(2)
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+
 #define MT6375_MSK_VREFTS_EN      BIT(7)
 #define MT6375_MSK_TYPECOTP_HWEN      BIT(0)
-#endif
+
 /* MT6375_REG_WD12MODECTRL: 0xD0 */
 #define MT6375_MSK_WD12MODE_EN	BIT(4)
 #define MT6375_MSK_WD12PROT	BIT(6)
@@ -287,9 +287,7 @@ struct mt6375_tcpc_data {
 	struct alarm hidet_debtimer;
 	struct delayed_work hidet_dwork;
 };
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
-bool typecotp_tcpc;
-#endif
+
 enum mt6375_vend_int {
 	MT6375_VEND_INT1 = 0,
 	MT6375_VEND_INT2,
@@ -1668,12 +1666,14 @@ static int mt6375_tcpc_init(struct tcpc_device *tcpc, bool sw_reset)
 	/* Disable bleed dischg for IQ about 2mA consumption */
 	mt6375_clr_bits(ddata, TCPC_V10_REG_POWER_CTRL,
 			TCPC_V10_REG_BLEED_DISC_EN);
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
-	/* Enable VREFTS */
-	mt6375_set_bits(ddata, MT6375_REG_TYPECOTPCTRL, MT6375_MSK_VREFTS_EN);
-	/* Off OTP_HW */
-	mt6375_clr_bits(ddata, MT6375_REG_TYPECOTPCTRL,MT6375_MSK_TYPECOTP_HWEN);
-#endif
+
+	if (!ddata->desc->en_typec_otp) {
+		/* Enable VREFTS */
+		mt6375_set_bits(ddata, MT6375_REG_TYPECOTPCTRL, MT6375_MSK_VREFTS_EN);
+		/* Off OTP_HW */
+		mt6375_clr_bits(ddata, MT6375_REG_TYPECOTPCTRL,MT6375_MSK_TYPECOTP_HWEN);
+	}
+
 	/* SHIPPING off, AUTOIDLE on */
 	mt6375_set_bits(ddata, MT6375_REG_SYSCTRL1,
 			MT6375_MSK_SHIPPING_OFF | MT6375_MSK_AUTOIDLE_EN);
@@ -1993,11 +1993,11 @@ static int mt6375_set_low_power_mode(struct tcpc_device *tcpc, bool en,
 	if (en) {
 		tcpci_set_otp_fwen(tcpc, false);
 		data = MT6375_MSK_LPWR_EN;
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
-		if (typecotp_tcpc) {
+
+		if (!ddata->desc->en_typec_otp) {
 			data = MT6375_MSK_BG_ITRIM_EN | MT6375_MSK_LPWR_EN;
 		}
-#endif
+
 #if CONFIG_TYPEC_CAP_NORP_SRC
 		data |= MT6375_MSK_VBUSDET_EN;
 #endif	/* CONFIG_TYPEC_CAP_NORP_SRC */
@@ -2599,9 +2599,6 @@ static int mt6375_register_tcpcdev(struct mt6375_tcpc_data *ddata)
 	if (IS_ERR(ddata->tcpc))
 		return -EINVAL;
 
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
-	typecotp_tcpc = of_property_read_bool(np, "typecotp_tcpc");
-#endif
 	/* Init tcpc_flags */
 #if CONFIG_USB_PD_RETRY_CRC_DISCARD
 	ddata->tcpc->tcpc_flags |= TCPC_FLAGS_RETRY_CRC_DISCARD;
@@ -2625,11 +2622,11 @@ static int mt6375_register_tcpcdev(struct mt6375_tcpc_data *ddata)
 		ddata->tcpc->tcpc_flags |= TCPC_FLAGS_CABLE_TYPE_DETECTION;
 	if (desc->en_fod)
 		ddata->tcpc->tcpc_flags |= TCPC_FLAGS_FOREIGN_OBJECT_DETECTION;
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
-	if (typecotp_tcpc) {
+
+	if (of_property_read_bool(np, "typecotp_tcpc")) {
 		desc->en_typec_otp = false;
 	}
-#endif
+
 	if (desc->en_typec_otp)
 		ddata->tcpc->tcpc_flags |= TCPC_FLAGS_TYPEC_OTP;
 	if (desc->en_floatgnd)

@@ -546,7 +546,6 @@ struct fg_temp fg_temp_table[21] = {
 };
 #endif
 
-#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
 struct typec_vol_temp {
 	int vol;
 	int temp;
@@ -576,7 +575,6 @@ struct typec_vol_temp typec_table[17] = {
 #define otp_threshold 750
 #define recover_threshold 650
 #define otpv_threshold 4000
-#endif
 
 /* ============================================================
  * <DOD, Battery_Voltage> Table
