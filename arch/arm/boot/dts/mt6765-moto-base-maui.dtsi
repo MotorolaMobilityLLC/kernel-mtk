@@ -19,6 +19,8 @@
         charger: charger {
              /delete-property/ enable_dynamic_mivr;
         };
+
+        charge_leds: charge_leds { };
 };
 
 &mtk_charger_type {

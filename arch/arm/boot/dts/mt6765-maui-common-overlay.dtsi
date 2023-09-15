@@ -568,6 +568,12 @@
 		0 0 0>;
 };
 
+&charge_leds {
+       compatible = "pmic-leds";
+       label = "charging";
+       default-state = "off";
+};
+
 //#include <k65v1_32_bsp/cust.dtsi>
 #include "cust_mt6765_camera.dtsi"
 #include "cust_mt6765_touch_maui_720x1600.dtsi"
