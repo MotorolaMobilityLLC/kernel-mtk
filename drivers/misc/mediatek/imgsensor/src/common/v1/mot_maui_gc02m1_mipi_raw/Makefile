@@ -11,5 +11,7 @@
 # GNU General Public License for more details.
 #
 
-obj-y += mot_maui_gc02m1_mipi_raw.o
+IMGSENSOR_SUBDRV_OBJ := \
+    $(subdrv-rpath)/mot_maui_gc02m1_mipi_raw.o
 
+obj-$(CONFIG_MTK_IMGSENSOR_ISP4_C) += $(IMGSENSOR_SUBDRV_OBJ)
