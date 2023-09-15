@@ -528,6 +528,7 @@ void bq2560x_enable_statpin(bool en)
 	else
 		bq2560x_set_stat_ctrl(g_bq2560x, 3);
 }
+EXPORT_SYMBOL_GPL(bq2560x_enable_statpin);
 
 
 static int bq2560x_set_int_mask(struct bq2560x *bq, int mask)
