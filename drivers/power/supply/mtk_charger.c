@@ -75,7 +75,6 @@
 #include "wt6670f.h"
 #endif
 
-#include "mtk_battery_table.h"
 #include <tcpm.h>
 
 #if defined(CONFIG_CANCUNF_FACTORY_MODE_SET_ICL_SUPPORT) || defined(CONFIG_OPT_FACTORY_IBUS_LIMIT)
@@ -88,6 +87,36 @@ struct tag_bootmode {
 	u32 bootmode;
 	u32 boottype;
 };
+
+struct typec_vol_temp {
+	int vol;
+	int temp;
+};
+
+static struct typec_vol_temp typec_table[17] = {
+		{1759286, 700},
+		{1732978, 800},
+		{1694221, 900},
+		{1639312, 1000},
+		{1565783, 1100},
+		{1471799, 1200},
+		{1358490, 1300},
+		{1230173, 1400},
+		{1091441, 1500},
+		{948936, 1600},
+		{812917, 1700},
+		{686546, 1800},
+		{574151, 1900},
+		{476038, 2000},
+		{393506, 2100},
+		{324635, 2200},
+		{274890, 2250}
+
+};
+#define typec_tab_len 17
+#define otp_threshold 750
+#define recover_threshold 650
+#define otpv_threshold 4000
 
 #define interpolate(x, x1, y1, x2, y2) \
 	((y1) + ((((y2) - (y1)) * ((x) - (x1))) / ((x2) - (x1))));
