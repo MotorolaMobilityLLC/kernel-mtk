@@ -2798,18 +2798,24 @@ static int mt6375_enable_tm(struct mt6375_priv *priv, bool en)
 
 static int mt6375_get_vbat_mon_rpt(struct mt6375_priv *priv, int *vbat)
 {
-	struct power_supply *psy;
+	static struct power_supply *psy = NULL;
 	union power_supply_propval val;
 	int ret;
 	u16 data;
 
-	psy = power_supply_get_by_name("primary_chg");
+	if(psy == NULL){
+	    psy = power_supply_get_by_name("primary_chg");
+	}
+
 	if (psy) {
 		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_CALIBRATE, &val);
-		if (ret >= 0)
+		if (ret >= 0){
+//		        bm_err("%s: succeed to get POWER_SUPPLY_PROP_CALIBRATE!\n", __func__);
 			*vbat = val.intval;
-		power_supply_put(psy);
+		}
+//		power_supply_put(psy);
 	} else {
+//		bm_err("%s: failed to get charger psy!\n", __func__);
 		ret = regmap_update_bits(priv->regmap, RG_ADC_CONFG1,
 					 VBAT_MON_EN_MASK, 0xFF);
 		if (ret < 0)

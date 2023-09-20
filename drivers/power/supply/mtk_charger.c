@@ -4996,7 +4996,12 @@ static void charger_status_check(struct mtk_charger *info)
 	int ret;
 	bool charging = true;
 
-	chg_psy = power_supply_get_by_name("primary_chg");
+	chg_psy = info->chg_psy;
+	
+	if (IS_ERR_OR_NULL(chg_psy)) {
+	    chg_psy = power_supply_get_by_name("primary_chg");
+	}
+
 	if (IS_ERR_OR_NULL(chg_psy)) {
 		chr_err("%s Couldn't get chg_psy\n", __func__);
 	} else {
@@ -5022,7 +5027,7 @@ static void charger_status_check(struct mtk_charger *info)
 
 int mmi_charger_get_batt_status(void)
 {
-	struct power_supply *chg_psy = NULL;
+	static struct power_supply *chg_psy = NULL;
 	struct power_supply *wl_psy = NULL;
 	struct power_supply *dv2_chg_psy = NULL;
 	union power_supply_propval online;
