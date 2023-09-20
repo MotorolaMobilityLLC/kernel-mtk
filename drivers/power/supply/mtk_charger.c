@@ -121,35 +121,92 @@ static struct typec_vol_temp typec_table[17] = {
 #define interpolate(x, x1, y1, x2, y2) \
 	((y1) + ((((y2) - (y1)) * ((x) - (x1))) / ((x2) - (x1))));
 
-
-static int get_typec_temp(struct charger_device *chg_dev)
+/* ============================================================ */
+/* Resistance to ntc temperature */
+/* ============================================================ */
+int res_to_temp(struct ntc_temp *ptable, int num, int res)
 {
-	int vol, vol1, i, value,ret;
+	int i = 0;
+	int res1 = 0, res2 = 0;
+	int t_value = -200, tmp1 = 0, tmp2 = 0;
 
-	ret = charger_dev_get_ts(chg_dev, &vol);
-	ret = charger_dev_get_vrefts(chg_dev, &vol1);
-	//chr_err("yyyts:%d\n", vol);
-	//chr_err("yyytsr:%d\n", vol1);
-	if (vol <= 0)
-		return -ENOMEM;
+	if (ptable == NULL)
+		return t_value;
 
-	for (i = 0; i < typec_tab_len; i++)
-		if (vol > typec_table[i].vol)
-			break;
-
-	if (i > 0 && i < typec_tab_len) {
-		value = interpolate(vol,
-				typec_table[i].vol,
-				typec_table[i].temp,
-				typec_table[i - 1].vol,
-				typec_table[i - 1].temp);
-	} else if (i == 0) {
-		value = typec_table[0].temp;
+	if (res >= ptable[0].TemperatureR) {
+		t_value = ptable[0].Temp;
+	} else if (res <= ptable[num-1].TemperatureR) {
+		t_value = ptable[num-1].Temp;
 	} else {
-		value = typec_table[typec_tab_len - 1].temp;
-	}
+		res1 = ptable[0].TemperatureR;
+		tmp1 = ptable[0].Temp;
 
-	value = value - 1000;
+		for (i = 0; i < num; i++) {
+			if (res >= ptable[i].TemperatureR) {
+				res2 = ptable[i].TemperatureR;
+				tmp2 = ptable[i].Temp;
+				break;
+			}
+			{	/* hidden else */
+				res1 = ptable[i].TemperatureR;
+				tmp1 = ptable[i].Temp;
+			}
+		}
+
+		t_value = (((res - res2) * tmp1) +
+			((res1 - res) * tmp2)) / (res1 - res2);
+	}
+	chr_info("[%s] %d %d %d %d %d %d\n",
+		__func__,
+		res1, res2, res, tmp1,
+		tmp2, t_value);
+
+	return t_value;
+}
+
+static int get_typec_temp(struct mtk_charger *info)
+{
+	struct charger_device *chg_dev = info->chg1_dev;
+	int ntc_v, bif_v, i, value,ret;
+	int tres_temp, delta_v;
+
+	ret = charger_dev_get_ts(chg_dev, &ntc_v);
+	ret = charger_dev_get_vrefts(chg_dev, &bif_v);
+
+	if (info->mmi.typec_ntc_table && info->mmi.typec_ntc_pull_up_r) {
+
+		ntc_v = ntc_v / 1000;
+		bif_v = bif_v / 1000;
+		tres_temp = ntc_v * (info->mmi.typec_ntc_pull_up_r);
+		delta_v = bif_v - ntc_v; //1.8v -ntc_v
+		tres_temp = div_s64(tres_temp, delta_v);
+
+		value = res_to_temp(info->mmi.typec_ntc_table, info->mmi.num_typec_ntc_table, tres_temp);
+		value *= 10;
+
+	} else {
+
+		if (ntc_v <= 0)
+			return -ENOMEM;
+
+		for (i = 0; i < typec_tab_len; i++)
+			if (ntc_v > typec_table[i].vol)
+				break;
+
+		if (i > 0 && i < typec_tab_len) {
+			value = interpolate(ntc_v,
+					typec_table[i].vol,
+					typec_table[i].temp,
+					typec_table[i - 1].vol,
+					typec_table[i - 1].temp);
+		} else if (i == 0) {
+			value = typec_table[0].temp;
+		} else {
+			value = typec_table[typec_tab_len - 1].temp;
+		}
+
+		value = value - 1000;
+	}
 	return value;
 }
 
@@ -4677,6 +4734,50 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 	if (rc)
 		info->mmi.vbus_l = 5000000;
 
+	rc = of_property_read_u32(node, "mmi,typec-ntc-pull-up-r",
+				  &info->mmi.typec_ntc_pull_up_r);
+	if (rc)
+		info->mmi.typec_ntc_pull_up_r = 0;
+
+	if (of_find_property(node, "mmi,typec-ntc-table", &byte_len)) {
+		if ((byte_len / sizeof(u32)) % 2) {
+			pr_err("[%s]DT error wrong mmi typec ntc table, byte_len = %d\n",
+				__func__, byte_len);
+			return -ENODEV;
+		}
+
+		info->mmi.typec_ntc_table = (struct ntc_temp *)
+			devm_kzalloc(dev, byte_len, GFP_KERNEL);
+
+		if (info->mmi.typec_ntc_table == NULL)
+			return -ENOMEM;
+
+		info->mmi.num_typec_ntc_table =
+			byte_len / sizeof(struct ntc_temp);
+
+		rc = of_property_read_u32_array(node,
+				"mmi,typec-ntc-table",
+				(u32 *)info->mmi.typec_ntc_table,
+				byte_len / sizeof(u32));
+		if (rc < 0) {
+			pr_err("[%s]Couldn't read mmi typec ntc table rc = %d\n", __func__, rc);
+			return rc;
+		}
+		pr_info("[%s]mmi typec ntc table: Num: %d\n",
+				__func__,
+				info->mmi.num_typec_ntc_table);
+		for (i = 0; i < info->mmi.num_typec_ntc_table; i++) {
+			pr_info("[%s]mmi typec ntc table: Temp: %d, Res: %d \n",
+				__func__,
+				info->mmi.typec_ntc_table[i].Temp,
+				info->mmi.typec_ntc_table[i].TemperatureR);
+		}
+	} else {
+		info->mmi.typec_ntc_table = NULL;
+		info->mmi.num_typec_ntc_table = 0;
+		pr_err("[%s]mmi typec ntc table is not set\n", __func__);
+	}
+
 	return rc;
 }
 
@@ -5124,7 +5225,7 @@ static void mmi_typec_connecter_otp(struct mtk_charger *info)
 	int ts;
 
 	if (info->typecotp_charger) {
-		ts = get_typec_temp(info->chg1_dev);
+		ts = get_typec_temp(info);
 		chr_err("otp_temp:%d\n", ts);
 
 		if ((ts > otp_threshold) && (get_vbus(info) > otpv_threshold)) {

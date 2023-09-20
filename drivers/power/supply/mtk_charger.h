@@ -342,6 +342,11 @@ enum {
 };
 #endif
 
+struct ntc_temp {
+	signed int Temp;
+	signed int TemperatureR;
+};
+
 struct mmi_params {
 	bool			init_done;
 	bool			factory_mode;
@@ -415,6 +420,10 @@ struct mmi_params {
 	int			vbus_h;
 	int			vbus_l;
 	int			charger_watt;
+
+	int			typec_ntc_pull_up_r;
+	struct ntc_temp 		*typec_ntc_table;
+	int			num_typec_ntc_table;
 };
 /*moto mmi Functionality end*/
 
