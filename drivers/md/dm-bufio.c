@@ -1117,12 +1117,7 @@ static void *new_read(struct dm_bufio_client *c, sector_t block,
 	if (need_submit)
 		submit_io(b, REQ_OP_READ, read_endio);
 
-#if IS_ENABLED(CONFIG_MTK_F2FS_DEBUG)
-	BUG_ON(wait_on_bit_timeout(&b->state, B_READING,
-		TASK_UNINTERRUPTIBLE, msecs_to_jiffies(30000)) != 0);
-#else /* #if IS_ENABLED(CONFIG_MTK_F2FS_DEBUG) */
 	wait_on_bit_io(&b->state, B_READING, TASK_UNINTERRUPTIBLE);
-#endif /* #if IS_ENABLED(CONFIG_MTK_F2FS_DEBUG) */
 
 	if (b->read_error) {
 		int error = blk_status_to_errno(b->read_error);

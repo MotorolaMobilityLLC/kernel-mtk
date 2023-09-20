@@ -224,9 +224,17 @@ int sbitmap_get(struct sbitmap *sb)
 	unsigned int hint, depth;
 
 	if (WARN_ON_ONCE(unlikely(!sb->alloc_hint)))
+#ifdef CONFIG_MTK_F2FS_DEBUG
+		BUG();
+#else /* #ifdef CONFIG_MTK_F2FS_DEBUG */
 		return -1;
+#endif /* #ifdef CONFIG_MTK_F2FS_DEBUG */
 
 	depth = READ_ONCE(sb->depth);
+#ifdef CONFIG_MTK_F2FS_DEBUG
+	if (!depth)
+		BUG();
+#endif /* #ifdef CONFIG_MTK_F2FS_DEBUG */
 	hint = update_alloc_hint_before_get(sb, depth);
 	nr = __sbitmap_get(sb, hint);
 	update_alloc_hint_after_get(sb, depth, hint, nr);
