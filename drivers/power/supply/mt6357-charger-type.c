@@ -15,6 +15,10 @@
 #include <linux/power_supply.h>
 #include <mtk_musb.h>
 #include <linux/reboot.h>
+
+#if IS_ENABLED(CONFIG_MTK_BQ2560x_SUPPORT)
+#include "charger_class.h"
+#endif
 /* ============================================================ */
 /* pmic control start*/
 /* ============================================================ */
@@ -601,7 +605,10 @@ irqreturn_t chrdet_int_handler(int irq, void *data)
 {
 	struct mtk_charger_type *info = data;
 	unsigned int chrdet = 0;
-
+#if IS_ENABLED(CONFIG_MTK_BQ2560x_SUPPORT)
+	bool otg_en = false;
+	struct charger_device *ch1_dev = NULL;
+#endif
 	chrdet = bc11_get_register_value(info->regmap,
 		PMIC_RGS_CHRDET_ADDR,
 		PMIC_RGS_CHRDET_MASK,
@@ -621,6 +628,25 @@ irqreturn_t chrdet_int_handler(int irq, void *data)
 #endif
 		}
 	}
+#if IS_ENABLED(CONFIG_MTK_BQ2560x_SUPPORT)
+	ch1_dev =get_charger_by_name("primary_chg");
+
+	if (ch1_dev)
+                pr_err("Found primary charger\n");
+       else {
+                pr_err("*** Error : can't find primary charger ***\n");
+                return IRQ_HANDLED;
+        }
+
+	charger_dev_is_otg_enable(ch1_dev, &otg_en);
+
+	pr_err("%s, otg_en = %d, chrdet = %d", __func__, otg_en, chrdet );
+
+	if(otg_en && chrdet) {
+		pr_err("otg occur, ignore chgdet\n");
+		return IRQ_HANDLED;
+	}
+#endif
 	pr_notice("%s: chrdet:%d\n", __func__, chrdet);
 	do_charger_detect(info, chrdet);
 
