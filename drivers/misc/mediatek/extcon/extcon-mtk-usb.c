@@ -33,6 +33,7 @@ static const unsigned int usb_extcon_cable[] = {
 	EXTCON_NONE,
 };
 
+#if !IS_ENABLED(CONFIG_MTK_BQ2560x_SUPPORT)
 static int mmi_mux_typec_otg_chan(enum mmi_mux_channel channel, bool on)
 {
 	struct mtk_charger *info = NULL;
@@ -54,6 +55,7 @@ static int mmi_mux_typec_otg_chan(enum mmi_mux_channel channel, bool on)
 
 	return 0;
 }
+#endif
 
 static void mtk_usb_extcon_update_role(struct work_struct *work)
 {
@@ -223,7 +225,7 @@ static int mtk_usb_extcon_psy_init(struct mtk_extcon_info *extcon)
 	return ret;
 }
 
-#if IS_ENABLED(CONFIG_CHARGER_RT9458)
+#if IS_ENABLED(CONFIG_CHARGER_RT9458) || IS_ENABLED(CONFIG_MTK_BQ2560x_SUPPORT)
 /* ADAPT_CHARGER_V1 */
 #include <charger_class.h>
 static struct charger_device *primary_charger;
@@ -274,7 +276,7 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 							bool is_on)
 {
 	int ret;
-#if IS_ENABLED(CONFIG_CHARGER_RT9458)
+#if IS_ENABLED(CONFIG_CHARGER_RT9458) || IS_ENABLED(CONFIG_MTK_BQ2560x_SUPPORT)
 	ret = mtk_usb_extcon_set_vbus_v1(extcon, is_on);
 #else
 	struct regulator *vbus = extcon->vbus;
