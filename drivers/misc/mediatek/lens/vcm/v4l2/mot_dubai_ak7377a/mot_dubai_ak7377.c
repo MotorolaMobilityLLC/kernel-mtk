@@ -469,13 +469,27 @@ static long ak7377a_ops_core_ioctl(struct v4l2_subdev *sd, unsigned int cmd, voi
 		} else if ((ois_ext_work.ext_data.cmd > OIS_ACTION_MAX) && (ois_ext_work.ext_data.cmd <= OIS_EXT_INTF_MAX)) {
 			//wait till result ready
 			{
-					motOISExtIntf resultData;
-					resultData.cmd = ois_ext_work.ext_data.cmd;
+					motOISExtIntf * pResultData = NULL;
+
+					pResultData =  (motOISExtIntf *) kzalloc(sizeof(motOISExtIntf), GFP_KERNEL);
+
+				        if (!pResultData) {
+						ret = -ENOMEM;
+						break;
+					}
+
+					pResultData->cmd = ois_ext_work.ext_data.cmd;
 					mutex_lock(&ois_mutex);
-					MOT_DW9781CAF_GET_TEST_RESULT(&resultData);
+					MOT_DW9781CAF_GET_TEST_RESULT(pResultData);
 					mutex_unlock(&ois_mutex);
-					memcpy((void *)arg, &resultData, sizeof(motOISExtIntf));
+					memcpy((void *)arg, pResultData, sizeof(motOISExtIntf));
 					ois_ext_work.ext_state = ois_ext_work.ext_data.cmd;
+
+					if (pResultData) {
+						kfree(pResultData);
+						pResultData = NULL;
+					}
+
 			}
 		} else if (ois_ext_work.ext_data.cmd == OIS_SET_GYRO_OFFSET) {
 				mutex_lock(&ois_mutex);
