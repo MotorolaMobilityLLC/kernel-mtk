@@ -170,7 +170,7 @@ struct charger_ops {
 	int (*enable_otg)(struct charger_device *dev, bool en);
 	int (*enable_discharge)(struct charger_device *dev, bool en);
 	int (*set_boost_current_limit)(struct charger_device *dev, u32 uA);
-
+	int (*is_otg_enable)(struct charger_device *dev, bool *en);
 	/* charger type detection */
 	int (*enable_chg_type_det)(struct charger_device *dev, bool en);
 
@@ -316,6 +316,8 @@ extern int charger_dev_enable_chg_type_det(
 	struct charger_device *charger_dev, bool en);
 extern int charger_dev_enable_otg(
 	struct charger_device *charger_dev, bool en);
+extern int charger_dev_is_otg_enable(
+	struct charger_device *charger_dev, bool *en);
 extern int charger_dev_enable_discharge(
 	struct charger_device *charger_dev, bool en);
 extern int charger_dev_set_boost_current_limit(
