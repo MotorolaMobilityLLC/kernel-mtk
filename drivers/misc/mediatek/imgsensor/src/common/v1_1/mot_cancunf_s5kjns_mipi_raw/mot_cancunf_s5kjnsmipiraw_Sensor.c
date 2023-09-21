@@ -598,7 +598,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	}
 
 	if (gain < S5KJNS_BASEGAIN || gain > max_gain) {
-		pr_debug("Error gain setting");
+		pr_debug("Error gain setting, gain = %d", gain);
 
 		if (gain < S5KJNS_BASEGAIN)
 			gain = S5KJNS_BASEGAIN;
@@ -683,6 +683,9 @@ static void sensor_init(void)
 	write_cmos_sensor(0x6226, 0x0001);
 	mot_cancunf_s5kjns_table_write_cmos_sensor(addr_data_pair_init_mot_cancunf_s5kjns,
 		sizeof(addr_data_pair_init_mot_cancunf_s5kjns)/sizeof(kal_uint16));
+
+	if (xtc_data_valid == 1)
+		write_xtc_data();
 
 	pr_debug("MOT CANCUNF S5KJNS init end\n");
 
@@ -776,7 +779,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-				//CANCUNF_S5KJNS_eeprom_format_calibration_data(&imgsensor);
+				CANCUNF_S5KJNS_eeprom_format_calibration_data(&imgsensor);
 				aw86006_update_fw_sync();
 				return ERROR_NONE;
 			}
@@ -1119,8 +1122,8 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->Custom1DelayFrame = imgsensor_info.custom1_delay_frame;
 
 	/*Apply calibration status and manufacture info*/
-//	memcpy(&sensor_info->calibration_status, CANCUNF_S5KJNS_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
-//	memcpy(&sensor_info->mnf_calibration, CANCUNF_S5KJNS_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, CANCUNF_S5KJNS_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
+	memcpy(&sensor_info->mnf_calibration, CANCUNF_S5KJNS_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
