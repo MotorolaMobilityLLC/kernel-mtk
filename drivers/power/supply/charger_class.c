@@ -639,6 +639,15 @@ int charger_dev_enable_otg(struct charger_device *chg_dev, bool en)
 }
 EXPORT_SYMBOL(charger_dev_enable_otg);
 
+int charger_dev_is_otg_enable(struct charger_device *chg_dev, bool *en)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->is_enabled)
+			return chg_dev->ops->is_otg_enable(chg_dev, en);
+
+		return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_is_otg_enable);
+
 int charger_dev_enable_discharge(struct charger_device *chg_dev, bool en)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&
