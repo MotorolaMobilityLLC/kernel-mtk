@@ -6208,6 +6208,7 @@
       <elf-symbol name='typec_find_power_role' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2d1e301d'/>
       <elf-symbol name='typec_get_drvdata' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf4d555ce'/>
       <elf-symbol name='typec_get_negotiated_svdm_version' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9e3f059d'/>
+      <elf-symbol name='typec_get_orientation' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa3560022'/>
       <elf-symbol name='typec_match_altmode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa5ff0ba0'/>
       <elf-symbol name='typec_mux_get_drvdata' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfea0a8ca'/>
       <elf-symbol name='typec_mux_put' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeef82f0e'/>
@@ -52371,7 +52372,7 @@
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='ec84183d' size-in-bits='64' id='6af1ec35'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1505' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1506' column='1'/>
         </data-member>
@@ -161211,6 +161212,10 @@
       <function-decl name='typec_get_negotiated_svdm_version' mangled-name='typec_get_negotiated_svdm_version' filepath='drivers/usb/typec/class.c' line='1872' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='typec_get_negotiated_svdm_version'>
         <parameter type-id='b977ca56' name='port' filepath='drivers/usb/typec/class.c' line='1872' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='typec_get_orientation' mangled-name='typec_get_orientation' filepath='drivers/usb/typec/class.c' line='1835' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='typec_get_orientation'>
+        <parameter type-id='b977ca56' name='port' filepath='drivers/usb/typec/class.c' line='1835' column='1'/>
+        <return type-id='131b0a9c'/>
       </function-decl>
       <function-decl name='typec_match_altmode' mangled-name='typec_match_altmode' filepath='drivers/usb/typec/bus.c' line='278' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='typec_match_altmode'>
         <parameter type-id='4da04a79' name='altmodes' filepath='drivers/usb/typec/bus.c' line='278' column='1'/>
