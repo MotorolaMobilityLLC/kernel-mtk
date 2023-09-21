@@ -1369,6 +1369,20 @@ static int bq2560x_set_otg(struct charger_device *chg_dev, bool en)
 	return ret;
 }
 
+static int bq2560x_is_otg_enable(struct charger_device *chg_dev, bool *en)
+{
+	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret;
+	u8 reg_val;
+
+	ret = bq2560x_read_byte(bq, BQ2560X_REG_01, &reg_val);
+
+	if (!ret)
+		*en = !!(reg_val & REG01_OTG_CONFIG_MASK);
+
+	return ret;
+}
+
 static int bq2560x_set_safety_timer(struct charger_device *chg_dev, bool en)
 {
 	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
@@ -1703,6 +1717,7 @@ static struct charger_ops bq2560x_chg_ops = {
 
 	/* OTG */
 	.enable_otg = bq2560x_set_otg,
+	.is_otg_enable = bq2560x_is_otg_enable,
 	.set_boost_current_limit = bq2560x_set_boost_ilmt,
 	.enable_discharge = NULL,
 
