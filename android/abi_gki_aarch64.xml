@@ -2927,6 +2927,7 @@
       <elf-symbol name='fwnode_property_read_u16_array' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x74e38ad9'/>
       <elf-symbol name='fwnode_property_read_u32_array' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa25d5d9d'/>
       <elf-symbol name='fwnode_property_read_u64_array' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x54201afd'/>
+      <elf-symbol name='fwnode_typec_mux_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x48f9a5da'/>
       <elf-symbol name='fwnode_usb_role_switch_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb718e1c3'/>
       <elf-symbol name='g_audio_cleanup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbee99165'/>
       <elf-symbol name='g_audio_setup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc4047133'/>
@@ -6208,11 +6209,14 @@
       <elf-symbol name='typec_get_negotiated_svdm_version' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9e3f059d'/>
       <elf-symbol name='typec_match_altmode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa5ff0ba0'/>
       <elf-symbol name='typec_mux_get_drvdata' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfea0a8ca'/>
+      <elf-symbol name='typec_mux_put' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeef82f0e'/>
       <elf-symbol name='typec_mux_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5212dd4a'/>
       <elf-symbol name='typec_mux_set' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2c352458'/>
       <elf-symbol name='typec_mux_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3c4a1d07'/>
       <elf-symbol name='typec_partner_register_altmode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x44ce1c09'/>
       <elf-symbol name='typec_partner_set_identity' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf43ea2f6'/>
+      <elf-symbol name='typec_partner_set_pd_revision' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x78a798'/>
+      <elf-symbol name='typec_partner_set_svdm_version' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf26e9236'/>
       <elf-symbol name='typec_port_register_altmode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa906705a'/>
       <elf-symbol name='typec_register_partner' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc734b488'/>
       <elf-symbol name='typec_register_port' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe1db87f5'/>
@@ -108111,14 +108115,7 @@
         <parameter type-id='95e97e5e'/>
         <return type-id='95e97e5e'/>
       </function-type>
-      <class-decl name='fscrypt_keyring' size-in-bits='8256' is-struct='yes' visibility='default' filepath='fs/crypto/keyring.c' line='30' column='1' id='dd510bd0'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='fs/crypto/keyring.c' line='35' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='key_hashtable' type-id='64f4baeb' visibility='default' filepath='fs/crypto/keyring.c' line='38' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='fscrypt_keyring' is-struct='yes' visibility='default' is-declaration-only='yes' id='dd510bd0'/>
       <pointer-type-def type-id='a7d74313' size-in-bits='64' id='dd575c43'/>
       <class-decl name='cstate' size-in-bits='1536' is-struct='yes' visibility='default' filepath='include/net/slhc_vj.h' line='128' column='1' id='dd60e4df'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -144283,6 +144280,11 @@
         <parameter type-id='b59d7dce' name='nval' filepath='drivers/base/property.c' line='347' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='fwnode_typec_mux_get' mangled-name='fwnode_typec_mux_get' filepath='drivers/usb/typec/mux.c' line='265' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='fwnode_typec_mux_get'>
+        <parameter type-id='4a935625' name='fwnode' filepath='drivers/usb/typec/mux.c' line='265' column='1'/>
+        <parameter type-id='064c3738' name='desc' filepath='drivers/usb/typec/mux.c' line='266' column='1'/>
+        <return type-id='374b228b'/>
+      </function-decl>
       <function-decl name='fwnode_usb_role_switch_get' mangled-name='fwnode_usb_role_switch_get' filepath='drivers/usb/roles/class.c' line='149' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='fwnode_usb_role_switch_get'>
         <parameter type-id='4a935625' name='fwnode' filepath='drivers/usb/roles/class.c' line='149' column='1'/>
         <return type-id='3e3cd44f'/>
@@ -161212,6 +161214,10 @@
         <parameter type-id='374b228b' name='mux' filepath='drivers/usb/typec/mux.c' line='380' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
+      <function-decl name='typec_mux_put' mangled-name='typec_mux_put' filepath='drivers/usb/typec/mux.c' line='285' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='typec_mux_put'>
+        <parameter type-id='374b228b' name='mux' filepath='drivers/usb/typec/mux.c' line='285' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='typec_mux_register' mangled-name='typec_mux_register' filepath='drivers/usb/typec/mux.c' line='324' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='typec_mux_register'>
         <parameter type-id='fa0b179b' name='parent' filepath='drivers/usb/typec/mux.c' line='324' column='1'/>
         <parameter type-id='233fa2f2' name='desc' filepath='drivers/usb/typec/mux.c' line='324' column='1'/>
@@ -161234,6 +161240,16 @@
       <function-decl name='typec_partner_set_identity' mangled-name='typec_partner_set_identity' filepath='drivers/usb/typec/class.c' line='689' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='typec_partner_set_identity'>
         <parameter type-id='33ca4bbb' name='partner' filepath='drivers/usb/typec/class.c' line='689' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='typec_partner_set_pd_revision' mangled-name='typec_partner_set_pd_revision' filepath='drivers/usb/typec/class.c' line='707' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='typec_partner_set_pd_revision'>
+        <parameter type-id='33ca4bbb' name='partner' filepath='drivers/usb/typec/class.c' line='707' column='1'/>
+        <parameter type-id='1dc6a898' name='pd_revision' filepath='drivers/usb/typec/class.c' line='707' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='typec_partner_set_svdm_version' mangled-name='typec_partner_set_svdm_version' filepath='drivers/usb/typec/class.c' line='782' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='typec_partner_set_svdm_version'>
+        <parameter type-id='33ca4bbb' name='partner' filepath='drivers/usb/typec/class.c' line='782' column='1'/>
+        <parameter type-id='664a29a4' name='svdm_version' filepath='drivers/usb/typec/class.c' line='783' column='1'/>
+        <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='typec_port_register_altmode' mangled-name='typec_port_register_altmode' filepath='drivers/usb/typec/class.c' line='1952' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='typec_port_register_altmode'>
         <parameter type-id='b977ca56' name='port' filepath='drivers/usb/typec/class.c' line='1952' column='1'/>
@@ -165398,6 +165414,7 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
+
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
