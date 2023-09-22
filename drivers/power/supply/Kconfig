@@ -1160,4 +1160,9 @@ config OPT_FACTORY_IBUS_LIMIT
 	help
 	  This is config cancunn factorymode set icl support
 
+config MOTO_10W_DCP_FFC_SUPPORT
+	bool "This is config moto 10W DCP FFC charging support"
+	default n
+	help
+	  This is config moto 10W DCP FFC charging support
 endif # POWER_SUPPLY
