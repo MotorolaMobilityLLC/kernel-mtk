@@ -77,6 +77,7 @@ struct board_ntc_info {
 	struct iio_channel *chan_wlc_ntc;
 	struct iio_channel *chan_quiet_ntc;
 	struct iio_channel *chan_tspk_ntc;
+	struct iio_channel *chan_usb_conn_ntc;
 };
 
 unsigned int tia2_rc_sel_to_value(unsigned int sel)
@@ -90,6 +91,9 @@ unsigned int tia2_rc_sel_to_value(unsigned int sel)
 	case 2:
 		resistance = 400000; /* 400K */
 		break;
+	case 3:
+		resistance = 3920; /* 3.92K */
+		break;
 	case 0:
 	default:
 		resistance = 100000; /* 100K */
@@ -97,6 +101,14 @@ unsigned int tia2_rc_sel_to_value(unsigned int sel)
 	}
 
 	return resistance;
+}
+
+bool is_chg_ts_detector(unsigned int pullup_r_type)
+{
+	if (pullup_r_type == 3)
+		return true;
+	else
+		return false;
 }
 
 unsigned long long mt6685_adc2volt(unsigned int adc_raw)
@@ -113,7 +125,7 @@ static struct tia_data tia2_data = {
 
 static struct pmic_auxadc_data mt6685_pmic_auxadc_data = {
 	.default_pullup_v = 184000,
-	.num_of_pullup_r_type = 3,
+	.num_of_pullup_r_type = 4,
 	.pullup_r_calibration = NULL,
 	.adc2volt = mt6685_adc2volt,
 	.tia_param = &tia2_data,
@@ -122,7 +134,7 @@ static struct pmic_auxadc_data mt6685_pmic_auxadc_data = {
 
 static struct pmic_auxadc_data mt6685_pmic_auxadc_data_debug = {
 	.default_pullup_v = 184000,
-	.num_of_pullup_r_type = 3,
+	.num_of_pullup_r_type = 4,
 	.pullup_r_calibration = NULL,
 	.adc2volt = mt6685_adc2volt,
 	.tia_param = &tia2_data,
@@ -255,6 +267,9 @@ static int board_ntc_get_temp(void *data, int *temp)
 	} else if(!PTR_ERR_OR_ZERO(ntc_info->chan_tspk_ntc)){
 		iio_read_channel_raw(ntc_info->chan_tspk_ntc, &val);
 		r_type = 0;
+	} else if(!PTR_ERR_OR_ZERO(ntc_info->chan_usb_conn_ntc)){
+		iio_read_channel_processed(ntc_info->chan_usb_conn_ntc, &val);
+		r_type = 3;
 	} else {
 		//do {
 		//	val = readl(ntc_info->data_reg);
@@ -368,7 +383,12 @@ static int board_ntc_get_temp(void *data, int *temp)
 		return -ENODEV;
 	}
 */
-	v_in = ntc_info->adc_data->adc2volt(get_adc_data(val, tia_param->valid_bit - 1));
+	if (is_chg_ts_detector(r_type) != true) {
+		v_in = ntc_info->adc_data->adc2volt(get_adc_data(val, tia_param->valid_bit - 1));
+	} else {
+		v_in = val;
+	}
+
 	r_ntc = calculate_r_ntc(v_in, adc_data->pullup_r[r_type],
 				adc_data->pullup_v[r_type]);
 
@@ -413,7 +433,10 @@ static int board_ntc_init_auxadc_data(struct device *dev,
 		for (i = 0; i < num; i++) {
 			adc_data->pullup_r[i] =
 				adc_data->tia_param->rc_sel_to_value(i);
-			adc_data->pullup_v[i] = adc_data->default_pullup_v;
+			if (is_chg_ts_detector(i) != true)
+				adc_data->pullup_v[i] = adc_data->default_pullup_v;
+			else
+				adc_data->pullup_v[i] = 1800000;
 
 			dev_info(dev, "%d: default pullup_r=%d, pullup_v=%d\n",
 				i, adc_data->pullup_r[i],
@@ -508,6 +531,7 @@ static int board_ntc_probe(struct platform_device *pdev)
 	//+EKDEVONN-16, madongyu.wt, add, 20220620, match the io-channel wiht io-channel-name
 	ntc_info->chan_quiet_ntc =  devm_iio_channel_get(&pdev->dev, "QUIET_NTC");
 	ntc_info->chan_tspk_ntc =  devm_iio_channel_get(&pdev->dev, "TSPK_NTC");
+	ntc_info->chan_usb_conn_ntc =  devm_iio_channel_get(&pdev->dev, "USB_CONN_NTC");
 
 	platform_set_drvdata(pdev, ntc_info);
 
