@@ -10,6 +10,7 @@
 	tboard_thermistor4: thermal-ntc4 { };
 	tboard_thermistor5: thermal-ntc5 { };
 	tboard_thermistor6: thermal-ntc6 { };
+	tboard_thermistor7: thermal-ntc7 { };
 	moto_chg_tcmd: moto_chg_tcmd { };
 	smart_pen_charger: mmi,pen-charger { };
 	moto_wlc: moto_wlc { };
