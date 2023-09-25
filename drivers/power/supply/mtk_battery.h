@@ -1093,9 +1093,6 @@ struct mtk_battery {
 	int no_bat_temp_compensate;
 	int enable_tmp_intr_suspend;
 	int fg_current_pn_label;
-#ifdef CONFIG_CANCUNF_BATTERY_NTC
-        int g_max_show;
-#endif
 	struct battery_temperature_table rbat;
 	struct fg_temp *tmp_table;
 

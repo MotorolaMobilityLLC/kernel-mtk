@@ -588,18 +588,9 @@ static int battery_psy_get_property(struct power_supply *psy,
 			int q_max_mah = 0;
 			int q_max_uah = 0;
 
-#ifdef CONFIG_CANCUNF_BATTERY_NTC
-			if(gm->g_max_show > 0){
-			   q_max_mah = gm->g_max_show;
-			}
-			else {
-#endif
 			q_max_mah =
 				gm->fg_table_cust_data.fg_profile[
 				gm->battery_id].q_max;
-#ifdef CONFIG_CANCUNF_BATTERY_NTC
-			}
-#endif
 
 			q_max_uah = q_max_mah * 1000;
 			if (q_max_uah <= 100000) {
@@ -1434,10 +1425,6 @@ void fg_custom_init_from_header(struct mtk_battery *gm)
 	gm->ext_hwocv_swocv_lt = EXT_HWOCV_SWOCV_LT;
 	gm->ext_hwocv_swocv_lt_temp = EXT_HWOCV_SWOCV_LT_TEMP;
 
-#ifdef CONFIG_CANCUNF_BATTERY_NTC
-        gm->g_max_show = 0;
-#endif
-
 	fg_cust_data->dc_ratio_sel = DC_RATIO_SEL;
 	fg_cust_data->dc_r_cnt = DC_R_CNT;
 
@@ -1787,12 +1774,6 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 
 	bm_err("%s\n", __func__);
 
-#ifdef CONFIG_CANCUNF_BATTERY_NTC
-	if(gm->g_max_show == 0) {
-	        fg_read_dts_val(np, "g_MAX_SHOW", &(gm->g_max_show), 1);
-		bm_err("%s read g_MAX_SHOW = %d\n", __func__, gm->g_max_show);
-	}
-#endif
 
 	if (gm->ptim_lk_v == 0) {
 		fg_read_dts_val(np, "fg_swocv_v", &(lk_v), 1);
