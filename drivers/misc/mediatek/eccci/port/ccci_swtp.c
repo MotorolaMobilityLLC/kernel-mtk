@@ -540,7 +540,7 @@ int swtp_init(int md_id)
 	/* tx work setting */
 	INIT_DELAYED_WORK(&swtp_data[md_id].delayed_work,
 		swtp_tx_delayed_work);
-#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST)
+#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST)
 #ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
 #else
