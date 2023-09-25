@@ -171,8 +171,6 @@
         CURR_MEASURE_20A = <(0)>;
         UNIT_MULTIPLE = <(1)>;
 
-        g_MAX_SHOW = <5000>;
-
 	/* battery prop */
 	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
 	g_FG_PSEUDO100 = <98 99 100 100
