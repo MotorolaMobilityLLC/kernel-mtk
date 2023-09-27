@@ -479,7 +479,7 @@ void CANCUNF_S5KJNS_eeprom_format_calibration_data(struct imgsensor_struct *pImg
 
 	CANCUNF_S5KJNS_eeprom_get_mnf_data((void *)CANCUNF_S5KJNS_eeprom, &mnf_info);
 
-	//get_hw_ggc_data(CANCUNF_S5KJNS_eeprom);
+	get_hw_ggc_data(CANCUNF_S5KJNS_eeprom);
 
 	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
 	        calibration_status.mnf, calibration_status.af, calibration_status.awb,
@@ -499,7 +499,7 @@ mot_calibration_mnf_t *CANCUNF_S5KJNS_eeprom_get_mnf_info(void)
 
 void write_xtc_data(void)
 {
-	uint16_t write_table[CANCUNF_S5KJNS_EEPROM_CRC_XTC_SIZE * 2] = {0};
+	uint16_t write_table[CANCUNF_S5KJNS_EEPROM_CRC_XTC_WRITE_SIZE * 2] = {0};
 
 	pr_debug("E\n");
 
