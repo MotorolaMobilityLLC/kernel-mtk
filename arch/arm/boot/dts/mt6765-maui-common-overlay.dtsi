@@ -568,6 +568,13 @@
 		0 0 0>;
 };
 
+&u2port0 {
+	mediatek,discth = <0xf>;
+	mediatek,eye-vrt = <7>;
+	mediatek,eye-term = <3>;
+	mediatek,rev6 = <3>;
+};
+
 &charge_leds {
        compatible = "pmic-leds";
        label = "charging";
