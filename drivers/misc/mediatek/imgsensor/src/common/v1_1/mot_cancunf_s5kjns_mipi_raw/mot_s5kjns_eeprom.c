@@ -52,7 +52,7 @@ static uint8_t CANCUNF_S5KJNS_eeprom[CANCUNF_S5KJNS_EEPROM_SIZE] = {0};
 static mot_calibration_status_t calibration_status = {CRC_FAILURE};
 static mot_calibration_mnf_t mnf_info = {0};
 
-extern kal_uint16 mot_cancunf_s5kjns_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len);
+extern kal_uint16 mot_cancunf_s5kjns_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len);
 
 static uint8_t crc_reverse_byte(uint32_t data)
 {
@@ -505,7 +505,7 @@ void write_xtc_data(void)
 
 	memcpy(write_table, &hw_ggc_data[0].addr, sizeof(write_table));
 
-	mot_cancunf_s5kjns_table_write_cmos_sensor(write_table,
+	mot_cancunf_s5kjns_burst_write_cmos_sensor(write_table,
 		sizeof(write_table)/sizeof(uint16_t));
 
 	pr_debug("apply xtc calibration data success.");
