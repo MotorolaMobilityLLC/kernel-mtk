@@ -85,7 +85,9 @@ struct compat_disp_ccorr_config {
 	bool is_dirty;
 	compat_int_t mode;
 	compat_int_t color_matrix[16];
+	bool feature_flag;
 };
+
 struct compat_disp_output_config {
 	compat_uptr_t va;
 	compat_uptr_t pa;
