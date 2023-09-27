@@ -4312,9 +4312,6 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 		//if (info->mmi.chrg_iterm > FFC_ITERM_500MA) {
 		//	mmi->vfloat_comp_mv = (batt_soc == 100)?FV_COMP_24_MV:FV_COMP_32_MV; //Only for ffc charging
 		//}
-#elif defined (CONFIG_MOTO_10W_DCP_FFC_SUPPORT)
-	if(info->dvchg1_dev!=NULL){
-	max_fv_mv=mmi_get_ffc_fv(info,batt_temp);
 #else
 	if (info->dvchg1_dev != NULL
 		&& info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
