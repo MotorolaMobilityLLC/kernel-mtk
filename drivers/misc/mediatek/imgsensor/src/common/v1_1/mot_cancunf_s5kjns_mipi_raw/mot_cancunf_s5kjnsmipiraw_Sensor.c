@@ -352,6 +352,45 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 }
 
 #if MULTI_WRITE
+kal_uint16 mot_cancunf_s5kjns_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
+{
+	char puSendCmd[I2C_BUFFER_LEN];
+	kal_uint32 tosend, IDX;
+	kal_uint16 addr = 0, addr_last = 0, data;
+	tosend = 0;
+	IDX = 0;
+
+	addr = para[IDX];
+	puSendCmd[tosend++] = (char)(addr >> 8);
+	puSendCmd[tosend++] = (char)(addr & 0xFF);
+	while (len > IDX) {
+		{
+			data = para[IDX + 1];
+			puSendCmd[tosend++] = (char)(data >> 8);
+			puSendCmd[tosend++] = (char)(data & 0xFF);
+			IDX += 2;
+			addr_last = para[IDX];
+		}
+		if ((I2C_BUFFER_LEN - tosend) < 3 || IDX == len || addr != addr_last) {
+			imgsensor_i2c_write(
+				get_i2c_cfg(),
+				puSendCmd,
+				tosend,
+				tosend,
+				imgsensor.i2c_write_id,
+				imgsensor_info.i2c_speed);
+			tosend = 0;
+			if(IDX < len) {
+				addr = para[IDX];
+				puSendCmd[tosend++] = (char)(addr >> 8);
+				puSendCmd[tosend++] = (char)(addr & 0xFF);
+			}
+
+		}
+	}
+	return 0;
+}
+
 kal_uint16 mot_cancunf_s5kjns_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
