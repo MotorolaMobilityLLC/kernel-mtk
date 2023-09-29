@@ -298,7 +298,7 @@ static int csot_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-	.clock = 341390,
+	.clock = 343022,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_0_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_0_HFP + HSA,
@@ -309,7 +309,7 @@ static const struct drm_display_mode default_mode = {
 	.vtotal = FRAME_HEIGHT + MODE_0_VFP + VSA + VBP,
 };
 static const struct drm_display_mode performance_mode_1 = {
-	.clock = 341459,
+	.clock = 343231,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_1_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_1_HFP + HSA,
@@ -321,7 +321,7 @@ static const struct drm_display_mode performance_mode_1 = {
 };
 
 static const struct drm_display_mode performance_mode_2 = {
-	.clock = 341529,
+	.clock = 343301,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_2_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_2_HFP + HSA,
