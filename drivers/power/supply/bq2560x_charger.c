@@ -1754,6 +1754,9 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				unsigned long event, void *data)
 {
 	struct tcp_notify *noti = data;
+	struct mtk_charger *info = NULL;
+	struct power_supply *chg_psy = NULL;
+	bool atm_enabled = false;
 	struct bq2560x *bq =
 		(struct bq2560x *)container_of(nb,
 		struct bq2560x, pd_nb);
@@ -1786,6 +1789,18 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 	default:
 		break;
 	};
+
+	chg_psy = power_supply_get_by_name("mtk-master-charger");
+	if (chg_psy == NULL || IS_ERR(chg_psy)) {
+		pr_err("%s Couldn't get chg_psy\n", __func__);
+	} else {
+		info = (struct mtk_charger *)power_supply_get_drvdata(chg_psy);
+		atm_enabled = info->atm_enabled;
+	}
+
+	if (atm_enabled)
+		power_supply_changed(bq->psy);
+
 	return NOTIFY_OK;
 }
 
