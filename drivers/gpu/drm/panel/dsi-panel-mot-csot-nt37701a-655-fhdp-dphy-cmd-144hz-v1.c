@@ -391,7 +391,7 @@ static struct mtk_panel_params ext_params_48hz = {
 		.data_rate = 330,
 	},
 	.data_rate = 330,
-	.lp_perline_en = 1,
+	.lp_perline_en = 0,
 
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
@@ -466,7 +466,7 @@ static struct mtk_panel_params ext_params_60hz = {
 		.data_rate = 380,
 	},
 	.data_rate = 380,
-	.lp_perline_en = 1,
+	.lp_perline_en = 0,
 
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
@@ -540,7 +540,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.data_rate = 570,
 	},
 	.data_rate = 570,
-	.lp_perline_en = 1,
+	.lp_perline_en = 0,
 
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
@@ -614,7 +614,7 @@ static struct mtk_panel_params ext_params_120hz = {
 		.data_rate = 760,
 	},
 	.data_rate = 760,
-	.lp_perline_en = 1,
+	.lp_perline_en = 0,
 
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
@@ -689,7 +689,7 @@ static struct mtk_panel_params ext_params_144hz = {
 		.data_rate = 950,
 	},
 	.data_rate = 950,
-	.lp_perline_en = 1,
+	.lp_perline_en = 0,
 
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
