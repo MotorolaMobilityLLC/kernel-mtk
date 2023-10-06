@@ -1,6 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0
 menu "Device Drivers"
 
+# +EKMAUI-7, zhouxin2.wt, RF Bring up swtp cfg, 20220402
+config MOTO_MAUI_PROJECT_SWTP_SETING_APART
+        bool "Define for Maui SWTP seting apart"
+        help
+          Say Y here for distinguish different projects
+# -EKMAUI-7, zhouxin2.wt, RF Bring up swtp cfg, 20220402
+
 # Keep I/O buses first
 
 source "drivers/amba/Kconfig"
