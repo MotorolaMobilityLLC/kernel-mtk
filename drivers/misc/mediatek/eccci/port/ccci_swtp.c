@@ -328,7 +328,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 	CCCI_LEGACY_ERR_LOG(-1, SYS,
 		"%s:the end swtp status is %d\n", __func__ , swtp->tx_power_mode);
 #endif
-#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST)
+#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART)
 
 
 #ifdef CONFIG_MOTO_BYPSS_RF_CABLE_DETECT_SUPPORT
