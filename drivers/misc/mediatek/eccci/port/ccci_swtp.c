@@ -283,6 +283,14 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2], swtp->gpio_state[3]);
 	}
 	//END <EKCANCUNN-4>
+
+#elif defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART)
+       //+EKMAUI-7, zhouxin2.wt, RF Bring up swtp cfg, 20220402
+       if (swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_IN) {
+           swtp->tx_power_mode = SWTP_NO_TX_POWER;
+       } else {
+           swtp->tx_power_mode = SWTP_DO_TX_POWER;
+       }
 #else
 	for (i = 0; i < MAX_PIN_NUM; i++) {
 		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
@@ -540,7 +548,8 @@ int swtp_init(int md_id)
 	/* tx work setting */
 	INIT_DELAYED_WORK(&swtp_data[md_id].delayed_work,
 		swtp_tx_delayed_work);
-#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST)
+//+EKMAUI-7, zhouxin2.wt, RF Bring up swtp cfg, 20220402
+#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART)
 #ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
 #else
