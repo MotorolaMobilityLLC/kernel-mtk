@@ -260,10 +260,18 @@ static void tianma_panel_init(struct tianma *ctx)
 	else {
 		//PANEL_V1 ili7807s for DVT,PVT
 		tianma_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x06);
+                tianma_dcs_write_seq_static(ctx, 0x12, 0xBD);
+                tianma_dcs_write_seq_static(ctx, 0x80, 0x00);
+                tianma_dcs_write_seq_static(ctx, 0xC7, 0x05);
+                tianma_dcs_write_seq_static(ctx, 0x4E, 0x40);
+                tianma_dcs_write_seq_static(ctx, 0x4D, 0x01);
+                tianma_dcs_write_seq_static(ctx, 0x48, 0x09);
 		tianma_dcs_write_seq_static(ctx, 0x3E, 0xE2);
 		tianma_dcs_write_seq_static(ctx, 0x80, 0x00);
 
 		tianma_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x02);
+		tianma_dcs_write_seq_static(ctx, 0x01, 0x55);
+		tianma_dcs_write_seq_static(ctx, 0x02, 0x09);
 		tianma_dcs_write_seq_static(ctx, 0x1B, 0x00);
 
 		tianma_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x0C);
