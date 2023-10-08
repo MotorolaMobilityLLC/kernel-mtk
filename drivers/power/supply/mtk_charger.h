@@ -290,6 +290,11 @@ struct mmi_cycle_cv_steps {
 	int		delta_cv_mv;
 };
 
+struct mmi_cycle_age_table {
+	int		cycle;
+	int		age;
+};
+
 struct mmi_temp_zone {
 	int		temp_c;
 	int		norm_mv;
@@ -375,6 +380,9 @@ struct mmi_params {
 	struct mmi_ffc_zone	*ffc_zones;
 	int			num_cycle_cv_steps;
 	struct mmi_cycle_cv_steps	*cycle_cv_steps;
+
+	int			num_cycle_age_table;
+	struct mmi_cycle_age_table	*cycle_age_table;
 
 #ifdef CONFIG_MOTO_CHG_FFC_5V10W_SUPPORT
 	CHARGER_FFC_STATE_T	ffc_state;

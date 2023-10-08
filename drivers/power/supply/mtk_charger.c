@@ -3462,12 +3462,72 @@ static ssize_t charge_rate_show(struct device *dev,
 
 static DEVICE_ATTR(charge_rate, S_IRUGO, charge_rate_show, NULL);
 
+static int mmi_get_battery_cycle(void)
+{
+	int rc = 0;
+	union power_supply_propval val = {0};
+
+	if (!mmi_info) {
+		pr_err("SMBMMI: mmi_info is not initialized\n");
+		return 0;
+	}
+
+	rc = mmi_get_prop_from_battery(mmi_info,
+					POWER_SUPPLY_PROP_CYCLE_COUNT, &val);
+	return val.intval;
+
+}
+
+static int mmi_get_battery_age_by_cycle(void)
+{
+	int batt_age = 100;
+	int i = 0;
+	int batt_cycle = 0;
+	struct mmi_cycle_age_table *zones = NULL;
+	int num_zones = 0;
+
+	if (!mmi_info) {
+		pr_err("SMBMMI: mmi_info is not initialized\n");
+		return batt_age;
+	}
+	zones = mmi_info->mmi.cycle_age_table;
+	num_zones = mmi_info->mmi.num_cycle_age_table;
+
+	if (zones != NULL && num_zones > 0) {
+		batt_cycle = mmi_get_battery_cycle();
+
+		if (batt_cycle <= zones[0].cycle) {
+			batt_age = zones[0].age;
+		} else if(batt_cycle >= zones[num_zones - 1].cycle) {
+			batt_age = zones[num_zones - 1].age;
+		} else {
+			for (i = 1; i < num_zones; i++) {
+				if (batt_cycle == zones[i].cycle) {
+					batt_age = zones[i].age;
+					break;
+				} else if (batt_cycle < zones[i].cycle) {
+					batt_age = zones[i-1].age + (batt_cycle - zones[i-1].cycle)
+						* (zones[i].age - zones[i-1].age) / (zones[i].cycle - zones[i-1].cycle);
+					break;
+				}
+			}
+		}
+		pr_info("%s cycle:%d age:%d\n", __func__, batt_cycle, batt_age);
+	}
+
+	return batt_age;
+}
+
 static mmi_get_battery_age(void)
 {
 	union power_supply_propval val = {0};
 	struct mtk_gauge *gauge;
 	struct power_supply *psy;
 	int rc = 0;
+
+	if (mmi_info && mmi_info->mmi.num_cycle_age_table > 1) {
+		return mmi_get_battery_age_by_cycle();
+	}
 
 	psy = power_supply_get_by_name("mtk-gauge");
 	if (psy == NULL) {
@@ -4596,6 +4656,45 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 		info->mmi.cycle_cv_steps = NULL;
 		info->mmi.num_cycle_cv_steps = 0;
 		pr_err("[%s]mmi cycle cv steps is not set\n", __func__);
+	}
+
+	if (of_find_property(node, "mmi,mmi-cycle-age-table", &byte_len)) {
+		if ((byte_len / sizeof(u32)) % 2) {
+			pr_err("[%s]DT error mmi cycle age zones, byte_len = %d\n",
+				__func__, byte_len);
+			return -ENODEV;
+		}
+
+		info->mmi.cycle_age_table = (struct mmi_cycle_age_table *)
+			devm_kzalloc(dev, byte_len, GFP_KERNEL);
+
+		if (info->mmi.cycle_age_table == NULL)
+			return -ENOMEM;
+
+		info->mmi.num_cycle_age_table =
+			byte_len / sizeof(struct mmi_cycle_age_table);
+
+		rc = of_property_read_u32_array(node,
+				"mmi,mmi-cycle-age-table",
+				(u32 *)info->mmi.cycle_age_table,
+				byte_len / sizeof(u32));
+		if (rc < 0) {
+			pr_err("[%s]Couldn't read mmi cycle age table rc = %d\n", __func__, rc);
+			return rc;
+		}
+		pr_info("[%s]mmi cycle age table: Num: %d\n",
+				__func__,
+				info->mmi.num_cycle_age_table);
+		for (i = 0; i < info->mmi.num_cycle_age_table; i++) {
+			pr_info("[%s]mmi cycle age table: cycle > %d, age = %d %%\n",
+				__func__,
+				info->mmi.cycle_age_table[i].cycle,
+				info->mmi.cycle_age_table[i].age);
+		}
+	} else {
+		info->mmi.cycle_age_table = NULL;
+		info->mmi.num_cycle_age_table = 0;
+		pr_err("[%s]mmi cycle age table is not set\n", __func__);
 	}
 
 	if (of_find_property(node, "mmi,mmi-temp-zones", &byte_len)) {
