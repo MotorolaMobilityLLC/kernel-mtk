@@ -65,6 +65,7 @@
 #include "mtk_battery.h"
 #include <linux/power/moto_chg_tcmd.h>
 #include <linux/of_gpio.h>
+#include <linux/thermal.h>
 
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_SGM415XX)
 #include "wt6670f.h"
@@ -341,6 +342,8 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 	}
 
 	info->typecotp_charger = of_property_read_bool(np, "typecotp_charger");
+	info->typecotp_use_thermal_cooling =
+		of_property_read_bool(np, "mmi,typecotp-use-thermal-cooling");
 
 	if (of_property_read_string(np, "algorithm_name",
 		&info->algorithm_name) < 0) {
@@ -5329,7 +5332,7 @@ static void mmi_typec_connecter_otp(struct mtk_charger *info)
 {
 	int ts;
 
-	if (info->typecotp_charger) {
+	if (info->typecotp_charger && ! info->typecotp_use_thermal_cooling) {
 		ts = get_typec_temp(info);
 		chr_err("otp_temp:%d\n", ts);
 
@@ -5369,6 +5372,109 @@ static void mmi_typec_connecter_otp(struct mtk_charger *info)
 		}
 	}
 }
+
+#define TYPEC_OTP_STATE_NUM 2
+/*
+0 - normal or recover
+1 - over temp
+*/
+static int mmi_typec_otp_tcd_get_max_state(struct thermal_cooling_device *tcd,
+	unsigned long *state)
+{
+	struct mtk_charger *info = tcd->devdata;
+
+	if (!info) {
+		chr_err("%s Error:info is NULL\n", __func__);
+		return -1;
+	}
+
+	*state = info->typec_otp_max_state;
+
+	return 0;
+}
+
+static int mmi_typec_otp_tcd_get_cur_state(struct thermal_cooling_device *tcd,
+	unsigned long *state)
+{
+	struct mtk_charger *info = tcd->devdata;
+
+	if (!info) {
+		chr_err("%s Error:info is NULL\n", __func__);
+		return -1;
+	}
+
+	*state = info->typec_otp_cur_state;
+
+	return 0;
+}
+
+static int mmi_typec_otp_set_cur_state(struct thermal_cooling_device *tcd,
+	unsigned long state)
+{
+	struct mtk_charger *info = tcd->devdata;
+
+	if (!info) {
+		chr_err("%s Error:info is NULL\n", __func__);
+		return -1;
+	}
+
+	if (state > info->typec_otp_max_state)
+		return -EINVAL;
+
+	if (info->typecotp_charger) {
+		if (state == 1) {
+			info->typec_otp_sts = true;
+			charger_dev_enable_powerpath(info->chg1_dev, 0);//hz
+			charger_dev_enable_hz(info->chg1_dev, 1);
+			chr_err("otph_hz\n");
+			if(get_charger_type(info) == POWER_SUPPLY_TYPE_USB_DCP) {
+				if (info->mmi.active_fast_alg == PDC_ID) {//cc
+					tcpm_typec_disable_function(info->tcpc_dev,true);
+					info->pdc_otp_sts = true;
+					chr_err("otph_cc\n");
+				} else {//short
+					charger_dev_enable_mos_short(info->chg1_dev, true);
+					info->dcp_otp_sts = true;
+					chr_err("otph_short\n");
+				}
+			}
+			info->typec_otp_cur_state = state;
+		} else if (state == 0) {
+			if (info->typec_otp_sts == true) {
+				info->typec_otp_sts = false;
+				charger_dev_enable_powerpath(info->chg1_dev, 1);
+				charger_dev_enable_hz(info->chg1_dev, 0);
+				chr_err("otpl_hz\n");
+				if (info->pdc_otp_sts == true) {//cc
+					tcpm_typec_disable_function(info->tcpc_dev,false);
+					info->pdc_otp_sts = false;
+					chr_err("otpl_cc\n");
+				}
+				if (info->dcp_otp_sts == true) {//short
+					charger_dev_enable_mos_short(info->chg1_dev, false);
+					info->dcp_otp_sts = false;
+					chr_err("otpl_short\n");
+				}
+			}
+			info->typec_otp_cur_state = state;
+		}
+	}
+
+	pr_info("%s set state=%d,cur_state=%d,otp_sts typec:%d pdc:%d dcp:%d\n",
+		__func__, state,
+		info->typec_otp_cur_state,
+		info->typec_otp_sts,
+		info->pdc_otp_sts,
+		info->dcp_otp_sts);
+
+	return 0;
+}
+
+static const struct thermal_cooling_device_ops mmi_typec_otp_tcd_ops = {
+	.get_max_state = mmi_typec_otp_tcd_get_max_state,
+	.get_cur_state = mmi_typec_otp_tcd_get_cur_state,
+	.set_cur_state = mmi_typec_otp_set_cur_state,
+};
 
 static int charger_routine_thread(void *arg)
 {
@@ -6625,6 +6731,14 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	mmi_init(info);
 	kthread_run(charger_routine_thread, info, "charger_thread");
 
+	/* Register typec connecter ntc thermal zone cooling device */
+	if (info->typecotp_charger && info->typecotp_use_thermal_cooling) {
+		info->typec_otp_max_state = TYPEC_OTP_STATE_NUM - 1;
+		info->tcd = thermal_of_cooling_device_register(dev_of_node(&pdev->dev),
+			"typec_otp", info, &mmi_typec_otp_tcd_ops);
+		pr_info("%s Register typec connecter ntc thermal zone cooling device %s\n",
+			__func__, (info->tcd > 0)? "Success": "Failed");
+	}
 	return 0;
 }
 

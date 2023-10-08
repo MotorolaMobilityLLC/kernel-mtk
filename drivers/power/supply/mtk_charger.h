@@ -610,6 +610,11 @@ struct mtk_charger {
 	bool typec_otp_sts;
 	bool dcp_otp_sts;
 	bool pdc_otp_sts;
+	/*typec connecter ntc thermal*/
+	bool typecotp_use_thermal_cooling;
+	struct thermal_cooling_device *tcd;
+	int typec_otp_max_state;
+	int typec_otp_cur_state;
 
 };
 
