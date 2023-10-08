@@ -181,6 +181,7 @@
 
 	/* typec otp */
 	typecotp_charger = <1>;
+	mmi,typecotp-use-thermal-cooling = <1>;
 
 	mmi,typec-ntc-pull-up-r = <3920>;
 	mmi,typec-ntc-table = <(-20) 68237>,
