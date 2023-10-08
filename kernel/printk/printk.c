@@ -2156,7 +2156,7 @@ static u16 printk_sprint(char *text, u16 size, int facility,
 			 va_list args)
 {
 	u16 text_len = 0;
-	static char textbuf[LOG_LINE_MAX];
+	char textbuf[LOG_LINE_MAX];
 	char *mtk_text = textbuf;
 	u16  mtk_prefix_len = 0;
 
