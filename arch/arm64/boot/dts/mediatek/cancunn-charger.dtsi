@@ -16,7 +16,7 @@
 	boot_battery_voltage = <3600000>;
 	battery_cv = <4500000>;
 	max_charger_voltage = <14500000>;
-	min_charger_voltage = <4600000>;
+	min_charger_voltage = <4700000>;
 
 	/* sw jeita */
 	enable_vbat_mon = <0>;
