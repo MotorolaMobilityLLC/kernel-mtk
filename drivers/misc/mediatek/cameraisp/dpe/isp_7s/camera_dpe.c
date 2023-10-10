@@ -5497,7 +5497,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					dpe_deque_request_isp7s(&dpe_reqs_dvp,
 					&kDpeReq.m_ReqNum, &kDpeReq);
 
-				if (kDpeReq.m_ReqNum > _SUPPORT_MAX_DPE_FRAME_REQUEST_) {
+				if (kDpeReq.m_ReqNum >= 3) {
 					LOG_ERR("kDpeReq m_ReqNum is too large");
 					Ret = -EFAULT;
 					goto EXIT;
@@ -6258,7 +6258,7 @@ static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 			goto EXIT;
 		}
 
-		if (kreq.m_ReqNum > _SUPPORT_MAX_DPE_FRAME_REQUEST_) {
+		if (kreq.m_ReqNum >= 3) {
 			LOG_ERR("kreq m_ReqNum is too large");
 			Ret = -EFAULT;
 			goto EXIT;
