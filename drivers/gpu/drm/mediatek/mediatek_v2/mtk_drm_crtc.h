@@ -279,7 +279,7 @@ enum DISP_PMQOS_SLOT {
 
 #define for_each_comp_in_crtc_path_bound(comp, mtk_crtc, __i, __j, offset)     \
 	for_each_comp_in_target_ddp_mode_bound(comp, mtk_crtc, __i, __j,       \
-			mtk_crtc->ddp_mode, offset)
+		(mtk_crtc->ddp_mode > 0 ? mtk_crtc->ddp_mode : 0), offset)
 
 #define for_each_comp_in_cur_crtc_path(comp, mtk_crtc, __i, __j)               \
 	for_each_comp_in_crtc_path_bound(comp, mtk_crtc, __i, __j, 0)

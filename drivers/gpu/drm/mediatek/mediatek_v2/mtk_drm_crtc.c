@@ -8194,7 +8194,7 @@ int mtk_crtc_attach_ddp_comp(struct drm_crtc *crtc, int ddp_mode,
 	int i, j;
 	bool only_output;
 
-	if (ddp_mode < 0)
+	if (ddp_mode < 0 || ddp_mode >= DDP_MODE_NR)
 		return -EINVAL;
 
 	only_output = (priv && priv->usage[drm_crtc_index(crtc)] == DISP_OPENING);
@@ -9265,8 +9265,14 @@ void mtk_crtc_stop(struct mtk_drm_crtc *mtk_crtc, bool need_wait)
 		goto skip;
 
 	if (crtc_id == 2) {
-		int gce_event =
-			get_path_wait_event(mtk_crtc, mtk_crtc->ddp_mode);
+		int gce_event;
+
+		if (mtk_crtc_with_sub_path(crtc, mtk_crtc->ddp_mode))
+			gce_event =
+			get_path_wait_event(mtk_crtc, DDP_SECOND_PATH);
+		else
+			gce_event =
+			get_path_wait_event(mtk_crtc, DDP_FIRST_PATH);
 
 		if (gce_event > 0)
 			cmdq_pkt_wait_no_clear(cmdq_handle, gce_event);
@@ -15409,7 +15415,8 @@ static void mtk_crtc_connect_single_path_cmdq(struct drm_crtc *crtc,
 			prev_id = DDP_COMPONENT_ID_MAX;
 		} else {
 			comp = mtk_crtc_get_comp(crtc, ddp_mode, path_idx, i - 1);
-			prev_id = comp->id;
+			if (comp)
+				prev_id = comp->id;
 		}
 
 		comp = mtk_crtc_get_comp(crtc, ddp_mode, path_idx, i);

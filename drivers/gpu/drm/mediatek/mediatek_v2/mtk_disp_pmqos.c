@@ -175,6 +175,9 @@ int mtk_disp_set_hrt_bw(struct mtk_drm_crtc *mtk_crtc, unsigned int bw)
 
 	tmp = bw;
 
+	if (mtk_crtc->ddp_mode >= DDP_MODE_NR)
+		return 0;
+
 	if (priv->data->mmsys_id == MMSYS_MT6835) {
 		if (mtk_disp_check_segment(mtk_crtc, priv) == false) {
 			mtk_icc_set_bw(priv->hrt_bw_request, 0, MBps_to_icc(1));
