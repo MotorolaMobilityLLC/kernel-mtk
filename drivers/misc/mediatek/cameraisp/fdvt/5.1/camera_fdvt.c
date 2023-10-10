@@ -3505,7 +3505,8 @@ static long FDVT_ioctl(struct file *pFile,
 
 			mutex_unlock(&fdvt_mutex);
 		} else {
-			log_err("FDVT_ENQUE_REQ copy_from_user failed\n");
+			log_err("FDVT_ENQUE_REQ copy_from_user failed, p1(%p) p2(%p) p3(%d)\n",
+					&fdvt_FdvtReq, Param, sizeof(FDVT_Request));
 			ret = -EFAULT;
 		}
 
