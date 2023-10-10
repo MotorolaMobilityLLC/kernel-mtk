@@ -5499,6 +5499,10 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 				if (kDpeReq.m_ReqNum >= 3) {
 					LOG_ERR("kDpeReq m_ReqNum is too large");
+					spin_unlock_irqrestore(
+					&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DVP_ST]),
+							       flags);
+					mutex_unlock(&gDVSMutex);
 					Ret = -EFAULT;
 					goto EXIT;
 				}
