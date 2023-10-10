@@ -20,7 +20,6 @@
 #include <linux/version.h>
 #include <linux/sched/clock.h>
 
-#include "inc/pd_dbg_info.h"
 #include "inc/tcpci.h"
 #include "inc/rt1711h.h"
 
@@ -1251,53 +1250,6 @@ static int rt_parse_dt(struct rt1711_chip *chip, struct device *dev)
 	return 0;
 }
 
-/*
- * In some platform pr_info may spend too much time on printing debug message.
- * So we use this function to test the printk performance.
- * If your platform cannot not pass this check function, please config
- * PD_DBG_INFO, this will provide the threaded debug message for you.
- */
-#if TCPC_ENABLE_ANYMSG
-static void check_printk_performance(void)
-{
-	int i;
-	u64 t1, t2;
-	u32 nsrem;
-
-#if IS_ENABLED(CONFIG_PD_DBG_INFO)
-	for (i = 0; i < 10; i++) {
-		t1 = local_clock();
-		pd_dbg_info("%d\n", i);
-		t2 = local_clock();
-		t2 -= t1;
-		nsrem = do_div(t2, 1000000000);
-		pd_dbg_info("pd_dbg_info : t2-t1 = %lu\n",
-				(unsigned long)nsrem / 1000);
-	}
-	for (i = 0; i < 10; i++) {
-		t1 = local_clock();
-		pr_info("%d\n", i);
-		t2 = local_clock();
-		t2 -= t1;
-		nsrem = do_div(t2, 1000000000);
-		pr_info("pr_info : t2-t1 = %lu\n",
-				(unsigned long)nsrem / 1000);
-	}
-#else
-	for (i = 0; i < 10; i++) {
-		t1 = local_clock();
-		pr_info("%d\n", i);
-		t2 = local_clock();
-		t2 -= t1;
-		nsrem = do_div(t2, 1000000000);
-		pr_info("t2-t1 = %lu\n",
-				(unsigned long)nsrem /  1000);
-		PD_BUG_ON(nsrem > 100*1000);
-	}
-#endif /* CONFIG_PD_DBG_INFO */
-}
-#endif /* TCPC_ENABLE_ANYMSG */
-
 static int rt1711_tcpcdev_init(struct rt1711_chip *chip, struct device *dev)
 {
 	struct tcpc_desc *desc;
@@ -1456,10 +1408,6 @@ static int rt1711_i2c_probe(struct i2c_client *client,
 	chip_id = rt1711h_check_revision(client);
 	if (chip_id < 0)
 		return chip_id;
-
-#if TCPC_ENABLE_ANYMSG
-	check_printk_performance();
-#endif /* TCPC_ENABLE_ANYMSG */
 
 	chip = devm_kzalloc(&client->dev, sizeof(*chip), GFP_KERNEL);
 	if (!chip)

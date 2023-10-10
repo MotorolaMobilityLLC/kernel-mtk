@@ -15,10 +15,7 @@
 #include <linux/delay.h>
 
 #include "tcpci_core.h"
-
-#if IS_ENABLED(CONFIG_PD_DBG_INFO)
 #include "pd_dbg_info.h"
-#endif /* CONFIG_PD_DBG_INFO */
 
 #if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
 #include "pd_core.h"

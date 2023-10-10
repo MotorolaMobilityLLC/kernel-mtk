@@ -65,9 +65,6 @@ void pe_snk_wait_for_capabilities_entry(
 
 void pe_snk_evaluate_capability_entry(struct pd_port *pd_port)
 {
-	/* Disable UART output for Source SenderResponse */
-	pd_lock_msg_output(pd_port);
-
 	pd_handle_hard_reset_recovery(pd_port);
 	pd_handle_first_pd_command(pd_port);
 
@@ -90,9 +87,6 @@ void pe_snk_select_capability_entry(struct pd_port *pd_port)
 		/* pd_dpm_sink_vbus(pd_port, false); */
 		PE_INFO("NewReq, rdo:0x%08x\n", pd_port->last_rdo);
 	}
-
-	/* Disable UART output for Sink SenderResponse */
-	pd_lock_msg_output(pd_port);
 
 	pd_send_sop_data_msg(pd_port,
 		PD_DATA_REQUEST, 1, &pd_port->last_rdo);
@@ -117,10 +111,6 @@ void pe_snk_select_capability_exit(struct pd_port *pd_port)
 		pd_port->cap_miss_match |= (1 << 1);
 	} else
 		pd_port->cap_miss_match = 0;
-
-	/* Waiting for Hard-Reset Done */
-	if (!pd_check_timer_msg_event(pd_port, PD_TIMER_SENDER_RESPONSE))
-		pd_unlock_msg_output(pd_port);
 }
 
 void pe_snk_transition_sink_entry(struct pd_port *pd_port)

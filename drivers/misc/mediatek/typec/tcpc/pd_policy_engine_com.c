@@ -33,8 +33,6 @@ static void pe_idle_reset_data(struct pd_port *pd_port)
 #endif	/* CONFIG_USB_PD_TRANSMIT_BIST2 */
 
 	pd_enable_timer(pd_port, PD_TIMER_PE_IDLE_TOUT);
-
-	pd_unlock_msg_output(pd_port);
 }
 
 void pe_idle1_entry(struct pd_port *pd_port)

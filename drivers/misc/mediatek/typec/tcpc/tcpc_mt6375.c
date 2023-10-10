@@ -22,7 +22,7 @@
 #include "inc/std_tcpci_v10.h"
 
 #define MT6375_INFO_EN	1
-#define MT6375_DBGINFO_EN	1
+#define MT6375_DBGINFO_EN	0
 #define MT6375_WD1_EN	1
 #define MT6375_WD2_EN	1
 
@@ -678,7 +678,7 @@ static int mt6375_enable_typec_otp_fwen(struct tcpc_device *tcpc, bool en)
 {
 	struct mt6375_tcpc_data *ddata = tcpc_get_dev_data(tcpc);
 
-	pr_info("%s: en=%d\n", __func__, en);
+	MT6375_DBGINFO("%s: en=%d\n", __func__, en);
 	return (en ? mt6375_set_bits : mt6375_clr_bits)
 		(ddata, MT6375_REG_TYPECOTPCTRL, MT6375_MSK_TYPECOTP_FWEN);
 }
@@ -1345,7 +1345,7 @@ static int mt6375_set_cc_toggling(struct mt6375_tcpc_data *ddata, int rp_lvl)
 						 TYPEC_CC_RD);
 	struct tcpc_desc *desc = ddata->desc;
 
-	pr_info("Toggle: %s\n", __func__);
+	MT6375_DBGINFO("Toggle: %s\n", __func__);
 	ret = mt6375_write8(ddata, TCPC_V10_REG_ROLE_CTRL, data);
 	if (ret < 0)
 		return ret;
@@ -1395,7 +1395,7 @@ static int mt6375_enable_floating_ground(struct mt6375_tcpc_data *ddata,
 	int ret = 0;
 	u8 value = 0;
 
-	pr_info("%s: en:%d\n", __func__, en);
+	MT6375_DBGINFO("%s: en:%d\n", __func__, en);
 	if (en) {
 		/* set wd0 detect time */
 		value |= (ddata->wd0_tsleep << MT6375_SFT_WD0_TSLEEP);
@@ -2255,7 +2255,7 @@ static int mt6375_get_vbus_voltage(struct tcpc_device *tcpc, u32 *vbus)
 		return ret;
 	/* TODO: Please re-write it */
 	*vbus = (data & 0x3FF) * 25;
-	pr_info("%s 0x%04x, %dmV\n", __func__, data, *vbus);
+	MT6375_DBGINFO("%s 0x%04x, %dmV\n", __func__, data, *vbus);
 	return 0;
 }
 
