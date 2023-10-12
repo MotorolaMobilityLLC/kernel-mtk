@@ -417,7 +417,7 @@ static int pe50_get_tbat(struct pe50_hal *hal)
 	union power_supply_propval prop;
 	struct power_supply *bat_psy;
 
-	bat_psy = devm_power_supply_get_by_phandle(hal->dev, "gauge");
+	bat_psy = power_supply_get_by_name("battery");
 	if (IS_ERR_OR_NULL(bat_psy)) {
 		PE50_ERR("%s Couldn't get bat_psy\n", __func__);
 		ret = 27;
@@ -464,9 +464,8 @@ int pe50_hal_get_soc(struct chg_alg_device *alg, u32 *soc)
 	int ret_tmp;
 	struct power_supply *bat_psy;
 	union power_supply_propval prop;
-	struct pe50_hal *hal = chg_alg_dev_get_drv_hal_data(alg);
 
-	bat_psy = devm_power_supply_get_by_phandle(hal->dev, "gauge");
+	bat_psy = power_supply_get_by_name("battery");
 	if (IS_ERR_OR_NULL(bat_psy)) {
 		PE50_ERR("%s Couldn't get bat_psy\n", __func__);
 		ret = 50;

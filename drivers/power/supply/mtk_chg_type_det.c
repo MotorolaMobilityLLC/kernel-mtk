@@ -63,7 +63,7 @@ static int mtk_ext_get_charger_type(struct mtk_ctd_info *mci, int attach)
 	static struct power_supply *bc12_psy;
 
 	if (mci->bc12_sel == MTK_CTD_BY_MAINPMIC)
-		bc12_psy = power_supply_get_by_name("mtk_charger_type");
+		bc12_psy = power_supply_get_by_name("primary_chg");
 	else if (mci->bc12_sel == MTK_CTD_BY_EXTCHG)
 		bc12_psy = power_supply_get_by_name("ext_charger_type");
 	if (IS_ERR_OR_NULL(bc12_psy)) {
@@ -310,8 +310,7 @@ static int mtk_ctd_probe(struct platform_device *pdev)
 
 	mtk_ctd_parse_dt(mci);
 
-	mci->bc12_psy = devm_power_supply_get_by_phandle(&pdev->dev,
-							"bc12");
+	mci->bc12_psy = power_supply_get_by_name("primary_chg");
 	if (IS_ERR(mci->bc12_psy)) {
 		dev_notice(&pdev->dev, "Failed to get charger psy, no device\n");
 		return PTR_ERR(mci->bc12_psy);
