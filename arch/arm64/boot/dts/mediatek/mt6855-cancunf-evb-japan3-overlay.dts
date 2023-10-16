@@ -28,5 +28,5 @@
 };
 
 #include <cancunf_evb/cust.dtsi>
-#include "mediatek/cancunf-charger-japan-overlay.dtsi"
+#include "mediatek/cancunf-charger-japan30w-overlay.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
