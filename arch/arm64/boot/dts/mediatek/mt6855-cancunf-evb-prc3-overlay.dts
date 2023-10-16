@@ -28,5 +28,5 @@
 };
 
 #include <cancunf_evb/cust.dtsi>
-#include "mediatek/cancunf-charger.dtsi"
+#include "mediatek/cancunf-30w_charger.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
