@@ -554,6 +554,34 @@
 	};
 };
 
+&i2c0 {
+	mediatek,clk_div_ctrl;
+};
+
+&i2c1 {
+	mediatek,clk_div_ctrl;
+};
+
+&i2c2 {
+	mediatek,clk_div_ctrl;
+};
+
+&i2c3 {
+	mediatek,clk_div_ctrl;
+};
+
+&i2c4 {
+	mediatek,clk_div_ctrl;
+};
+
+&i2c5 {
+	mediatek,clk_div_ctrl;
+};
+
+&i2c6 {
+	mediatek,clk_div_ctrl;
+};
+
 &mmc1 {
 	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 	cd-gpios = <&pio 1 GPIO_ACTIVE_HIGH>;
