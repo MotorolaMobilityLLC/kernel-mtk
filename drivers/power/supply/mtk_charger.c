@@ -4024,7 +4024,11 @@ static int mmi_charger_check_dcp_ffc_status(struct mtk_charger *info, int batt_s
 	do {
 
 		chr_type = get_charger_type(info);
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 		pr_err("[%s] ffc_state:%d, charge stage:%d, uisoc:%d, chg_type:%d\n", __func__, mmi->ffc_state, current_charge_state, batt_soc, m_chg_type);
+#else
+                pr_err("[%s] ffc_state:%d, charge stage:%d, uisoc:%d, chg_type:%d\n", __func__, mmi->ffc_state, current_charge_state, batt_soc, chr_type);
+#endif
 		switch (mmi->ffc_state) {
 			case CHARGER_FFC_STATE_INITIAL:
 				if (current_charge_state == STEP_MAX &&
@@ -4052,8 +4056,10 @@ static int mmi_charger_check_dcp_ffc_status(struct mtk_charger *info, int batt_s
 					if (0 == chr_type) {
 						max_fv_mv = _max_fv_mv;
 						info->data.ac_charger_input_current = info->ffc_input_current_backup;
-					} else
-						mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
+					} else {
+                                                if(current_charge_state != STEP_NORM)
+						    mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
+                                        }
 					pr_err("[%s] ui_soc:%d, charge_type:%d not for ffc\n", __func__, batt_soc, chr_type);
 				}
 				loop = false;
