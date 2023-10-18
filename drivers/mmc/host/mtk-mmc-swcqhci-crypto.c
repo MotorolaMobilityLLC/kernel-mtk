@@ -348,8 +348,8 @@ static int swcq_mmc_init_crypto_spec(struct mmc_host *mmc,
 	mmc->ksm.ksm_ll_ops = swcq_ksm_ops;
 	mmc->ksm.dev = mmc_dev(mmc);
 
-	/* only supports 32 DUN bits. */
-	mmc->ksm.max_dun_bytes_supported = 4;
+	/* only supports 64 DUN bits. */
+	mmc->ksm.max_dun_bytes_supported = 8;
 
 	mmc->ksm.features = BLK_CRYPTO_FEATURE_STANDARD_KEYS;
 
