@@ -68,9 +68,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		use within device memory layer.
 */
 
-	/* Start at 2 MiB Size of 512 GiB less 2 MiB (managed by OS/Services) */
-	#define RGX_GENERAL_SVM_HEAP_BASE           IMG_UINT64_C(0x0000200000)
-	#define RGX_GENERAL_SVM_HEAP_SIZE			IMG_UINT64_C(0x7FFFE00000)
+	/* Start at 32 KiB Size of 512 GiB less 32 KiB (managed by OS/Services) */
+	#define RGX_GENERAL_SVM_HEAP_BASE           IMG_UINT64_C(0x0000008000)
+	#define RGX_GENERAL_SVM_HEAP_SIZE			IMG_UINT64_C(0x7FFFFF8000)
 
 	/* Start at 512GiB. Size of 255 GiB */
 	#define RGX_GENERAL_HEAP_BASE				IMG_UINT64_C(0x8000000000)
