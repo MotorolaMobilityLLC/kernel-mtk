@@ -19,3 +19,6 @@ mmc_block-objs			:= block.o queue.o
 obj-$(CONFIG_MMC_TEST)		+= mmc_test.o
 obj-$(CONFIG_SDIO_UART)		+= sdio_uart.o
 mmc_core-$(CONFIG_MMC_CRYPTO)	+= crypto.o
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+include $(srctree)/drivers/tee/gud/Makefile.include
+endif
