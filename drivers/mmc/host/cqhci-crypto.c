@@ -68,7 +68,6 @@ static void cqhci_crypto_program_wrapped_key(struct cqhci_host *host,
 {
 	u32 slot_offset = host->crypto_cfg_register + slot * sizeof(*cfg);
 
-	msdc_ungate_clock(host->mmc);
 	/* Ensure that CFGE is cleared before programming the key */
 	cqhci_writel(host, 0, slot_offset + 16 * sizeof(cfg->reg_val[0]));
 	pr_notice("Trustonic HWKM: Start programming slot: %d\n", slot);
@@ -87,10 +86,9 @@ static void cqhci_crypto_program_wrapped_key(struct cqhci_host *host,
 		cqhci_writel(host, le32_to_cpu(cfg->reg_val[16]),
 			     slot_offset + 16 * sizeof(cfg->reg_val[0]));
 	}
-	msdc_gate_clock(host->mmc);
 }
 
-static int cqhci_crypto_derive_raw_secret(struct keyslot_manager *ksm,
+static int cqhci_crypto_derive_raw_secret(struct blk_keyslot_manager *ksm,
 			const u8 *wrapped_key,
 			unsigned int wrapped_key_size,
 			u8 *secret,
