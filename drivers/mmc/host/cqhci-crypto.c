@@ -57,6 +57,49 @@ static int cqhci_crypto_program_key(struct cqhci_host *cq_host,
 	return 0;
 }
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+#include <tlc_km.h>
+#include <linux/arm-smccc.h>
+#include <linux/soc/mediatek/mtk_sip_svc.h>
+
+static void cqhci_crypto_program_wrapped_key(struct cqhci_host *host,
+				     const union cqhci_crypto_cfg_entry *cfg,
+				     int slot)
+{
+	u32 slot_offset = host->crypto_cfg_register + slot * sizeof(*cfg);
+
+	msdc_ungate_clock(host->mmc);
+	/* Ensure that CFGE is cleared before programming the key */
+	cqhci_writel(host, 0, slot_offset + 16 * sizeof(cfg->reg_val[0]));
+	pr_notice("Trustonic HWKM: Start programming slot: %d\n", slot);
+	if (hwkm_program_key(
+			cfg->crypto_key,
+			CQHCI_CRYPTO_KEY_MAX_SIZE/2 + WRAPPED_STORAGE_KEY_HEADER_SIZE, /*40 bytes*/
+			slot_offset,
+			STORAGE_KEY_EMMC_HWCQHCI) != 0) {
+		pr_notice("Trustonic HWKM: Unwrap or install storage key failed to ICE");
+	} else {
+		pr_notice("Trustonic HWKM: End programing slot: %d\n", slot);
+		/* Write dword 17 */
+		cqhci_writel(host, le32_to_cpu(cfg->reg_val[17]),
+			     slot_offset + 17 * sizeof(cfg->reg_val[0]));
+		/* Write dword 16 */
+		cqhci_writel(host, le32_to_cpu(cfg->reg_val[16]),
+			     slot_offset + 16 * sizeof(cfg->reg_val[0]));
+	}
+	msdc_gate_clock(host->mmc);
+}
+
+static int cqhci_crypto_derive_raw_secret(struct keyslot_manager *ksm,
+			const u8 *wrapped_key,
+			unsigned int wrapped_key_size,
+			u8 *secret,
+			unsigned int secret_size)
+{
+	return hwkm_derive_raw_secret(wrapped_key, wrapped_key_size, secret, secret_size);
+}
+#endif
+
 static int cqhci_crypto_keyslot_program(struct blk_keyslot_manager *ksm,
 					const struct blk_crypto_key *key,
 					unsigned int slot)
@@ -71,7 +114,7 @@ static int cqhci_crypto_keyslot_program(struct blk_keyslot_manager *ksm,
 	int i;
 	int cap_idx = -1;
 	union cqhci_crypto_cfg_entry cfg = {};
-	int err;
+	int err = 0;
 
 	BUILD_BUG_ON(CQHCI_CRYPTO_KEY_SIZE_INVALID != 0);
 	for (i = 0; i < cq_host->crypto_capabilities.num_crypto_cap; i++) {
@@ -98,7 +141,11 @@ static int cqhci_crypto_keyslot_program(struct blk_keyslot_manager *ksm,
 		memcpy(cfg.crypto_key, key->raw, key->size);
 	}
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	cqhci_crypto_program_wrapped_key(cq_host, &cfg, slot);
+#else
 	err = cqhci_crypto_program_key(cq_host, &cfg, slot);
+#endif
 
 	memzero_explicit(&cfg, sizeof(cfg));
 	return err;
@@ -135,6 +182,9 @@ static int cqhci_crypto_keyslot_evict(struct blk_keyslot_manager *ksm,
 static const struct blk_ksm_ll_ops cqhci_ksm_ops = {
 	.keyslot_program	= cqhci_crypto_keyslot_program,
 	.keyslot_evict		= cqhci_crypto_keyslot_evict,
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	.derive_raw_secret	= cqhci_crypto_derive_raw_secret,
+#endif
 };
 
 static enum blk_crypto_mode_num
@@ -209,7 +259,11 @@ int cqhci_crypto_init(struct cqhci_host *cq_host)
 	/* Unfortunately, CQHCI crypto only supports 32 DUN bits. */
 	ksm->max_dun_bytes_supported = 4;
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+        ksm->features = BLK_CRYPTO_FEATURE_WRAPPED_KEYS;
+#else
 	ksm->features = BLK_CRYPTO_FEATURE_STANDARD_KEYS;
+#endif
 
 	/*
 	 * Cache all the crypto capabilities and advertise the supported crypto
