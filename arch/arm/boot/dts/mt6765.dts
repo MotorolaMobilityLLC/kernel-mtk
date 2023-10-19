@@ -4655,6 +4655,7 @@ initcall_debug=1 pelt=8 clk_ignore_unused=1";
 
 &mt6370_chg {
 	charger = <&mtk_charger_type>; /*mt6370 get online status*/
+	charger_name = "mt6370-charger";
 };
 
 &mtk_charger_type {
