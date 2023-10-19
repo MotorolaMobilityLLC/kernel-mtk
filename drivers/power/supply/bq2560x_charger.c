@@ -459,6 +459,12 @@ int bq2560x_set_boost_current(struct bq2560x *bq, int curr)
 	if (curr == BOOSTI_1200)
 		val = REG02_BOOST_LIM_1P2A;
 
+	if ( charger_ic_type == CHARGER_IC_SGM41513 || charger_ic_type == CHARGER_IC_ETA6953) {
+		if (curr >= BOOSTI_1200) {
+			val = REG02_BOOST_LIM_1P2A;
+			pr_err("the SGM41513/ETA6935 set the boot lim is 1200\n");
+		}
+	}
 //the sgm41542 boot lim is diff sgm41511
 	if ( charger_ic_type == CHARGER_IC_SGM41542 ) {
 		if (curr == BOOSTI_1200) {
