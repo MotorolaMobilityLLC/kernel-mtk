@@ -7,6 +7,9 @@
 #include <linux/mmc/mmc.h>
 #include "mtk-mmc.h"
 #include "mtk-mmc-swcqhci-crypto.h"
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+#include <tlc_km.h>
+#endif
 
 #define NUM_KEYSLOTS(host) \
 	(((u32)(host->crypto_capabilities.config_count) & 0xFF))
@@ -248,6 +251,30 @@ static int mmc_crypto_keyslot_program(struct blk_keyslot_manager *ksm,
 		return err;
 	}
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	{
+		if (hwkm_is_slot_already_programmed(slot)) {
+			pr_notice("Trustonic HWKM: keyslot: %d is already programmed, skipping!\n", slot);
+		} else {
+			u32 gie_config = (slot & 0xFF) | (0x01 << 16);
+			u8 wrapped_key[HWKM_AES_STORAGE_KEY_MAX_SIZE] = {0};
+			pr_notice("Trustonic HWKM: Start programming slot: %d\n", slot);
+			memcpy(wrapped_key, key->raw, MMC_CRYPTO_KEY_MAX_SIZE);
+			if (hwkm_program_key(
+					wrapped_key,
+					MMC_CRYPTO_KEY_MAX_SIZE/2 + WRAPPED_STORAGE_KEY_HEADER_SIZE, /*40 bytes*/
+					gie_config, /* slot number marker*/
+					STORAGE_KEY_EMMC_SWCQHCI) != 0) {
+				pr_notice("Trustonic HWKM: Unwrap or install storage key failed to ICE");
+				return -EINVAL;
+			} else {
+				hwkm_set_slot_programmed_mask(slot);
+			}
+			pr_notice("Trustonic HWKM: End programing slot: %d\n", slot);
+		}
+	}
+#endif
+
 	memcpy(&cfg_arr[slot], &cfg, sizeof(cfg));
 	memzero_explicit(&cfg, sizeof(cfg));
 
@@ -263,12 +290,34 @@ static int mmc_crypto_keyslot_evict(struct blk_keyslot_manager *ksm,
 
 	memset(&cfg_arr[slot], 0, sizeof(cfg_arr[slot]));
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	if (hwkm_is_slot_already_programmed(slot)) {
+		pr_notice("Trustonic HWKM: Start eviction for slot: %d\n", slot);
+		hwkm_set_slot_evicted_mask(slot);
+		pr_notice("Trustonic HWKM: End eviction for slot: %d\n", slot);
+	}
+#endif
+
 	return 0;
 }
+
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+static int mmc_crypto_derive_raw_secret(struct blk_keyslot_manager *ksm,
+			const u8 *wrapped_key,
+			unsigned int wrapped_key_size,
+			u8 *secret,
+			unsigned int secret_size)
+{
+	return hwkm_derive_raw_secret(wrapped_key, wrapped_key_size, secret, secret_size);
+}
+#endif
 
 static const struct blk_ksm_ll_ops swcq_ksm_ops = {
 	.keyslot_program	= mmc_crypto_keyslot_program,
 	.keyslot_evict		= mmc_crypto_keyslot_evict,
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	.derive_raw_secret	= mmc_crypto_derive_raw_secret,
+#endif
 };
 
 /**
@@ -351,7 +400,11 @@ static int swcq_mmc_init_crypto_spec(struct mmc_host *mmc,
 	/* only supports 64 DUN bits. */
 	mmc->ksm.max_dun_bytes_supported = 8;
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	mmc->ksm.features = BLK_CRYPTO_FEATURE_WRAPPED_KEYS;
+#else
 	mmc->ksm.features = BLK_CRYPTO_FEATURE_STANDARD_KEYS;
+#endif
 
 	/* Hardcode for special swcmdq */
 	mmc->ksm.crypto_modes_supported[1] = 0x1200;
@@ -466,6 +519,102 @@ static int set_crypto(struct msdc_host *host,
 	return 0;
 }
 
+
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+#include <linux/arm-smccc.h>
+#include <linux/soc/mediatek/mtk_sip_svc.h>
+
+#define MTK_SIP_KERNEL_HW_FDE_MSDC_CTL \
+	MTK_SIP_SMC_CMD(0x273)
+
+/* only non-cqe uses this to set key */
+static void msdc_crypto_program_hwkm_key(struct mmc_host *mmc,
+                        u8 *key, u8 *tkey, u32 config, u32 slot)
+{
+        struct arm_smccc_res res;
+        struct msdc_host *host = mmc_priv(mmc);
+	u32 val;
+
+        if (!host || !host->base)
+                return;
+
+        /* disable AES path firstly if need for safety */
+        msdc_complete_mqr_crypto(mmc);
+
+        if (unlikely(!*key && !tkey)) {
+                /* disable AES path by set bypass bit */
+		val = readl(host->base + MSDC_AES_SWST);
+		val |= MSDC_AES_BYPASS;
+		writel(val, host->base + MSDC_AES_SWST);
+                return;
+        }
+
+        /* switch crypto engine to MSDC */
+
+        /* write AES config */
+	writel(0, host->base + MSDC_AES_CFG_GP1);
+	writel(config, host->base + MSDC_AES_CFG_GP1);
+
+        if (!(readl(host->base + MSDC_AES_CFG_GP1)))
+                pr_notice("%s write config fail %d!!\n", __func__, config);
+
+        if (hwkm_is_slot_already_programmed(slot)) {
+                arm_smccc_smc(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL,
+                                (1 << 7), slot, 0, 0, 0, 0, 0, &res);
+        } else {
+                u8 wrapped_key[HWKM_AES_STORAGE_KEY_MAX_SIZE] = {0};
+                memcpy(wrapped_key, key, MMC_CRYPTO_KEY_MAX_SIZE/2);
+                memcpy(wrapped_key + MMC_CRYPTO_KEY_MAX_SIZE/2, tkey,
+                                MMC_CRYPTO_KEY_MAX_SIZE/2);
+                if (hwkm_program_key(
+                                wrapped_key,
+                                MMC_CRYPTO_KEY_MAX_SIZE/2 + WRAPPED_STORAGE_KEY_HEADER_SIZE, /*40 bytes*/
+                                0, /*We don't care about the slot number, offset, etc*/
+                                STORAGE_KEY_EMMC_SWCQHCI) != 0) {
+                        pr_notice("Trustonic HWKM: Unwrap or install storage key failed to ICE");
+                }
+        }
+}
+
+/* set crypto information */
+int swcq_mmc_start_crypto(struct mmc_host *mmc,
+		struct mmc_request *mrq, u32 opcode)
+{
+	int ddir, slot;
+	u32 data_unit_size, aes_config;
+	struct swcq_host *swcq_host = NULL;
+	struct msdc_host *host = mmc_priv(mmc);
+
+	if (!host || !mrq->crypto_ctx)
+		return 0;
+
+	slot = mrq->crypto_key_slot;
+	swcq_host = host->swcq_host;
+
+	data_unit_size = mrq->crypto_ctx->bc_key->crypto_cfg.data_unit_size;
+	if (data_unit_size > 4096) {
+		WARN_ON(1);
+		return -EDOM;
+	}
+
+	/* There is only one cap in sw-cqhci */
+	aes_config = (mrq->crypto_ctx->bc_key->crypto_cfg.data_unit_size) << 16 |
+		swcq_host->crypto_cap_array[0].key_size << 8 |
+		swcq_host->crypto_cap_array[0].algorithm_id << 0;
+
+        /* Program key onto ICE */
+        msdc_crypto_program_hwkm_key(mmc,
+                        &(swcq_host->crypto_cfgs[slot].crypto_key[0]),
+                        &(swcq_host->crypto_cfgs[slot].crypto_key[MMC_CRYPTO_KEY_MAX_SIZE/2]),
+                        aes_config,
+                        slot);
+
+	/* set IV and trigger crypto engine */
+	ddir = (opcode == MMC_EXECUTE_WRITE_TASK) ? 1 : 0;
+	return set_crypto(host, mrq->crypto_ctx->bc_dun[0], ddir);
+}
+#else
+
 /* only non-cqe uses this to set key */
 static void msdc_crypto_program_key(struct mmc_host *mmc,
 			u32 *key, u32 *tkey, u32 config)
@@ -549,6 +698,7 @@ int swcq_mmc_start_crypto(struct mmc_host *mmc,
 	ddir = (opcode == MMC_EXECUTE_WRITE_TASK) ? 1 : 0;
 	return set_crypto(host, mrq->crypto_ctx->bc_dun[0], ddir);
 }
+#endif
 
 void swcq_mmc_complete_mqr_crypto(struct mmc_host *mmc)
 {
