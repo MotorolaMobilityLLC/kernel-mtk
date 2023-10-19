@@ -94,6 +94,7 @@ struct mtk_charger_type {
 	int bc12_active;
 	u32 bootmode;
 	u32 boottype;
+	struct mutex attach_lock;
 };
 
 struct tag_bootmode {
@@ -717,9 +718,11 @@ int psy_chr_type_set_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-		if (val->intval)
+		if (val->intval) {
+			mutex_lock(&info->attach_lock);
 			info->type = get_charger_type(info);
-		else {
+			mutex_unlock(&info->attach_lock);
+		} else {
 			info->psy_desc.type = POWER_SUPPLY_TYPE_USB;
 			info->type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
 		}
@@ -903,6 +906,7 @@ static int mt6357_charger_type_probe(struct platform_device *pdev)
 	info->usb_desc.get_property = mt_usb_get_property;
 	info->usb_cfg.drv_data = info;
 
+	mutex_init(&info->attach_lock);
 	info->psy = power_supply_register(&pdev->dev, &info->psy_desc,
 			&info->psy_cfg);
 
