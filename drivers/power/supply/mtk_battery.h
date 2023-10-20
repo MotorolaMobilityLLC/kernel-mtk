@@ -908,6 +908,11 @@ struct ag_center_data_st {
 	struct timespec64 times[3];
 };
 
+struct mmi_charge_full_percent_table {
+	int	cycle;
+	int	percent;
+};
+
 struct mtk_battery {
 	/*linux driver related*/
 	wait_queue_head_t  wait_que;
@@ -1103,6 +1108,12 @@ struct mtk_battery {
 	int log_level;
 
 	bool mmi_tbat_filter_enable;
+
+	/*charge_full percent by cycle*/
+	int charge_full;
+	int q_max_uah_design;
+	int charge_full_percent_table_num;
+	struct mmi_charge_full_percent_table *charge_full_percent_table;
 };
 
 struct mtk_battery_sysfs_field_info {
