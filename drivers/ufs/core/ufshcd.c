@@ -7793,8 +7793,7 @@ release:
  */
 static int ufshcd_host_reset_and_restore(struct ufs_hba *hba)
 {
-	struct ufs_hw_queue *hwq;
-	int err, i;
+	int err;
 
 	/*
 	 * Stop the host controller and complete the requests
@@ -7805,15 +7804,6 @@ static int ufshcd_host_reset_and_restore(struct ufs_hba *hba)
 	hba->silence_err_logs = true;
 	ufshcd_complete_requests(hba, true);
 	hba->silence_err_logs = false;
-
-	if (hba->mcq_enabled) {
-		for (i = 0; i < hba->nr_hw_queues; i++) {
-			hwq = &hba->uhq[i];
-			hwq->sq_tail_slot = 0;
-			hwq->cq_tail_slot = 0;
-			hwq->cq_head_slot = 0;
-		}
-	}
 
 	/* scale up clocks to max frequency before full reinitialization */
 	ufshcd_scale_clks(hba, true);
