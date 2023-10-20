@@ -340,6 +340,55 @@ int check_cap_level(int uisoc)
 		return POWER_SUPPLY_CAPACITY_LEVEL_UNKNOWN;
 }
 
+int get_charge_full_by_cycle_percent(void)
+{
+	int i = 0;
+	int batt_cycle = 0;
+	int num_zones = 0;
+	int percent = 100;
+	struct mtk_battery *gm;
+	struct mmi_charge_full_percent_table *zones = NULL;
+
+	gm = get_mtk_battery();
+	if (!gm) {
+		pr_err("%s:gm is not initialized\n", __func__);
+		return percent;
+	}
+
+	if (gm->charge_full_percent_table) {
+		zones = gm->charge_full_percent_table;
+		num_zones = gm->charge_full_percent_table_num;
+
+		if (zones != NULL && num_zones > 0) {
+			pr_debug("%s bat_cycle:%d bat_cycle_count:%d\n", gm->bat_cycle, gm->bat_cycle_count);
+			if (gm->bat_cycle_count > 0)
+				batt_cycle = gm->bat_cycle_count;
+			else
+				batt_cycle = gm->bat_cycle;
+
+			if (batt_cycle <= zones[0].cycle) {
+				percent = zones[0].percent;
+			} else if(batt_cycle >= zones[num_zones - 1].cycle) {
+				percent = zones[num_zones - 1].percent;
+			} else {
+				for (i = 1; i < num_zones; i++) {
+					if (batt_cycle == zones[i].cycle) {
+						percent = zones[i].percent;
+						break;
+					} else if (batt_cycle < zones[i].cycle) {
+						percent = zones[i-1].percent + (batt_cycle - zones[i-1].cycle)
+							* (zones[i].percent - zones[i-1].percent) / (zones[i].cycle - zones[i-1].cycle);
+						break;
+					}
+				}
+			}
+			pr_info("%s cycle:%d percent:%d\n", __func__, batt_cycle, percent);
+		}
+	}
+
+	return percent;
+}
+
 #ifdef CONFIG_MOTO_CHARGER_SGM415XX
 static enum power_supply_property usb_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
@@ -516,10 +565,21 @@ static int battery_psy_get_property(struct power_supply *psy,
 		break;
 #endif
 	case POWER_SUPPLY_PROP_CHARGE_FULL:
-		val->intval = gm->algo_qmax * 1000 / 10;
+		if (gm->charge_full_percent_table_num > 0) {
+			gm->charge_full = gm->q_max_uah_design * get_charge_full_by_cycle_percent() /100;
+			val->intval = gm->charge_full;
+			pr_debug("charge_full=%d set_cycle=%d bat_cycle=%d\n", __func__,
+					val->intval, gm->bat_cycle_count, gm->bat_cycle);
+		} else {
+			val->intval = gm->algo_qmax * 1000 / 10;
+		}
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-		val->intval = gm->ui_soc * (gm->algo_qmax * 1000 / 10) / 100;
+		if (gm->charge_full_percent_table && gm->charge_full > 0) {
+			val->intval = gm->ui_soc * gm->charge_full / 100;
+		} else {
+			val->intval = gm->ui_soc * (gm->algo_qmax * 1000 / 10) / 100;
+		}
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		/* 1 = META_BOOT, 4 = FACTORY_BOOT 5=ADVMETA_BOOT */
@@ -600,6 +660,7 @@ static int battery_psy_get_property(struct power_supply *psy,
 			}
 			val->intval = q_max_uah;
 		}
+		gm->q_max_uah_design = val->intval;
 		break;
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
 		bs_data = &gm->bs_data;
@@ -1766,6 +1827,8 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 	char node_name[128];
 	struct fuel_gauge_custom_data *fg_cust_data;
 	struct fuel_gauge_table_custom_data *fg_table_cust_data;
+	int byte_len = 0;
+	int rc = 0;
 
 	gm->battery_id = fgauge_get_profile_id();
 	bat_id = gm->battery_id;
@@ -2371,6 +2434,44 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 
 	gm->mmi_tbat_filter_enable = of_property_read_bool(np, "mmi,tbat-filter-enable");
 
+	if (of_find_property(np, "mmi,charge-full-percent-table", &byte_len)) {
+		if ((byte_len / sizeof(u32)) % 2) {
+			pr_err("[%s]DT error mmi charge_full percent table, byte_len = %d\n",
+				__func__, byte_len);
+			return;
+		}
+
+		gm->charge_full_percent_table = (struct mmi_charge_full_percent_table *)
+			devm_kzalloc(&dev->dev, byte_len, GFP_KERNEL);
+
+		if (gm->charge_full_percent_table == NULL)
+			return;
+
+		gm->charge_full_percent_table_num =
+			byte_len / sizeof(struct mmi_charge_full_percent_table);
+
+		rc = of_property_read_u32_array(np,
+				"mmi,charge-full-percent-table",
+				(u32 *)gm->charge_full_percent_table,
+				byte_len / sizeof(u32));
+		if (rc < 0) {
+			pr_err("[%s]Couldn't read mmi charge_full percent table, rc = %d\n", __func__, rc);
+			return;
+		}
+		pr_info("[%s]mmi charge_full percent table: Num: %d\n",
+				__func__,
+				gm->charge_full_percent_table_num);
+		for (i = 0; i < gm->charge_full_percent_table_num; i++) {
+			pr_info("[%s]mmi charge_full percent table: cycle = %d, percent = %d %%\n",
+				__func__,
+				gm->charge_full_percent_table[i].cycle,
+				gm->charge_full_percent_table[i].percent);
+		}
+	} else {
+		gm->charge_full_percent_table = NULL;
+		gm->charge_full_percent_table_num = 0;
+		pr_info("[%s]mmi charge_full percent table is not set\n", __func__);
+	}
 }
 
 #endif	/* end of CONFIG_OF */
