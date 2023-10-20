@@ -112,6 +112,13 @@
 	df-serialnum = "SB18D39674";
 	#include "bat_setting/mt6879_battery_nf50_atl_5000mah.dtsi"
 	#include "bat_setting/mt6879_battery_nf50_sunw_5000mah.dtsi"
+
+	/*<cycle,percent>*/
+	mmi,charge-full-percent-table = <100 100>,
+		<300 95>,
+		<500 90>,
+		<700 85>,
+		<900 80>;
 };
 
 &lk_charger {
