@@ -60,6 +60,7 @@
 #define MT6377_GPIO_MODE9_CLR                0xd8
 #define MT6377_TOP_CKPDN_CON0                0x10c
 #define MT6377_TOP_CKHWEN_CON0               0x121
+#define MT6377_DCXO_CW11                     0x7a7
 #define MT6377_DCXO_CW12                     0x7a9
 #define MT6377_OTP_CON0                      0x38a
 #define MT6377_OTP_CON10                     0x394
@@ -352,6 +353,11 @@
 #define MT6377_AUDENC_ANA_CON32              0x2528
 #define MT6377_AUDENC_ANA_CON33              0x2529
 #define MT6377_AUDENC_ANA_CON34              0x252a
+#define MT6377_VOWPLL_ANA_CON0               0x252b
+#define MT6377_VOWPLL_ANA_CON1               0x252c
+#define MT6377_VOWPLL_ANA_CON2               0x252d
+#define MT6377_VOWPLL_ANA_CON4               0x252f
+#define MT6377_VOWPLL_ANA_CON5               0x2530
 #define MT6377_AUDDEC_ANA_ID                 0x2580
 #define MT6377_AUDDEC_DIG_ID                 0x2581
 #define MT6377_AUDDEC_ANA_REV                0x2582
@@ -491,6 +497,19 @@
 
 /* MT6377_DCXO_CW12 */
 #define RG_XO_AUDIO_EN_M_SFT                             5
+#define RG_XO_AUDIO_EN_M_MASK                            0x1
+#define RG_XO_AUDIO_EN_M_MASK_SFT                        (0x1 << 5)
+
+/* MT6377_DCXO_CW11 */
+#define RG_XO_VOW_EN_SFT                                 1
+#define RG_XO_VOW_EN_MASK                                0x1
+#define RG_XO_VOW_EN_MASK_SFT                            (0x1 << 1)
+#define RG_XO_LV_PUF_FPMISET_SFT                         5
+#define RG_XO_LV_PUF_FPMISET_MASK                        0x7
+#define RG_XO_LV_PUF_FPMISET_MASK_SFT                    (0x7 << 5)
+#define RG_XO_LV_PUF_ISET_SFT                            2
+#define RG_XO_LV_PUF_ISET_MASK                           0x7
+#define RG_XO_LV_PUF_ISET_MASK_SFT                       (0x7 << 2)
 
 /* LDO_VIO18_CON0 */
 #define RG_LDO_VIO18_EN_SFT                              0
@@ -3055,6 +3074,21 @@
 #define RGS_AUDRCTUNERREAD_MASK                          0x1f
 #define RGS_AUDRCTUNERREAD_MASK_SFT                      (0x1f << 0)
 
+/* VOWPLL_ANA_CON0 */
+#define RG_PLL_EN_SFT                                    0
+#define RG_PLL_EN_MASK                                   0x1
+#define RG_PLL_EN_MASK_SFT                               (0x1 << 0)
+
+/* VOWPLL_ANA_CON2 */
+#define RG_PLL_RLATCH_EN_SFT                             0
+#define RG_PLL_RLATCH_EN_MASK                            0x1
+#define RG_PLL_RLATCH_EN_MASK_SFT                        (0x1 << 0)
+
+/* VOWPLL_ANA_CON4 */
+#define RG_PLL_HPM_EN_SFT                                6
+#define RG_PLL_HPM_EN_MASK                               0x1
+#define RG_PLL_HPM_EN_MASK_SFT                           (0x1 << 6)
+
 /* AUDDEC_ANA_ID */
 #define AUDDEC_ANA_ID_SFT                                0
 #define AUDDEC_ANA_ID_MASK                               0xff
@@ -5082,20 +5116,22 @@ enum {
 	SUPPLY_SEQ_DL_NV,
 	SUPPLY_SEQ_HP_ANA_TRIM,
 	SUPPLY_SEQ_DL_IBIST,
+	/* vow */
+	SUPPLY_SEQ_AUD_GLB_VOW,
+	SUPPLY_SEQ_VOW_AUD_LPW,
+	SUPPLY_SEQ_AUD_VOW,
+	SUPPLY_SEQ_VOW_CLK,
+	SUPPLY_SEQ_VOW_LDO,
+	SUPPLY_SEQ_VOW_PLL,
+	SUPPLY_SEQ_VOW_PERIODIC_CFG,
 	/* capture */
 	SUPPLY_SEQ_UL_PGA,
 	SUPPLY_SEQ_UL_ADC,
 	SUPPLY_SEQ_UL_MTKAIF,
 	SUPPLY_SEQ_UL_SRC_DMIC,
 	SUPPLY_SEQ_UL_SRC,
-	/* vow */
-	SUPPLY_SEQ_VOW_AUD_LPW,
-	SUPPLY_SEQ_AUD_VOW,
-	SUPPLY_SEQ_VOW_CLK,
-	SUPPLY_SEQ_VOW_LDO,
-	SUPPLY_SEQ_AUD_GLB_VOW,
+	/* vow digital*/
 	SUPPLY_SEQ_VOW_DIG_CFG,
-	SUPPLY_SEQ_VOW_PERIODIC_CFG,
 };
 
 enum {

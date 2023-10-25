@@ -339,7 +339,7 @@ static int mt6835_i2s_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 	return 0;
 }
 
-#if IS_ENABLED(CONFIG_MTK_VOW_SUPPORT) && !defined(SKIP_SB)
+#if IS_ENABLED(CONFIG_MTK_VOW_SUPPORT)
 static const struct snd_pcm_hardware mt6835_mt6377_vow_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 		 SNDRV_PCM_INFO_MMAP_VALID),
@@ -644,7 +644,7 @@ SND_SOC_DAILINK_DEFS(btcvsd,
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_PLATFORM("18050000.mtk-btcvsd-snd")));
 #endif
-#if IS_ENABLED(CONFIG_MTK_VOW_SUPPORT) && !defined(SKIP_SB)
+#if IS_ENABLED(CONFIG_MTK_VOW_SUPPORT)
 SND_SOC_DAILINK_DEFS(vow,
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_CODEC(DEVICE_MT6377_NAME,
@@ -1236,7 +1236,7 @@ static struct snd_soc_dai_link mt6835_mt6377_dai_links[] = {
 	},
 #endif
 	/* VoW */
-#if IS_ENABLED(CONFIG_MTK_VOW_SUPPORT) && !defined(SKIP_SB)
+#if IS_ENABLED(CONFIG_MTK_VOW_SUPPORT)
 	{
 		.name = "VOW_Capture",
 		.stream_name = "VOW_Capture",
