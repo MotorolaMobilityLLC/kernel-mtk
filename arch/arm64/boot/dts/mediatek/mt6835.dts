@@ -3545,6 +3545,13 @@
 			ccci-infracfg = <&infracfg_ao_clk>;
 			ccci-topckgen = <&topckgen_clk>;
 			ccci-spmsleep = <&apccci_mdo1>;
+			#address-cells = <2>;
+			#size-cells = <2>;
+			ranges;
+			md-bus-addr@0 {
+				compatible = "mediatek,md-bus";
+				reg = <0 0x21a00200 0 0x4>;
+			};
 		};
 
 		md_auxadc:md-auxadc {
