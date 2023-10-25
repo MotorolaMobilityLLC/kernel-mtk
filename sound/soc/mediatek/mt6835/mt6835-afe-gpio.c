@@ -30,6 +30,10 @@ static struct audio_gpio_attr aud_gpios[MT6835_AFE_GPIO_GPIO_NUM] = {
 	[MT6835_AFE_GPIO_I2S0_ON] = {"aud_gpio_i2s0_on", false, NULL},
 	[MT6835_AFE_GPIO_I2S3_OFF] = {"aud_gpio_i2s3_off", false, NULL},
 	[MT6835_AFE_GPIO_I2S3_ON] = {"aud_gpio_i2s3_on", false, NULL},
+	[MT6835_AFE_GPIO_VOW_DAT_OFF] = {"vow_dat_miso_off", false, NULL},
+	[MT6835_AFE_GPIO_VOW_DAT_ON] = {"vow_dat_miso_on", false, NULL},
+	[MT6835_AFE_GPIO_VOW_CLK_OFF] = {"vow_clk_miso_off", false, NULL},
+	[MT6835_AFE_GPIO_VOW_CLK_ON] = {"vow_clk_miso_on", false, NULL},
 };
 
 static DEFINE_MUTEX(gpio_request_mutex);
@@ -168,6 +172,19 @@ int mt6835_afe_gpio_request(struct mtk_base_afe *afe, bool enable,
 			mt6835_afe_gpio_select(afe, MT6835_AFE_GPIO_I2S5_ON);
 		else
 			mt6835_afe_gpio_select(afe, MT6835_AFE_GPIO_I2S5_OFF);
+		break;
+	case MT6835_DAI_VOW:
+		if (enable) {
+			mt6835_afe_gpio_select(afe,
+					       MT6835_AFE_GPIO_VOW_CLK_ON);
+			mt6835_afe_gpio_select(afe,
+					       MT6835_AFE_GPIO_VOW_DAT_ON);
+		} else {
+			mt6835_afe_gpio_select(afe,
+					       MT6835_AFE_GPIO_VOW_CLK_OFF);
+			mt6835_afe_gpio_select(afe,
+					       MT6835_AFE_GPIO_VOW_DAT_OFF);
+		}
 		break;
 	default:
 		mutex_unlock(&gpio_request_mutex);
