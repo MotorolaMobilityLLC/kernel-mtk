@@ -90,6 +90,7 @@ struct md_hw_info {
 	unsigned int md_epon_offset;
 	void __iomem *md_l2sram_base;
 	unsigned int md_l2sram_size;
+	void __iomem *md_bus_check_addr;
 
 	/* HW info - Interrupt flags */
 	unsigned long ap_ccif_irq1_flags;

@@ -4,6 +4,7 @@
  */
 
 #include <linux/delay.h>
+#include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
@@ -1132,12 +1133,39 @@ static int md_cd_power_on(struct ccci_modem *md)
 	return 0;
 }
 
+static void check_pass_before_go(void)
+{
+	unsigned int wait_cnt = 0, md_chk_val;
+	struct ccci_modem *md = ccci_get_modem();
+
+	if(md->hw_info->md_bus_check_addr == NULL)
+		return;
+
+	do {
+		md_chk_val = ccci_read32(md->hw_info->md_bus_check_addr, 0);
+		if ((md_chk_val & 0xFF) == 0xFF)
+			break;
+		udelay(100);
+		wait_cnt++;
+		if (wait_cnt == 10000)
+			CCCI_NORMAL_LOG(0, TAG, "[POWER ON]check MD boot slave wait ...\n");
+		else if (wait_cnt == 100000) {
+			CCCI_ERROR_LOG(0, TAG, "[POWER ON]check MD boot slave wait 10s timeout\n");
+			break;
+		}
+	} while (1);
+
+	CCCI_BOOTUP_LOG(0, TAG, "[POWER ON]check MD boot slave end\n");
+	CCCI_NORMAL_LOG(0, TAG, "[POWER ON]check MD boot slave end\n");
+}
+
 static int md_cd_let_md_go(struct ccci_modem *md)
 {
 	struct arm_smccc_res res;
 
 	if (MD_IN_DEBUG(md))
 		return -1;
+	check_pass_before_go();
 	CCCI_BOOTUP_LOG(0, TAG, "[POWER ON]set MD boot slave\n");
 	CCCI_NORMAL_LOG(0, TAG, "[POWER ON]set MD boot slave\n");
 
@@ -1180,6 +1208,7 @@ static int md_cd_get_modem_hw_info(struct platform_device *dev_ptr,
 #ifdef USING_PM_RUNTIME
 	int retval = 0;
 #endif
+	struct device_node *child_node = NULL;
 
 	if (dev_ptr->dev.of_node == NULL) {
 		CCCI_ERROR_LOG(0, TAG, "modem OF node NULL\n");
@@ -1250,6 +1279,16 @@ static int md_cd_get_modem_hw_info(struct platform_device *dev_ptr,
 		CCCI_ERROR_LOG(0, TAG, "%s:get DTS:md_gen fail\n",
 			__func__);
 		return -1;
+	}
+
+	child_node = of_get_child_by_name(dev_ptr->dev.of_node, "md-bus-addr");
+	if (child_node) {
+		hw_info->md_bus_check_addr = of_iomap(child_node, 0);
+		if (hw_info->md_bus_check_addr == NULL)
+			CCCI_ERROR_LOG(0, TAG, "%s:iomap md-bus-check-addr fail\n", __func__);
+	} else {
+		hw_info->md_bus_check_addr = NULL;
+		CCCI_ERROR_LOG(0, TAG, "%s:get child_dev md-bus-addr fail\n", __func__);
 	}
 
 	/* "mediatek,md-sub-version" = 0 or can't find this properity
