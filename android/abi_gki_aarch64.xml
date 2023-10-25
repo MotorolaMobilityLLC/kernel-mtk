@@ -1192,6 +1192,7 @@
       <elf-symbol name='blkg_rwstat_recursive_sum' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa1151dc5'/>
       <elf-symbol name='block_invalidatepage' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x334b6464'/>
       <elf-symbol name='block_is_partially_uptodate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc71c32f5'/>
+      <elf-symbol name='block_read_full_page' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x21692aeb'/>
       <elf-symbol name='block_truncate_page' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9e97be8a'/>
       <elf-symbol name='block_write_begin' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x384c6d32'/>
       <elf-symbol name='block_write_end' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xac6a554c'/>
@@ -3401,6 +3402,7 @@
       <elf-symbol name='init_srcu_struct' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd7df630a'/>
       <elf-symbol name='init_timer_key' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x79cf5987'/>
       <elf-symbol name='init_wait_entry' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfe487975'/>
+      <elf-symbol name='inode_add_bytes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4e8415a4'/>
       <elf-symbol name='inode_dio_wait' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x21404200'/>
       <elf-symbol name='inode_get_bytes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5b1feb67'/>
       <elf-symbol name='inode_init_once' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x346a07aa'/>
@@ -6103,6 +6105,7 @@
       <elf-symbol name='truncate_setsize' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9aba22f9'/>
       <elf-symbol name='try_module_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x55b19677'/>
       <elf-symbol name='try_to_del_timer_sync' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfaf9e645'/>
+      <elf-symbol name='try_to_free_buffers' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf2be880c'/>
       <elf-symbol name='try_to_free_mem_cgroup_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x67f3edc8'/>
       <elf-symbol name='try_to_release_page' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x30bb8b62'/>
       <elf-symbol name='try_to_writeback_inodes_sb' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc1b82ff7'/>
@@ -6587,6 +6590,7 @@
       <elf-symbol name='user_revoke' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x841286f1'/>
       <elf-symbol name='usleep_range_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc3055d20'/>
       <elf-symbol name='utf16s_to_utf8s' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xabf32f29'/>
+      <elf-symbol name='utf32_to_utf8' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2875a315'/>
       <elf-symbol name='utf8_casefold' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe0955f76'/>
       <elf-symbol name='utf8_load' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfc399557'/>
       <elf-symbol name='utf8_strncasecmp_folded' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4c38d4e0'/>
@@ -7586,6 +7590,7 @@
       <elf-symbol name='crypto_alg_sem' size='64' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xedac5f42'/>
       <elf-symbol name='debug_locks_silent' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x97de2b83'/>
       <elf-symbol name='dev_base_lock' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa5976e4f'/>
+      <elf-symbol name='dirty_writeback_interval' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x41814cb8'/>
       <elf-symbol name='dma_contiguous_default_area' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4fd950ed'/>
       <elf-symbol name='dma_fence_array_ops' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe03a689d'/>
       <elf-symbol name='dma_fence_chain_ops' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2293ac3'/>
@@ -135124,6 +135129,11 @@
         <parameter type-id='7359adad' name='count' filepath='fs/buffer.c' line='2217' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='block_read_full_page' mangled-name='block_read_full_page' filepath='fs/buffer.c' line='2261' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='block_read_full_page'>
+        <parameter type-id='02f11ed4' name='page' filepath='fs/buffer.c' line='2261' column='1'/>
+        <parameter type-id='05ca8778' name='get_block' filepath='fs/buffer.c' line='2261' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='block_truncate_page' mangled-name='block_truncate_page' filepath='fs/buffer.c' line='2875' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='block_truncate_page'>
         <parameter type-id='f57039f0' name='mapping' filepath='fs/buffer.c' line='2875' column='1'/>
         <parameter type-id='69bf7bee' name='from' filepath='fs/buffer.c' line='2876' column='1'/>
@@ -139607,6 +139617,7 @@
         <parameter type-id='eaa32e2f' name='id' filepath='drivers/base/devres.c' line='663' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <var-decl name='dirty_writeback_interval' type-id='f0981eeb' mangled-name='dirty_writeback_interval' visibility='default' filepath='mm/page-writeback.c' line='101' column='1' elf-symbol-id='dirty_writeback_interval'/>
       <function-decl name='disable_irq' mangled-name='disable_irq' filepath='kernel/irq/manage.c' line='737' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='disable_irq'>
         <parameter type-id='f0981eeb' name='irq' filepath='kernel/irq/manage.c' line='737' column='1'/>
         <return type-id='48b5725f'/>
@@ -146766,6 +146777,11 @@
       <function-decl name='init_wait_entry' mangled-name='init_wait_entry' filepath='kernel/sched/wait.c' line='297' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='init_wait_entry'>
         <parameter type-id='db9d03e3' name='wq_entry' filepath='kernel/sched/wait.c' line='297' column='1'/>
         <parameter type-id='95e97e5e' name='flags' filepath='kernel/sched/wait.c' line='297' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='inode_add_bytes' mangled-name='inode_add_bytes' filepath='fs/stat.c' line='741' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='inode_add_bytes'>
+        <parameter type-id='7e666abe' name='inode' filepath='fs/stat.c' line='741' column='1'/>
+        <parameter type-id='69bf7bee' name='bytes' filepath='fs/stat.c' line='741' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='inode_dio_wait' mangled-name='inode_dio_wait' filepath='fs/inode.c' line='2245' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='inode_dio_wait'>
@@ -160706,6 +160722,10 @@
         <parameter type-id='9248e67f' name='timer' filepath='kernel/time/timer.c' line='1229' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='try_to_free_buffers' mangled-name='try_to_free_buffers' filepath='fs/buffer.c' line='3227' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='try_to_free_buffers'>
+        <parameter type-id='02f11ed4' name='page' filepath='fs/buffer.c' line='3227' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='try_to_free_mem_cgroup_pages' mangled-name='try_to_free_mem_cgroup_pages' filepath='mm/vmscan.c' line='6520' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='try_to_free_mem_cgroup_pages'>
         <parameter type-id='223696fb' name='memcg' filepath='mm/vmscan.c' line='6520' column='1'/>
         <parameter type-id='7359adad' name='nr_pages' filepath='mm/vmscan.c' line='6521' column='1'/>
@@ -163116,6 +163136,12 @@
         <parameter type-id='95e97e5e' name='maxout' filepath='fs/nls/nls_base.c' line='187' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='utf32_to_utf8' mangled-name='utf32_to_utf8' filepath='fs/nls/nls_base.c' line='86' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='utf32_to_utf8'>
+        <parameter type-id='47c2d8bc' name='u' filepath='fs/nls/nls_base.c' line='86' column='1'/>
+        <parameter type-id='8bff8096' name='s' filepath='fs/nls/nls_base.c' line='86' column='1'/>
+        <parameter type-id='95e97e5e' name='maxout' filepath='fs/nls/nls_base.c' line='86' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='utf8_casefold' mangled-name='utf8_casefold' filepath='fs/unicode/utf8-core.c' line='105' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='utf8_casefold'>
         <parameter type-id='a8463e24' name='um' filepath='fs/unicode/utf8-core.c' line='105' column='1'/>
         <parameter type-id='43a0eb6c' name='str' filepath='fs/unicode/utf8-core.c' line='105' column='1'/>
@@ -165477,7 +165503,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
