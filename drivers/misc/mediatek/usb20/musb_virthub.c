@@ -261,9 +261,14 @@ int musb_hub_control(struct usb_hcd *hcd,
 
 	spin_lock_irqsave(&musb->lock, flags);
 
+	if (!musb->is_active) {
+		retval = -EACCES;
+		goto shutdown;
+	}
+
 	if (unlikely(!HCD_HW_ACCESSIBLE(hcd))) {
-		spin_unlock_irqrestore(&musb->lock, flags);
-		return -ESHUTDOWN;
+		retval = -ESHUTDOWN;
+		goto shutdown;
 	}
 
 	/* hub features:  always zero, setting is a NOP
@@ -452,6 +457,7 @@ error:
 		/* "protocol stall" on error */
 		retval = -EPIPE;
 	}
+shutdown:
 	spin_unlock_irqrestore(&musb->lock, flags);
 
 	musb_platform_unprepare_clk(musb);
