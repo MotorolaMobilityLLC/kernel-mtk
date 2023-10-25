@@ -2833,7 +2833,7 @@ pwrap: pwrap@1000d000 {
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
 		mediatek,hs_only;
 	};
 
@@ -2845,7 +2845,7 @@ pwrap: pwrap@1000d000 {
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
 		mediatek,hs_only;
 	};
 
@@ -2857,7 +2857,7 @@ pwrap: pwrap@1000d000 {
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
 		mediatek,hs_only;
 	};
 
@@ -2869,7 +2869,7 @@ pwrap: pwrap@1000d000 {
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 		<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
 		mediatek,hs_only;
 	};
 
@@ -2881,7 +2881,7 @@ pwrap: pwrap@1000d000 {
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
 		mediatek,hs_only;
 	};
 
@@ -2893,7 +2893,7 @@ pwrap: pwrap@1000d000 {
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
 		mediatek,hs_only;
 	};
 
@@ -2905,7 +2905,7 @@ pwrap: pwrap@1000d000 {
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
 		mediatek,hs_only;
 	};
 
