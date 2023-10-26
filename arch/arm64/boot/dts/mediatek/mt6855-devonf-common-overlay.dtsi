@@ -38,14 +38,15 @@
 
 &i2c3 {
         status = "okay";
+        clock-frequency = <400000>;
         nfc_pn5xx: nfc_pn5xx@28 {
-                compatible = "nxp,pn5xx";
+                compatible = "qcom,sn-nci";
                 reg = <0x28>;
                 interrupt-parent = <&pio>;
-                interrupts = <19 IRQ_TYPE_LEVEL_HIGH>;
-                nxp,pn544-irq = <&pio 2 0>;
-                nxp,pn544-ven = <&pio 161 0>;
-                nxp,pn544-fd = <&pio 1 0>;
+                interrupts = <19 IRQ_TYPE_LEVEL_HIGH 1 0>;
+                qcom,sn-irq = <&pio 2 0>;
+                qcom,sn-ven = <&pio 161 0>;
+                qcom,sn-firm = <&pio 1 0>;
                 status = "okay";
         };
 };
