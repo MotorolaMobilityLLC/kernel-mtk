@@ -62,6 +62,7 @@ struct tianma {
 	struct drm_panel panel;
 	struct backlight_device *backlight;
 	struct gpio_desc *reset_gpio;
+	struct gpio_desc *tp_reset_gpio;
 	struct gpio_desc *bias_n_gpio;
 	struct gpio_desc *bias_p_gpio;
 
@@ -338,6 +339,25 @@ static void tianma_panel_init(struct tianma *ctx)
 	pr_info("disp:init code %s, data_rate=%d-\n", __func__, DATA_RATE);
 }
 
+static void tianma_panel_tp_reset(struct tianma *ctx)
+{
+	ctx->tp_reset_gpio = devm_gpiod_get(ctx->dev, "tp_reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->tp_reset_gpio)) {
+		dev_err(ctx->dev, "%s: cannot get tp_reset_gpio %ld\n",
+			__func__, PTR_ERR(ctx->tp_reset_gpio));
+		//return;
+	}
+	else {
+		gpiod_set_value(ctx->tp_reset_gpio, 1);
+		usleep_range(1 * 1000, 2 * 1000);
+		gpiod_set_value(ctx->tp_reset_gpio, 0);
+		usleep_range(5 * 1000, 6 * 1000);
+		gpiod_set_value(ctx->tp_reset_gpio, 1);
+		devm_gpiod_put(ctx->dev, ctx->tp_reset_gpio);
+		pr_info("disp: %s tp_reset_gpio\n", __func__);
+	}
+}
+
 static int tianma_disable(struct drm_panel *panel)
 {
 	struct tianma *ctx = panel_to_tianma(panel);
@@ -442,6 +462,7 @@ static int tianma_prepare(struct drm_panel *panel)
 #ifdef PANEL_SUPPORT_READBACK
 	tianma_panel_get_data(ctx);
 #endif*/
+	tianma_panel_tp_reset(ctx);
 	pr_info("disp: %s-\n", __func__);
 	return ret;
 }

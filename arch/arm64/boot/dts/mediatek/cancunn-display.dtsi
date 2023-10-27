@@ -144,6 +144,22 @@
 		};
 	};
 
+	mtkfb_pins_tp_rst_out1_gpio: tp_rst_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO3__FUNC_GPIO3>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_tp_rst_out0_gpio: tp_rst_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO3__FUNC_GPIO3>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
 	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO94__FUNC_DSI_TE>;
@@ -159,7 +175,9 @@
 	pinctrl-1 = <&mtkfb_pins_lcd_bias_enn0>;
 	pinctrl-2 = <&mtkfb_pins_lcm_rst_out1_gpio>;
 	pinctrl-3 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-4 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-4 = <&mtkfb_pins_tp_rst_out1_gpio>;
+	pinctrl-5 = <&mtkfb_pins_tp_rst_out0_gpio>;
+	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
 	status = "okay";
 };
 
@@ -185,6 +203,7 @@
 		reg = <1>;
 		1p8-supply = <&mt6369_vtp>;
 		reset-gpios = <&pio 95 0>;
+		tp_reset-gpios = <&pio 3 0>;
 		bias_n-gpios = <&pio 182 0>;
 		bias_p-gpios = <&pio 134 0>;
 		pinctrl-names = "default";
