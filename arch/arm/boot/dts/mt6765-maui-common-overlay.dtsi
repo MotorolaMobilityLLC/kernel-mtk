@@ -555,31 +555,31 @@
 };
 
 &i2c0 {
-	mediatek,clk_div_ctrl;
+	clock-div = <1>;
 };
 
 &i2c1 {
-	mediatek,clk_div_ctrl;
+	clock-div = <1>;
 };
 
 &i2c2 {
-	mediatek,clk_div_ctrl;
+	clock-div = <1>;
 };
 
 &i2c3 {
-	mediatek,clk_div_ctrl;
+	clock-div = <1>;
 };
 
 &i2c4 {
-	mediatek,clk_div_ctrl;
+	clock-div = <1>;
 };
 
 &i2c5 {
-	mediatek,clk_div_ctrl;
+	clock-div = <1>;
 };
 
 &i2c6 {
-	mediatek,clk_div_ctrl;
+	clock-div = <1>;
 };
 
 &mmc1 {
