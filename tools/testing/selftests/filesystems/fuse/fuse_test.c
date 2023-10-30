@@ -1345,9 +1345,6 @@ static int flock_test(const char *mount_dir)
 	int fuse_dev = -1;
 	int fd = -1, fd2 = -1;
 	int backing_fd = -1;
-#if !IS_ENABLED(CONFIG_MTK_FUSE_UPSTREAM_BUILD)
-	char *addr = NULL;
-#endif
 
 	TEST(src_fd = open(ft_src, O_DIRECTORY | O_RDONLY | O_CLOEXEC),
 	     src_fd != -1);
@@ -2012,7 +2009,6 @@ static int bpf_test_lookup_postfilter(const char *mount_dir)
 	return result;
 }
 
-#if IS_ENABLED(CONFIG_MTK_FUSE_UPSTREAM_BUILD)
 /**
  * Test that a file made via create_and_open correctly gets the bpf assigned
  * from the negative lookup
@@ -2050,7 +2046,38 @@ out:
 	umount(mount_dir);
 	return result;
 }
-#endif
+
+static int bpf_test_mkdir_and_remove_bpf(const char *mount_dir)
+{
+	const char *dir = "dir";
+
+	int result = TEST_FAILURE;
+	int src_fd = -1;
+	int bpf_fd = -1;
+	int fuse_dev = -1;
+	int fd = -1;
+	int fd2 = -1;
+
+	TEST(src_fd = open(ft_src, O_DIRECTORY | O_RDONLY | O_CLOEXEC),
+	     src_fd != -1);
+	TESTEQUAL(install_elf_bpf("test_bpf.bpf", "test_mkdir_remove", &bpf_fd,
+				  NULL, NULL), 0);
+	TESTEQUAL(mount_fuse_no_init(mount_dir, bpf_fd, src_fd, &fuse_dev), 0);
+	TEST(fd = s_mkdir(s_path(s(mount_dir), s(dir)), 0777),
+	     fd != -1);
+	TEST(fd2 = s_open(s_path(s(mount_dir), s(dir)), O_RDONLY),
+	     fd2 != -1);
+
+	result = TEST_SUCCESS;
+out:
+	close(fd2);
+	close(fd);
+	close(fuse_dev);
+	close(bpf_fd);
+	close(src_fd);
+	umount(mount_dir);
+	return result;
+}
 
 static void parse_range(const char *ranges, bool *run_test, size_t tests)
 {
@@ -2179,9 +2206,8 @@ int main(int argc, char *argv[])
 		MAKE_TEST(bpf_test_revalidate_handle_backing_fd),
 		MAKE_TEST(bpf_test_lookup_postfilter),
 		MAKE_TEST(flock_test),
-#if IS_ENABLED(CONFIG_MTK_FUSE_UPSTREAM_BUILD)
 		MAKE_TEST(bpf_test_create_and_remove_bpf),
-#endif
+		MAKE_TEST(bpf_test_mkdir_and_remove_bpf),
 	};
 #undef MAKE_TEST
 
