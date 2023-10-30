@@ -685,9 +685,9 @@ static struct mtk_panel_params ext_params_120hz = {
 
 static struct mtk_panel_params ext_params_144hz = {
 	.dyn_fps = {
-		.data_rate = 950,
+		.data_rate = 920,
 	},
-	.data_rate = 950,
+	.data_rate = 920,
 	.lp_perline_en = 0,
 
 	.cust_esd_check = 0,
