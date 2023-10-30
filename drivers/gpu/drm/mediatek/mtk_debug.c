@@ -1747,7 +1747,7 @@ static void process_dbg_opt(const char *opt)
 
 		tmp = (char *)(opt + 7);
 		limited = strlen(tmp);
-		for (i = 0; i < 100; i++) {
+		for (i = 0; i < 99; i++) { /* option[99] should be '\0' to aviod oob */
 			if (i >= limited)
 				return;
 			if (tmp[i] != ',' && tmp[i] != ' ')
