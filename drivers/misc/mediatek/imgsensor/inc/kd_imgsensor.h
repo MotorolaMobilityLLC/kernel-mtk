@@ -425,6 +425,8 @@
 #define SENSOR_DRVNAME_MOT_CANCUNF_S5KJNS_MIPI_RAW          "mot_cancunf_s5kjns_mipi_raw"
 #define MOT_CANCUNF_HI1634Q_SENSOR_ID            0x1634
 #define SENSOR_DRVNAME_MOT_CANCUNF_HI1634Q_MIPI_RAW         "mot_cancunf_hi1634q_mipi_raw"
+#define MOT_CANCUNF_S5K3P9SP04_SENSOR_ID         0x3109
+#define SENSOR_DRVNAME_MOT_CANCUNF_S5K3P9SP04_MIPI_RAW      "mot_cancunf_s5k3p9sp04_mipi_raw"
 #define MOT_CANCUNF_S5K4H7_SENSOR_ID             0x487b
 #define SENSOR_DRVNAME_MOT_CANCUNF_S5K4H7_MIPI_RAW          "mot_cancunf_s5k4h7_mipi_raw"
 #define MOT_CANCUNF_SC202_SENSOR_ID             0xeb52
