@@ -82,3 +82,8 @@ config  MOT_MAUI_CAMERA_PROJECT
         tristate "set maui camera driver"
         help
           Used to distinguish project-driver code from other projects.
+
+config  MOT_VICKY_CAMERA_PROJECT
+        tristate "set vicky camera driver"
+        help
+          Used to distinguish project-driver code from other projects.
