@@ -151,6 +151,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(MOT_CANCUNF_S5K3P9SP04_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_CANCUNF_S5K3P9SP04_MIPI_RAW,
+		{
+			{RST, Vol_Low, 1},
+			{DOVDD, Vol_High, 0},
+			{AVDD, Vol_High, 0},
+			{DVDD, Vol_High, 1},//1.1v
+			{RST, Vol_High, 5},
+			{SensorMCLK, Vol_High, 2},
+		},
+	},
+#endif
 #if defined(MOT_CANCUNF_S5K4H7_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_MOT_CANCUNF_S5K4H7_MIPI_RAW,
