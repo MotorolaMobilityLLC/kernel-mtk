@@ -178,3 +178,8 @@ type 'struct mm_struct' changed
 
 type 'struct files_struct' changed
   member 'struct task_dma_buf_info* dmabuf_info' was added
+
+type 'struct trace_event_file' changed
+  member 'unsigned long flags' was removed
+  member 'union { unsigned long flags; struct __trace_event_file_ref ref; }' was added
+

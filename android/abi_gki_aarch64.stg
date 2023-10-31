@@ -41090,6 +41090,11 @@ member {
   offset: 24
 }
 member {
+  id: 0x34ac7224
+  type_id: 0x5d9f9d48
+  offset: 576
+}
+member {
   id: 0x34be27ed
   type_id: 0x5dd6efa4
 }
@@ -42741,6 +42746,11 @@ member {
   name: "__pad4"
   type_id: 0xe532a446
   offset: 128
+}
+member {
+  id: 0x3b34b760
+  name: "__padding"
+  type_id: 0xc9082b19
 }
 member {
   id: 0xddf65eaa
@@ -164723,6 +164733,12 @@ member {
   offset: 1216
 }
 member {
+  id: 0xce6bf955
+  name: "ref"
+  type_id: 0x74d29cf1
+  offset: 32
+}
+member {
   id: 0xce703117
   name: "ref"
   type_id: 0x6f1daf87
@@ -164792,6 +164808,11 @@ member {
   name: "ref"
   type_id: 0xa722c13e
   offset: 192
+}
+member {
+  id: 0xcef31f4b
+  name: "ref"
+  type_id: 0xec39b96e
 }
 member {
   id: 0xcef9084d
@@ -219349,6 +219370,15 @@ struct_union {
   }
 }
 struct_union {
+  id: 0x5d9f9d48
+  kind: UNION
+  definition {
+    bytesize: 8
+    member_id: 0x2d5bf13a
+    member_id: 0xcef31f4b
+  }
+}
+struct_union {
   id: 0x5dafba4f
   kind: UNION
   definition {
@@ -221703,6 +221733,16 @@ struct_union {
     member_id: 0x85b2141a
     member_id: 0xfce8408c
     member_id: 0x72a93276
+  }
+}
+struct_union {
+  id: 0xec39b96e
+  kind: STRUCT
+  name: "__trace_event_file_ref"
+  definition {
+    bytesize: 8
+    member_id: 0x3b34b760
+    member_id: 0xce6bf955
   }
 }
 struct_union {
@@ -267139,7 +267179,7 @@ struct_union {
     member_id: 0xd5537fd9
     member_id: 0x55e889a7
     member_id: 0x614a670b
-    member_id: 0x2d5bf848
+    member_id: 0x34ac7224
     member_id: 0x2f686c5b
     member_id: 0x80b4279c
   }
