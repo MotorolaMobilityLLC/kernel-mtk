@@ -7398,6 +7398,7 @@
 		charger = <&mt6375_chg>;
 		tcpc = "type_c_port0";
 		mediatek,bypss-typec-sink = <1>;
+		mediatek,u2;
 		port {
 			usb_role: endpoint@0 {
 				remote-endpoint = <&mtu3_drd_switch>;
@@ -7411,7 +7412,7 @@
 
 	typec_mux_switch: typec_mux_switch {
 		compatible = "mediatek,typec_mux_switch";
-		status = "okay";
+		status = "disabled";
 	};
 
 	mrdump_ext_rst: mrdump_ext_rst {
