@@ -156,6 +156,7 @@
 			<&dispsys_config_clk CLK_MM_DISP_GAMMA0>,
 			<&dispsys_config_clk CLK_MM_DISP_POSTMASK0>,
 			<&dispsys_config_clk CLK_MM_DISP_DITHER0>,
+			<&dispsys_config_clk CLK_MM_DISP_DSC_WRAP0>,
 			<&dispsys_config_clk CLK_MM_DISP_DUMMY_MOD_B0>,
 			<&dispsys_config_clk CLK_MM_DISP_DSI0>,
 			<&dispsys_config_clk CLK_MM_DISP_DP_INTF0>,
