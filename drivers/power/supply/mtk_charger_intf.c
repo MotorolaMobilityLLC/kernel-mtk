@@ -79,7 +79,7 @@ int get_uisoc(struct mtk_charger *info)
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s retry to get bat_psy\n", __func__);
-		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
+		bat_psy = power_supply_get_by_name("battery");
 		info->bat_psy = bat_psy;
 	}
 #endif
@@ -112,7 +112,7 @@ int get_battery_voltage(struct mtk_charger *info)
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s retry to get bat_psy\n", __func__);
-		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
+		bat_psy = power_supply_get_by_name("battery");
 		info->bat_psy = bat_psy;
 	}
 #endif
@@ -146,7 +146,7 @@ int get_battery_temperature(struct mtk_charger *info)
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s retry to get bat_psy\n", __func__);
-		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
+		bat_psy = power_supply_get_by_name("battery");
 		info->bat_psy = bat_psy;
 	}
 #endif
@@ -179,7 +179,7 @@ int get_battery_current(struct mtk_charger *info)
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s retry to get bat_psy\n", __func__);
-		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
+		bat_psy = power_supply_get_by_name("battery");
 		info->bat_psy = bat_psy;
 	}
 #endif
@@ -208,7 +208,7 @@ static int get_pmic_vbus(struct mtk_charger *info, int *vchr)
 		chg_psy = power_supply_get_by_name("usb_vbus");
 #else
 	if (chg_psy == NULL)
-		chg_psy = power_supply_get_by_name("mtk_charger_type");
+		chg_psy = power_supply_get_by_name("primary_chg");
 #endif
 	if (chg_psy == NULL || IS_ERR(chg_psy)) {
 		chr_err("%s Couldn't get chg_psy\n", __func__);
@@ -287,7 +287,7 @@ bool is_battery_exist(struct mtk_charger *info)
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s retry to get bat_psy\n", __func__);
-		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
+		bat_psy = power_supply_get_by_name("battery");
 		info->bat_psy = bat_psy;
 	}
 #endif
@@ -322,7 +322,7 @@ bool is_charger_exist(struct mtk_charger *info)
 
 
 		chr_err("%s retry to get chg_psy\n", __func__);
-		chg_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "charger");
+		chg_psy = power_supply_get_by_name("primary_chg");
 		info->chg_psy = chg_psy;
 	}
 #endif
@@ -387,7 +387,7 @@ int get_charger_type(struct mtk_charger *info)
 
 	if (chg_psy == NULL || IS_ERR(chg_psy)) {
 		chr_err("%s retry to get chg_psy\n", __func__);
-		chg_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "charger");
+		chg_psy = power_supply_get_by_name("primary_chg");
 		info->chg_psy = chg_psy;
 	}
 #endif
@@ -439,8 +439,7 @@ int get_usb_type(struct mtk_charger *info)
 
 	if (chg_psy == NULL || IS_ERR(chg_psy)) {
 		chr_err("%s retry to get chg_psy\n", __func__);
-		chg_psy = devm_power_supply_get_by_phandle(&info->pdev->dev,
-						       "charger");
+		chg_psy = power_supply_get_by_name("primary_chg");
 		info->chg_psy = chg_psy;
 	}
 #endif

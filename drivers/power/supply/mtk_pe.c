@@ -949,7 +949,7 @@ static int mtk_pe_probe(struct platform_device *pdev)
 	pe->ta_vchr_org = 5000000;
 
 	mtk_pe_parse_dt(pe, &pdev->dev);
-	pe->bat_psy = devm_power_supply_get_by_phandle(&pdev->dev, "gauge");
+	pe->bat_psy = power_supply_get_by_name("battery");
 	if (IS_ERR_OR_NULL(pe->bat_psy))
 		pe_err("%s: devm power fail to get bat_psy\n", __func__);
 
