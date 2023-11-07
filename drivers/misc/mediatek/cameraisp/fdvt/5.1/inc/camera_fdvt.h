@@ -302,12 +302,12 @@ struct fdvt_config {
 	unsigned int FDVT_FD_POSE_CON_BUFSIZE;
 	unsigned int FDVT_LOOPS_OF_FDMODE;
 	unsigned int FDVT_NUMBERS_OF_PYRAMID;
-	struct FD_RESULT *FDOUTPUT;
-	struct ATTRIBUTE_RESULT *ATTRIBUTEOUTPUT;
-	struct POSE_RESULT *POSEOUTPUT;
+	uint64_t FDOUTPUT;
+	uint64_t ATTRIBUTEOUTPUT;
+	uint64_t POSEOUTPUT;
 	FDVT_MetaDataToGCE FDVT_METADATA_TO_GCE;
-	unsigned int *FDVT_IMG_Y_VA;
-	unsigned int *FDVT_IMG_UV_VA;
+	uint64_t FDVT_IMG_Y_VA;
+	uint64_t FDVT_IMG_UV_VA;
 	unsigned int FDVT_IMG_Y_FD;
 	unsigned int FDVT_IMG_UV_FD;
 	unsigned int FDVT_IMG_Y_OFFSET;

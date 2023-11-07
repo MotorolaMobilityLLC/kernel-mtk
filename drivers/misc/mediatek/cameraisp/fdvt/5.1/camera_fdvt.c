@@ -3173,20 +3173,207 @@ EXIT:
 /*****************************************************************************
  *
  *****************************************************************************/
+signed int FDVT_Enque_Func_64B(unsigned long Param, struct FDVT_USER_INFO_STRUCT *pUserInfo)
+{
+	signed int ret = 0;
+	FDVT_Request *fdvt_FdvtReq = NULL;
+
+	int idx;
+	struct FDVT_REQUEST_STRUCT *request;
+	spinlock_t *spinlock_lrq_ptr; /* spinlock for irq */
+	unsigned long flags;
+	signed int FdvtWriteIdx = 0;
+
+	spinlock_lrq_ptr = &fdvt_info.spinlock_irq[FDVT_IRQ_TYPE_INT_FDVT_ST];
+	fdvt_FdvtReq = (FDVT_Request *)Param;
+
+	if (fdvt_FdvtReq != NULL) {
+		request = &fdvt_req_ring.req_struct
+					[fdvt_req_ring.write_idx];
+
+		if (fdvt_FdvtReq->m_ReqNum > MAX_FDVT_FRAME_REQUEST) {
+			log_err("FDVT Enque Num is bigger than enqueNum:%d\n",
+				fdvt_FdvtReq->m_ReqNum);
+			ret = -EFAULT;
+			return ret;
+		}
+		if (copy_from_user(
+			fdvt_enq_req.frame_config,
+			(void *)fdvt_FdvtReq->m_pFdvtConfig,
+			fdvt_FdvtReq->m_ReqNum *
+			sizeof(struct fdvt_config)) != 0) {
+			log_err("copy FDVTConfig from request is fail!!\n");
+			ret = -EFAULT;
+			return ret;
+		}
+
+		/* Protect the Multi Process */
+		mutex_lock(&fdvt_mutex);
+
+		spin_lock_irqsave(spinlock_lrq_ptr, flags);
+			if (FDVT_REQUEST_STATE_EMPTY ==
+				request->state) {
+				request->process_id = pUserInfo->pid;
+				request->enque_req_num = fdvt_FdvtReq->m_ReqNum;
+
+				for (idx = 0; idx < fdvt_FdvtReq->m_ReqNum;
+					idx++) {
+					request->fdvt_frame_status
+					[request->frame_wr_idx] =
+						FDVT_FRAME_STATUS_ENQUE;
+					memcpy(&request->frame_config
+						[request->frame_wr_idx++],
+						&fdvt_enq_req.frame_config[idx],
+						sizeof(struct fdvt_config));
+				}
+				request->state =
+					FDVT_REQUEST_STATE_PENDING;
+				FdvtWriteIdx = fdvt_req_ring.write_idx;
+				fdvt_req_ring.write_idx =
+					(fdvt_req_ring.write_idx + 1) %
+						MAX_FDVT_REQUEST_RING_SIZE;
+				log_dbg("FDVT request enque done!!\n");
+			} else {
+				log_err("Enque req NG: write_idx(%d) Stat(%d) frame_wr_idx(%d) enque_req_num(%d)\n",
+					fdvt_req_ring.write_idx,
+					request->state,
+					request->frame_wr_idx,
+					request->enque_req_num);
+			}
+			spin_unlock_irqrestore(spinlock_lrq_ptr, flags);
+			config_fdvt_request(FdvtWriteIdx);
+
+			mutex_unlock(&fdvt_mutex);
+		} else {
+			log_err("FDVT_ENQUE_REQ NULL\n");
+			ret = -EFAULT;
+		}
+	return ret;
+}
+
+signed int FDVT_Deque_Func_64B(unsigned long Param)
+{
+	signed int ret = 0;
+	FDVT_Request *fdvt_FdvtReq = NULL;
+	struct FDVT_REQUEST_STRUCT *request;
+	spinlock_t *spinlock_lrq_ptr; /* spinlock for irq */
+	int dequeNum;
+	int idx;
+	int fd_buffer = 0;
+	unsigned long flags;
+
+	spinlock_lrq_ptr = &fdvt_info.spinlock_irq[FDVT_IRQ_TYPE_INT_FDVT_ST];
+	fdvt_FdvtReq = (FDVT_Request *)Param;
+	if (fdvt_FdvtReq != 0) { //COPY FROM USER
+		/* Protect the Multi Process */
+		mutex_lock(&fdvt_deque_mutex);
+
+		spin_lock_irqsave(spinlock_lrq_ptr, flags);
+		request = &fdvt_req_ring.req_struct
+				[fdvt_req_ring.read_idx];
+		if (FDVT_REQUEST_STATE_FINISHED ==
+			request->state) {
+			dequeNum = request->enque_req_num;
+			log_dbg("FDVT_DEQUE_REQ(%d)\n", dequeNum);
+		} else {
+			dequeNum = 0;
+			log_err("DEQUE_REQ no buf:RIdx(%d) Stat(%d) frame_rd_idx(%d) enque_req_num(%d)\n",
+				fdvt_req_ring.read_idx,
+				request->state,
+				request->frame_rd_idx,
+				request->enque_req_num);
+		}
+		fdvt_FdvtReq->m_ReqNum = dequeNum;
+
+		for (idx = 0; idx < dequeNum; idx++) {
+			if (request->fdvt_frame_status[request->frame_rd_idx]
+				== FDVT_FRAME_STATUS_FINISHED) {
+				if (request->frame_config
+				[request->frame_rd_idx].FDVT_IS_SECURE &&
+	       request->frame_config[request->frame_rd_idx]. FDVT_METADATA_TO_GCE.SecMemType == 1) {
+					fd_buffer = aie_result_dmabuf2fd();
+					request->frame_config[request->frame_rd_idx].FDVT_IMG_Y_FD =
+						fd_buffer; /*ResultMVA_FD*/
+				}
+
+				memcpy(&fdvt_deq_req.frame_config[idx],
+					&request->frame_config
+					[request->frame_rd_idx],
+					sizeof(struct fdvt_config));
+				if (
+				request->frame_config[request->frame_rd_idx].FDVT_IS_SECURE
+	&& request->frame_config[request->frame_rd_idx].FDVT_METADATA_TO_GCE.SecMemType == 3
+				) {
+					fdvt_free_iova(&request->frame_dmabuf
+						[request->frame_rd_idx].ImgSrcY);
+					dma_buf_put(
+				request->frame_dmabuf[request->frame_rd_idx].ImgSrcY.dmabuf
+					);
+				}
+				if (
+		request->frame_config[request->frame_rd_idx].FDVT_METADATA_TO_GCE.ImgSrcUV_Handler
+				&& request->frame_config[request->frame_rd_idx].FDVT_IS_SECURE &&
+		request->frame_config[request->frame_rd_idx].FDVT_METADATA_TO_GCE.SecMemType == 3) {
+					fdvt_free_iova(
+					&request->frame_dmabuf[request->frame_rd_idx].ImgSrcUV);
+					dma_buf_put(
+				request->frame_dmabuf[request->frame_rd_idx].ImgSrcUV.dmabuf);
+				}
+				request->fdvt_frame_status[request->frame_rd_idx++] =
+					FDVT_FRAME_STATUS_EMPTY;
+			} else {
+				log_err("deq err idx(%d)dequNum(%d)Rd(%d)RrameRD(%d)FrmStat(%d)\n",
+					idx, dequeNum,
+					fdvt_req_ring.read_idx,
+					request->frame_rd_idx,
+					request->fdvt_frame_status
+					[request->frame_rd_idx]);
+			}
+		}
+		request->state = FDVT_REQUEST_STATE_EMPTY;
+		request->frame_wr_idx = 0;
+		request->frame_rd_idx = 0;
+		request->enque_req_num = 0;
+		fdvt_req_ring.read_idx =
+			(fdvt_req_ring.read_idx + 1) %
+				MAX_FDVT_REQUEST_RING_SIZE;
+		log_dbg("FDVT Request read_idx(%d)\n",
+			fdvt_req_ring.read_idx);
+
+		spin_unlock_irqrestore(spinlock_lrq_ptr, flags);
+
+		mutex_unlock(&fdvt_deque_mutex);
+
+		if (!fdvt_FdvtReq->m_pFdvtConfig) {
+			log_err("NULL pointer:fdvt_FdvtReq.m_pFdvtConfig");
+			ret = -EFAULT;
+		}
+
+		if (copy_to_user((void *)fdvt_FdvtReq->m_pFdvtConfig,
+				&fdvt_deq_req.frame_config[0],
+				dequeNum *
+				sizeof(struct fdvt_config)) != 0) { //COPY To USER
+			log_err("FDVT_DEQUE_REQ copy_to_user frameconfig failed\n");
+			ret = -EFAULT;
+		}
+	} else {
+		log_err("FDVT_CMD_FDVT_DEQUE_REQ NULL\n");
+		ret = -EFAULT;
+	}
+	return ret;
+}
+
 static long FDVT_ioctl(struct file *pFile,
 		       unsigned int Cmd, unsigned long Param)
 {
 	signed int ret = 0;
-
 	/*unsigned int pid = 0;*/
 	FDVT_REG_IO_STRUCT RegIo;
 	FDVT_WAIT_IRQ_STRUCT irq_info;
 	FDVT_CLEAR_IRQ_STRUCT ClearIrq;
 	struct fdvt_config fdvt_FdvtConfig;
-	FDVT_Request fdvt_FdvtReq;
-	signed int FdvtWriteIdx = 0;
-	int idx;
 	struct FDVT_USER_INFO_STRUCT *pUserInfo;
+	FDVT_Request *fdvt_FdvtReq = NULL;
 	int enqueNum;
 	int dequeNum;
 	/* old: unsigned int flags;*//* FIX to avoid build warning */
@@ -3444,72 +3631,16 @@ static long FDVT_ioctl(struct file *pFile,
 		break;
 	case FDVT_ENQUE_REQ:
 		if (copy_from_user(&fdvt_FdvtReq, (void *)Param,
-		    sizeof(FDVT_Request)) == 0) {
-			request = &fdvt_req_ring.req_struct
-					[fdvt_req_ring.write_idx];
-			log_dbg("FDVT_ENQNUE_NUM:%d, pid:%d\n",
-				fdvt_FdvtReq.m_ReqNum,
-				pUserInfo->pid);
-			if (fdvt_FdvtReq.m_ReqNum > MAX_FDVT_FRAME_REQUEST) {
-				log_err("FDVT Enque Num is bigger than enqueNum:%d\n",
-					fdvt_FdvtReq.m_ReqNum);
-				ret = -EFAULT;
-				goto EXIT;
-			}
-			if (copy_from_user(
-				fdvt_enq_req.frame_config,
-				(void *)fdvt_FdvtReq.m_pFdvtConfig,
-				fdvt_FdvtReq.m_ReqNum *
-				sizeof(struct fdvt_config)) != 0) {
-				log_err("copy FDVTConfig from request is fail!!\n");
-				ret = -EFAULT;
-				goto EXIT;
-			}
-
-			/* Protect the Multi Process */
-			mutex_lock(&fdvt_mutex);
-
-			spin_lock_irqsave(spinlock_lrq_ptr, flags);
-			if (FDVT_REQUEST_STATE_EMPTY ==
-				request->state) {
-				request->process_id = pUserInfo->pid;
-				request->enque_req_num = fdvt_FdvtReq.m_ReqNum;
-
-				for (idx = 0; idx < fdvt_FdvtReq.m_ReqNum;
-					idx++) {
-					request->fdvt_frame_status
-					[request->frame_wr_idx] =
-						FDVT_FRAME_STATUS_ENQUE;
-					memcpy(&request->frame_config
-						[request->frame_wr_idx++],
-						&fdvt_enq_req.frame_config[idx],
-						sizeof(struct fdvt_config));
-				}
-				request->state =
-					FDVT_REQUEST_STATE_PENDING;
-				FdvtWriteIdx = fdvt_req_ring.write_idx;
-				fdvt_req_ring.write_idx =
-					(fdvt_req_ring.write_idx + 1) %
-						MAX_FDVT_REQUEST_RING_SIZE;
-				log_dbg("FDVT request enque done!!\n");
-			} else {
-				log_err("Enque req NG: write_idx(%d) Stat(%d) frame_wr_idx(%d) enque_req_num(%d)\n",
-					fdvt_req_ring.write_idx,
-					request->state,
-					request->frame_wr_idx,
-					request->enque_req_num);
-			}
-			spin_unlock_irqrestore(spinlock_lrq_ptr, flags);
-			log_dbg("config_fdvt Request!!\n");
-			config_fdvt_request(FdvtWriteIdx);
-
-			mutex_unlock(&fdvt_mutex);
-		} else {
+		    sizeof(FDVT_Request)) != 0) {
 			log_err("FDVT_ENQUE_REQ copy_from_user failed, p1(%p) p2(%p) p3(%d)\n",
 					&fdvt_FdvtReq, Param, sizeof(FDVT_Request));
 			ret = -EFAULT;
+			goto EXIT;
 		}
 
+		ret = FDVT_Enque_Func_64B((unsigned long)&fdvt_FdvtReq, pUserInfo);
+		if (ret != 0)
+			goto EXIT;
 		break;
 	case FDVT_DEQUE_NUM:
 		request =
@@ -3617,115 +3748,21 @@ static long FDVT_ioctl(struct file *pFile,
 		break;
 	case FDVT_DEQUE_REQ:
 		if (copy_from_user(&fdvt_FdvtReq, (void *)Param,
-				   sizeof(FDVT_Request)) == 0) {
-			/* Protect the Multi Process */
-			mutex_lock(&fdvt_deque_mutex);
-
-			spin_lock_irqsave(spinlock_lrq_ptr, flags);
-			request = &fdvt_req_ring.req_struct
-					[fdvt_req_ring.read_idx];
-			if (FDVT_REQUEST_STATE_FINISHED ==
-				request->state) {
-				dequeNum = request->enque_req_num;
-				log_dbg("FDVT_DEQUE_REQ(%d)\n", dequeNum);
-			} else {
-				dequeNum = 0;
-				log_err("DEQUE_REQ no buf:RIdx(%d) Stat(%d) frame_rd_idx(%d) enque_req_num(%d)\n",
-					fdvt_req_ring.read_idx,
-					request->state,
-					request->frame_rd_idx,
-					request->enque_req_num);
-			}
-			fdvt_FdvtReq.m_ReqNum = dequeNum;
-
-			for (idx = 0; idx < dequeNum; idx++) {
-				if (request->fdvt_frame_status
-					[request->frame_rd_idx]
-						== FDVT_FRAME_STATUS_FINISHED) {
-					if (request->frame_config
-					    [request->frame_rd_idx].FDVT_IS_SECURE &&
-	       request->frame_config[request->frame_rd_idx]. FDVT_METADATA_TO_GCE.SecMemType == 1) {
-						fd_buffer = aie_result_dmabuf2fd();
-						request->frame_config
-				[request->frame_rd_idx].FDVT_IMG_Y_FD = fd_buffer; /*ResultMVA_FD*/
-					}
-
-					memcpy(&fdvt_deq_req
-						.frame_config[idx],
-						&request->frame_config
-						[request->frame_rd_idx],
-						sizeof(struct fdvt_config));
-					if (
-					request->frame_config[request->frame_rd_idx].FDVT_IS_SECURE
-		&& request->frame_config[request->frame_rd_idx].FDVT_METADATA_TO_GCE.SecMemType == 3
-					) {
-						fdvt_free_iova(
-							&request->frame_dmabuf[
-							request->frame_rd_idx].ImgSrcY);
-						dma_buf_put(
-					request->frame_dmabuf[request->frame_rd_idx].ImgSrcY.dmabuf
-						);
-					}
-					if (
-		request->frame_config[request->frame_rd_idx].FDVT_METADATA_TO_GCE.ImgSrcUV_Handler
-				&& request->frame_config[request->frame_rd_idx].FDVT_IS_SECURE &&
-		request->frame_config[request->frame_rd_idx].FDVT_METADATA_TO_GCE.SecMemType == 3
-					) {
-						fdvt_free_iova(
-					&request->frame_dmabuf[request->frame_rd_idx].ImgSrcUV);
-						dma_buf_put(
-				request->frame_dmabuf[request->frame_rd_idx].ImgSrcUV.dmabuf);
-					}
-					request->fdvt_frame_status
-						[request->frame_rd_idx++] =
-						FDVT_FRAME_STATUS_EMPTY;
-				} else {
-					log_err("deq err idx(%d) dequNum(%d) Rd(%d) RrameRD(%d) FrmStat(%d)\n",
-						idx, dequeNum,
-						fdvt_req_ring.read_idx,
-						request->frame_rd_idx,
-						request->fdvt_frame_status
-						[request->frame_rd_idx]);
-				}
-			}
-			request->state = FDVT_REQUEST_STATE_EMPTY;
-			request->frame_wr_idx = 0;
-			request->frame_rd_idx = 0;
-			request->enque_req_num = 0;
-			fdvt_req_ring.read_idx =
-				(fdvt_req_ring.read_idx + 1) %
-					MAX_FDVT_REQUEST_RING_SIZE;
-			log_dbg("FDVT Request read_idx(%d)\n",
-				fdvt_req_ring.read_idx);
-
-			spin_unlock_irqrestore(spinlock_lrq_ptr, flags);
-
-			mutex_unlock(&fdvt_deque_mutex);
-
-			if (!fdvt_FdvtReq.m_pFdvtConfig) {
-				log_err("NULL pointer:fdvt_FdvtReq.m_pFdvtConfig");
-				ret = -EFAULT;
-				goto EXIT;
-			}
-
-			if (copy_to_user((void *)fdvt_FdvtReq.m_pFdvtConfig,
-					 &fdvt_deq_req.frame_config[0],
-					 dequeNum *
-					 sizeof(struct fdvt_config)) != 0) {
-				log_err("FDVT_DEQUE_REQ copy_to_user frameconfig failed\n");
-				ret = -EFAULT;
-			}
-			if (copy_to_user((void *)Param,
-					 &fdvt_FdvtReq,
-					 sizeof(FDVT_Request)) != 0) {
-				log_err("FDVT_DEQUE_REQ copy_to_user failed\n");
-				ret = -EFAULT;
-			}
-		} else {
-			log_err("FDVT_CMD_FDVT_DEQUE_REQ copy_from_user failed\n");
+		    sizeof(FDVT_Request)) != 0) {
+			log_err("FDVT_ENQUE_REQ copy_from_user failed, p1(%p) p2(%p) p3(%d)\n",
+					&fdvt_FdvtReq, Param, sizeof(FDVT_Request));
+			ret = -EFAULT;
+			goto EXIT;
+		}
+		ret = FDVT_Deque_Func_64B((unsigned long)&fdvt_FdvtReq);
+		if (ret != 0)
+			goto EXIT;
+		if (copy_to_user((void *)Param,
+			&fdvt_FdvtReq,
+			sizeof(FDVT_Request)) != 0) {
+			log_err("FDVT_DEQUE_REQ copy_to_user failed\n");
 			ret = -EFAULT;
 		}
-
 		break;
 	default:
 		log_err("Unknown Cmd(%d)", Cmd);
@@ -3737,6 +3774,7 @@ static long FDVT_ioctl(struct file *pFile,
 	}
 	/*  */
 EXIT:
+	log_err("RET: (%d))", ret);
 	if (ret != 0) {
 		log_err(
 		"Fail, Cmd(%d), pid(%d), (process, pid, tgid)=(%s, %d, %d)",
@@ -3884,11 +3922,22 @@ static long FDVT_ioctl_compat(struct file *filp,
 			      unsigned int cmd, unsigned long arg)
 {
 	long ret;
+	struct FDVT_USER_INFO_STRUCT *pUserInfo;
 
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
 		log_err("no f_op !!!\n");
 		return -ENOTTY;
 	}
+
+	/*  */
+	if (!filp->private_data) {
+		log_wrn(
+		"private_data is NULL,(process, pid, tgid)=(%s, %d, %d)",
+		current->comm, current->pid, current->tgid);
+		return -EFAULT;
+	}
+	/*  */
+	pUserInfo = (struct FDVT_USER_INFO_STRUCT *)filp->private_data;
 
 	switch (cmd) {
 	case COMPAT_FDVT_READ_REGISTER:
@@ -3940,22 +3989,16 @@ static long FDVT_ioctl_compat(struct file *filp,
 		}
 	case COMPAT_FDVT_ENQUE_REQ:
 		{
-			//compat_FDVT_Request __user *data32;
+
 			FDVT_Request data;
 			int err;
-
-			//data32 = compat_ptr(arg);
-			//data = compat_alloc_user_space(sizeof(*data));
-			//if (!data)
-				//return -EFAULT;
 
 			err = compat_get_FDVT_enque_req_data(arg, &data);
 			if (err) {
 				log_inf("COMPAT_FDVT_ENQUE_REQ error!!!\n");
 				return err;
 			}
-			ret = filp->f_op->unlocked_ioctl(filp, FDVT_ENQUE_REQ,
-							(unsigned long)&data);
+			ret = FDVT_Enque_Func_64B((unsigned long)&data, pUserInfo);
 			err = compat_put_FDVT_enque_req_data(arg, &data);
 			if (err) {
 				log_inf("COMPAT_FDVT_ENQUE_REQ error!!!\n");
@@ -3965,23 +4008,15 @@ static long FDVT_ioctl_compat(struct file *filp,
 		}
 	case COMPAT_FDVT_DEQUE_REQ:
 		{
-			//compat_FDVT_Request __user *data32;
 			FDVT_Request data;
 			int err;
-
-			//data32 = compat_ptr(arg);
-			//data = compat_alloc_user_space(sizeof(*data));
-			//if (!data)
-				//return -EFAULT;
 
 			err = compat_get_FDVT_deque_req_data(arg, &data);
 			if (err) {
 				log_inf("COMPAT_FDVT_DEQUE_REQ error!!!\n");
 				return err;
 			}
-			ret =
-				filp->f_op->unlocked_ioctl(filp, FDVT_DEQUE_REQ,
-							(unsigned long)&data);
+			ret = FDVT_Deque_Func_64B((unsigned long)&data);
 			err = compat_put_FDVT_deque_req_data(arg, &data);
 			if (err) {
 				log_inf("COMPAT_FDVT_DEQUE_REQ error!!!\n");
