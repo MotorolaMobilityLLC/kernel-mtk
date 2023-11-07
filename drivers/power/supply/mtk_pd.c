@@ -1371,7 +1371,7 @@ static int mtk_pd_probe(struct platform_device *pdev)
 	mutex_init(&pd->access_lock);
 	mutex_init(&pd->data_lock);
 	mtk_pd_parse_dt(pd, &pdev->dev);
-	pd->bat_psy = devm_power_supply_get_by_phandle(&pdev->dev, "gauge");
+	pd->bat_psy = power_supply_get_by_name("battery");
 	if (IS_ERR_OR_NULL(pd->bat_psy))
 		pd_err("%s: devm power fail to get bat_psy\n", __func__);
 

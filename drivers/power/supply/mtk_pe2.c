@@ -1446,7 +1446,7 @@ static int mtk_pe2_probe(struct platform_device *pdev)
 	pe2->vbus = 5000000;
 	pe2->state = PE2_HW_UNINIT;
 	mtk_pe2_parse_dt(pe2, &pdev->dev);
-	pe2->bat_psy = devm_power_supply_get_by_phandle(&pdev->dev, "gauge");
+	pe2->bat_psy = power_supply_get_by_name("battery");
 
 	if (IS_ERR_OR_NULL(pe2->bat_psy))
 		pe2_err("%s: devm power fail to get bat_psy\n", __func__);

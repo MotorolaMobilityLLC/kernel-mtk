@@ -2804,7 +2804,7 @@ static int mt6375_get_vbat_mon_rpt(struct mt6375_priv *priv, int *vbat)
 	u16 data;
 
 	if(psy == NULL){
-	    psy = devm_power_supply_get_by_phandle(priv->dev, "charger");
+	    psy = power_supply_get_by_name("primary_chg");
 	}
 
 	if (psy) {

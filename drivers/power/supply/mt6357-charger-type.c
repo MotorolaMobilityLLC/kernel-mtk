@@ -661,7 +661,7 @@ static int psy_chr_type_get_property(struct power_supply *psy,
 		val->intval = vbus;
 		break;
 	case POWER_SUPPLY_PROP_STATUS:
-		chg_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "charger");
+		chg_psy = power_supply_get_by_name("mt6370-charger");
 		if (chg_psy == NULL || IS_ERR(chg_psy)) {
 			pr_info("get chg_psy fail %s\n", __func__);
 			return -EINVAL;
@@ -847,7 +847,7 @@ static int mt6357_charger_type_probe(struct platform_device *pdev)
 
 	check_boot_mode(info, &pdev->dev);
 
-	info->psy_desc.name = "mtk_charger_type";
+	info->psy_desc.name = "primary_chg";
 	info->psy_desc.type = POWER_SUPPLY_TYPE_USB;
 	info->psy_desc.properties = chr_type_properties;
 	info->psy_desc.num_properties = ARRAY_SIZE(chr_type_properties);

@@ -2032,7 +2032,7 @@ static int mtk_pe4_probe(struct platform_device *pdev)
 		wakeup_source_register(NULL, "PE4.0 suspend wakelock");
 
 	mtk_pe4_parse_dt(pe4, &pdev->dev);
-	pe4->bat_psy = devm_power_supply_get_by_phandle(&pdev->dev, "gauge");
+	pe4->bat_psy = power_supply_get_by_name("battery");
 
 	if (IS_ERR_OR_NULL(pe4->bat_psy))
 		pe4_err("%s: devm power fail to get pe4->bat_psy\n", __func__);

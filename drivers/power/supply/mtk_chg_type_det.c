@@ -74,7 +74,7 @@ static int mtk_ext_get_charger_type(struct mtk_ctd_info *mci, int attach)
 	static struct power_supply *bc12_psy;
 
 	if (mci->bc12_sel == MTK_CTD_BY_MAINPMIC)
-		bc12_psy = power_supply_get_by_name("mtk_charger_type");
+		bc12_psy = power_supply_get_by_name("primary_chg");
 	else if (mci->bc12_sel == MTK_CTD_BY_EXTCHG)
 #ifdef CONFIG_MOTO_CHARGER_SGM415XX
 		bc12_psy = power_supply_get_by_name("sgm4154x-charger");
@@ -483,8 +483,7 @@ static int mtk_ctd_probe(struct platform_device *pdev)
 
 	mtk_ctd_parse_dt(mci);
 
-	mci->bc12_psy = devm_power_supply_get_by_phandle(&pdev->dev,
-							"bc12");
+	mci->bc12_psy = power_supply_get_by_name("primary_chg");
 	if (IS_ERR(mci->bc12_psy)) {
 		mci->bc12_psy = devm_power_supply_get_by_phandle(&pdev->dev,
 							"bc12_2nd");

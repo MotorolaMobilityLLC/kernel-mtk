@@ -3192,7 +3192,7 @@ static int mt6360_pmu_chg_probe(struct platform_device *pdev)
 	/* power supply register */
 	memcpy(&mci->psy_desc,
 		&mt6360_charger_desc, sizeof(mci->psy_desc));
-	mci->psy_desc.name = dev_name(&pdev->dev);
+	mci->psy_desc.name = pdata->chg_name;
 
 	charger_cfg.drv_data = mci;
 	charger_cfg.of_node = pdev->dev.of_node;

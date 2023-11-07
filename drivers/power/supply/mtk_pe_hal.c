@@ -107,7 +107,7 @@ static int get_pmic_vbus(int *vchr)
 	int ret;
 
 	if (chg_psy == NULL)
-		chg_psy = power_supply_get_by_name("mtk_charger_type");
+		chg_psy = power_supply_get_by_name("primary_chg");
 	if (chg_psy == NULL || IS_ERR(chg_psy)) {
 		pe_err("%s Couldn't get chg_psy\n", __func__);
 		ret = -1;
@@ -159,7 +159,7 @@ int pe_hal_get_ibat(struct chg_alg_device *alg)
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		pr_notice("%s retry to get pe->bat_psy\n", __func__);
-		bat_psy = devm_power_supply_get_by_phandle(&pe->pdev->dev, "gauge");
+		bat_psy = power_supply_get_by_name("battery");
 		pe->bat_psy = bat_psy;
 	}
 
@@ -254,7 +254,7 @@ int pe_hal_get_uisoc(struct chg_alg_device *alg)
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		pr_notice("%s retry to get pe->bat_psy\n", __func__);
-		bat_psy = devm_power_supply_get_by_phandle(&pe->pdev->dev, "gauge");
+		bat_psy = power_supply_get_by_name("battery");
 		pe->bat_psy = bat_psy;
 	}
 
