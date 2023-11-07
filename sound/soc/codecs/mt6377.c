@@ -309,9 +309,52 @@ static const char *const hp_dl_pga_gain[] = {
 	"-7Db", "-8Db", "-9Db", "-10Db", "-40Db"
 };
 
-static void zcd_disable(struct mt6377_priv *priv)
+static void zcd_enable(struct mt6377_priv *priv, bool enable, int device)
 {
-	regmap_write(priv->regmap, MT6377_ZCD_CON0, 0x0);
+	dev_info(priv->dev, "%s(), enable: %d, device: %d\n",
+			 __func__, enable, device);
+	if (enable) {
+		switch (device) {
+		case DEVICE_RCV:
+			regmap_update_bits(priv->regmap,
+					   MT6377_AUDDEC_ANA_CON20,
+					   RG_AUDZCDMUXSEL_VAUDP15_MASK_SFT,
+					   0x2 << RG_AUDZCDMUXSEL_VAUDP15_SFT);
+			break;
+		case DEVICE_LO:
+			regmap_update_bits(priv->regmap,
+					   MT6377_AUDDEC_ANA_CON20,
+					   RG_AUDZCDMUXSEL_VAUDP15_MASK_SFT,
+					   0x0 << RG_AUDZCDMUXSEL_VAUDP15_SFT);
+			break;
+		case DEVICE_HP:
+		default:
+			regmap_update_bits(priv->regmap,
+					   MT6377_AUDDEC_ANA_CON20,
+					   RG_AUDZCDMUXSEL_VAUDP15_MASK_SFT,
+					   0x1 << RG_AUDZCDMUXSEL_VAUDP15_SFT);
+			break;
+		}
+		/* Enable ZCD, for minimize pop noise */
+		/* timeout, 1 = 5ms, 0 = 30ms */
+		regmap_update_bits(priv->regmap, MT6377_ZCD_CON0,
+				   RG_AUDZCDTIMEOUTMODESEL_MASK_SFT,
+				   0x0 << RG_AUDZCDTIMEOUTMODESEL_SFT);
+		regmap_update_bits(priv->regmap, MT6377_ZCD_CON0,
+				   RG_AUDZCDGAINSTEPSIZE_MASK_SFT,
+				   0x0 << RG_AUDZCDGAINSTEPSIZE_SFT);
+		regmap_update_bits(priv->regmap, MT6377_ZCD_CON0,
+				   RG_AUDZCDGAINSTEPTIME_MASK_SFT,
+				   0x5 << RG_AUDZCDGAINSTEPTIME_SFT);
+		regmap_update_bits(priv->regmap, MT6377_ZCD_CON0,
+				   RG_AUDZCDENABLE_MASK_SFT,
+				   0x1 << RG_AUDZCDENABLE_SFT);
+	} else {
+		regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON20,
+				   RG_AUDZCDMUXSEL_VAUDP15_MASK_SFT,
+				   0x4 << RG_AUDZCDMUXSEL_VAUDP15_SFT);
+		regmap_write(priv->regmap, MT6377_ZCD_CON0, 0x0);
+	}
 }
 
 static void hp_main_output_ramp(struct mt6377_priv *priv, bool up)
@@ -1046,8 +1089,8 @@ static void mtk_hp_enable(struct mt6377_priv *priv)
 			0x1 << RG_NVREG_EN_VAUDP15_SFT);
 	usleep_range(100, 120);
 
-	/* Disable AUD_ZCD */
-	zcd_disable(priv);
+	/* Enable AUD_ZCD */
+	zcd_enable(priv, true, DEVICE_HP);
 
 	/* Disable headphone short-circuit protection */
 	regmap_write(priv->regmap, MT6377_AUDDEC_ANA_CON1, 0x30);
@@ -1293,7 +1336,7 @@ static void mtk_hp_disable(struct mt6377_priv *priv)
 			   0x3 << 2, 0x0);
 
 	/* Disable AUD_ZCD */
-	zcd_disable(priv);
+	zcd_enable(priv, false, DEVICE_HP);
 
 
 	/* Set HPL/HPR gain to mute */
@@ -1331,8 +1374,8 @@ static int mtk_hp_dual_spk_enable(struct mt6377_priv *priv)
 	regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON8,
 			0x1 << 6, 0x1 << 6);
 
-	/* Disable AUD_ZCD */
-	zcd_disable(priv);
+	/* Enable AUD_ZCD */
+	zcd_enable(priv, true, DEVICE_HP);
 
 	/* Disable headphone short-circuit protection */
 	regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON1,
@@ -1590,6 +1633,8 @@ static int mtk_hp_dual_spk_disable(struct mt6377_priv *priv)
 	regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON8,
 			   0x1 << 6, 0x0 << 6);
 	/* disable Pull-down HPL/R to AVSS28_AUD */
+	/* Disable AUD_ZCD */
+	zcd_enable(priv, false, DEVICE_HP);
 	hp_pull_down(priv, false);
 
 	return 0;
@@ -1623,6 +1668,9 @@ static int mtk_hp_impedance_enable(struct mt6377_priv *priv)
 	/* Set TRIMBUF gain as 18dB */
 	regmap_write(priv->regmap, MT6377_AUDDEC_ANA_CON14, 0x72);
 
+	/* Enable AUD_ZCD */
+	zcd_enable(priv, true, DEVICE_HP);
+
 	return 0;
 }
 
@@ -1653,6 +1701,9 @@ static int mtk_hp_impedance_disable(struct mt6377_priv *priv)
 	/* from accdet request */
 	mt6377_accdet_modify_vref_volt();
 #endif
+
+	/* Disable AUD_ZCD */
+	zcd_enable(priv, false, DEVICE_HP);
 	return 0;
 }
 
@@ -1763,8 +1814,6 @@ static int mt_rcv_event(struct snd_soc_dapm_widget *w,
 				0x1 << RG_NVREG_EN_VAUDP15_SFT);
 		usleep_range(100, 120);
 
-		/* Disable AUD_ZCD */
-		zcd_disable(priv);
 
 		/* Disable handset short-circuit protection */
 		regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON10,
@@ -1827,6 +1876,8 @@ static int mt_rcv_event(struct snd_soc_dapm_widget *w,
 		regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON10,
 				RG_AUDHSMUXINPUTSEL_VAUDP15_MASK_SFT,
 				0x2 << RG_AUDHSMUXINPUTSEL_VAUDP15_SFT);
+		/* Enable AUD_ZCD */
+		zcd_enable(priv, true, DEVICE_RCV);
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
 		/* HS mux to open */
@@ -1852,6 +1903,8 @@ static int mt_rcv_event(struct snd_soc_dapm_widget *w,
 		/* Disable HS driver bias circuits */
 		regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON10,
 				   RG_AUDHSPWRUP_IBIAS_VAUDP15_MASK_SFT, 0x0);
+		/* Disable AUD_ZCD */
+		zcd_enable(priv, false, DEVICE_RCV);
 		break;
 	default:
 		break;
@@ -1907,8 +1960,6 @@ static int mt_lo_event(struct snd_soc_dapm_widget *w,
 				0x1 << RG_NVREG_EN_VAUDP15_SFT);
 		usleep_range(100, 120);
 
-		/* Disable AUD_ZCD */
-		zcd_disable(priv);
 
 		/* Disable LO short-circuit protection */
 		regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON12,
@@ -1965,6 +2016,8 @@ static int mt_lo_event(struct snd_soc_dapm_widget *w,
 		regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON12,
 				RG_AUDLOLMUXINPUTSEL_VAUDP15_MASK_SFT,
 				0x1 << RG_AUDLOLMUXINPUTSEL_VAUDP15_SFT);
+		/* Enable AUD_ZCD */
+		zcd_enable(priv, true, DEVICE_LO);
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
 		/* Switch LOL MUX to open */
@@ -2003,6 +2056,8 @@ static int mt_lo_event(struct snd_soc_dapm_widget *w,
 		/* Disable LO driver bias circuits */
 		regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON12,
 				   RG_AUDLOLPWRUP_IBIAS_VAUDP15_MASK_SFT, 0x0);
+		/* Disable AUD_ZCD */
+		zcd_enable(priv, false, DEVICE_LO);
 		break;
 	default:
 		break;
@@ -4366,8 +4421,8 @@ static void start_trim_hardware(struct mt6377_priv *priv)
 			0x1 << RG_NVREG_EN_VAUDP15_SFT);
 	usleep_range(100, 120);
 
-	/* Disable AUD_ZCD */
-	zcd_disable(priv);
+	/* Enable AUD_ZCD */
+	zcd_enable(priv, true, DEVICE_HP);
 
 	/* Disable HeadphoneL/HeadphoneR short circuit protection */
 	regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON1,
@@ -4479,6 +4534,9 @@ static void stop_trim_hardware(struct mt6377_priv *priv)
 	regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON22,
 			   RG_AUDIBIASPWRDN_VAUDP15_MASK_SFT,
 			   0x1 << RG_AUDIBIASPWRDN_VAUDP15_SFT);
+
+	/* Disable AUD_ZCD */
+	zcd_enable(priv, false, DEVICE_HP);
 
 	/* Disable NV regulator (-1.2V) */
 	regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON27,
@@ -5592,8 +5650,8 @@ static int mt6377_rcv_acc_set(struct snd_kcontrol *kcontrol,
 	regmap_write(priv->regmap, MT6377_AUDDEC_ANA_CON27, 0x1);
 	usleep_range(100, 120);
 
-	/* Disable AUD_ZCD */
-	zcd_disable(priv);
+	/* Enable AUD_ZCD */
+	zcd_enable(priv, true, DEVICE_RCV);
 
 	/* Disable handset short-circuit protection */
 	regmap_write(priv->regmap, MT6377_AUDDEC_ANA_CON10, 0x10);
@@ -5767,7 +5825,7 @@ static int mt6377_codec_init_reg(struct snd_soc_component *cmpnt)
 	priv->hp_hifi_mode = 0;
 
 	/* Disable AUD_ZCD */
-	zcd_disable(priv);
+	zcd_enable(priv, false, DEVICE_NUM);
 
 	/* disable clk buf */
 	regmap_update_bits(priv->regmap, MT6377_DCXO_CW12,
