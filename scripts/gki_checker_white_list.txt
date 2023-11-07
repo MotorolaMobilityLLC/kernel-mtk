@@ -55,11 +55,9 @@ f drivers/scsi/ufs/unipro.h
 f drivers/tty/serial/8250/8250_core.c
 f drivers/tty/serial/8250/8250_port.c
 f fs/coredump.c
-f fs/drop_caches.c
 f fs/f2fs/checkpoint.c
 f fs/f2fs/namei.c
 f fs/f2fs/super.c
-f fs/f2fs/sysfs.c
 f fs/fs-writeback.c
 f include/linux/dev_printk.h
 f include/linux/dynamic_debug.h
@@ -229,7 +227,6 @@ s dlink_dub1312_info
 s dlink_dub_e100_info
 s do_handle_mm_fault
 s do_setlink
-s drop_caches_sysctl_handler
 s eeprom_prepare_data
 s ethtool_get_any_eeprom
 s ethtool_get_module_eeprom
