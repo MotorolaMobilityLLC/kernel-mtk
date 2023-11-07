@@ -72,6 +72,7 @@ struct pd_check_swcg dispsys_config_swcgs[] = {
 	SWCG("mm_disp_gamma0"),
 	SWCG("mm_disp_postmask0"),
 	SWCG("mm_disp_dither0"),
+	SWCG("mm_disp_dsc_wrap0"),
 	SWCG("mm_disp_dummy_mod_b0"),
 	SWCG("mm_clk0"),
 	SWCG("mm_dp_clk"),

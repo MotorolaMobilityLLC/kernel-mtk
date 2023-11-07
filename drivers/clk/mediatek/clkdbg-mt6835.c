@@ -263,6 +263,7 @@ const char * const *get_mt6835_all_clk_names(void)
 		"mm_disp_gamma0",
 		"mm_disp_postmask0",
 		"mm_disp_dither0",
+		"mm_disp_dsc_wrap0",
 		"mm_disp_dummy_mod_b0",
 		"mm_clk0",
 		"mm_dp_clk",
