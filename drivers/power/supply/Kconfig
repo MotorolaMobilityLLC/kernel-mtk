@@ -977,6 +977,11 @@ config MTK_HVBP_SUPPORT
 	  Set Yes to enable HVBP charging
 	  Set No to disable HVBP charging
 
+config MOTO_CHG_TCMD_SUPPORT
+	tristate "MOTO TCMD interface driver for charger"
+	help
+	  This is to enable MOTO supports of charger TCMD INTERFACE.
+
 config CHARGER_RT9759
 	tristate "Charger Driver for Richtek RT9759 Charger IC"
 	default n
