@@ -3373,7 +3373,7 @@ static long FDVT_ioctl(struct file *pFile,
 	FDVT_CLEAR_IRQ_STRUCT ClearIrq;
 	struct fdvt_config fdvt_FdvtConfig;
 	struct FDVT_USER_INFO_STRUCT *pUserInfo;
-	FDVT_Request *fdvt_FdvtReq = NULL;
+	FDVT_Request fdvt_FdvtReq;
 	int enqueNum;
 	int dequeNum;
 	/* old: unsigned int flags;*//* FIX to avoid build warning */
