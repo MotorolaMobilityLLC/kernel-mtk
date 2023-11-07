@@ -94,10 +94,10 @@
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
-	switch-fps = <90>;
+	switch-fps = <0>;
 	switch-mode = "vfp";
 	panel1@0 {
-		compatible = "jdi,nt36672e,cphy,vdo,no,dsc";
+		compatible = "jdi,nt36672e,vdo,60hz";
 		reg = <0>;
 		pm-enable-gpios = <&pio 150 0>;
 		reset-gpios = <&pio 86 0>;
@@ -111,7 +111,7 @@
 		};
 	};
 	panel2@1 {
-		compatible = "jdi,nt36672e,cphy,vdo,wo,dsc,60hz";
+		compatible = "jdi,nt36672e,cphy,vdo,no,dsc";
 		reg = <1>;
 		pm-enable-gpios = <&pio 150 0>;
 		reset-gpios = <&pio 86 0>;
@@ -124,20 +124,6 @@
 			};
 		};
 	};
-	panel3@2 {
-		compatible = "jdi,nt36672e,cphy,vdo,wo,dsc,hfp";
-		reg = <2>;
-		pm-enable-gpios = <&pio 150 0>;
-		reset-gpios = <&pio 86 0>;
-		cphy-sel-gpios = <&pio 133 0>;
-		gate-ic = <4831>;
-		pinctrl-names = "default";
-		port {
-			panel_in3: endpoint {
-				remote-endpoint = <&dsi_out3>;
-			};
-		};
-	};
 	ports {
 		port {
 			dsi_out: endpoint {
@@ -145,9 +131,6 @@
 			};
 			dsi_out2: endpoint2 {
 				remote-endpoint = <&panel_in2>;
-			};
-			dsi_out3: endpoint3 {
-				remote-endpoint = <&panel_in3>;
 			};
 		};
 	};
