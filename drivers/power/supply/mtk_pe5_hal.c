@@ -20,9 +20,6 @@ struct mtk_chgdev_desc {
 	bool must_exist;
 };
 
-// global battery psy
-static struct power_supply *bat_psy = NULL;
-
 static struct mtk_chgdev_desc mtk_chgdev_desc_tbl[MTK_CHGTYP_MAX] = {
 	{
 		.type = MTK_CHGTYP_SWCHG,
@@ -494,12 +491,9 @@ static int pe50_get_tbat(struct pe50_hal *hal)
 	int ret = 0;
 	int tmp_ret;
 	union power_supply_propval prop;
-//	static struct power_supply *bat_psy = NULL;
+	struct power_supply *bat_psy = NULL;
 
-	if(IS_ERR_OR_NULL(bat_psy)){
-	   bat_psy = power_supply_get_by_name("battery");
-	}
-
+	bat_psy = power_supply_get_by_name("battery");
 	if (IS_ERR_OR_NULL(bat_psy)) {
 		PE50_ERR("%s Couldn't get bat_psy\n", __func__);
 		ret = 27;
@@ -521,7 +515,7 @@ int pe50_hal_get_adc(struct chg_alg_device *alg, enum chg_idx chgidx,
 	struct pe50_hal *hal = chg_alg_dev_get_drv_hal_data(alg);
 	int _chan = to_chgclass_adc(chan);
 	union power_supply_propval prop;
-//	static struct power_supply *bat_psy = NULL;
+	struct power_supply *bat_psy = NULL;
 
 	if (chgtyp < 0)
 		return chgtyp;
@@ -577,13 +571,10 @@ int pe50_hal_get_soc(struct chg_alg_device *alg, u32 *soc)
 {
 	int ret;
 	int ret_tmp;
-//	static struct power_supply *bat_psy = NULL;
+	struct power_supply *bat_psy = NULL;
 	union power_supply_propval prop;
 
-	if (IS_ERR_OR_NULL(bat_psy)) {
-	    bat_psy = power_supply_get_by_name("battery");
-	}
-
+	bat_psy = power_supply_get_by_name("battery");
 	if (IS_ERR_OR_NULL(bat_psy)) {
 		PE50_ERR("%s Couldn't get bat_psy\n", __func__);
 		ret = 50;
