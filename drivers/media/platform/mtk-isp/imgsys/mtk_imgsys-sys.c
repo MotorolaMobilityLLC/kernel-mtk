@@ -1695,6 +1695,13 @@ static void imgsys_cleartoken_handler(void *data, unsigned int len, void *priv)
 	gce_virt = mtk_hcp_get_gce_mem_virt(imgsys_dev->scp_pdev);
 	cleartoken_info = (struct cleartoken_info_t *)(gce_virt + (swbuf_data->offset));
 
+	if (swbuf_data->offset > mtk_hcp_get_gce_mem_size(imgsys_dev->scp_pdev)) {
+		pr_info("%s: invalid swbuf_data->offset(%u), max(%d)\n",
+			__func__, swbuf_data->offset,
+			mtk_hcp_get_gce_mem_size(imgsys_dev->scp_pdev));
+		return;
+	}
+
 	if (!cleartoken_info) {
 		pr_info("%s: invalid swfrm_info\n", __func__);
 		return;
