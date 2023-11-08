@@ -335,46 +335,7 @@ static void set_max_framerate(UINT16 framerate,
 	set_dummy();
 }	/*	set_max_framerate  */
 
-static void write_shutter(kal_uint16 shutter)
-{
-	kal_uint16 realtime_fps = 0;
-
-	spin_lock(&imgsensor_drv_lock);
-	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
-		imgsensor.frame_length = shutter + imgsensor_info.margin;
-	else
-		imgsensor.frame_length = imgsensor.min_frame_length;
-
-	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-		imgsensor.frame_length = imgsensor_info.max_frame_length;
-	spin_unlock(&imgsensor_drv_lock);
-	if (shutter < imgsensor_info.min_shutter)
-		shutter = imgsensor_info.min_shutter;
-
-	if (imgsensor.autoflicker_en) {
-		realtime_fps =
-			imgsensor.pclk / imgsensor.line_length
-			* 10 / imgsensor.frame_length;
-		if (realtime_fps >= 297 && realtime_fps <= 305) {
-			set_max_framerate(296, 0);
-		} else if (realtime_fps >= 147 && realtime_fps <= 150) {
-			set_max_framerate(146, 0);
-		} else {
-			/* Extend frame length*/
-			write_cmos_sensor_16_16(0x0340, imgsensor.frame_length);
-		}
-	} else {
-		/* Extend frame length*/
-		write_cmos_sensor_16_16(0x0340, imgsensor.frame_length);
-	}
-
-	/* Update Shutter*/
-	write_cmos_sensor_16_16(0x0202, shutter);
-	pr_debug("shutter = %d, framelength = %d, autoflicker_en = %d\n",
-		shutter, imgsensor.frame_length, imgsensor.autoflicker_en);
-
-}	/*	write_shutter  */
-
+int needSetNormalMode = 0;
 /*
  ************************************************************************
  * FUNCTION
@@ -393,16 +354,73 @@ static void write_shutter(kal_uint16 shutter)
  *
  ************************************************************************
  */
-static void set_shutter(kal_uint16 shutter)
+static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
+	kal_uint16 realtime_fps = 0;
+	kal_uint32 CintR = 0;
+	kal_uint32 Time_Frame = 0;
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-	write_shutter(shutter);
-}	/*	set_shutter */
+	spin_lock(&imgsensor_drv_lock);
+	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin) {
+		imgsensor.frame_length = shutter + imgsensor_info.margin;
+	} else {
+		imgsensor.frame_length = imgsensor.min_frame_length;
+	}
+	if (imgsensor.frame_length > imgsensor_info.max_frame_length) {
+		imgsensor.frame_length = imgsensor_info.max_frame_length;
+	}
+	spin_unlock(&imgsensor_drv_lock);
+	if (shutter < imgsensor_info.min_shutter)
+		shutter = imgsensor_info.min_shutter;
+
+	if (imgsensor.autoflicker_en) {
+		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+		if (realtime_fps >= 297 && realtime_fps <= 305) {
+			set_max_framerate(296, 0);
+		} else if (realtime_fps >= 147 && realtime_fps <= 150) {
+			set_max_framerate(146, 0);
+		} else {
+			// Extend frame length
+			write_cmos_sensor_16_16(0x0340, imgsensor.frame_length);
+		}
+	} else {
+		// Extend frame length
+		write_cmos_sensor_16_16(0x0340, imgsensor.frame_length);
+	}
+
+	if (shutter > 0xFFF0) {
+		needSetNormalMode = KAL_TRUE;
+		if(shutter >= 1947775){
+			shutter = 1947775;
+		}
+		CintR = ((unsigned long long)shutter) / 64;
+		Time_Frame = CintR + 0x0004;
+		pr_debug("CintR = %d\n", CintR);
+		write_cmos_sensor_16_16(0x0340, Time_Frame & 0xFFFF);
+		write_cmos_sensor_16_16(0x0202, CintR & 0xFFFF);
+		write_cmos_sensor_16_16(0x0702, 0x0600);
+		write_cmos_sensor_16_16(0x0704, 0x0600);
+		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
+		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
+		imgsensor.current_ae_effective_frame = 2;
+		pr_debug("download long shutter setting shutter = %d\n", shutter);
+	} else {
+		if (needSetNormalMode == KAL_TRUE) {
+			needSetNormalMode = KAL_FALSE;
+			write_cmos_sensor_16_16(0x0702, 0x0000);
+			write_cmos_sensor_16_16(0x0704, 0x0000);
+		}
+
+		pr_debug("return to normal shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
+		write_cmos_sensor_16_16(0x0340, imgsensor.frame_length);
+		write_cmos_sensor_16_16(0x0202, imgsensor.shutter);
+	}
+} /* set_shutter */
 
 /*	write_shutter  */
 static void set_shutter_frame_length(
@@ -3229,9 +3247,9 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 
 	if (enable) {
 /* 0 : Normal, 1 : Solid Color, 2 : Color Bar, 3 : Shade Color Bar, 4 : PN9 */
-		write_cmos_sensor_16_8(0x0600, 0x0001);
+		write_cmos_sensor_16_16(0x0600, 0x0001);
 	} else {
-		write_cmos_sensor_16_8(0x0600, 0x0000);
+		write_cmos_sensor_16_16(0x0600, 0x0000);
 	}
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;

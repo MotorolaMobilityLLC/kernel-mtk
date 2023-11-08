@@ -79,6 +79,9 @@ struct imgsensor_struct {
 	enum MSDK_SCENARIO_ID_ENUM current_scenario_id;//current scenario id
 	kal_uint8  ihdr_mode;//ihdr mode 0: disable, 1: ihdr, 2:mVHDR, 9:zigzag
 
+	struct IMGSENSOR_AE_FRM_MODE ae_frm_mode;
+	kal_uint8 current_ae_effective_frame;
+
 	kal_uint8 i2c_write_id;//record current sensor's i2c write id
 };
 
