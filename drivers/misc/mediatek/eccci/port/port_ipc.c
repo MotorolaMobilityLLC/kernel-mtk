@@ -35,7 +35,7 @@ static struct ipc_task_id_map ipc_msgsvc_maptbl[] = {
 #undef __IPC_ID_TABLE
 };
 
-#ifdef CONFIG_MTK_CONN_MD
+#if IS_ENABLED(CONFIG_MTK_CONN_MD)
 /* this file also include ccci_ipc_task_ID.h,
  * must include it after ipc_msgsvc_maptbl
  */
@@ -329,7 +329,7 @@ int ccci_ipc_send_ilm(int md_id, struct ipc_ilm *in_ilm)
 	return port_ipc_kernel_write(md_id, in_ilm);
 }
 
-#ifdef CONFIG_MTK_CONN_MD
+#if IS_ENABLED(CONFIG_MTK_CONN_MD)
 static int ccci_ipc_send_ilm_to_md1(struct ipc_ilm *in_ilm)
 {
 	return port_ipc_kernel_write(0, in_ilm);
@@ -426,7 +426,7 @@ retry:
 		if (id_map != NULL) {
 			switch (id_map->task_id) {
 			case AP_IPC_WMT:
-#ifdef CONFIG_MTK_CONN_MD
+#if IS_ENABLED(CONFIG_MTK_CONN_MD)
 				mtk_conn_md_bridge_send_msg(&out_ilm);
 #endif
 				break;
@@ -492,7 +492,7 @@ int port_ipc_init(struct port_t *port)
 	} else {
 		kthread_run(port_ipc_kernel_thread, port, "%s", port->name);
 		if (ipc_ctrl->task_id == AP_IPC_WMT) {
-#ifdef CONFIG_MTK_CONN_MD
+#if IS_ENABLED(CONFIG_MTK_CONN_MD)
 			struct conn_md_bridge_ops ccci_ipc_conn_ops = {
 			.rx_cb = ccci_ipc_send_ilm_to_md1};
 
