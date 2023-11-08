@@ -204,6 +204,9 @@ struct charger_ops {
 	int (*get_property)(struct charger_device *dev,
 			    enum charger_property prop,
 			    union charger_propval *val);
+
+	/* enable adc*/
+	int (*enable_adc)(struct charger_device *dev, bool en);
 };
 
 static inline void *charger_dev_get_drvdata(
@@ -398,5 +401,6 @@ extern int unregister_charger_device_notifier(
 extern int charger_dev_notify(
 	struct charger_device *charger_dev, int event);
 
+extern int charger_dev_enable_adc(struct charger_device *chg_dev, bool en);
 
 #endif /*LINUX_POWER_CHARGER_CLASS_H*/
