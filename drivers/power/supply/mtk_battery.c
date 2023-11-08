@@ -762,13 +762,13 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 	}
 	if (IS_ERR_OR_NULL(chg_psy)) {
 		chg_psy = power_supply_get_by_name("primary_chg");
+		bm_err("%s retry to get chg_psy\n", __func__);
 		if (IS_ERR_OR_NULL(chg_psy)) {
 			chg_psy = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,
 								"charger_2nd");
-			bm_err("%s retry to get chg_psy\n", __func__);
-			bs_data->chg_psy = chg_psy;
-			bm_err("%s charger psy name: %s\n", __func__, chg_psy->desc->name); 
+			bm_err("%s retry to get chg_psy from charger_2nd\n", __func__);
 		}
+		bm_err("%s charger psy name: %s\n", __func__, chg_psy->desc->name);
 		bs_data->chg_psy = chg_psy;
 	} else {
 		ret = power_supply_get_property(chg_psy,
