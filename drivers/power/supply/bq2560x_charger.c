@@ -1561,7 +1561,7 @@ static int bq2560x_psy_gauge_get_property(struct power_supply *psy,
 			return -EINVAL;
 
 		if (bq->chg_psy == NULL) {
-			bq->chg_psy = power_supply_get_by_name("mtk_charger_type");
+			bq->chg_psy = power_supply_get_by_name("primary_chg");
 		}
 		if (IS_ERR_OR_NULL(bq->chg_psy)) {
 			pr_err("%s Couldn't get chg_psy\n", __func__);
