@@ -551,9 +551,9 @@ static struct mtk_panel_params ext_params = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.hfp = 174,
-		.data_rate = 1124,
+		.switch_en = 1,
+		.hfp = 60,
+		.data_rate = 908,
 	},
 };
 
@@ -631,9 +631,9 @@ static struct mtk_panel_params ext_params_mode_30 = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.hfp = 174,
-		.data_rate = 1124,
+		.switch_en = 1,
+		.hfp = 60,
+		.data_rate = 908,
 	},
 };
 
@@ -712,9 +712,9 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.hfp = 174,
-		.data_rate = 1124,
+		.switch_en = 1,
+		.hfp = 60,
+		.data_rate = 908,
 	},
 };
 
@@ -793,9 +793,9 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-		.switch_en = 0,
-		.hfp = 174,
-		.data_rate = 1124,
+		.switch_en = 1,
+		.hfp = 60,
+		.data_rate = 908,
 	},
 };
 #endif
