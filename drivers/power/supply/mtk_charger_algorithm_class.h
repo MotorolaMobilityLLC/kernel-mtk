@@ -25,6 +25,9 @@
 #define HVBP_ID  (1 << 5)
 #define PE5P_ID  (1 << 6)
 
+//Reserve some bits for MTK
+#define WLC_ID  (1 << 15) //0x8000
+
 struct chg_alg_properties {
 	const char *alias_name;
 };
@@ -124,6 +127,7 @@ enum chg_alg_props {
 	ALG_MAX_VBUS,
 	ALG_LOG_LEVEL,
 	ALG_REF_VBAT,
+	ALG_WLC_STATE,
 };
 
 struct chg_alg_ops {
