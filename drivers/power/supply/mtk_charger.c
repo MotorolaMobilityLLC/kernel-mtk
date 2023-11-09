@@ -2342,7 +2342,10 @@ static void charger_check_status(struct mtk_charger *info)
 		charging = false;
 		goto stop_charging;
 	}
-
+	if (info->atm_enabled) {
+		charging = false;
+		goto stop_charging;
+	}
 	if (info->cmd_discharging)
 		charging = false;
 	if (info->safety_timeout)
