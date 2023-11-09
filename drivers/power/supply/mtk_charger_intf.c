@@ -277,6 +277,8 @@ bool is_charger_exist(struct mtk_charger *info)
 {
 	union power_supply_propval prop;
 	static struct power_supply *chg_psy;
+	union power_supply_propval wlc_prop;
+	static struct power_supply *wl_psy;
 	int ret;
 	int tmp_ret = 0;
 
@@ -296,6 +298,17 @@ bool is_charger_exist(struct mtk_charger *info)
 			POWER_SUPPLY_PROP_ONLINE, &prop);
 		ret = prop.intval;
 	}
+	if (ret <= 0) {
+		wl_psy = power_supply_get_by_name("wireless");
+		if (wl_psy == NULL || IS_ERR(wl_psy)) {
+			chr_err("%s Couldn't get wl_psy\n", __func__);
+			wlc_prop.intval = 0;
+		} else {
+			ret = power_supply_get_property(wl_psy,
+				POWER_SUPPLY_PROP_ONLINE, &wlc_prop);
+			ret = wlc_prop.intval;
+		}
+	}
 
 	chr_debug("%s:%d\n", __func__,
 		ret);
@@ -307,8 +320,30 @@ int get_charger_type(struct mtk_charger *info)
 	union power_supply_propval prop = {0};
 	union power_supply_propval prop2 = {0};
 	union power_supply_propval prop3 = {0};
+	union power_supply_propval prop_wls = {0};
+	static struct power_supply *wl_psy = NULL;
 	static struct power_supply *bc12_psy;
 	int ret;
+
+	if (info->wireless_online) {
+		if (wl_psy == NULL || IS_ERR(wl_psy)) {
+			chr_err("%s retry to get wl_psy\n", __func__);
+			wl_psy = power_supply_get_by_name("wireless");
+		}
+		if (wl_psy == NULL || IS_ERR(wl_psy)) {
+			chr_err("%s Couldn't get wl_psy\n", __func__);
+			prop_wls.intval = POWER_SUPPLY_TYPE_UNKNOWN;
+		} else {
+			ret = power_supply_get_property(wl_psy,
+			POWER_SUPPLY_PROP_TYPE, &prop_wls);
+			chr_err("%s type:%d ret:%d\n", __func__, prop_wls.intval,ret);
+			if (POWER_SUPPLY_TYPE_WIRELESS == prop_wls.intval) {
+				chr_err("%s event, wireless online,type:%d\n", __func__, prop_wls.intval);
+			} else {
+				prop_wls.intval = POWER_SUPPLY_TYPE_UNKNOWN;
+			}
+		}
+	}
 
 	bc12_psy = info->bc12_psy;
 
@@ -341,7 +376,12 @@ int get_charger_type(struct mtk_charger *info)
 		prop2.intval,
 		prop3.intval);
 
-	return prop2.intval;
+	if (POWER_SUPPLY_TYPE_UNKNOWN != prop2.intval)
+		return prop2.intval;
+	else if(POWER_SUPPLY_TYPE_UNKNOWN != prop_wls.intval)
+		return prop_wls.intval;
+	else
+		return POWER_SUPPLY_TYPE_UNKNOWN;
 }
 
 int get_usb_type(struct mtk_charger *info)
