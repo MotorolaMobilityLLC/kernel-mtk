@@ -159,12 +159,18 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		is_basic = true;
 		goto done;
 	}
-
+#ifdef MTK_BASE
 	if (info->atm_enabled == true
 		&& (info->chr_type == POWER_SUPPLY_TYPE_USB ||
 		info->chr_type == POWER_SUPPLY_TYPE_USB_CDP)
 		) {
 		pdata->input_current_limit = 100000; /* 100mA */
+		is_basic = true;
+		goto done;
+	}
+#endif
+
+	if (info->atm_enabled == true) {
 		is_basic = true;
 		goto done;
 	}
@@ -319,6 +325,12 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		pdata_dvchg->thermal_input_current_limit;
 
 done:
+
+	if (pdata->moto_chg_tcmd_ibat != -1)
+		pdata->charging_current_limit = pdata->moto_chg_tcmd_ibat;
+
+	if (pdata->moto_chg_tcmd_ichg != -1)
+		pdata->input_current_limit = pdata->moto_chg_tcmd_ichg;
 
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
 	if (ret != -EOPNOTSUPP && pdata->charging_current_limit < ichg1_min) {
