@@ -78,6 +78,7 @@ static void select_cv(struct mtk_charger *info)
 		}
 
 	constant_voltage = info->data.battery_cv;
+	constant_voltage = info->mmi.target_fv;
 	info->setting.cv = constant_voltage;
 }
 
@@ -265,6 +266,10 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		}
 	}
 
+	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
+
+	info->mmi.target_usb = pdata->input_current_limit;
+
 	sc_select_charging_current(info, pdata);
 
 	if (pdata->thermal_charging_current_limit != -1) {
@@ -386,7 +391,12 @@ static int do_algorithm(struct mtk_charger *info)
 	int lst_rnd_alg_idx = info->lst_rnd_alg_idx;
 
 	pdata = &info->chg_data[CHG1_SETTING];
+#ifdef MTK_BASE
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
+#else
+	if (info->mmi.pres_chrg_step == STEP_FULL)
+		chg_done = true;
+#endif
 	is_basic = select_charging_current_limit(info, &info->setting);
 
 	if (info->is_chg_done != chg_done) {
