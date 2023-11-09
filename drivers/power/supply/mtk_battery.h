@@ -18,6 +18,7 @@
 #include <linux/ktime.h>
 #include <linux/ctype.h>
 #include "mtk_gauge.h"
+#include <linux/power/moto_chg_tcmd.h>
 
 
 #define NETLINK_FGD 26
@@ -167,6 +168,7 @@ struct battery_data {
 	/* Add for Battery Service */
 	int bat_batt_vol;
 	int bat_batt_temp;
+	struct moto_chg_tcmd_client bat_tcmd_client;//moto add
 };
 
 struct VersionControl {
