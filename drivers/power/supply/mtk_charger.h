@@ -397,6 +397,8 @@ struct mtk_charger {
 	/*charger IC charging status*/
 	bool is_charging;
 
+	int wireless_online;
+
 	ktime_t uevent_time_check;
 
 	bool force_disable_pp[CHG2_SETTING + 1];
