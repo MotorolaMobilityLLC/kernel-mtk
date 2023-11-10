@@ -3891,6 +3891,8 @@ static int pe50_stop_algo(struct chg_alg_device *alg)
 	mutex_lock(&data->lock);
 	if (!data->inited)
 		goto out;
+	data->ta_ready = false;
+	data->run_once = false;
 	ret = pe50_stop(info, &sinfo);
 out:
 	mutex_unlock(&data->lock);
