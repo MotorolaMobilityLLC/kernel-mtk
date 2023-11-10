@@ -219,7 +219,11 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 	}
 
 	info->setting.mmi_fcc_limit  =  ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
-	info->setting.mmi_current_limit_dvchg1 =pdata->thermal_charging_current_limit;
+	if (pdata->thermal_charging_current_limit < 0 ||
+		pdata->thermal_charging_current_limit > info->mmi.min_therm_current_limit)
+		info->setting.mmi_current_limit_dvchg1 = pdata->thermal_charging_current_limit;
+	else
+		info->setting.mmi_current_limit_dvchg1 = info->mmi.min_therm_current_limit;
 	if (support_fast_charging(info))
 		is_basic = false;
 	else {
@@ -433,6 +437,14 @@ static int do_algorithm(struct mtk_charger *info)
 					chg_alg_stop_algo(alg);
 				chr_err("%s: alg:%s alg_vbus:%d\n", __func__,
 					dev_name(&alg->dev), val);
+				continue;
+			} else if ((pdata->thermal_charging_current_limit > 0)
+				&& (pdata->thermal_charging_current_limit < info->mmi.min_therm_current_limit)
+				&& (alg->alg_id & PE5_ID)) {
+				chg_alg_stop_algo(alg);
+				chr_err("%s: alg:%s due to thermal limit current%d < %d\n", __func__,
+					dev_name(&alg->dev), pdata->thermal_charging_current_limit,
+					info->mmi.min_therm_current_limit);
 				continue;
 			}
 
