@@ -598,6 +598,7 @@ HTBControlKM(
 	return eError;
 }
 
+#if defined(PVRSRV_ENABLE_HTB)
 /*************************************************************************/ /*!
 */ /**************************************************************************/
 static IMG_BOOL
@@ -614,6 +615,7 @@ _ValidPID( IMG_UINT32 PID )
 	}
 	return IMG_FALSE;
 }
+#endif	/* PVRSRV_ENABLE_HTB */
 
 
 /*************************************************************************/ /*!
@@ -758,6 +760,7 @@ HTBLogKM(
 		IMG_UINT32 * aui32Args
 )
 {
+#if defined(PVRSRV_ENABLE_HTB)
 	OS_SPINLOCK_FLAGS uiSpinLockFlags;
 	IMG_UINT32 ui32ReturnFlags = 0;
 
@@ -865,6 +868,16 @@ HTBLogKM(
 
 ReturnError:
 	return eError;
+#else
+	/* HTB support is disabled. Just return PVRSRV_OK and do nothing. */
+	PVR_UNREFERENCED_PARAMETER(PID);
+	PVR_UNREFERENCED_PARAMETER(ui64TimeStamp);
+	PVR_UNREFERENCED_PARAMETER(SF);
+	PVR_UNREFERENCED_PARAMETER(ui32NumArgs);
+	PVR_UNREFERENCED_PARAMETER(aui32Args);
+
+	return PVRSRV_OK;
+#endif
 }
 
 /*************************************************************************/ /*!
