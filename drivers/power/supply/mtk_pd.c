@@ -670,9 +670,12 @@ static int pd_sc_set_charger(struct chg_alg_device *alg)
 	mutex_lock(&pd->data_lock);
 	if (pd->charging_current_limit1 != -1) {
 		if (pd->charging_current_limit1 <
-			pd->sc_charger_current)
+			pd->sc_charger_current){
 			pd->charging_current1 =
 				pd->charging_current_limit1;
+		} else {
+			pd->charging_current1 = pd->sc_charger_current;
+		}
 		ret = pd_hal_get_min_charging_current(alg, CHG1, &ichg1_min);
 		if (ret != -EOPNOTSUPP &&
 			pd->charging_current_limit1 < ichg1_min)
