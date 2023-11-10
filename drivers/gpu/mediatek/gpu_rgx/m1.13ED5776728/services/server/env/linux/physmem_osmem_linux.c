@@ -3449,7 +3449,7 @@ PMRChangeSparseMemOSMem(PMR_IMPL_PRIVDATA pPriv,
 			{
 				uiFreepgidx = pai32FreeIndices[ui32Loop];
 
-				if (uiFreepgidx > (psPMRPageArrayData->uiTotalNumOSPages >> uiOrder))
+				if (uiFreepgidx >= (psPMRPageArrayData->uiTotalNumOSPages >> uiOrder))
 				{
 					eError = PVRSRV_ERROR_DEVICEMEM_OUT_OF_RANGE;
 					goto e0;
@@ -3480,7 +3480,7 @@ PMRChangeSparseMemOSMem(PMR_IMPL_PRIVDATA pPriv,
 	{
 		uiAllocpgidx = pai32AllocIndices[ui32Loop];
 
-		if (uiAllocpgidx > (psPMRPageArrayData->uiTotalNumOSPages >> uiOrder))
+		if (uiAllocpgidx >= (psPMRPageArrayData->uiTotalNumOSPages >> uiOrder))
 		{
 			eError = PVRSRV_ERROR_DEVICEMEM_OUT_OF_RANGE;
 			goto e0;
