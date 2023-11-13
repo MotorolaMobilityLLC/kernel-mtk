@@ -4680,6 +4680,11 @@ static void mtk_charger_external_power_changed(struct power_supply *psy)
 
 	info = (struct mtk_charger *)power_supply_get_drvdata(psy);
 
+	if (info == NULL) {
+		pr_notice("%s: failed to get info\n", __func__);
+		return;
+	}
+
 	wl_psy = power_supply_get_by_name("wireless");
 	if (wl_psy == NULL || IS_ERR(wl_psy)) {
 			chr_err("%s Couldn't get wl_psy\n", __func__);
@@ -4694,10 +4699,6 @@ static void mtk_charger_external_power_changed(struct power_supply *psy)
 			}
 	}
 
-	if (info == NULL) {
-		pr_notice("%s: failed to get info\n", __func__);
-		return;
-	}
 	chg_psy = info->chg_psy;
 
 	if (IS_ERR_OR_NULL(chg_psy)) {
