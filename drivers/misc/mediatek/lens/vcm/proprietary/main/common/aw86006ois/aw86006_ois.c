@@ -3018,7 +3018,7 @@ int run_aw86006ois_drawcircle(motOISHeaParam *param)
         AW_LOGE("fail to draw circle, param is null");
         return -1;
    }
-   return aw86006_ois_drawcircle_test(param->radius, param->steps_in_degree, 1, param->accuracy, param->wait1, param->wait2);
+   return aw86006_ois_drawcircle_test(param->radius, param->steps_in_degree, 1, param->accuracy, param->wait0, param->wait1);
 }
 static ssize_t drawcycle_show(struct class *class, struct class_attribute *attr,
 								char *buf)
