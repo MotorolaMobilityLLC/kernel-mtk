@@ -832,11 +832,11 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 {
 	struct mtk_battery *gm;
 	struct battery_data *bs_data;
-	union power_supply_propval online, status, vbat0;
-	union power_supply_propval prop_type;
+	union power_supply_propval online = {0}, status = {0}, vbat0 = {0}, wls_online = {0};
+	union power_supply_propval prop_type = {0};
 	int cur_chr_type = 0, old_vbat0 = 0;
 
-	struct power_supply *chg_psy = NULL;
+	struct power_supply *chg_psy = NULL, *wl_psy = NULL;
 	struct power_supply *dv2_chg_psy = NULL;
 	int ret;
 
@@ -850,6 +850,14 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 		return;
 	}
 
+	wl_psy = power_supply_get_by_name("wireless");
+	if (wl_psy == NULL || IS_ERR(wl_psy)) {
+		bm_err("%s Couldn't get wl_psy\n", __func__);
+		wls_online.intval = 0;
+	} else {
+		ret = power_supply_get_property(wl_psy,
+			POWER_SUPPLY_PROP_ONLINE, &wls_online);
+	}
 	if (IS_ERR_OR_NULL(chg_psy)) {
 		chg_psy = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,
 						       "charger");
@@ -858,6 +866,7 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 	} else {
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_ONLINE, &online);
+		online.intval =online.intval || wls_online.intval;
 
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_STATUS, &status);
@@ -904,6 +913,9 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 		battery_update(gm);
 
 		/* check charger type */
+		if (wls_online.intval) {
+			cur_chr_type = POWER_SUPPLY_TYPE_WIRELESS;
+		} else {
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_USB_TYPE, &prop_type);
 
@@ -917,7 +929,7 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 			if (gm->chr_type == POWER_SUPPLY_TYPE_UNKNOWN)
 				wakeup_fg_algo(gm, FG_INTR_CHARGER_IN);
 		}
-
+		}
 		if (gm->vbat0_flag != vbat0.intval) {
 			old_vbat0 = gm->vbat0_flag;
 			gm->vbat0_flag = vbat0.intval;
@@ -929,7 +941,7 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 	}
 
 	bm_err("%s event, name:%s online:%d, status:%d, EOC:%d, cur_chr_type:%d old:%d, vbat0:[o:%d n:%d]\n",
-		__func__, psy->desc->name, online.intval, status.intval,
+		__func__, psy->desc->name, online.intval || wls_online.intval, status.intval,
 		gm->b_EOC, cur_chr_type, gm->chr_type,
 		old_vbat0, vbat0.intval);
 
