@@ -3704,6 +3704,21 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 #if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 	    if(info->mmi.charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO){
 		power_watt = 5 * 3;
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_MT6375_SUPPORT)
+		if (info->mmi.factory_mode) {
+		// Qc3+ should show power 30W in factory mode
+			if  ((m_chg_type == 0x08) || (m_chg_type == 0x09))
+				power_watt = 5 * 6;
+		// Qc3 should show power 20W in factory mode
+			if  (m_chg_type == 0x06)
+				power_watt = 5 * 4;
+		// Qc2 should show power 15W in factory mode
+			if  (m_chg_type == 0x05)
+				power_watt = 5 * 3;
+
+			pr_info("[%s] In factory mode, show power watt by charger type, chg_type = %d, power_watt = %d\n", __func__, m_chg_type, power_watt);
+		}
+#endif
 	    }
 	    else {
 		struct chg_alg_device *alg = NULL;
