@@ -113,7 +113,7 @@ static inline int AF_init(void)
 {
 	int ret = 0;
 	uint8_t data[1] = {0x1};
-	uint8_t dataSac[2] = {0x5, 0x3};
+	uint8_t dataSac[2] = {0x0, 0x3};
 	ret = aw86006_i2c_writes(0x0001, 2, data, 1);
 	if(ret < 0) {
 		AW_LOGE("Set OIS ON error, ret = %d", ret);
