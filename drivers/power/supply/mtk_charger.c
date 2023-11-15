@@ -2454,126 +2454,152 @@ static bool charger_init_algo(struct mtk_charger *info)
 		return false;
 	}
 
-	alg = get_chg_alg_by_name("pe5p");
-	info->alg[idx] = alg;
-	if (alg == NULL)
-		chr_err("get pe5p fail\n");
-	else {
-		chr_err("get pe5p success\n");
-		alg->config = info->config;
-		alg->alg_id = PE5P_ID;
-		chg_alg_init_algo(alg);
-		register_chg_alg_notifier(alg, &info->chg_alg_nb);
-	}
-	idx++;
-
-	alg = get_chg_alg_by_name("hvbp");
-	info->alg[idx] = alg;
-	if (alg == NULL)
-		chr_err("get hvbp fail\n");
-	else {
-		chr_err("get hvbp success\n");
-		alg->config = info->config;
-		alg->alg_id = HVBP_ID;
-		chg_alg_init_algo(alg);
-		register_chg_alg_notifier(alg, &info->chg_alg_nb);
-	}
-	idx++;
-
-	alg = get_chg_alg_by_name("pe5");
-	info->alg[idx] = alg;
-	if (alg == NULL)
-		chr_err("get pe5 fail\n");
-	else {
-		chr_err("get pe5 success\n");
-		alg->config = info->config;
-		alg->alg_id = PE5_ID;
-		if (info->enable_fast_charging_indicator &&
-		    (PE5_ID & info->fast_charging_indicator)) {
-			if (chg_alg_init_algo(alg) == -ENODEV)
-				return false;
-		} else
+	if (info->fast_charging_indicator & PE5P_ID) {
+		alg = get_chg_alg_by_name("pe5p");
+		info->alg[idx] = alg;
+		if (alg == NULL) {
+			chr_err("get pe5p fail\n");
+			return false;
+		} else if(alg->alg_id == 0) {
+			chr_err("get pe5p success\n");
+			alg->config = info->config;
+			alg->alg_id = PE5P_ID;
 			chg_alg_init_algo(alg);
-
-		register_chg_alg_notifier(alg, &info->chg_alg_nb);
+			register_chg_alg_notifier(alg, &info->chg_alg_nb);
+		}
+		idx++;
 	}
-	idx++;
 
-	alg = get_chg_alg_by_name("pe45");
-	info->alg[idx] = alg;
-	if (alg == NULL)
-		chr_err("get pe45 fail\n");
-	else {
-		chr_err("get pe45 success\n");
-		alg->config = info->config;
-		alg->alg_id = PE4_ID;
-		chg_alg_init_algo(alg);
-		register_chg_alg_notifier(alg, &info->chg_alg_nb);
+	if (info->fast_charging_indicator & HVBP_ID) {
+		alg = get_chg_alg_by_name("hvbp");
+		info->alg[idx] = alg;
+		if (alg == NULL) {
+			chr_err("get hvbp fail\n");
+			return false;
+		} else if (alg->alg_id == 0) {
+			chr_err("get hvbp success\n");
+			alg->config = info->config;
+			alg->alg_id = HVBP_ID;
+			chg_alg_init_algo(alg);
+			register_chg_alg_notifier(alg, &info->chg_alg_nb);
+		}
+		idx++;
 	}
-	idx++;
 
-	alg = get_chg_alg_by_name("pe4");
-	info->alg[idx] = alg;
-	if (alg == NULL)
-		chr_err("get pe4 fail\n");
-	else {
-		chr_err("get pe4 success\n");
-		alg->config = info->config;
-		alg->alg_id = PE4_ID;
-		chg_alg_init_algo(alg);
-		register_chg_alg_notifier(alg, &info->chg_alg_nb);
+	if (info->fast_charging_indicator & PE5_ID) {
+		alg = get_chg_alg_by_name("pe5");
+		info->alg[idx] = alg;
+		if (alg == NULL) {
+			chr_err("get pe5 fail\n");
+			return false;
+		} else if (alg->alg_id == 0) {
+			chr_err("get pe5 success\n");
+			alg->config = info->config;
+			alg->alg_id = PE5_ID;
+			if (info->enable_fast_charging_indicator &&
+		    (PE5_ID & info->fast_charging_indicator)) {
+				if (chg_alg_init_algo(alg) == -ENODEV)
+					return false;
+			} else
+				chg_alg_init_algo(alg);
+
+			register_chg_alg_notifier(alg, &info->chg_alg_nb);
+		}
+		idx++;
 	}
-	idx++;
 
-	alg = get_chg_alg_by_name("pd");
-	info->alg[idx] = alg;
-	if (alg == NULL)
-		chr_err("get pd fail\n");
-	else {
-		chr_err("get pd success\n");
-		alg->config = info->config;
-		alg->alg_id = PDC_ID;
-		chg_alg_init_algo(alg);
-		register_chg_alg_notifier(alg, &info->chg_alg_nb);
+	if (info->fast_charging_indicator & PE4_ID) {
+		alg = get_chg_alg_by_name("pe45");
+		info->alg[idx] = alg;
+		if (alg == NULL) {
+			chr_err("get pe45 fail\n");
+		} else if (alg->alg_id == 0) {
+			chr_err("get pe45 success\n");
+			alg->config = info->config;
+			alg->alg_id = PE4_ID;
+			chg_alg_init_algo(alg);
+			register_chg_alg_notifier(alg, &info->chg_alg_nb);
+		}
+		idx++;
 	}
-	idx++;
 
-	alg = get_chg_alg_by_name("pe2");
-	info->alg[idx] = alg;
-	if (alg == NULL)
-		chr_err("get pe2 fail\n");
-	else {
-		chr_err("get pe2 success\n");
-		alg->config = info->config;
-		alg->alg_id = PE2_ID;
-		chg_alg_init_algo(alg);
-		register_chg_alg_notifier(alg, &info->chg_alg_nb);
+	if (info->fast_charging_indicator & PE4_ID) {
+		alg = get_chg_alg_by_name("pe4");
+		info->alg[idx] = alg;
+		if (alg == NULL) {
+			chr_err("get pe4 fail\n");
+			return false;
+		} else if(alg->alg_id == 0) {
+			chr_err("get pe4 success\n");
+			alg->config = info->config;
+			alg->alg_id = PE4_ID;
+			chg_alg_init_algo(alg);
+			register_chg_alg_notifier(alg, &info->chg_alg_nb);
+		}
+		idx++;
 	}
-	idx++;
 
-	alg = get_chg_alg_by_name("wlc");
-	info->alg[idx] = alg;
-	if (alg == NULL)
-		chr_err("get wlc fail\n");
-	else {
-		chr_err("get wlc success\n");
-		alg->config = info->config;
-		alg->alg_id = WLC_ID;
-		chg_alg_init_algo(alg);
-		register_chg_alg_notifier(alg, &info->chg_alg_nb);
+	if (info->fast_charging_indicator & PDC_ID) {
+		alg = get_chg_alg_by_name("pd");
+		info->alg[idx] = alg;
+		if (alg == NULL) {
+			chr_err("get pd fail\n");
+			return false;
+		} else if (alg->alg_id == 0) {
+			chr_err("get pd success\n");
+			alg->config = info->config;
+			alg->alg_id = PDC_ID;
+			chg_alg_init_algo(alg);
+			register_chg_alg_notifier(alg, &info->chg_alg_nb);
+		}
+		idx++;
 	}
-	idx++;
 
-	alg = get_chg_alg_by_name("pe");
-	info->alg[idx] = alg;
-	if (alg == NULL)
-		chr_err("get pe fail\n");
-	else {
-		chr_err("get pe success\n");
-		alg->config = info->config;
-		alg->alg_id = PE_ID;
-		chg_alg_init_algo(alg);
-		register_chg_alg_notifier(alg, &info->chg_alg_nb);
+	if (info->fast_charging_indicator & PE2_ID) {
+		alg = get_chg_alg_by_name("pe2");
+		info->alg[idx] = alg;
+		if (alg == NULL) {
+			chr_err("get pe2 fail\n");
+			return false;
+		} else if (alg->alg_id == 0) {
+			chr_err("get pe2 success\n");
+			alg->config = info->config;
+			alg->alg_id = PE2_ID;
+			chg_alg_init_algo(alg);
+			register_chg_alg_notifier(alg, &info->chg_alg_nb);
+		}
+		idx++;
+	}
+
+	if (info->fast_charging_indicator & WLC_ID) {
+		alg = get_chg_alg_by_name("wlc");
+		info->alg[idx] = alg;
+		if (alg == NULL) {
+			chr_err("get wlc fail\n");
+			return false;
+		} else if (alg->alg_id == 0) {
+			chr_err("get wlc success\n");
+			alg->config = info->config;
+			alg->alg_id = WLC_ID;
+			chg_alg_init_algo(alg);
+			register_chg_alg_notifier(alg, &info->chg_alg_nb);
+		}
+		idx++;
+	}
+
+	if (info->fast_charging_indicator & PE_ID) {
+		alg = get_chg_alg_by_name("pe");
+		info->alg[idx] = alg;
+		if (alg == NULL) {
+			chr_err("get pe fail\n");
+			return false;
+		} else if (alg->alg_id == 0) {
+			chr_err("get pe success\n");
+			alg->config = info->config;
+			alg->alg_id = PE_ID;
+			chg_alg_init_algo(alg);
+			register_chg_alg_notifier(alg, &info->chg_alg_nb);
+		}
 	}
 
 	chr_err("config is %d\n", info->config);
@@ -4159,7 +4185,7 @@ static int charger_routine_thread(void *arg)
 {
 	struct mtk_charger *info = arg;
 	unsigned long flags;
-	unsigned int init_times = 3;
+	unsigned int init_times = 30;
 	static bool is_module_init_done;
 	bool is_charger_on;
 	int ret;
@@ -4184,12 +4210,12 @@ static int charger_routine_thread(void *arg)
 			}
 			else {
 				if (init_times > 0) {
-					chr_err("retry to init charger\n");
+					chr_err("retry to init charger, init_times=%d\n", init_times);
 					init_times = init_times - 1;
-					msleep(10000);
+					msleep(1000);
 				} else {
 					chr_err("holding to init charger\n");
-					msleep(60000);
+					msleep(6000);
 				}
 			}
 		}
