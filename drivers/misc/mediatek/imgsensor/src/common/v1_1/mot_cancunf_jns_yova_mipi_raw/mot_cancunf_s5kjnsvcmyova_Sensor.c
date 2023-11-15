@@ -1977,7 +1977,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 MOT_CANCUNF_S5KJNS_VCM_YOVA_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 MOT_CANCUNF_JNS_YOVA_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	sensor_func.arch = IMGSENSOR_ARCH_V2;
@@ -1986,4 +1986,4 @@ UINT32 MOT_CANCUNF_S5KJNS_VCM_YOVA_SensorInit(struct SENSOR_FUNCTION_STRUCT **pf
 	if (imgsensor.psensor_func == NULL)
 		imgsensor.psensor_func = &sensor_func;
 	return ERROR_NONE;
-} /* MOT_CANCUNF_S5KJNS_VCM_YOVA_SensorInit */
+} /* MOT_CANCUNF_JNS_YOVA_SensorInit */
