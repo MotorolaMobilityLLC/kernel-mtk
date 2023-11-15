@@ -530,6 +530,11 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 			DEFAULT_ALG);
 		info->fast_charging_indicator = DEFAULT_ALG;
 	}
+	/* meta mode*/
+	if ((info->bootmode == 1) ||(info->bootmode == 5)) {
+		info->config = SINGLE_CHARGER;
+		info->fast_charging_indicator = DEFAULT_ALG;
+	}
 }
 
 static void mtk_charger_start_timer(struct mtk_charger *info)
