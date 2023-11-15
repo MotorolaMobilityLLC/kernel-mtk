@@ -115,10 +115,16 @@ static bool support_fast_charging(struct mtk_charger *info)
 		chg_alg_set_current_limit(alg, &info->setting);
 		state = chg_alg_is_algo_ready(alg);
 		chr_debug("%s %s ret:%s\n", __func__, dev_name(&alg->dev),
-			chg_alg_state_to_str(state));
+			  chg_alg_state_to_str(state));
 
 		if (state == ALG_READY || state == ALG_RUNNING) {
 			info->mmi.active_fast_alg |= alg->alg_id;
+			if ((PE5_ID == alg->alg_id) &&
+			    (PDC_ID & info->mmi.active_fast_alg)) {
+				alg = get_chg_alg_by_name("pd");
+				chg_alg_stop_algo(alg);
+				info->mmi.active_fast_alg &= ~PDC_ID;
+			}
 			ret = true;
 			break;
 		} else
