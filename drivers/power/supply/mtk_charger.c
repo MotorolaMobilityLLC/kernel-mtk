@@ -2683,6 +2683,8 @@ static bool charger_init_algo(struct mtk_charger *info)
 		mtk_charger_tcmd_set_usb_current((void *)info, 2000);
 	}
 
+	charger_dev_set_mivr(info->chg1_dev, info->data.min_charger_voltage);
+
 	return true;
 }
 
