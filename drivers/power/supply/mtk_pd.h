@@ -113,6 +113,7 @@ struct mtk_pd {
 	int input_current2;
 	int charging_current1;
 	int charging_current2;
+	int mmi_fcc;
 
 	/* dtsi setting */
 	int vbus_l;

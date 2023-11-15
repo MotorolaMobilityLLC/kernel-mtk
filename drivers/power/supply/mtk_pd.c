@@ -150,7 +150,9 @@ static int _pd_is_algo_ready(struct chg_alg_device *alg)
 {
 	struct mtk_pd *pd = dev_get_drvdata(&alg->dev);
 	int ret_value;
+#ifdef MTK_BASE
 	int uisoc;
+#endif
 
 	if (algo_waiver_test) {
 		ret_value = ALG_WAIVER;
@@ -166,6 +168,7 @@ static int _pd_is_algo_ready(struct chg_alg_device *alg)
 	case PD_HW_READY:
 		ret_value = pd_hal_is_pd_adapter_ready(alg);
 		if (ret_value == ALG_READY) {
+#ifdef MTK_BASE
 			uisoc = pd_hal_get_uisoc(alg);
 			if (pd->input_current_limit1 != -1 ||
 				pd->charging_current_limit1 != -1 ||
@@ -175,6 +178,7 @@ static int _pd_is_algo_ready(struct chg_alg_device *alg)
 			else if (uisoc >= pd->pd_stop_battery_soc ||
 				(uisoc == -1 && pd->ref_vbat > pd->vbat_threshold))
 				ret_value = ALG_WAIVER;
+#endif
 		} else if (ret_value == ALG_TA_NOT_SUPPORT)
 			pd->state = PD_TA_NOT_SUPPORT;
 		else if (ret_value == ALG_TA_CHECKING)
@@ -704,6 +708,9 @@ static int pd_sc_set_charger(struct chg_alg_device *alg)
 	} else
 		pd->charging_current1 = pd->sc_charger_current;
 
+	pd->charging_current1 = pd->charging_current1 < pd->mmi_fcc?
+		pd->charging_current1: pd->mmi_fcc;
+
 	if (pd->input_current_limit1 != -1 &&
 		pd->input_current_limit1 <
 		pd->sc_input_current) {
@@ -744,8 +751,8 @@ static int pd_sc_set_charger(struct chg_alg_device *alg)
 		}
 	}
 
-	pd_dbg("%s old_cv=%d, new_cv=%d, pd_6pin_en=%d 6pin_re_en=%d\n", __func__,
-		pd->old_cv, pd->cv, pd->pd_6pin_en, pd->stop_6pin_re_en);
+	pd_dbg("%s old_cv=%d, new_cv=%d, chg1:%d,%d,%d, pd_6pin_en=%d 6pin_re_en=%d\n", __func__,
+		pd->old_cv, pd->cv,pd->input_current1,pd->charging_current1,pd->mmi_fcc, pd->pd_6pin_en, pd->stop_6pin_re_en);
 
 	return 0;
 }
@@ -915,7 +922,9 @@ static int _pd_start_algo(struct chg_alg_device *alg)
 	int ret_value = 0;
 	struct mtk_pd *pd = dev_get_drvdata(&alg->dev);
 	bool again = false;
+#ifdef MTK_BASE
 	int uisoc;
+#endif
 
 	mutex_lock(&pd->access_lock);
 
@@ -941,6 +950,9 @@ static int _pd_start_algo(struct chg_alg_device *alg)
 			if (ret_value == ALG_TA_NOT_SUPPORT)
 				pd->state = PD_TA_NOT_SUPPORT;
 			else if (ret_value == ALG_READY) {
+				pd->state = PD_RUN;
+				again = true;
+#ifdef MTK_BASE
 				uisoc = pd_hal_get_uisoc(alg);
 				if (pd->input_current_limit1 != -1 ||
 					pd->charging_current_limit1 != -1 ||
@@ -954,6 +966,7 @@ static int _pd_start_algo(struct chg_alg_device *alg)
 					pd->state = PD_RUN;
 					again = true;
 				}
+#endif
 			}
 			break;
 		case PD_TA_NOT_SUPPORT:
@@ -1347,13 +1360,14 @@ int _pd_set_setting(struct chg_alg_device *alg_dev,
 {
 	struct mtk_pd *pd;
 
-	pd_dbg("%s cv:%d icl:%d,%d cc:%d,%d\n",
+	pd_dbg("%s cv:%d icl:%d,%d cc:%d,%d mmi_fcc:%d\n",
 		__func__,
 		setting->cv,
 		setting->input_current_limit1,
 		setting->input_current_limit2,
 		setting->charging_current_limit1,
-		setting->charging_current_limit2);
+		setting->charging_current_limit2,
+		setting->mmi_fcc_limit);
 	pd = dev_get_drvdata(&alg_dev->dev);
 
 	mutex_lock(&pd->access_lock);
@@ -1363,6 +1377,8 @@ int _pd_set_setting(struct chg_alg_device *alg_dev,
 	pd->charging_current_limit1 = setting->charging_current_limit1;
 	pd->input_current_limit2 = setting->input_current_limit2;
 	pd->charging_current_limit2 = setting->charging_current_limit2;
+	pd->mmi_fcc = setting->mmi_fcc_limit;
+
 	mutex_unlock(&pd->access_lock);
 
 	return 0;
