@@ -61,6 +61,9 @@ struct charger_data;
 #define AC_CHARGER_INPUT_CURRENT		3200000
 #define NON_STD_AC_CHARGER_CURRENT		500000
 #define CHARGING_HOST_CHARGER_CURRENT		650000
+/*wireless input current and charging current*/
+#define WIRELESS_FACTORY_MAX_CURRENT			3000000
+#define WIRELESS_FACTORY_MAX_INPUT_CURRENT		1250000
 
 /* dynamic mivr */
 #define V_CHARGER_MIN_1 4400000 /* 4.4 V */
@@ -120,6 +123,7 @@ struct mmi_mux_configure {
 	u32 wls_mos;
 	bool wls_boost_en;
 	bool wls_loadswtich_en;
+	bool wls_chip_en;
 };
 
 enum bat_temp_state_enum {
@@ -247,6 +251,9 @@ struct charger_custom_data {
 	int min_charger_voltage_2;
 	int max_dmivr_charger_current;
 
+	/*wireless charger*/
+	int wireless_factory_max_current;
+	int wireless_factory_max_input_current;
 };
 
 struct charger_data {

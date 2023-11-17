@@ -530,6 +530,23 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 			DEFAULT_ALG);
 		info->fast_charging_indicator = DEFAULT_ALG;
 	}
+
+	if (of_property_read_u32(np, "wireless_factory_max_current", &val) >= 0) {
+		info->data.wireless_factory_max_current = val;
+	} else {
+		chr_err("use default WIRELESS_FACTORY_MAX_CURRENT:%d\n",
+			WIRELESS_FACTORY_MAX_CURRENT);
+		info->data.wireless_factory_max_current = WIRELESS_FACTORY_MAX_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "wireless_factory_max_input_current", &val) >= 0) {
+		info->data.wireless_factory_max_input_current = val;
+	} else {
+		chr_err("use default WIRELESS_FACTORY_MAX_INPUT_CURRENT:%d\n",
+			WIRELESS_FACTORY_MAX_INPUT_CURRENT);
+		info->data.wireless_factory_max_input_current = WIRELESS_FACTORY_MAX_INPUT_CURRENT;
+	}
+
 	/* meta mode*/
 	if ((info->bootmode == 1) ||(info->bootmode == 5)) {
 		info->config = SINGLE_CHARGER;
@@ -4922,7 +4939,12 @@ static void mtk_charger_external_power_changed(struct power_supply *psy)
 	pr_notice("%s event, name:%s online:%d type:%d vbus:%d\n", __func__,
 		psy->desc->name, prop.intval, prop2.intval,
 		get_vbus(info));
-
+	/*icl been set to 2A when factory mode boot,for wireless,2A more than OCP(1.5A),
+		 will report OCP before wireless power transfer interrupt.here set to max
+		 current wireless chip could support when wireless cable insert.
+	*/
+	if(info->wireless_online && info->mmi.factory_mode)
+		 charger_dev_set_input_current(info->chg1_dev, info->data.wireless_factory_max_input_current);
 	_wake_up_charger(info);
 }
 
@@ -5333,7 +5355,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	/* 8 = KERNEL_POWER_OFF_CHARGING_BOOT */
 	/* 9 = LOW_POWER_OFF_CHARGING_BOOT */
-	if (info != NULL && info->bootmode != 8 && info->bootmode != 9)
+	if (info != NULL && info->bootmode != 8 && info->bootmode != 9 && info->atm_enabled != true)
 		mtk_charger_force_disable_power_path(info, CHG1_SETTING, true);
 
 	mtk_charger_tcmd_register(info);
