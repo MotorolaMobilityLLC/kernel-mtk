@@ -45,8 +45,9 @@ extern int __attribute__ ((weak)) sm5109_BiasPower_enable(u32 avdd, u32 avee,u32
 #endif
 
 //TM EVT panel v0 support. to be disabled before PVT
-#define TM_PANEL_EVT_V0_SUPPORT		1
+//#define TM_PANEL_EVT_V0_SUPPORT		0
 
+#if 0 //TM_PANEL_EVT_V0_SUPPORT
 #define TM_ILI_PANEL_VENDOR_ID  	0x910a0501
 #define TM_ILI_PANEL_V0_VENDOR_ID  	(TM_ILI_PANEL_VENDOR_ID | (0xF << 24))
 
@@ -54,6 +55,7 @@ enum panel_version {
         PANEL_V1,		//DVT, PVT
         PANEL_V0,		//EVT
 };
+#endif
 
 static int tp_gesture_flag = 0;
 
@@ -72,7 +74,9 @@ struct tianma {
 	int error;
 	unsigned int hbm_mode;
 	unsigned int cabc_mode;
+#if 0 //TM_PANEL_EVT_V0_SUPPORT
 	enum panel_version version;
+#endif
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
@@ -241,6 +245,7 @@ static void tianma_panel_init(struct tianma *ctx)
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
 
+#if 0 //TM_PANEL_EVT_V0_SUPPORT
 	if (PANEL_V0 == ctx->version) {
 		//PANEL_V0 il77600A for EVT
 		pr_info("tm ili init v0\n");
@@ -258,15 +263,18 @@ static void tianma_panel_init(struct tianma *ctx)
 		tianma_dcs_write_seq_static(ctx, 0xBE, 0x00);
 		tianma_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x00);
 	}
-	else {
+	else
+#endif
+	{
+		//pr_info("tm ili init v1\n");
 		//PANEL_V1 ili7807s for DVT,PVT
 		tianma_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x06);
-                tianma_dcs_write_seq_static(ctx, 0x12, 0xBD);
-                tianma_dcs_write_seq_static(ctx, 0x80, 0x00);
-                tianma_dcs_write_seq_static(ctx, 0xC7, 0x05);
-                tianma_dcs_write_seq_static(ctx, 0x4E, 0x40);
-                tianma_dcs_write_seq_static(ctx, 0x4D, 0x01);
-                tianma_dcs_write_seq_static(ctx, 0x48, 0x09);
+		tianma_dcs_write_seq_static(ctx, 0x12, 0xBD);
+		tianma_dcs_write_seq_static(ctx, 0x80, 0x00);
+		tianma_dcs_write_seq_static(ctx, 0xC7, 0x05);
+		tianma_dcs_write_seq_static(ctx, 0x4E, 0x40);
+		tianma_dcs_write_seq_static(ctx, 0x4D, 0x01);
+		tianma_dcs_write_seq_static(ctx, 0x48, 0x09);
 		tianma_dcs_write_seq_static(ctx, 0x3E, 0xE2);
 		tianma_dcs_write_seq_static(ctx, 0x80, 0x00);
 
@@ -1147,9 +1155,9 @@ static const struct drm_panel_funcs tianma_drm_funcs = {
 	.get_modes = tianma_get_modes,
 };
 
+#if 0 //TM_PANEL_EVT_V0_SUPPORT
 static void tianma_parse_panel_version(struct tianma *ctx)
 {
-#if TM_PANEL_EVT_V0_SUPPORT
 	int rc;
 	struct device_node *chosen = of_find_node_by_name(NULL, "chosen");
 
@@ -1173,10 +1181,10 @@ static void tianma_parse_panel_version(struct tianma *ctx)
 		pr_info("tianma_parse_panel_version: chosen node null\n");
 
 	pr_info("parse tianma panel version:%d\n", ctx->version);
-#endif
 
 	return;
 }
+#endif
 
 static int tianma_probe(struct mipi_dsi_device *dsi)
 {
@@ -1251,8 +1259,10 @@ static int tianma_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_add(&ctx->panel);
 
+#if 0 //TM_PANEL_EVT_V0_SUPPORT
 	//parse panel version for evt/dvt
 	tianma_parse_panel_version(ctx);
+#endif
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
