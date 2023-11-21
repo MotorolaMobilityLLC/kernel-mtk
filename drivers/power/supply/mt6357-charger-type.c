@@ -110,6 +110,7 @@ static enum power_supply_property chr_type_properties[] = {
 	POWER_SUPPLY_PROP_TYPE,
 	POWER_SUPPLY_PROP_USB_TYPE,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
 };
 
 static enum power_supply_property mt_ac_properties[] = {
@@ -660,6 +661,9 @@ static int psy_chr_type_get_property(struct power_supply *psy,
 {
 	struct mtk_charger_type *info;
 	struct power_supply *chg_psy = NULL;
+#if IS_ENABLED(CONFIG_MTK_BQ2560x_SUPPORT)
+	struct charger_device *ch1_dev = NULL;
+#endif
 
 	int vbus = 0;
 
@@ -694,6 +698,22 @@ static int psy_chr_type_get_property(struct power_supply *psy,
 			return -EINVAL;
 		}
 		power_supply_get_property(chg_psy, POWER_SUPPLY_PROP_STATUS, val);
+		break;
+	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
+		val->intval = 4350;
+#if IS_ENABLED(CONFIG_MTK_BQ2560x_SUPPORT)
+	ch1_dev =get_charger_by_name("primary_chg");
+
+	if (ch1_dev)
+                pr_err("Found primary charger\n");
+       else {
+                pr_err("*** Error : can't find primary charger ***\n");
+                return -EINVAL;
+        }
+
+	charger_dev_get_constant_voltage(ch1_dev, &(val->intval));
+
+#endif
 		break;
 	default:
 		return -EINVAL;
