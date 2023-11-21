@@ -620,8 +620,8 @@ static struct mtk_panel_params ext_params = {
 	},
 	//.data_rate_khz = 808000,
 	.data_rate = DATA_RATE,
-	.lfr_enable = 0,
-	.lfr_minimum_fps = MODE_120_FPS,
+	.lfr_enable = 1,
+	.lfr_minimum_fps = MODE_60_FPS,
 	.dyn_fps = {
 		.switch_en = 1,
 		.vact_timing_fps = 120,
