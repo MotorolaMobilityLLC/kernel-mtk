@@ -305,6 +305,13 @@ static int mtk_venc_translation_fault_callback(
 		hw_id = MTK_VENC_CORE_1;
 	}
 
+	if (dev->tf_info != NULL) {
+		dev->tf_info->hw_id  = (__u32)hw_id;
+		dev->tf_info->port   = (__u32)port;
+		dev->tf_info->tf_mva = (__u64)mva;
+		dev->tf_info->has_tf = 1;
+	}
+
 	spin_lock_irqsave(&dev->enc_power_lock[hw_id], flags);
 	if (dev->enc_is_power_on[hw_id] == false) {
 		mtk_v4l2_err("hw %d power is off !!", hw_id);
