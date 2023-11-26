@@ -1532,6 +1532,12 @@ static int scp_reserve_memory_ioremap(struct platform_device *pdev)
 			ret = of_property_read_u32(pdev->dev.of_node,
 					"secure_dump_size",
 					&m_size);
+			/* retry to parse secure-dump-size*/
+			if(ret) {
+				ret = of_property_read_u32(pdev->dev.of_node,
+						"secure-dump-size",
+						&m_size);
+			}
 		} else {
 			ret = of_property_read_u32_index(pdev->dev.of_node,
 					"scp-mem-tbl",
@@ -2645,11 +2651,16 @@ static int scp_device_probe(struct platform_device *pdev)
 		}
 	}
 
-	of_property_read_u32(pdev->dev.of_node, "scp_sramSize"
+	of_property_read_u32(pdev->dev.of_node, "scp_sramsize"
 						, &scpreg.scp_tcmsize);
 	if (!scpreg.scp_tcmsize) {
-		pr_notice("[SCP] total_tcmsize not found\n");
-		return -ENODEV;
+		/* retry to parse scp-sramsize */
+		of_property_read_u32(pdev->dev.of_node, "scp-sramsize"
+						, &scpreg.scp_tcmsize);
+		if (!scpreg.scp_tcmsize) {
+			pr_notice("[SCP] total_tcmsize not found\n");
+			return -ENODEV;
+		}
 	}
 	pr_debug("[SCP] scpreg.scp_tcmsize = %d\n", scpreg.scp_tcmsize);
 
