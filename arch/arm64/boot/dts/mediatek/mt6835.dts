@@ -48,6 +48,7 @@
 		ovl4  = &disp_ovl1_2l;
 		rdma0 = &disp_rdma0;
 		wdma0 = &disp_wdma0;
+		dsc0 = &disp_dsc0_wrap;
 		dsi0  = &dsi0;
 		rsz0 = &disp_rsz0;
 		color0 = &disp_color0;
@@ -3989,6 +3990,14 @@
 
 		gateic0: gateic@0 {
 			compatible = "mediatek,mtk-drm-gateic-drv";
+		};
+
+		disp_dsc0_wrap: disp-dsc-wrap@14015000 {
+			compatible = "mediatek,disp_dsc_wrap",
+						"mediatek,mt6835-disp-dsc";
+			reg = <0 0x14015000 0 0x1000>;
+			interrupts = <GIC_SPI 323 IRQ_TYPE_LEVEL_HIGH 0>;
+			clocks = <&dispsys_config_clk CLK_MM_DISP_DSC_WRAP0>;
 		};
 
 		dsi0: dsi@14017000 {
