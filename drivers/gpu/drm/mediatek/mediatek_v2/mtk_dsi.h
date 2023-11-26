@@ -146,5 +146,6 @@ int mtk_dsi_porch_setting(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle,
 			  enum dsi_porch_type type, unsigned int value);
 void mtk_dsi_porch_config(struct mtk_dsi *dsi, struct cmdq_pkt *handle);
 int mtk_dsi_trigger(struct mtk_ddp_comp *comp, void *handle);
+unsigned int mtk_dsi_get_dsc_compress_rate(struct mtk_dsi *dsi);
 
 #endif

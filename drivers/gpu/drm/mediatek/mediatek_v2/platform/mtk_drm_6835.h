@@ -213,7 +213,7 @@ extern const struct mtk_disp_dither_data mt6835_dither_driver_data;
 // dsc
 extern const struct mtk_disp_dsc_data mt6835_dsc_driver_data;
 // dsi
-extern struct mtk_dsi_driver_data mt6835_dsi_driver_data;
+extern const struct mtk_dsi_driver_data mt6835_dsi_driver_data;
 // drv
 extern const struct mtk_mmsys_driver_data mt6835_mmsys_driver_data;
 // ddp

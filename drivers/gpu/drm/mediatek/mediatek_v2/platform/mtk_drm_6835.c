@@ -198,7 +198,7 @@ const struct mtk_disp_dsc_data mt6835_dsc_driver_data = {
 };
 
 // dsi
-struct mtk_dsi_driver_data mt6835_dsi_driver_data = {
+const struct mtk_dsi_driver_data mt6835_dsi_driver_data = {
 	.reg_cmdq0_ofs = 0xd00,
 	.reg_cmdq1_ofs = 0xd04,
 	.reg_vm_cmd_con_ofs = 0x200,
@@ -1213,6 +1213,7 @@ void mtk_dsi_set_mmclk_by_datarate(struct mtk_dsi *dsi,
 	struct mtk_drm_crtc *mtk_crtc, unsigned int en)
 {
 	struct mtk_panel_ext *ext = dsi->ext;
+	unsigned int compress_rate;
 	unsigned int data_rate;
 	unsigned int pixclk = 0;
 	u32 bpp = mipi_dsi_pixel_format_to_bpp(dsi->format);
@@ -1251,6 +1252,8 @@ void mtk_dsi_set_mmclk_by_datarate(struct mtk_dsi *dsi,
 		return;
 	}
 
+	compress_rate = mtk_dsi_get_dsc_compress_rate(dsi);
+
 	if (!data_rate) {
 		DDPPR_ERR("DSI data_rate is NULL\n");
 		return;
@@ -1274,7 +1277,7 @@ void mtk_dsi_set_mmclk_by_datarate(struct mtk_dsi *dsi,
 
 		pixclk = (pixclk_min > pixclk) ? pixclk_min : pixclk;
 	} else {
-		pixclk = data_rate * dsi->lanes;
+		pixclk = data_rate * dsi->lanes * compress_rate;
 		if (data_rate && ext->params->is_cphy)
 			pixclk = pixclk * 16 / 7;
 		pixclk = pixclk / bpp / 100;
@@ -1912,6 +1915,5 @@ void path_ver_adapt_mt6835(void)
 	if (hw_ver == MT6835_VER_E3) {
 		mt6835_mtk_main_path_data.path[DDP_MAJOR][0] = mt6835_mtk_ddp_main_E3;
 		mt6835_mtk_main_path_data.path_len[DDP_MAJOR][0] = ARRAY_SIZE(mt6835_mtk_ddp_main_E3);
-		mt6835_dsi_driver_data.mmclk_by_datarate = mtk_dsi_set_mmclk_by_datarate_V1;
 	}
 }
