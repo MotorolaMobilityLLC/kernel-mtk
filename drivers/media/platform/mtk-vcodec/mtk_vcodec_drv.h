@@ -841,6 +841,7 @@ struct mtk_vcodec_dev {
 	int vdec_larb_cnt;
 	int vdec_port_idx[MTK_VDEC_HW_NUM];
 	int venc_port_idx[MTK_VENC_HW_NUM];
+	struct mtk_tf_info *tf_info;
 	struct vcodec_perf *vdec_tput;
 	struct vcodec_perf *venc_tput;
 	//struct vcodec_config *vdec_cfg;
