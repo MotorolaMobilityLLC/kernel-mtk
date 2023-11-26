@@ -2651,7 +2651,7 @@ static int scp_device_probe(struct platform_device *pdev)
 		}
 	}
 
-	of_property_read_u32(pdev->dev.of_node, "scp_sramsize"
+	of_property_read_u32(pdev->dev.of_node, "scp_sramSize"
 						, &scpreg.scp_tcmsize);
 	if (!scpreg.scp_tcmsize) {
 		/* retry to parse scp-sramsize */
