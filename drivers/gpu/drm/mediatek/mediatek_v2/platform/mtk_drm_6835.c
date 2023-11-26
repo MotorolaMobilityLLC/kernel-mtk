@@ -32,8 +32,7 @@
 #define MT6835_OVL0_2L_NWCG_AID_SEL	(0xB0CUL)
 #define MT6835_OVL1_2L_NWCG_AID_SEL	(0xB10UL)
 
-//#define MTK_DRM_BRINGUP_STAGE
-//#define DRM_BYPASS_PQ
+#define MT6835_VER_E3 0xCB00
 
 static void mt6835_mtk_sodi_config(struct drm_device *drm, enum mtk_ddp_comp_id id,
 			struct cmdq_pkt *handle, void *data);
@@ -188,6 +187,15 @@ const struct mtk_disp_dither_data mt6835_dither_driver_data = {
 	.need_bypass_shadow = true,
 };
 
+// dsc
+const struct mtk_disp_dsc_data mt6835_dsc_driver_data = {
+	.support_shadow     = false,
+	.need_bypass_shadow = false,
+	.need_obuf_sw = false,
+	.dsi_buffer = false,
+	.shadow_ctrl_reg = 0x0200,
+};
+
 // dsi
 const struct mtk_dsi_driver_data mt6835_dsi_driver_data = {
 	.reg_cmdq0_ofs = 0xd00,
@@ -243,6 +251,7 @@ static const unsigned int mt6835_mutex_mod[DDP_COMPONENT_ID_MAX] = {
 		[DDP_COMPONENT_OVL1_2L] = MT6835_MUTEX_MOD_DISP_OVL1_2L,
 		[DDP_COMPONENT_RDMA0] = MT6835_MUTEX_MOD_DISP_RDMA0,
 		[DDP_COMPONENT_RSZ0] = MT6835_MUTEX_MOD_DISP_RSZ0,
+		[DDP_COMPONENT_C3D0] = MT6835_MUTEX_MOD_DISP_C3D0,
 		[DDP_COMPONENT_COLOR0] = MT6835_MUTEX_MOD_DISP_COLOR0,
 		[DDP_COMPONENT_CCORR0] = MT6835_MUTEX_MOD_DISP_CCORR0,
 		[DDP_COMPONENT_AAL0] = MT6835_MUTEX_MOD_DISP_AAL0,
@@ -252,6 +261,7 @@ static const unsigned int mt6835_mutex_mod[DDP_COMPONENT_ID_MAX] = {
 		[DDP_COMPONENT_DSI0] = MT6835_MUTEX_MOD_DISP_DSI0,
 		[DDP_COMPONENT_WDMA0] = MT6835_MUTEX_MOD_DISP_WDMA0,
 		[DDP_COMPONENT_PWM0] = MT6835_MUTEX_MOD_DISP_PWM0,
+		[DDP_COMPONENT_DSC0] = MT6835_MUTEX_MOD_DISP_DSC_WRAP0_CORE0,
 };
 
 static const unsigned int mt6835_mutex_sof[DDP_MUTEX_SOF_MAX] = {
@@ -825,9 +835,17 @@ int mtk_ddp_sel_in_MT6835(const struct mtk_mmsys_reg_data *data,
 		*addr = MT6835_DISP_RDMA0_POS_SEL;
 		value = MT6835_DISP_RDMA0_POS_FROM_DISP_RDMA0_SOUT;
 	} else if (cur == DDP_COMPONENT_TDSHP_VIRTUAL0 &&
+		next == DDP_COMPONENT_C3D0) {
+		*addr = MT6835_DISP_C3D0_SEL;
+		value = MT6835_DISP_C3D0_FROM_DISP_TDSHP0_SOUT;
+	} else if (cur == DDP_COMPONENT_TDSHP_VIRTUAL0 &&
 		next == DDP_COMPONENT_COLOR0) {
 		*addr = MT6835_DISP_COLOR0_SEL;
 		value = MT6835_DISP_COLOR0_FROM_DISP_TDSHP0_SOUT;
+	} else if (cur == DDP_COMPONENT_C3D0 &&
+		next == DDP_COMPONENT_COLOR0) {
+		*addr = MT6835_DISP_COLOR0_SEL;
+		value = MT6835_DISP_COLOR0_FROM_DISP_C3D0_SOUT;
 	} else if (cur == DDP_COMPONENT_CCORR0 &&
 		next == DDP_COMPONENT_AAL0) {
 		*addr = MT6835_DISP_MDP_AAL0_SEL;
@@ -873,6 +891,14 @@ int mtk_ddp_sout_sel_MT6835(const struct mtk_mmsys_reg_data *data,
 		next == DDP_COMPONENT_COLOR0) {
 		*addr = MT6835_DISP_TDSHP0_SOUT_SEL;
 		value = MT6835_DISP_TDSHP0_SOUT_TO_DISP_COLOR0_SEL;
+	} else if (cur == DDP_COMPONENT_TDSHP_VIRTUAL0 &&
+		next == DDP_COMPONENT_C3D0) {
+		*addr = MT6835_DISP_TDSHP0_SOUT_SEL;
+		value = MT6835_DISP_TDSHP0_SOUT_TO_DISP_C3D0_SEL;
+	} else if (cur == DDP_COMPONENT_C3D0 &&
+		next == DDP_COMPONENT_COLOR0) {
+		*addr = MT6835_DISP_C3D0_SOUT_SEL;
+		value = MT6835_DISP_C3D0_SOUT_TO_DISP_COLOR0_SEL;
 	} else if (cur == DDP_COMPONENT_CCORR0 &&
 		next == DDP_COMPONENT_AAL0) {
 		*addr = MT6835_DISP_CCORR0_SOUT_SEL;
@@ -1348,6 +1374,55 @@ static void mt6835_mtk_sodi_config(struct drm_device *drm, enum mtk_ddp_comp_id 
 	}
 }
 
+void mtk_ddp_insert_dsc_prim_MT6835(struct mtk_drm_crtc *mtk_crtc,
+	struct cmdq_pkt *handle)
+{
+	unsigned int addr, value;
+
+	addr = MT6835_DISP_PQ0_SOUT_SEL;
+	value = MT6835_DISP_PQ0_SOUT_TO_DISP_DSC_WRAP0_L_SEL;
+	cmdq_pkt_write(handle, mtk_crtc->gce_obj.base,
+		       mtk_crtc->config_regs_pa + addr, value, ~0);
+
+	addr = MT6835_DISP_DSC_WRAP0_L_SEL;
+	value = MT6835_DISP_DSC_WRAP0_L_FROM_DISP_PQ0_SOUT;
+	cmdq_pkt_write(handle, mtk_crtc->gce_obj.base,
+		       mtk_crtc->config_regs_pa + addr, value, ~0);
+
+	addr = MT6835_DISP_DSC_WRAP0_MOUT_EN;
+	value = MT6835_DISP_DSC_WRAP0_MOUT_TO_DISP_MAIN0_SEL;
+	cmdq_pkt_write(handle, mtk_crtc->gce_obj.base,
+		       mtk_crtc->config_regs_pa + addr, value, ~0);
+
+	addr = MT6835_DISP_MAIN0_SEL;
+	value = MT6835_DISP_MAIN0_FROM_DISP_DSC_WRAP0_MOUT;
+	cmdq_pkt_write(handle, mtk_crtc->gce_obj.base,
+		       mtk_crtc->config_regs_pa + addr, value, ~0);
+}
+
+void mtk_ddp_remove_dsc_prim_MT6835(struct mtk_drm_crtc *mtk_crtc,
+	struct cmdq_pkt *handle)
+{
+	unsigned int addr;
+	unsigned int value = 0;
+
+	addr = MT6835_DISP_PQ0_SOUT_SEL;
+	cmdq_pkt_write(handle, mtk_crtc->gce_obj.base,
+		       mtk_crtc->config_regs_pa + addr, value, ~0);
+
+	addr = MT6835_DISP_DSC_WRAP0_L_SEL;
+	cmdq_pkt_write(handle, mtk_crtc->gce_obj.base,
+		       mtk_crtc->config_regs_pa + addr, value, ~0);
+
+	addr = MT6835_DISP_DSC_WRAP0_MOUT_EN;
+	cmdq_pkt_write(handle, mtk_crtc->gce_obj.base,
+		       mtk_crtc->config_regs_pa + addr, value, ~0);
+
+	addr = MT6835_DISP_MAIN0_SEL;
+	cmdq_pkt_write(handle, mtk_crtc->gce_obj.base,
+		       mtk_crtc->config_regs_pa + addr, value, ~0);
+}
+
 // drv
 static const enum mtk_ddp_comp_id mt6835_mtk_ddp_main[] = {
 #ifndef MTK_DRM_BRINGUP_STAGE
@@ -1357,6 +1432,24 @@ static const enum mtk_ddp_comp_id mt6835_mtk_ddp_main[] = {
 	DDP_COMPONENT_PQ0_RDMA0_POS_VIRTUAL, DDP_COMPONENT_RDMA0,
 #ifndef DRM_BYPASS_PQ
 	DDP_COMPONENT_TDSHP_VIRTUAL0, DDP_COMPONENT_COLOR0, DDP_COMPONENT_CCORR0,
+	DDP_COMPONENT_AAL0, DDP_COMPONENT_GAMMA0, DDP_COMPONENT_POSTMASK0,
+	DDP_COMPONENT_DITHER0, DDP_COMPONENT_SPR0_VIRTUAL,
+	DDP_COMPONENT_PQ0_VIRTUAL, DDP_COMPONENT_MAIN0_VIRTUAL,
+#endif
+	DDP_COMPONENT_MAIN0_TX_VIRTUAL0,
+	DDP_COMPONENT_DSI0,
+	DDP_COMPONENT_PWM0,
+};
+
+static const enum mtk_ddp_comp_id mt6835_mtk_ddp_main_E3[] = {
+#ifndef MTK_DRM_BRINGUP_STAGE
+	DDP_COMPONENT_OVL1_2L,
+#endif
+	DDP_COMPONENT_OVL0, DDP_COMPONENT_MAIN_OVL_DISP_PQ0_VIRTUAL,
+	DDP_COMPONENT_PQ0_RDMA0_POS_VIRTUAL, DDP_COMPONENT_RDMA0,
+#ifndef DRM_BYPASS_PQ
+	DDP_COMPONENT_TDSHP_VIRTUAL0, DDP_COMPONENT_C3D0,
+	DDP_COMPONENT_COLOR0, DDP_COMPONENT_CCORR0,
 	DDP_COMPONENT_AAL0, DDP_COMPONENT_GAMMA0, DDP_COMPONENT_POSTMASK0,
 	DDP_COMPONENT_DITHER0, DDP_COMPONENT_SPR0_VIRTUAL,
 	DDP_COMPONENT_PQ0_VIRTUAL, DDP_COMPONENT_MAIN0_VIRTUAL,
@@ -1434,7 +1527,7 @@ static const struct mtk_addon_scenario_data mt6835_addon_ext[ADDON_SCN_NR] = {
 	},
 };
 
-static const struct mtk_crtc_path_data mt6835_mtk_main_path_data = {
+static struct mtk_crtc_path_data mt6835_mtk_main_path_data = {
 	.path[DDP_MAJOR][0] = mt6835_mtk_ddp_main,
 	.path_len[DDP_MAJOR][0] = ARRAY_SIZE(mt6835_mtk_ddp_main),
 	.path_req_hrt[DDP_MAJOR][0] = true,
@@ -1793,3 +1886,30 @@ const struct mtk_mipitx_data mt6835_mipitx_cphy_data = {
 	.refill_mipitx_impedance = refill_mipitx_impedance,
 };
 
+// others
+struct tag_chipid {
+	u32 size;
+	u32 hw_code;
+	u32 hw_subcode;
+	u32 hw_ver;
+	u32 sw_ver;
+};
+
+void path_ver_adapt_mt6835(void)
+{
+	struct device_node *dn = of_find_node_by_path("/chosen");
+	struct tag_chipid *chipid;
+	int hw_ver = 0;
+
+	if (!dn)
+		dn = of_find_node_by_path("/chosen@0");
+	if (dn) {
+		chipid = (struct tag_chipid *) of_get_property(dn,"atag,chipid", NULL);
+		hw_ver = (int)chipid->hw_ver;
+	}
+	DDPMSG("%s, hw_ver:0x%x\n", __func__, hw_ver);
+	if (hw_ver == MT6835_VER_E3) {
+		mt6835_mtk_main_path_data.path[DDP_MAJOR][0] = mt6835_mtk_ddp_main_E3;
+		mt6835_mtk_main_path_data.path_len[DDP_MAJOR][0] = ARRAY_SIZE(mt6835_mtk_ddp_main_E3);
+	}
+}

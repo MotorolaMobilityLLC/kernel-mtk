@@ -6682,6 +6682,8 @@ static const struct of_device_id mtk_ddp_comp_dt_ids[] = {
 	 .data = (void *)MTK_DISP_C3D},
 	{.compatible = "mediatek,mt6879-disp-c3d",
 	 .data = (void *)MTK_DISP_C3D},
+	{.compatible = "mediatek,mt6835-disp-c3d",
+	 .data = (void *)MTK_DISP_C3D},
 	{.compatible = "mediatek,mt6983-disp-tdshp",
 	 .data = (void *)MTK_DISP_TDSHP},
 	{.compatible = "mediatek,mt6985-disp-tdshp",
@@ -6990,6 +6992,8 @@ static const struct of_device_id mtk_ddp_comp_dt_ids[] = {
 	 .data = (void *)MTK_DISP_DSC},
 	{.compatible = "mediatek,mt6853-disp-dsc",
 	 .data = (void *)MTK_DISP_DSC},
+	{.compatible = "mediatek,mt6835-disp-dsc",
+	 .data = (void *)MTK_DISP_DSC},
 	{.compatible = "mediatek,mt6885-disp-merge",
 	 .data = (void *)MTK_DISP_MERGE},
 	{.compatible = "mediatek,mt6983-disp-merge",
@@ -7258,6 +7262,7 @@ static int mtk_drm_probe(struct platform_device *pdev)
 	if (private->data->mmsys_id == MMSYS_MT6835) {
 		if (mtk_drm_get_segment_id(pdev, private))
 			DDPPR_ERR("%s, segment get fail\n", __func__);
+		path_ver_adapt_mt6835();
 	}
 
 	ranges = of_get_property(dev->of_node, "dma-ranges", &len);

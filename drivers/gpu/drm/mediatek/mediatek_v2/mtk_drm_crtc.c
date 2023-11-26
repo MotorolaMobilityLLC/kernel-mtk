@@ -8270,6 +8270,9 @@ static void mtk_crtc_addon_connector_disconnect(struct drm_crtc *crtc,
 		case MMSYS_MT6855:
 			mtk_ddp_remove_dsc_prim_MT6855(mtk_crtc, handle);
 			break;
+		case MMSYS_MT6835:
+			mtk_ddp_remove_dsc_prim_MT6835(mtk_crtc, handle);
+			break;
 		default:
 			DDPINFO("%s mtk drm not support mmsys id %d\n",
 				__func__, priv->data->mmsys_id);
@@ -8408,6 +8411,9 @@ void mtk_crtc_addon_connector_connect(struct drm_crtc *crtc,
 			break;
 		case MMSYS_MT6855:
 			mtk_ddp_insert_dsc_prim_MT6855(mtk_crtc, handle);
+			break;
+		case MMSYS_MT6835:
+			mtk_ddp_insert_dsc_prim_MT6835(mtk_crtc, handle);
 			break;
 		default:
 			DDPINFO("%s mtk drm not support mmsys id %d\n",

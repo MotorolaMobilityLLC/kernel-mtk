@@ -946,6 +946,8 @@ static const struct of_device_id mtk_disp_dsc_driver_dt_match[] = {
 	  .data = &mt6879_dsc_driver_data},
 	{ .compatible = "mediatek,mt6855-disp-dsc",
 	  .data = &mt6855_dsc_driver_data},
+	{ .compatible = "mediatek,mt6835-disp-dsc",
+	  .data = &mt6835_dsc_driver_data},
 	{},
 };
 

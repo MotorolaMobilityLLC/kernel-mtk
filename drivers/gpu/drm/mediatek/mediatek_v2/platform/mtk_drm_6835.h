@@ -74,7 +74,11 @@
 	#define MT6835_DISP_RDMA0_POS_FROM_DISP_RDMA0_POS_MOUT   (0)
 	#define MT6835_DISP_RDMA0_POS_FROM_DISP_RDMA0_SOUT       (1)
 
+#define MT6835_DISP_C3D0_SEL                           0xF44
+	#define MT6835_DISP_C3D0_FROM_DISP_TDSHP0_SOUT   (0)
+
 #define MT6835_DISP_COLOR0_SEL                         0xF48
+	#define MT6835_DISP_COLOR0_FROM_DISP_C3D0_SOUT     (0)
 	#define MT6835_DISP_COLOR0_FROM_DISP_TDSHP0_SOUT   (1)
 
 #define MT6835_DISP_MDP_AAL0_SEL                         0xF4C
@@ -108,13 +112,18 @@
 	#define MT6835_DISP_RDMA0_SOUT_TO_DISP_TDSHP0            (1)
 
 #define MT6835_DISP_TDSHP0_SOUT_SEL                      0xF9C
+	#define MT6835_DISP_TDSHP0_SOUT_TO_DISP_C3D0_SEL     (0)
 	#define MT6835_DISP_TDSHP0_SOUT_TO_DISP_COLOR0_SEL   (1)
+
+#define MT6835_DISP_C3D0_SOUT_SEL                        0xFA0
+	#define MT6835_DISP_C3D0_SOUT_TO_DISP_COLOR0_SEL     (0)
 
 #define MT6835_DISP_CCORR0_SOUT_SEL                        0xFA4
 	#define MT6835_DISP_CCORR0_SOUT_TO_DISP_MDP_AAL0_SEL   (0)
 
 #define MT6835_DISP_PQ0_SOUT_SEL                           0xFAC
 	#define MT6835_DISP_PQ0_SOUT_TO_DISP_MAIN0_SEL         (1)
+	#define MT6835_DISP_PQ0_SOUT_TO_DISP_DSC_WRAP0_L_SEL   (4)
 
 #define MT6835_DISP_MAIN0_SOUT_SEL                          0xFBC
 	#define MT6835_DISP_MAIN0_SOUT_TO_DISP_RDMA0_IN_RELAY   (0)
@@ -167,12 +176,14 @@
 #define MT6835_MUTEX_MOD_DISP_OVL1_2L         BIT(2)
 #define MT6835_MUTEX_MOD_DISP_RSZ0            BIT(3)
 #define MT6835_MUTEX_MOD_DISP_RDMA0           BIT(4)
+#define MT6835_MUTEX_MOD_DISP_C3D0            BIT(6)
 #define MT6835_MUTEX_MOD_DISP_COLOR0          BIT(7)
 #define MT6835_MUTEX_MOD_DISP_CCORR0          BIT(8)
 #define MT6835_MUTEX_MOD_DISP_AAL0            BIT(11)
 #define MT6835_MUTEX_MOD_DISP_GAMMA0          BIT(12)
 #define MT6835_MUTEX_MOD_DISP_POSTMASK0       BIT(13)
 #define MT6835_MUTEX_MOD_DISP_DITHER0         BIT(14)
+#define MT6835_MUTEX_MOD_DISP_DSC_WRAP0_CORE0 BIT(19)
 #define MT6835_MUTEX_MOD_DISP_DSI0            BIT(22)
 #define MT6835_MUTEX_MOD_DISP_WDMA0           BIT(23)
 #define MT6835_MUTEX_MOD_DISP_PWM0           (BIT(9)|BIT(31))
@@ -199,6 +210,8 @@ extern const struct mtk_disp_ccorr_data mt6835_ccorr_driver_data;
 extern const struct mtk_disp_color_data mt6835_color_driver_data;
 // dither
 extern const struct mtk_disp_dither_data mt6835_dither_driver_data;
+// dsc
+extern const struct mtk_disp_dsc_data mt6835_dsc_driver_data;
 // dsi
 extern const struct mtk_dsi_driver_data mt6835_dsi_driver_data;
 // drv
@@ -225,4 +238,9 @@ int mtk_ddp_ovl_bg_blend_en_MT6835(const struct mtk_mmsys_reg_data *data,
 			   unsigned int *addr);
 void mutex_dump_analysis_mt6835(struct mtk_disp_mutex *mutex);
 void mmsys_config_dump_analysis_mt6835(void __iomem *config_regs);
+void path_ver_adapt_mt6835(void);
+void mtk_ddp_insert_dsc_prim_MT6835(struct mtk_drm_crtc *mtk_crtc,
+	struct cmdq_pkt *handle);
+void mtk_ddp_remove_dsc_prim_MT6835(struct mtk_drm_crtc *mtk_crtc,
+	struct cmdq_pkt *handle);
 #endif /* MTK_DRM_6835_H */
