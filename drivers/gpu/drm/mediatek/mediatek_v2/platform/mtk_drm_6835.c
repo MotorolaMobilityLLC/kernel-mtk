@@ -23,6 +23,7 @@
 #include "../mtk_disp_ovl.h"
 #include "../mtk_disp_wdma.h"
 #include "../mtk_mipi_tx.h"
+#include "../mtk_dsi.h"
 #include "mtk_drm_6835.h"
 
 /* AID offset in mmsys config */
@@ -197,7 +198,7 @@ const struct mtk_disp_dsc_data mt6835_dsc_driver_data = {
 };
 
 // dsi
-const struct mtk_dsi_driver_data mt6835_dsi_driver_data = {
+struct mtk_dsi_driver_data mt6835_dsi_driver_data = {
 	.reg_cmdq0_ofs = 0xd00,
 	.reg_cmdq1_ofs = 0xd04,
 	.reg_vm_cmd_con_ofs = 0x200,
@@ -1911,5 +1912,6 @@ void path_ver_adapt_mt6835(void)
 	if (hw_ver == MT6835_VER_E3) {
 		mt6835_mtk_main_path_data.path[DDP_MAJOR][0] = mt6835_mtk_ddp_main_E3;
 		mt6835_mtk_main_path_data.path_len[DDP_MAJOR][0] = ARRAY_SIZE(mt6835_mtk_ddp_main_E3);
+		mt6835_dsi_driver_data.mmclk_by_datarate = mtk_dsi_set_mmclk_by_datarate_V1;
 	}
 }
