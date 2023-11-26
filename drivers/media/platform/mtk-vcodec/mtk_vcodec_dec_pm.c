@@ -242,6 +242,7 @@ void mtk_vcodec_dec_pw_off(struct mtk_vcodec_pm *pm)
 	}
 }
 
+#ifdef VDEC_DEBUG_DUMP
 static void mtk_vdec_hw_break_dump(
 	void __iomem *reg_addr, char *debug_str, int off_start, int off_end)
 {
@@ -471,6 +472,7 @@ static void mtk_vdec_hw_break(struct mtk_vcodec_dev *dev, int hw_id)
 		mtk_v4l2_err("hw_id (%d) is unknown or unsupport\n", hw_id);
 	}
 }
+#endif
 
 void mtk_vcodec_dec_clock_on(struct mtk_vcodec_pm *pm, int hw_id)
 {
@@ -634,8 +636,8 @@ void mtk_vcodec_dec_clock_off(struct mtk_vcodec_pm *pm, int hw_id)
 		}
 		mutex_unlock(&pm->dec_racing_info_mutex);
 	}
-
-	mtk_vdec_hw_break(dev, hw_id);
+	// remove for security, handle decode timeout hw break in vcp
+	//mtk_vdec_hw_break(dev, hw_id);
 
 	/* avoid translation fault callback dump reg not done */
 	spin_lock_irqsave(&dev->dec_power_lock[hw_id], flags);
@@ -679,6 +681,7 @@ void mtk_vcodec_dec_clock_off(struct mtk_vcodec_pm *pm, int hw_id)
 #endif
 }
 
+#ifdef VDEC_DEBUG_DUMP
 static void mtk_vdec_dump_addr_reg(
 	struct mtk_vcodec_dev *dev, int hw_id, enum mtk_dec_dump_addr_type type)
 {
@@ -884,6 +887,7 @@ static void mtk_vdec_dump_addr_reg(
 
 	spin_unlock_irqrestore(&dev->dec_power_lock[hw_id], flags);
 }
+#endif
 
 void mtk_vdec_uP_TF_dump_handler(struct work_struct *ws)
 {
@@ -963,7 +967,7 @@ static int mtk_vdec_translation_fault_callback(
 			(hw_id == MTK_VDEC_LAT) ? "LAT" : "CORE", hw_id,
 			MTK_M4U_TO_LARB(port), dec_port_name[port_idx], port, (u64)mva);
 	}
-
+#ifdef VDEC_DEBUG_DUMP	// remove for security
 	if (port == dev->dec_m4u_ports[VDEC_M4U_PORT_LAT0_VLD] ||
 	    port == dev->dec_m4u_ports[VDEC_M4U_PORT_LAT0_VLD2]) {
 		mtk_vdec_dump_addr_reg(dev, hw_id, DUMP_VDEC_IN_BUF);
@@ -1004,7 +1008,7 @@ static int mtk_vdec_translation_fault_callback(
 			mtk_vdec_dump_addr_reg(dev, hw_id, DUMP_VDEC_OUT_BUF);
 		}
 	}
-
+#endif
 	return 0;
 }
 
