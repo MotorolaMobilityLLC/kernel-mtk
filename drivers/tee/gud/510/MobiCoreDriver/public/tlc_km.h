@@ -137,6 +137,7 @@ typedef struct {
 typedef struct __attribute__((packed)) {
     tciCommandHeader_t header; /**< Command header */
     uint32_t len; /**< Length of data to process */
+    uint32_t padding; /**< Padding but unused field to algin with secure world structure */
 } command_t;
 
 
