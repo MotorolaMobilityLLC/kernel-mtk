@@ -20,6 +20,7 @@
 #define is_adc_data_valid(val, bit)       (((val) & BIT(bit)) != 0)
 #define get_adc_data(val, bit)            ((val) & GENMASK(bit, 0))
 #define adc_data_to_v_in(val)             (1900 - (((val) * 1000) >> 14))
+#define USB_CONN_NTC_DEFAULT_PULL_UP_R 3920
 
 /**
  * struct tia_data - parameters to parse the data from TIA
@@ -60,6 +61,7 @@ struct pmic_auxadc_data {
 	unsigned long long (*adc2volt)(unsigned int adc_raw);
 	struct tia_data *tia_param;
 	bool is_print_tia_cg;
+	int usb_conn_ntc_pull_up_r;
 };
 
 struct board_ntc_info {
@@ -90,9 +92,6 @@ unsigned int tia2_rc_sel_to_value(unsigned int sel)
 		break;
 	case 2:
 		resistance = 400000; /* 400K */
-		break;
-	case 3:
-		resistance = 3920; /* 3.92K */
 		break;
 	case 0:
 	default:
@@ -431,13 +430,18 @@ static int board_ntc_init_auxadc_data(struct device *dev,
 		ret = adc_data->pullup_r_calibration(dev, adc_data);
 	} else {
 		for (i = 0; i < num; i++) {
-			adc_data->pullup_r[i] =
-				adc_data->tia_param->rc_sel_to_value(i);
-			if (is_chg_ts_detector(i) != true)
+			if (is_chg_ts_detector(i) != true) {
 				adc_data->pullup_v[i] = adc_data->default_pullup_v;
-			else
+				adc_data->pullup_r[i] =
+					adc_data->tia_param->rc_sel_to_value(i);
+			} else {
 				adc_data->pullup_v[i] = 1800000;
-
+				adc_data->pullup_r[i] =
+					adc_data->usb_conn_ntc_pull_up_r;
+				dev_info(dev, "%s, usb_conn_ntc: pull_up(v, r) = (%d, %d)\n",
+					__func__, adc_data->pullup_v[i],
+					adc_data->pullup_r[i]);
+			}
 			dev_info(dev, "%d: default pullup_r=%d, pullup_v=%d\n",
 				i, adc_data->pullup_r[i],
 				adc_data->pullup_v[i]);
@@ -485,6 +489,25 @@ static int board_ntc_parse_lookup_table(struct device *dev,
 	return 0;
 }
 
+static int usb_conn_ntc_parse_lookup_table(struct device *dev,
+					struct board_ntc_info *ntc_info)
+{
+	struct device_node *np = dev->of_node;
+	u32 val = 0;
+
+	if (of_property_read_u32(np, "usb_conn_ntc_pull_up_r", &val) >= 0) {
+		ntc_info->adc_data->usb_conn_ntc_pull_up_r = val;
+		dev_err(dev, "%s, set usb_conn_ntc_pull_up_r:%d\n",
+			__func__, ntc_info->adc_data->usb_conn_ntc_pull_up_r);
+	} else {
+		ntc_info->adc_data->usb_conn_ntc_pull_up_r = USB_CONN_NTC_DEFAULT_PULL_UP_R;
+		dev_err(dev, "%s, use default usb_conn_ntc_pull_up_r:%d\n",
+			__func__, ntc_info->adc_data->usb_conn_ntc_pull_up_r);
+	}
+
+	return 0;
+}
+
 static int board_ntc_probe(struct platform_device *pdev)
 {
 	struct board_ntc_info *ntc_info;
@@ -510,7 +533,10 @@ static int board_ntc_probe(struct platform_device *pdev)
 	ntc_info->prev_val = 0;
 	ntc_info->adc_data = (struct pmic_auxadc_data *)
 		of_device_get_match_data(&pdev->dev);
+
 	if (!ntc_info->adc_data->is_initialized) {
+		usb_conn_ntc_parse_lookup_table(&pdev->dev, ntc_info);
+
 		ret = board_ntc_init_auxadc_data(&pdev->dev,
 						ntc_info->adc_data);
 		if (ret)
