@@ -5244,12 +5244,73 @@ static char *dump_charger_type(int chg_type, int usb_type)
 	}
 }
 
+
+#include <linux/thermal.h>
+
+static int mmi_typec_connecter_otp_uevent(struct mtk_charger *info, unsigned long state)
+{
+	struct thermal_zone_device *usb_conn_zone;
+	char *thermal_prop[6];
+	int i;
+	int uevent_sup = 1;
+	int temp, ret;
+
+	usb_conn_zone = thermal_zone_get_zone_by_name("usb_conn_ntc");
+	if (IS_ERR(usb_conn_zone)) {
+		chr_err("get usb_conn zone failure\n");
+		return -1;
+	}
+
+        ret = thermal_zone_get_temp(usb_conn_zone, &temp);
+	if (ret) {
+		if (ret != -EAGAIN)
+			chr_err("failed to read out thermal zone (%d)\n", ret);
+		return -1;
+	}
+
+	thermal_prop[0] = kasprintf(GFP_KERNEL, "UEVENT=%d", uevent_sup);
+	thermal_prop[1] = kasprintf(GFP_KERNEL, "NAME=%s", usb_conn_zone->type);
+	thermal_prop[2] = kasprintf(GFP_KERNEL, "TEMP=%d", temp);
+	thermal_prop[3] = kasprintf(GFP_KERNEL, "TRIP=%d", 1);
+	thermal_prop[4] = kasprintf(GFP_KERNEL, "EVENT=%d", usb_conn_zone->notify_event);
+	thermal_prop[5] = NULL;
+
+	chr_err("%s name=%s, temp=%d\n",
+			__func__, usb_conn_zone->type, temp);
+	kobject_uevent_env(&usb_conn_zone->device.kobj, KOBJ_CHANGE, thermal_prop);
+	for (i = 0; i < 5; ++i)
+		kfree(thermal_prop[i]);
+
+	return 0;
+}
+
+static int mmi_get_typec_temp(struct mtk_charger *info)
+{
+	struct thermal_zone_device *usb_conn_zone;
+        int temp, ret;
+
+	usb_conn_zone = thermal_zone_get_zone_by_name("usb_conn_ntc");
+	if (IS_ERR(usb_conn_zone)) {
+		chr_err("get usb_conn zone failure\n");
+		return get_typec_temp(info);
+	}
+
+        ret = thermal_zone_get_temp(usb_conn_zone, &temp);
+	if (ret) {
+		if (ret != -EAGAIN)
+			chr_err("failed to read out thermal zone (%d)\n", ret);
+		return get_typec_temp(info);
+	}
+
+	return temp / 100;
+}
+
 static void mmi_typec_connecter_otp(struct mtk_charger *info)
 {
 	int ts;
 
 	if (info->typecotp_charger && ! info->typecotp_use_thermal_cooling) {
-		ts = get_typec_temp(info);
+		ts = mmi_get_typec_temp(info);
 		chr_err("otp_temp:%d\n", ts);
 
 		if ((ts > otp_threshold) && (get_vbus(info) > otpv_threshold)) {
@@ -5268,6 +5329,7 @@ static void mmi_typec_connecter_otp(struct mtk_charger *info)
 					chr_err("otph_short\n");
 				}
 			}
+			mmi_typec_connecter_otp_uevent(info, info->typec_otp_sts);
 		} else if (ts < recover_threshold) {
 			if (info->typec_otp_sts == true) {
 				info->typec_otp_sts = false;
@@ -5284,6 +5346,7 @@ static void mmi_typec_connecter_otp(struct mtk_charger *info)
 					info->dcp_otp_sts = false;
 					chr_err("otpl_short\n");
 				}
+				mmi_typec_connecter_otp_uevent(info, info->typec_otp_sts);
 			}
 		}
 	}
@@ -5374,6 +5437,8 @@ static int mmi_typec_otp_set_cur_state(struct thermal_cooling_device *tcd,
 			}
 			info->typec_otp_cur_state = state;
 		}
+
+		mmi_typec_connecter_otp_uevent(info, state);
 	}
 
 	pr_info("%s set state=%d,cur_state=%d,otp_sts typec:%d pdc:%d dcp:%d\n",
