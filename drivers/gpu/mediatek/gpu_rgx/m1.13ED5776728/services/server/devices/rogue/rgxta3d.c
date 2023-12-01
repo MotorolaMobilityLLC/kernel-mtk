@@ -1784,7 +1784,7 @@ PVRSRV_ERROR RGXDestroyHWRTDataSet(RGX_KM_HW_RT_DATASET *psKMHWRTDataSet)
 
 	/* Cleanup HWRTData */
 	eError = RGXFWRequestHWRTDataCleanUp(psDevNode, psHWRTData);
-	if (eError == PVRSRV_ERROR_RETRY)
+	if (eError != PVRSRV_OK)
 	{
 		return eError;
 	}
@@ -2329,7 +2329,7 @@ PVRSRV_ERROR RGXDestroyZSBufferKM(RGX_ZSBUFFER_DATA *psZSBuffer)
 	/* Request ZS Buffer cleanup */
 	eError = RGXFWRequestZSBufferCleanUp(psZSBuffer->psDevInfo,
 			psZSBuffer->sZSBufferFWDevVAddr);
-	if (eError != PVRSRV_ERROR_RETRY)
+	if (eError == PVRSRV_OK)
 	{
 		/* Free the firmware render context. */
 		RGXUnsetFirmwareAddress(psZSBuffer->psFWZSBufferMemDesc);
