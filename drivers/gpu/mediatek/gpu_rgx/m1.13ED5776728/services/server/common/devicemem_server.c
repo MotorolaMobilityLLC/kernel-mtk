@@ -508,7 +508,18 @@ DevmemIntHeapCreate(DEVMEMINT_CTX *psDevmemCtx,
                     DEVMEMINT_HEAP **ppsDevmemHeapPtr)
 {
 	DEVMEMINT_HEAP *psDevmemHeap;
-
+	PVRSRV_ERROR eError;
+	IMG_DEV_VIRTADDR sBlueprintHeapBaseAddr;
+	IMG_DEVMEM_SIZE_T uiBlueprintHeapLength;
+	IMG_DEVMEM_SIZE_T uiBlueprintResRgnLength;
+	IMG_UINT32 ui32BlueprintLog2DataPageSize;
+	IMG_UINT32 ui32BlueprintLog2ImportAlignment;
+	IMG_UINT32 ui32NumHeapConfigsOut;
+	IMG_UINT32 ui32NumHeapsOut;
+	IMG_BOOL bHeapParamsValidated = IMG_FALSE;
+	
+	IMG_INT uiHeapConfigIndex, uiHeapIndex;
+	
 	PVR_DPF((PVR_DBG_MESSAGE, "%s", __func__));
 
 	/* allocate a Devmem context */
@@ -521,11 +532,86 @@ DevmemIntHeapCreate(DEVMEMINT_CTX *psDevmemCtx,
 
 	OSAtomicWrite(&psDevmemHeap->uiRefCount, 1);
 
+	/* getting number of heaps and heap configs */
+	eError = HeapCfgHeapConfigCount(NULL, psDevmemHeap->psDevmemCtx->psDevNode, &ui32NumHeapConfigsOut);
+	
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%s: Cannot retrieve the number of heap configs.\n", __func__));
+		eError = PVRSRV_ERROR_FAILED_TO_RETRIEVE_HEAPINFO;
+		goto ErrorCtxRelease;
+	}
+
+	for(uiHeapConfigIndex = 0; uiHeapConfigIndex < ui32NumHeapConfigsOut; uiHeapConfigIndex++)
+	{		
+		eError = HeapCfgHeapCount(NULL, psDevmemHeap->psDevmemCtx->psDevNode, uiHeapConfigIndex, &ui32NumHeapsOut);
+		if (eError != PVRSRV_OK)
+		{
+			PVR_DPF((PVR_DBG_ERROR, "%s: Failed to retrieve the number of heaps for heap config index %d.\n",
+					 __func__, uiHeapConfigIndex));
+			eError = PVRSRV_ERROR_FAILED_TO_RETRIEVE_HEAPINFO;
+			goto ErrorCtxRelease;
+		}
+		else
+		{
+			for(uiHeapIndex = 0; uiHeapIndex < ui32NumHeapsOut; uiHeapIndex++)
+			{
+				/* Check page size and base addr match the heap blueprint */
+				eError = HeapCfgHeapDetails(NULL,
+											psDevmemHeap->psDevmemCtx->psDevNode,
+											uiHeapConfigIndex,
+											uiHeapIndex,
+											0, NULL,
+											&sBlueprintHeapBaseAddr,
+											&uiBlueprintHeapLength,
+											&uiBlueprintResRgnLength,
+											&ui32BlueprintLog2DataPageSize,
+											&ui32BlueprintLog2ImportAlignment);
+				if (eError == PVRSRV_OK)
+				{
+					if ((ui32BlueprintLog2DataPageSize == uiLog2DataPageSize) && 
+						(sHeapBaseAddr.uiAddr == sBlueprintHeapBaseAddr.uiAddr) &&
+						(uiBlueprintHeapLength == uiHeapLength))
+					{
+						bHeapParamsValidated = IMG_TRUE; 
+						break;
+					}
+				}
+				else
+				{
+					PVR_DPF((PVR_DBG_ERROR, "%s: HeapCfgHeapDetails call fail with Heap Config Index: %d, and Heap Index: %d.\n"
+							,__func__, uiHeapConfigIndex, uiHeapIndex));
+					eError = PVRSRV_ERROR_FAILED_TO_RETRIEVE_HEAPINFO;
+					goto ErrorCtxRelease;
+				}
+			}
+		}
+
+		if (bHeapParamsValidated == IMG_TRUE)
+		{
+			break;
+		}
+	}
+
+	if (bHeapParamsValidated != IMG_TRUE)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%s:The passed parameters do not match with any heap blueprint.\n",
+					 __func__));
+		eError = PVRSRV_ERROR_INVALID_PARAMS;
+		goto ErrorCtxRelease;
+	}
+	
 	psDevmemHeap->uiLog2PageSize = uiLog2DataPageSize;
 
 	*ppsDevmemHeapPtr = psDevmemHeap;
 
 	return PVRSRV_OK;
+
+ErrorCtxRelease:
+	DevmemIntCtxRelease(psDevmemHeap->psDevmemCtx);
+	OSFreeMem(psDevmemHeap);
+
+	return eError;
 }
 
 PVRSRV_ERROR DevmemIntAllocDefBackingPage(PVRSRV_DEVICE_NODE *psDevNode,
@@ -1037,6 +1123,14 @@ DevmemIntChangeSparse(DEVMEMINT_HEAP *psDevmemHeap,
 	IMG_UINT32 *pai32UnmapIndices = pai32FreeIndices;
 	IMG_UINT32 uiMapPageCount = ui32AllocPageCount;
 	IMG_UINT32 uiUnmapPageCount = ui32FreePageCount;
+
+	if (uiLog2HeapContiguity > uiLog2PMRContiguity)
+	{
+		PVR_DPF((PVR_DBG_ERROR,
+				"%s: Invalid PMR Contiguity for given DevmemHeap.",
+				__func__));
+		return PVRSRV_ERROR_PMR_INCOMPATIBLE_CONTIGUITY;
+	}
 
 	/* Special case:
 	 * Adjust indices if we map into a heap that uses smaller page sizes

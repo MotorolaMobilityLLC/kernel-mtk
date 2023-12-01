@@ -269,20 +269,36 @@ static inline PVRSRV_ERROR _ValidateParams(IMG_UINT32 ui32NumPhysChunks,
 	IMG_BOOL bIsSparse = (ui32NumVirtChunks != ui32NumPhysChunks ||
 			ui32NumVirtChunks > 1) ? IMG_TRUE : IMG_FALSE;
 
-	/* Protect against ridiculous page sizes */
-	if (uiLog2AllocPageSize > RGX_HEAP_2MB_PAGE_SHIFT || uiLog2AllocPageSize < RGX_HEAP_4KB_PAGE_SHIFT)
+        if (ui32NumVirtChunks == 0)
 	{
-		PVR_DPF((PVR_DBG_ERROR, "Page size is out of range: 2^%u.", uiLog2AllocPageSize));
+		PVR_DPF((PVR_DBG_ERROR, "%s: Number of virtual chunks cannot be 0",
+		         __func__));
+
 		return PVRSRV_ERROR_INVALID_PARAMS;
+	}
+
+	/* Protect against invalid page sizes */
+	switch (uiLog2AllocPageSize)
+	{
+		#define X(_name, _shift) case _shift:
+			RGX_HEAP_PAGE_SHIFTS_DEF
+		#undef X
+			break;
+		default:
+			PVR_DPF((PVR_DBG_ERROR,
+			         "%s: Page size of %u is invalid.",
+			         __func__,
+			         1 << uiLog2AllocPageSize));
+			return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
 	/* Range check of the alloc size PMRs can be a max of 1GB*/
 	if (!PMRValidateSize(uiSize))
 	{
 		PVR_DPF((PVR_DBG_ERROR,
-				 "PMR size exceeds limit #Chunks: %u ChunkSz %"IMG_UINT64_FMTSPECX"",
-					ui32NumVirtChunks,
-					(IMG_UINT64) 1ULL << uiLog2AllocPageSize));
+				 "%s: Cancelling allocation request of over 64 GB. "
+				 "This is likely a bug."
+				, __func__));
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 

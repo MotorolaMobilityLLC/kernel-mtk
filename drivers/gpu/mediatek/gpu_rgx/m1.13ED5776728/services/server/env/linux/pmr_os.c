@@ -394,10 +394,35 @@ OSMMapPMRGeneric(PMR *psPMR, PMR_MMAP_DATA pOSMMapData)
 	IMG_BOOL *pbValid;
 	IMG_BOOL bUseMixedMap = IMG_FALSE;
 	IMG_BOOL bUseVMInsertPage = IMG_FALSE;
+	IMG_DEVMEM_SIZE_T uiPmrVirtualSize;
 
 	/* if writeable but not shared mapping is requested then fail */
 	PVR_RETURN_IF_INVALID_PARAM(((ps_vma->vm_flags & VM_WRITE) == 0) ||
 	                            ((ps_vma->vm_flags & VM_SHARED) != 0));
+
+	uiLength = ps_vma->vm_end - ps_vma->vm_start;
+
+	PMR_LogicalSize(psPMR, &uiPmrVirtualSize);
+
+	/* Check early if the requested mapping size doesn't exceed the virtual
+	 * PMR size. */
+	if (uiPmrVirtualSize < uiLength)
+	{
+		PVR_GOTO_WITH_ERROR(eError, PVRSRV_ERROR_BAD_MAPPING, e0);
+	}
+
+	uiLog2PageSize = PMR_GetLog2Contiguity(psPMR);
+
+	/* Check the number of PFNs to be mapped is valid. */
+	uiNumOfPFNs = uiLength >> uiLog2PageSize;
+	if (uiNumOfPFNs == 0)
+	{
+		PVR_DPF((PVR_DBG_ERROR,
+		         "%s: uiLength is invalid. Must be >= %u.",
+		         __func__,
+		         1 << uiLog2PageSize));
+		PVR_GOTO_WITH_ERROR(eError, PVRSRV_ERROR_BAD_MAPPING, e0);
+	}
 
 	eError = PMRLockSysPhysAddresses(psPMR);
 	if (eError != PVRSRV_OK)
@@ -457,13 +482,9 @@ OSMMapPMRGeneric(PMR *psPMR, PMR_MMAP_DATA pOSMMapData)
 	/* Don't allow mapping to be inherited across a process fork */
 	ps_vma->vm_flags |= VM_DONTCOPY;
 
-	uiLength = ps_vma->vm_end - ps_vma->vm_start;
-
+#if defined(PMR_OS_USE_VM_INSERT_PAGE)
 	/* Is this mmap targeting non order-zero pages or does it use pfn mappings?
 	 * If yes, don't use vm_insert_page */
-	uiLog2PageSize = PMR_GetLog2Contiguity(psPMR);
-
-#if defined(PMR_OS_USE_VM_INSERT_PAGE)
 	bUseVMInsertPage = (uiLog2PageSize == PAGE_SHIFT) && (PMR_GetType(psPMR) != PMR_TYPE_EXTMEM);
 #if defined(CONFIG_L4)
 	/* L4 uses CMA allocations */
@@ -472,7 +493,6 @@ OSMMapPMRGeneric(PMR *psPMR, PMR_MMAP_DATA pOSMMapData)
 #endif
 
 	/* Can we use stack allocations */
-	uiNumOfPFNs = uiLength >> uiLog2PageSize;
 	if (uiNumOfPFNs > PMR_MAX_TRANSLATION_STACK_ALLOC)
 	{
 		psCpuPAddr = OSAllocMem(uiNumOfPFNs * sizeof(*psCpuPAddr));

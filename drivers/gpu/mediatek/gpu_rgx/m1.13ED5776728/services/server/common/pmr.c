@@ -1268,7 +1268,7 @@ PMRUnmapMemoryObject(PMR *psPMR,
 	Log2PageSize else argument is redundant (set to zero).
  */
 
-static void
+static PVRSRV_ERROR
 _PMRLogicalOffsetToPhysicalOffset(const PMR *psPMR,
                                   IMG_UINT32 ui32Log2PageSize,
                                   IMG_UINT32 ui32NumOfPages,
@@ -1316,6 +1316,14 @@ _PMRLogicalOffsetToPhysicalOffset(const PMR *psPMR,
 					TRUNCATE_64BITS_TO_32BITS(psMappingTable->uiChunkSize),
 					&ui32Remain);
 
+			/* In some cases ui32NumOfPages can come from the user space which
+			 * means that the uiOffset could go out-of-bounds when the number
+			 * of pages is invalid. */
+			if (ui64ChunkIndex >= psMappingTable->ui32NumVirtChunks)
+			{
+				return PVRSRV_ERROR_BAD_MAPPING;
+			}
+
 			if (psMappingTable->aui32Translation[ui64ChunkIndex] == TRANSLATION_INVALID)
 			{
 				bValid[idx] = IMG_FALSE;
@@ -1337,18 +1345,17 @@ _PMRLogicalOffsetToPhysicalOffset(const PMR *psPMR,
 					*pui32BytesRemain = TRUNCATE_64BITS_TO_32BITS(psMappingTable->uiChunkSize - ui32Remain);
 				}
 
-				puiPhysicalOffset[idx] = (psMappingTable->aui32Translation[ui64ChunkIndex] * psMappingTable->uiChunkSize) +	 ui32Remain;
-
 				/* initial offset may not be page aligned, round down */
 				uiOffset &= ~(uiPageSize-1);
 			}
-			else
-			{
-				puiPhysicalOffset[idx] = psMappingTable->aui32Translation[ui64ChunkIndex] * psMappingTable->uiChunkSize + ui32Remain;
-			}
+
+			puiPhysicalOffset[idx] = psMappingTable->aui32Translation[ui64ChunkIndex] * psMappingTable->uiChunkSize + ui32Remain;
+
 			uiOffset += uiPageSize;
 		}
 	}
+
+	return PVRSRV_OK;
 }
 
 static PVRSRV_ERROR
@@ -1453,13 +1460,15 @@ PMR_ReadBytes(PMR *psPMR,
 		size_t uiRead;
 		IMG_BOOL bValid;
 
-		_PMRLogicalOffsetToPhysicalOffset(psPMR,
-		                                  0,
-		                                  1,
-		                                  uiLogicalOffset,
-		                                  &uiPhysicalOffset,
-		                                  &ui32Remain,
-		                                  &bValid);
+		eError = _PMRLogicalOffsetToPhysicalOffset(psPMR,
+		                                           0,
+		                                           1,
+		                                           uiLogicalOffset,
+		                                           &uiPhysicalOffset,
+		                                           &ui32Remain,
+		                                           &bValid);
+		PVR_LOG_RETURN_IF_ERROR(eError, "_PMRLogicalOffsetToPhysicalOffset");
+
 		/* Copy till either then end of the chunk or end
 		 * of the buffer
 		 */
@@ -1610,13 +1619,14 @@ PMR_WriteBytes(PMR *psPMR,
 		size_t uiWrite;
 		IMG_BOOL bValid;
 
-		_PMRLogicalOffsetToPhysicalOffset(psPMR,
-		                                  0,
-		                                  1,
-		                                  uiLogicalOffset,
-		                                  &uiPhysicalOffset,
-		                                  &ui32Remain,
-		                                  &bValid);
+		eError = _PMRLogicalOffsetToPhysicalOffset(psPMR,
+		                                           0,
+		                                           1,
+		                                           uiLogicalOffset,
+		                                           &uiPhysicalOffset,
+		                                           &ui32Remain,
+		                                           &bValid);
+		PVR_LOG_RETURN_IF_ERROR(eError, "_PMRLogicalOffsetToPhysicalOffset");
 
 		/* Copy till either then end of the chunk or end of the buffer
 		 */
@@ -1838,13 +1848,14 @@ PMR_IsOffsetValid(const PMR *psPMR,
 		PVR_GOTO_IF_NOMEM(pui32BytesRemain, eError, e0);
 	}
 
-	_PMRLogicalOffsetToPhysicalOffset(psPMR,
-	                                  ui32Log2PageSize,
-	                                  ui32NumOfPages,
-	                                  uiLogicalOffset,
-	                                  puiPhysicalOffset,
-	                                  pui32BytesRemain,
-	                                  pbValid);
+	eError = _PMRLogicalOffsetToPhysicalOffset(psPMR,
+	                                           ui32Log2PageSize,
+	                                           ui32NumOfPages,
+	                                           uiLogicalOffset,
+	                                           puiPhysicalOffset,
+	                                           pui32BytesRemain,
+	                                           pbValid);
+	PVR_LOG_IF_ERROR(eError, "_PMRLogicalOffsetToPhysicalOffset");
 
 e0:
 	if (puiPhysicalOffset != auiPhysicalOffset && puiPhysicalOffset != NULL)
@@ -1930,13 +1941,14 @@ PMR_DevPhysAddr(const PMR *psPMR,
 		PVR_RETURN_IF_NOMEM(puiPhysicalOffset);
 	}
 
-	_PMRLogicalOffsetToPhysicalOffset(psPMR,
+	eError = _PMRLogicalOffsetToPhysicalOffset(psPMR,
 	                                  ui32Log2PageSize,
 	                                  ui32NumOfPages,
 	                                  uiLogicalOffset,
 	                                  puiPhysicalOffset,
 	                                  &ui32Remain,
 	                                  pbValid);
+	PVR_LOG_GOTO_IF_ERROR(eError, "_PMRLogicalOffsetToPhysicalOffset", FreeOffsetArray);
 	if (*pbValid || _PMRIsSparse(psPMR))
 	{
 		/* Sparse PMR may not always have the first page valid */
@@ -2211,16 +2223,18 @@ PMR_PDumpSymbolicAddr(const PMR *psPMR,
 	IMG_DEVMEM_OFFSET_T uiPhysicalOffset;
 	IMG_UINT32 ui32Remain;
 	IMG_BOOL bValid;
+	PVRSRV_ERROR eError;
 
 	PVR_ASSERT(uiLogicalOffset < psPMR->uiLogicalSize);
 
-	_PMRLogicalOffsetToPhysicalOffset(psPMR,
-	                                  0,
-	                                  1,
-	                                  uiLogicalOffset,
-	                                  &uiPhysicalOffset,
-	                                  &ui32Remain,
-	                                  &bValid);
+	eError = _PMRLogicalOffsetToPhysicalOffset(psPMR,
+	                                           0,
+	                                           1,
+	                                           uiLogicalOffset,
+	                                           &uiPhysicalOffset,
+	                                           &ui32Remain,
+	                                           &bValid);
+	PVR_LOG_RETURN_IF_ERROR(eError, "_PMRLogicalOffsetToPhysicalOffset");
 
 	if (!bValid)
 	{
