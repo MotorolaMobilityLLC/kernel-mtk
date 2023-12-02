@@ -4011,6 +4011,85 @@ void mtk_output_bdg_enable(struct mtk_dsi *dsi,
 	}
 }
 
+static ssize_t panelVer_show(struct device *device,
+			struct device_attribute *attr,
+			char *buf)
+{
+	struct drm_connector *connector = dev_get_drvdata(device);
+	struct mtk_dsi *dsi = connector_to_dsi(connector);
+	int written = 0;
+
+	if (dsi && dsi->ext && dsi->ext->params) {
+		mutex_lock(&connector->dev->mode_config.mutex);
+		written = snprintf(buf, PAGE_SIZE, "0x%016llx\n",
+					dsi->ext->params->panel_ver);
+		mutex_unlock(&connector->dev->mode_config.mutex);
+	}
+
+	return written;
+}
+
+static ssize_t panelName_show(struct device *device,
+			struct device_attribute *attr,
+			char *buf)
+{
+	struct drm_connector *connector = dev_get_drvdata(device);
+	struct mtk_dsi *dsi = connector_to_dsi(connector);
+	int written = 0;
+
+	if (dsi && dsi->ext && dsi->ext->params) {
+		mutex_lock(&connector->dev->mode_config.mutex);
+		written = snprintf(buf, PAGE_SIZE, "%s\n", dsi->ext->params->panel_name);
+		mutex_unlock(&connector->dev->mode_config.mutex);
+	}
+	return written;
+}
+
+static ssize_t panelSupplier_show(struct device *device,
+			struct device_attribute *attr,
+			char *buf)
+{
+	struct drm_connector *connector = dev_get_drvdata(device);
+	struct mtk_dsi *dsi = connector_to_dsi(connector);
+	int written = 0;
+	if (dsi && dsi->ext && dsi->ext->params) {
+		mutex_lock(&connector->dev->mode_config.mutex);
+		written = snprintf(buf, PAGE_SIZE, "%s\n", dsi->ext->params->panel_supplier);
+		mutex_unlock(&connector->dev->mode_config.mutex);
+	}
+	return written;
+}
+
+static DEVICE_ATTR_RO(panelVer);
+static DEVICE_ATTR_RO(panelName);
+static DEVICE_ATTR_RO(panelSupplier);
+
+static const struct attribute *conn_panel_attrs[] = {
+	&dev_attr_panelVer.attr,
+	&dev_attr_panelName.attr,
+	&dev_attr_panelSupplier.attr,
+	NULL
+};
+
+static int moto_panel_sysfs_add(struct mtk_dsi *dsi)
+{
+	int ret;
+
+	if (!dsi || !dsi->conn.kdev) {
+		DDPMSG("dsi->conn->kdev is still null\n");
+		return -EINVAL;
+	}
+
+	if (dsi->moto_sysfs_add_done) return 0;
+
+	ret = sysfs_create_files(&dsi->conn.kdev->kobj, conn_panel_attrs);
+
+	DDPMSG(" sysfs add done, ret %d\n", ret);
+	dsi->moto_sysfs_add_done = true;
+
+	return ret;
+}
+
 static void mtk_dsi_encoder_enable(struct drm_encoder *encoder)
 {
 	struct mtk_dsi *dsi = encoder_to_dsi(encoder);
@@ -4021,6 +4100,10 @@ static void mtk_dsi_encoder_enable(struct drm_encoder *encoder)
 
 	CRTC_MMP_EVENT_START(index, dsi_resume,
 			(unsigned long)crtc, index);
+
+	DDPINFO("%s\n", __func__);
+
+	moto_panel_sysfs_add(dsi);
 
 	/* TODO: assume DSI0 would use for primary display so far */
 	if (comp->id == DDP_COMPONENT_DSI0) {
