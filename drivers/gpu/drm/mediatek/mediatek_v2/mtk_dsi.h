@@ -126,6 +126,8 @@ struct mtk_dsi {
 	struct mipi_dsi_device *dev_for_PM;
 	bool pending_switch;
 	struct mtk_drm_esd_ctx *esd_ctx;
+
+	bool moto_sysfs_add_done;
 };
 
 enum dsi_porch_type;

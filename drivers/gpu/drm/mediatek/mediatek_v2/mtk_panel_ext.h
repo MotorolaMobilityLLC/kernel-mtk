@@ -24,6 +24,8 @@
 #define MAX_DYN_CMD_NUM 20
 #define MAX_TX_CMD_NUM_PACK 64
 
+#define DRM_DISPLAY_NAME_LEN 128
+
 struct mtk_dsi;
 struct cmdq_pkt;
 struct mtk_panel_para_table {
@@ -516,6 +518,10 @@ struct mtk_panel_params {
 	/*Msync 3.0*/
 	unsigned int skip_vblank;
 	bool vblank_off;
+
+	u64 panel_ver;
+	char panel_name[DRM_DISPLAY_NAME_LEN];
+	char panel_supplier[DRM_DISPLAY_NAME_LEN];
 };
 
 struct mtk_panel_ext {
