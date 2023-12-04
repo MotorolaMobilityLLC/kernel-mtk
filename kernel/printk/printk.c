@@ -2156,15 +2156,14 @@ static u16 printk_sprint(char *text, u16 size, int facility,
 			 va_list args)
 {
 	u16 text_len = 0;
-	char textbuf[LOG_LINE_MAX];
-	char *mtk_text = textbuf;
+	char textbuf[TASK_COMM_LEN + 3];
 	u16  mtk_prefix_len = 0;
 
 
-	text_len = vscnprintf(mtk_text, sizeof(textbuf), fmt, args);
+	text_len = vscnprintf(text, size, fmt, args);
 
 	/* Mark and strip a trailing newline. */
-	if (text_len && mtk_text[text_len - 1] == '\n') {
+	if (text_len && text[text_len - 1] == '\n') {
 		text_len--;
 		*flags |= LOG_NEWLINE;
 	}
@@ -2173,18 +2172,27 @@ static u16 printk_sprint(char *text, u16 size, int facility,
 	if (facility == 0) {
 		u16 prefix_len;
 
-		prefix_len = printk_parse_prefix(mtk_text, NULL, flags);
+		prefix_len = printk_parse_prefix(text, NULL, NULL);
 		if (prefix_len) {
 			text_len -= prefix_len;
-			memmove(mtk_text, mtk_text + prefix_len, text_len);
+			memmove(text, text + prefix_len, text_len);
 		}
 	}
 
 	if (!(*flags & LOG_CONT)) {
-		mtk_prefix_len = scnprintf(text, size, "%s: ", current->comm);
-		text_len += mtk_prefix_len;
+		mtk_prefix_len = scnprintf(textbuf, sizeof(textbuf), "%s: ", current->comm);
+		if (mtk_prefix_len < size) {
+			if ((text_len + mtk_prefix_len) <= size) {
+				memmove(text + mtk_prefix_len, text, text_len);
+				text_len += mtk_prefix_len;
+			} else {
+				memmove(text + mtk_prefix_len, text, size - mtk_prefix_len);
+				text[size - 1] = '\0';
+				text_len = strnlen(text, size);
+			}
+			memcpy(text, textbuf, mtk_prefix_len);
+		}
 	}
-	memmove(text + mtk_prefix_len, mtk_text, size - mtk_prefix_len);
 
 	return text_len;
 }
