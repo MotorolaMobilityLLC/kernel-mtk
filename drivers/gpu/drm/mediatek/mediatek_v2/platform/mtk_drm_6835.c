@@ -192,7 +192,7 @@ const struct mtk_disp_dither_data mt6835_dither_driver_data = {
 const struct mtk_disp_dsc_data mt6835_dsc_driver_data = {
 	.support_shadow     = false,
 	.need_bypass_shadow = false,
-	.need_obuf_sw = false,
+	.need_obuf_sw = true,
 	.dsi_buffer = false,
 	.shadow_ctrl_reg = 0x0200,
 };
