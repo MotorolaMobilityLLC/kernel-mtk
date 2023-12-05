@@ -279,5 +279,5 @@
 /*End of this file, DO NOT ADD ANYTHING HERE*/
 
 #include "mediatek/cust_mt6835_camera_6377_v4l2.dtsi"
-#include "mediatek/cust_mt6835_touch_6377_1080x2400.dtsi"
+#include "mediatek/cust_mt6835_touch_6377_gt9886_1080_2340.dtsi"
 #include "mediatek/cust_evb6835.dtsi"
