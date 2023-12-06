@@ -7039,6 +7039,7 @@
 		mcusys_ctrl: mcusys-ctrl@0c53a000 {
 			compatible = "mediatek,mcusys-ctrl";
 			reg = <0 0x0c53a000 0 0x1000>;
+			bootmode = <&chosen>;
 		};
 		lpm_sysram: lpm_sysram@0011b500 {
 			compatible = "mediatek,lpm-sysram";
