@@ -3423,6 +3423,10 @@ static void sc_nl_send_to_user(u32 pid, int seq, struct sc_nl_msg_t *reply_msg)
 	if (!skb)
 		return;
 
+	if(pid == 0){
+		chr_err("[Netlink] pid : %d\n", pid);
+		return;
+	}
 	nlh = nlmsg_put(skb, pid, seq, 0, size, 0);
 	data = NLMSG_DATA(nlh);
 	memcpy(data, reply_msg, size);
