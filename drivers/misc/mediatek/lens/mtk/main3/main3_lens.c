@@ -483,8 +483,6 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 	camaf_power_init();
 	camaf_power_on();
 
-	mot_af_poweron(1);
-
 	/* OIS/EIS Timer & Workqueue */
 	/* init work queue */
 	INIT_WORK(&ois_work, ois_pos_polling);
@@ -520,8 +518,6 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	}
 
 	camaf_power_off();
-
-	mot_af_poweron(0);
 
 	/* OIS/EIS Timer & Workqueue */
 	/* Cancel Timer */

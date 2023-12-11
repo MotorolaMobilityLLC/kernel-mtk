@@ -188,12 +188,6 @@ static struct pinctrl_state *vcamaf_pio_off;
 #define CAMAF_GPIO_ON  "camaf_m1_gpio_on"
 #define CAMAF_GPIO_OFF "camaf_m1_gpio_off"
 
-void mot_af_poweron(int state)
-{
-	af_pinctrl_set(AF_PINCTRL_PIN_HWEN, state);
-}
-EXPORT_SYMBOL(mot_af_poweron);
-
 static void camaf_power_init(void)
 {
 	int ret;
