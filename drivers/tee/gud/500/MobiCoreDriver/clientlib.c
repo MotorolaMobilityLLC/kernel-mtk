@@ -327,6 +327,9 @@ enum mc_result mc_malloc_wsm(u32 device_id, u32 align, u32 len, u8 **wsm,
 	if (!g_ctx.real_drv)
 		return MC_DRV_ERR_NOT_IMPLEMENTED;
 
+	if (!g_ctx.real_drv)
+		return MC_DRV_ERR_NOT_IMPLEMENTED;
+
 	/* Check parameters */
 	if (!is_valid_device(device_id))
 		return MC_DRV_ERR_UNKNOWN_DEVICE;

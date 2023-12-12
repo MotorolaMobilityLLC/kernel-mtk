@@ -112,6 +112,7 @@ obj-$(CONFIG_CHARGER_BD99954)	+= bd99954-charger.o
 obj-$(CONFIG_CHARGER_WILCO)	+= wilco-charger.o
 obj-$(CONFIG_RN5T618_POWER)	+= rn5t618_power.o
 obj-$(CONFIG_CHARGER_MT6360)	+= mt6360_pmu_chg.o
+obj-$(CONFIG_CHARGER_MT6370)	+= mt6370_pmu_chg.o
 obj-$(CONFIG_CHARGER_MT6362)	+= mt6362-chg.o
 obj-$(CONFIG_CHARGER_MT6370)	+= mt6370-charger.o
 obj-$(CONFIG_CHARGER_MT6375)	+= mt6375-charger.o
