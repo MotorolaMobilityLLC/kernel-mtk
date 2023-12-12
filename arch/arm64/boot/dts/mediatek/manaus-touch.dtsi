@@ -33,7 +33,7 @@
 		pinctrl-1 = <&ctp_gt9896s_int_suspend &ctp_gt9896s_reset_suspend>;
 		pinctrl-2 = <&ctp_gt9896s_stylus_active>;
 		pinctrl-3 = <&ctp_gt9896s_stylus_suspend>;
-		mmi,status = "/chosen","mmi,panel_name","contains","tm_vtdr6115";
+		mmi,status = "/chosen","mmi,panel_name","contains","tm_vtdr6115","boe_cmd_nt37701A";
 		spi-max-frequency = <9600000>;  /* 4800000,9600000,15000000,19200000 */
 		goodix,reset-gpio = <&pio 159 0x0>;
 		goodix,irq-gpio = <&pio 22 0x2002>;
