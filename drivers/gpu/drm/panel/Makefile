@@ -134,6 +134,7 @@ obj-$(CONFIG_DRM_PANEL_CSOT_VTDR6115_655_FHDP_DPHY_VDO_144HZ_C7) += dsi-panel-mo
 obj-$(CONFIG_DRM_PANEL_TIANMA_VTDR6115_655_FHDP_DPHY_VDO_144HZ_U8) += dsi-panel-mot-tm-vtdr6115-655-fhdp-dphy-vdo-144hz-u8.o
 obj-$(CONFIG_DRM_PANEL_TM_ICNL9911C_652_HDP_DPHY_VDO_90HZ) += dsi-panel-mot-tm-icnl9911c-652-hdp-dphy-video-90hz.o
 obj-$(CONFIG_DRM_PANEL_HLT_FT8006S_652_HDP_DPHY_VDO_90HZ) += dsi-panel-mot-hlt-ft8006s-652-hdp-dphy-video-90hz.o
+obj-$(CONFIG_DRM_PANEL_BOE_NT37701A_655_FHDP_CMD_144HZ) += dsi-panel-mot-boe-nt37701a-655-fhdp-cmd-144hz.o
 
 obj-$(CONFIG_GATEIC_OCP2138) += ocp2138.o
 obj-$(CONFIG_GATEIC_SM5109) += sm5109.o
