@@ -168,4 +168,26 @@
 			};
 		};
 	};
+
+	panel5@0 {
+		/delete-property/ compatible;
+		/delete-property/ pm-enable-gpios;
+		/delete-property/ reset-gpios;
+		/delete-property/gate-ic;
+
+		compatible = "boe,nt37701a,cmd,144hz";
+		reg = <4>;
+		pm-enable-gpios = <&pio 164 0>,
+                          <&pio 166 0>,
+                          <&pio 103 0>,
+                          <&pio 165 0>;
+		reset-gpios = <&pio 97 0>;
+		pinctrl-names = "default";
+		lhbm-enable;
+		port {
+			panel_in5: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
 };

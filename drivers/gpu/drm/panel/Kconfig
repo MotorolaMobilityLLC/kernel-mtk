@@ -1302,4 +1302,14 @@ config DRM_PANEL_HLT_FT8006S_652_HDP_DPHY_VDO_90HZ
 	  Say Y here if you want to enable support for DRM_PANEL_HLT_FT8006S_652_HDP_DPHY_VDO_90HZ
 	  panel. It provides a MIPI DSI interface to host.
 
+config DRM_PANEL_BOE_NT37701A_655_FHDP_CMD_144HZ
+	tristate "BOE NT37701A 1080*2400 DSC DPHY CMD MODE 144HZ PANEL"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  Say Y here if you want to enable support for BOE NT37701A DSC DPHY CMD FHDP 144HZ panel. The panel
+	  has a 1080x2400 resolution and uses 30-bits RGB per pixel. It provides a MIPI DSI interface to host.
+
 endmenu
