@@ -503,6 +503,7 @@ struct msdc_host {
 	struct pinctrl_state *pins_default;
 	struct pinctrl_state *pins_uhs;
 	struct delayed_work req_timeout;
+	struct delayed_work sdcard_hotplut_work;
 	int irq;		/* host interrupt */
 	int eint_irq;	        /* device interrupt */
 	int sdio_irq_cnt;       /* irq enable cnt */
