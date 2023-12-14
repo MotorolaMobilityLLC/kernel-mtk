@@ -657,6 +657,7 @@ struct msdc_host {
 	int dump_gpio_end; /* gpio end num */
 #endif
 	struct delayed_work req_timeout;
+	struct delayed_work sdcard_hotplut_work;
 	int irq;		/* host interrupt */
 	int eint_irq;	        /* device interrupt */
 	int sdio_irq_cnt;       /* irq enable cnt */

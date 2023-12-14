@@ -16,6 +16,11 @@
 #include <mt-plat/dvfsrc-exp.h>
 #include <mt-plat/mtk_blocktag.h>
 
+#include <linux/genhd.h>
+#include <linux/blkdev.h>
+#include <linux/dcache.h>
+#include "../core/queue.h"
+
 #if IS_ENABLED(CONFIG_MMC_MTK_SW_CQHCI)
 #include "mtk-mmc-swcqhci.h"
 #endif
@@ -27,6 +32,45 @@ static void msdc_request_done(struct msdc_host *host, struct mmc_request *mrq);
 #if IS_ENABLED(CONFIG_MMC_DEBUG)
 static void msdc_gpio_of_parse(struct msdc_host *host);
 #endif
+static void msdc_init_card(struct mmc_host *host, struct mmc_card *card);
+
+/* shenying copied from block*/
+struct mmc_blk_data {
+        struct device   *parent;
+        struct gendisk  *disk;
+        struct mmc_queue queue;
+        struct list_head part;
+        struct list_head rpmbs;
+
+        unsigned int    flags;
+#define MMC_BLK_CMD23   (1 << 0)        /* Can do SET_BLOCK_COUNT for multiblock */
+#define MMC_BLK_REL_WR  (1 << 1)        /* MMC Reliable write support */
+
+        unsigned int    usage;
+        unsigned int    read_only;
+        unsigned int    part_type;
+        unsigned int    reset_done;
+#define MMC_BLK_READ            BIT(0)
+#define MMC_BLK_WRITE           BIT(1)
+#define MMC_BLK_DISCARD         BIT(2)
+#define MMC_BLK_SECDISCARD      BIT(3)
+#define MMC_BLK_CQE_RECOVERY    BIT(4)
+
+        /*
+         * Only set in main mmc_blk_data associated
+         * with mmc_card with dev_set_drvdata, and keeps
+         * track of the current selected device partition.
+         */
+        unsigned int    part_curr;
+        struct device_attribute force_ro;
+        struct device_attribute power_ro_lock;
+        int     area_type;
+
+        /* debugfs files (only in main mmc_blk_data) */
+        struct dentry *status_dentry;
+        struct dentry *ext_csd_dentry;
+};
+
 static int msdc_get_gpio_version(void)
 {
 	struct device_node *of_chosen = NULL;
@@ -2650,6 +2694,33 @@ end:
 	return ret;
 }
 
+static void moto_sdcard_event_work(struct work_struct *work)
+{
+	struct msdc_host *msdc_host = container_of(work, struct msdc_host, sdcard_hotplut_work.work);
+	struct mmc_host *mmc_host = mmc_from_priv(msdc_host);
+	struct mmc_card *card = mmc_host->card;
+	struct mmc_blk_data *md = dev_get_drvdata(&card->dev);
+
+	if (mmc_card_is_removable(mmc_host)) {
+		if (md != NULL) {
+			pr_debug("mmc update the removable card discard sectors to max=%d\n", UINT_MAX);
+                        blk_queue_max_discard_sectors(md->queue.queue, UINT_MAX);
+                        cancel_delayed_work(&msdc_host->sdcard_hotplut_work);
+                }
+	}
+}
+
+
+static void msdc_init_card(struct mmc_host *host, struct mmc_card *card)
+{
+       struct msdc_host *msdc_host = mmc_priv(host);
+
+       if (mmc_card_is_removable(host)) {
+                schedule_delayed_work(&msdc_host->sdcard_hotplut_work, msecs_to_jiffies(2*HZ));
+        }
+}
+
+
 static int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -2930,6 +3001,7 @@ static const struct mmc_host_ops mt_msdc_ops = {
 	.start_signal_voltage_switch = msdc_ops_switch_volt,
 	.card_busy = msdc_card_busy,
 	.execute_tuning = msdc_execute_tuning,
+	.init_card = msdc_init_card,
 	.prepare_hs400_tuning = msdc_prepare_hs400_tuning,
 	.hw_reset = msdc_hw_reset,
 	.card_event = msdc_ops_card_event,
@@ -3409,6 +3481,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	}
 	msdc_init_gpd_bd(host, &host->dma);
 	INIT_DELAYED_WORK(&host->req_timeout, msdc_request_timeout);
+	INIT_DELAYED_WORK(&host->sdcard_hotplut_work, moto_sdcard_event_work);
 	spin_lock_init(&host->lock);
 #if IS_ENABLED(CONFIG_MMC_DEBUG)
 	spin_lock_init(&host->log_lock);
