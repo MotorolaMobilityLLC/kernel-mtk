@@ -169,6 +169,8 @@
 		input-voltage-limit-microvolt = <4700000>;
 		input-current-limit-microamp = <500000>;
 
+		typec-support;
+
 		/* sw jeita  parameter customer defined*/
 		enable_sw_jeita;
 		jeita_temp_above_t4_cv = <0>;
