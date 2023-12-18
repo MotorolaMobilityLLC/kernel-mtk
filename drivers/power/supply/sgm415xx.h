@@ -354,6 +354,11 @@ struct sgm4154x_device {
 	struct delayed_work charge_detect_delayed_work;
 	struct delayed_work charge_monitor_work;
 	struct work_struct rerun_apsd_work;
+	struct delayed_work typec_in_work;
+	struct delayed_work typec_out_work;
+	struct notifier_block pd_nb;
+	bool typec_support;
+	struct tcpc_device *tcpc_dev;
 
 	int typec_apsd_rerun_done;
 	bool mmi_qc3p_rerun_done;

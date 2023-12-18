@@ -6621,6 +6621,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 					       "charger_2nd");
 		if (IS_ERR_OR_NULL(info->chg_psy)) {
 			chr_err("%s: devm power fail to get chg_psy\n", __func__);
+			return -EPROBE_DEFER;
 		}
 	}
 	chr_err("%s charger psy name: %s\n", __func__, info->chg_psy->desc->name);
