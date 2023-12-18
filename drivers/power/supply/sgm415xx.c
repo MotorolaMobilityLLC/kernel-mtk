@@ -29,6 +29,7 @@
 #include "wt6670f.h"
 #include "charger_class.h"
 #include "mtk_charger.h"
+#include "tcpm.h"
 /**********************************************************
  *
  *   [I2C Slave Setting]
@@ -58,6 +59,7 @@ bool wt6670f_is_detect = false;
 EXPORT_SYMBOL_GPL(wt6670f_is_detect);
 extern int g_qc3p_id;
 #endif
+static bool charger_irq_normal_flag = false;
 unsigned int boost_current_limit[2];
 unsigned int SGM4154x_IINDPM_I_MAX_uA;
 /* SGM4154x REG06 BOOST_LIM[5:4], uV */
@@ -1620,6 +1622,80 @@ static void sgm4154x_rerun_apsd_work_func(struct work_struct *work)
 	schedule_delayed_work(&sgm->charge_detect_delayed_work, 100);
 }
 
+static void typec_in_work_func(struct work_struct *work)
+{
+    struct sgm4154x_device *sgm = NULL;
+    struct delayed_work *typec_in_work = NULL;
+
+    typec_in_work = (struct delayed_work *)container_of(work, struct delayed_work, work);
+    if(typec_in_work == NULL) {
+        pr_err("Cann't get typec in work\n");
+        return;
+    }
+
+    sgm = (struct sgm4154x_device *)container_of(typec_in_work, struct sgm4154x_device, typec_in_work);
+    if(sgm == NULL) {
+        pr_err("Cann't get sgm\n");
+	return;
+    }
+
+    if(charger_irq_normal_flag == false) {
+        schedule_delayed_work(&sgm->charge_detect_delayed_work, msecs_to_jiffies(10));
+        pr_info("%s USB Plug in charger\n", __func__);
+    }
+    pr_err("%s:typec in is running\n", __func__);
+}
+
+static void typec_out_work_func(struct work_struct *work)
+{
+    struct sgm4154x_device *sgm = NULL;
+    struct delayed_work *typec_out_work = NULL;
+
+    typec_out_work = (struct delayed_work *)container_of(work, struct delayed_work, work);
+    if(typec_out_work == NULL) {
+        pr_err("Cann't get typec in work\n");
+        return;
+    }
+
+    sgm = (struct sgm4154x_device *)container_of(typec_out_work, struct sgm4154x_device, typec_out_work);
+    if(sgm == NULL) {
+        pr_err("Cann't get sgm\n");
+        return;
+    }
+
+    if(charger_irq_normal_flag == true) {
+        schedule_delayed_work(&sgm->charge_detect_delayed_work, msecs_to_jiffies(10));
+	pr_info("%s USB Plug out charger\n", __func__);
+    }
+    pr_err("%s:typec in is running\n", __func__);
+}
+
+static int pd_tcp_notifier_call(struct notifier_block *pnb, unsigned long event, void *data)
+{
+    struct sgm4154x_device *sgm  = NULL;
+    struct tcp_notify *noti = data;
+    pr_info("%s USB Plug single to charger\n", __func__);
+
+    sgm = (struct sgm4154x_device *)container_of(pnb, struct sgm4154x_device, pd_nb);
+    if(sgm == NULL) {
+        pr_err("%s, fail to get sgm\n", __func__);
+        return NOTIFY_BAD;
+    }
+
+    switch(event) {
+        case TCP_NOTIFY_TYPEC_STATE:
+		if(noti->typec_state.old_state == TYPEC_UNATTACHED &&
+				(noti->typec_state.new_state == TYPEC_ATTACHED_SNK)) {
+		    schedule_delayed_work(&sgm->typec_in_work, msecs_to_jiffies(500));
+		} else if(noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
+				(noti->typec_state.new_state == TYPEC_UNATTACHED)) {
+                    schedule_delayed_work(&sgm->typec_out_work, msecs_to_jiffies(500));
+		}
+	break;
+    }
+    return NOTIFY_OK;
+}
+
 static void charger_monitor_work_func(struct work_struct *work)
 {
 	int ret = 0;
@@ -1638,6 +1714,20 @@ static void charger_monitor_work_func(struct work_struct *work)
 	if(sgm == NULL) {
 		pr_err("Cann't get sgm \n");
 		return ;
+	}
+
+	if((sgm->typec_support) && (sgm->tcpc_dev == NULL)) {
+		sgm->tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+		if(sgm->tcpc_dev) {
+			sgm->pd_nb.notifier_call = pd_tcp_notifier_call;
+        		ret = register_tcp_dev_notifier(sgm->tcpc_dev, &sgm->pd_nb, TCP_NOTIFY_TYPE_ALL);
+        		if(ret < 0) {
+				sgm->tcpc_dev = NULL;
+            			pr_err("%d: sgm4154x register usb fail\n", __LINE__);
+			}
+                } else {
+			pr_err("%d: sgm4154x tcpc get typec_c_port0 fail\n", __LINE__);
+		}
 	}
 
 	ret = sgm4154x_get_state(sgm, &state);
@@ -1705,7 +1795,8 @@ static void charger_detect_work_func(struct work_struct *work)
 		goto err;
 	}
 	mutex_lock(&sgm->lock);
-	sgm->state = state;	
+	sgm->state = state;
+	charger_irq_normal_flag = true;
 	mutex_unlock(&sgm->lock);	
 	
 	if(!sgm->state.vbus_gd) {
@@ -1713,6 +1804,7 @@ static void charger_detect_work_func(struct work_struct *work)
 		sgm4154x_disable_charger(sgm);
 		sgm->mmi_qc3p_rerun_done = false;
 		sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+		charger_irq_normal_flag = false;
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 		if(m_chg_type != 0 && is_already_probe_ok != 0){
 			wt6670f_reset_chg_type();
@@ -1952,6 +2044,9 @@ static int sgm4154x_parse_dt(struct sgm4154x_device *sgm)
 				       &sgm->init_data.ilim);
 	if (ret)
 		sgm->init_data.ilim = SGM4154x_IINDPM_DEF_uA;
+
+	sgm->typec_support = device_property_read_bool(sgm->dev,
+				       "typec-support");
 
 	if (sgm->init_data.ilim > SGM4154x_IINDPM_I_MAX_uA ||
 	    sgm->init_data.ilim < SGM4154x_IINDPM_I_MIN_uA)
@@ -2406,8 +2501,7 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 	int ret = 0;
 	struct device *dev = &client->dev;
 	struct sgm4154x_device *sgm;
-
-    char *name = NULL;
+        char *name = NULL;
 
 	pr_info("[%s]\n", __func__);
 
@@ -2483,6 +2577,11 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 	INIT_DELAYED_WORK(&sgm->charge_monitor_work, charger_monitor_work_func);
 	INIT_WORK(&sgm->rerun_apsd_work, sgm4154x_rerun_apsd_work_func);
 
+	if(sgm->typec_support) {
+		INIT_DELAYED_WORK(&sgm->typec_in_work, typec_in_work_func);
+		INIT_DELAYED_WORK(&sgm->typec_out_work, typec_out_work_func);
+	}
+
 	//rerun apsd and trigger charger detect when boot with charger
 	schedule_work(&sgm->rerun_apsd_work);
 
@@ -2525,7 +2624,6 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 		dev_err(dev, "failed to init regulator\n");
 		return ret;
 	}
-
 	schedule_delayed_work(&sgm->charge_monitor_work,100);
 
 	return ret;
