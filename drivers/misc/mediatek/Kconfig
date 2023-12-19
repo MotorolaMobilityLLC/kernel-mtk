@@ -8,6 +8,9 @@ config MTK_PLATFORM
 config MOT_LYRIQ
 	bool "MOTO project lyriq name"
 
+config MOT_KYOTO
+	bool "MOTO project kyoto name"
+
 config ARCH_MTK_PROJECT
 	string "MTK project name"
 
