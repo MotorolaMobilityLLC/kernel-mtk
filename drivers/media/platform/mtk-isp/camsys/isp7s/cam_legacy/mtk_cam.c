@@ -1141,6 +1141,10 @@ STOP_SCAN:
 
 		spin_unlock(&req->done_status_lock);
 
+		if (is_raw_subdev(pipe_id) &&
+		    !(s_data->flags & MTK_CAM_REQ_S_DATA_FLAG_META1_INDEPENDENT))
+			mtk_cam_read_hdr_timestamp(ctx, s_data);
+
 		if (mtk_cam_scen_is_mstream_2exp_types(scen))
 			s_data_mstream = mtk_cam_req_get_s_data(req, ctx->stream_id, 1);
 		else

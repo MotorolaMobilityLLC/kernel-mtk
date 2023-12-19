@@ -216,6 +216,9 @@ void
 mtk_cam_set_sensor_switch(struct mtk_cam_request_stream_data *s_data,
 			  struct mtk_camsys_sensor_ctrl *sensor_ctrl);
 
+void mtk_cam_read_hdr_timestamp(struct mtk_cam_ctx *ctx,
+				struct mtk_cam_request_stream_data *stream_data);
+
 /*EXT ISP*/
 void mtk_cam_event_sensor_trigger(struct mtk_raw_pipeline *pipeline,
 				     unsigned int frame_seq_no, unsigned int tg_cnt);
