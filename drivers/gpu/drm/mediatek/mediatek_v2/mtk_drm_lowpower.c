@@ -681,16 +681,16 @@ static void mtk_drm_idlemgr_enable_crtc(struct drm_crtc *crtc)
 	/* 6. connect path */
 	mtk_crtc_connect_default_path(mtk_crtc);
 
-	/* 7. conect addon module and config */
+	/* 7. config ddp engine & set dirty for cmd mode */
+	mtk_crtc_config_default_path(mtk_crtc);
+
+	/* 8. conect addon module and config */
 	if (mtk_crtc->mml_ir_state == MML_IR_IDLE)
 		mtk_crtc_addon_connector_connect(crtc, NULL); /* config dsc only */
 	else
 		mtk_crtc_connect_addon_module(crtc);
 
 	mutex_unlock(&priv->path_ctrl_lock);
-
-	/* 8. config ddp engine & set dirty for cmd mode */
-	mtk_crtc_config_default_path(mtk_crtc);
 
 	if (mtk_crtc->mml_ir_sram.bk_hrt_idx)
 		mtk_crtc_alloc_sram(mtk_crtc, mtk_crtc->mml_ir_sram.bk_hrt_idx);

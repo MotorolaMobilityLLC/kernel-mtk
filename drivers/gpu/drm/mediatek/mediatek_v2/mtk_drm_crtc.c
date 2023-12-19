@@ -9719,14 +9719,14 @@ void mtk_drm_crtc_enable(struct drm_crtc *crtc)
 
 	mtk_crtc->qos_ctx->last_hrt_req = 0;
 
-	/* 6. disconnect addon module and config */
+	/* 6. config ddp engine */
+	mtk_crtc_config_default_path(mtk_crtc);
+	CRTC_MMP_MARK((int) crtc_id, enable, 1, 3);
+
+	/* 7. disconnect addon module and config */
 	mtk_crtc_connect_addon_module(crtc);
 
 	mutex_unlock(&priv->path_ctrl_lock);
-
-	/* 7. config ddp engine */
-	mtk_crtc_config_default_path(mtk_crtc);
-	CRTC_MMP_MARK((int) crtc_id, enable, 1, 3);
 
 	/* 8. restore OVL setting */
 	if (!only_output)
