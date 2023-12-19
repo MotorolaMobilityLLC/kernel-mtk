@@ -3388,12 +3388,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	mmc->max_blk_size = 2048;
 	mmc->max_req_size = 512 * 1024;
 	mmc->max_blk_count = mmc->max_req_size / 512;
-
-	if (host->id == MSDC_SD) {
-		mmc->max_busy_timeout = 90000;
-		pr_info("set max_busy_timeout 90s!\n");
-	}
-
 	if (host->dev_comp->support_64g)
 		host->dma_mask = DMA_BIT_MASK(36);
 	else
