@@ -782,6 +782,7 @@ struct mtk_ddp_comp {
 	u32 fbdc_bw;
 	u32 hrt_bw;
 	bool in_scaling_path;
+	bool clk_on;
 };
 
 static inline void mtk_ddp_comp_config_overhead(struct mtk_ddp_comp *comp,
