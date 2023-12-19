@@ -902,6 +902,7 @@ static struct mtk_panel_params ext_params_60hz = {
 		.data_rate = 440,
 	},
 	.data_rate = 440,
+	.lp_perline_en = 0,
 
 	.panel_cellid_reg = 0xac,
 	.panel_cellid_offset_reg = 0x6f,
@@ -987,6 +988,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.data_rate = 630,
 	},
 	.data_rate = 630,
+	.lp_perline_en = 0,
 
 	.panel_cellid_reg = 0xac,
 	.panel_cellid_offset_reg = 0x6f,
@@ -1071,6 +1073,7 @@ static struct mtk_panel_params ext_params_120hz = {
 		.data_rate = 820,
 	},
 	.data_rate = 820,
+	.lp_perline_en = 0,
 
 	.panel_cellid_reg = 0xac,
 	.panel_cellid_offset_reg = 0x6f,
@@ -1156,6 +1159,7 @@ static struct mtk_panel_params ext_params_144hz = {
 		.data_rate = 1000,
 	},
 	.data_rate = 1000,
+	.lp_perline_en = 0,
 
 	.panel_cellid_reg = 0xac,
 	.panel_cellid_offset_reg = 0x6f,
