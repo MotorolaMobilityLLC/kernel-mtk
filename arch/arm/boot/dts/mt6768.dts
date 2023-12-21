@@ -2872,7 +2872,8 @@ transparent_hugepage=never clk_ignore_unused=1";
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
+		mediatek,control_irq_sel;
 	};
 
 	i2c1: i2c@11008000 {
@@ -2883,7 +2884,8 @@ transparent_hugepage=never clk_ignore_unused=1";
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
+		mediatek,control_irq_sel;
 	};
 
 	i2c2: i2c@11009000 {
@@ -2894,7 +2896,8 @@ transparent_hugepage=never clk_ignore_unused=1";
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
+		mediatek,control_irq_sel;
 	};
 
 	i2c3: i2c@1100f000 {
@@ -2905,7 +2908,8 @@ transparent_hugepage=never clk_ignore_unused=1";
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
+		mediatek,control_irq_sel;
 	};
 
 	i2c4: i2c@11011000 {
@@ -2916,7 +2920,8 @@ transparent_hugepage=never clk_ignore_unused=1";
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
+		mediatek,control_irq_sel;
 	};
 
 	i2c5: i2c@11016000 {
@@ -2927,7 +2932,8 @@ transparent_hugepage=never clk_ignore_unused=1";
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
+		mediatek,control_irq_sel;
 	};
 
 	i2c6: i2c@1100d000 {
@@ -2938,7 +2944,8 @@ transparent_hugepage=never clk_ignore_unused=1";
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
+		mediatek,control_irq_sel;
 	};
 
 	i2c7: i2c@11004000 {
@@ -2949,7 +2956,8 @@ transparent_hugepage=never clk_ignore_unused=1";
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
+		mediatek,control_irq_sel;
 	};
 
 	i2c8: i2c@11005000 {
@@ -2960,7 +2968,8 @@ transparent_hugepage=never clk_ignore_unused=1";
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <1>;
+		mediatek,control_irq_sel;
 	};
 
 	spi0:spi0@1100a000 {
