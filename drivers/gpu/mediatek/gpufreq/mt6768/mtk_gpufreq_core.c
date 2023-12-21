@@ -2010,10 +2010,10 @@ static void __mt_gpufreq_bucks_enable(void)
 	aee_rr_rec_gpu_dvfs_status(0x10 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
 
-	if (regulator_is_enabled(g_pmic->reg_vsram_gpu) == 0) {
-		ret = regulator_enable(g_pmic->reg_vsram_gpu);
+	if (regulator_is_enabled(g_pmic->reg_vgpu) == 0) {
+		ret = regulator_enable(g_pmic->reg_vgpu);
 		if (ret) {
-			gpufreq_pr_err("@%s: enable VSRAM_GPU failed, ret = %d\n", __func__, ret);
+			gpufreq_pr_err("@%s: enable VGPU failed, ret = %d\n", __func__, ret);
 			return;
 		}
 	}
@@ -2022,10 +2022,10 @@ static void __mt_gpufreq_bucks_enable(void)
 	aee_rr_rec_gpu_dvfs_status(0x20 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
 
-	if (regulator_is_enabled(g_pmic->reg_vgpu) == 0) {
-		ret = regulator_enable(g_pmic->reg_vgpu);
+	if (regulator_is_enabled(g_pmic->reg_vsram_gpu) == 0) {
+		ret = regulator_enable(g_pmic->reg_vsram_gpu);
 		if (ret) {
-			gpufreq_pr_err("@%s: enable VGPU failed, ret = %d\n", __func__, ret);
+			gpufreq_pr_err("@%s: enable VSRAM_GPU failed, ret = %d\n", __func__, ret);
 			return;
 		}
 	}
@@ -2048,10 +2048,10 @@ static void __mt_gpufreq_bucks_disable(void)
 	aee_rr_rec_gpu_dvfs_status(0x40 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
 
-	if (regulator_is_enabled(g_pmic->reg_vgpu) > 0) {
-		ret = regulator_disable(g_pmic->reg_vgpu);
+	if (regulator_is_enabled(g_pmic->reg_vsram_gpu) > 0) {
+		ret = regulator_disable(g_pmic->reg_vsram_gpu);
 		if (ret) {
-			gpufreq_pr_err("@%s: disable VGPU failed, ret = %d\n", __func__, ret);
+			gpufreq_pr_err("@%s: disable VSRAM_GPU failed, ret = %d\n", __func__, ret);
 			return;
 		}
 	}
@@ -2060,10 +2060,10 @@ static void __mt_gpufreq_bucks_disable(void)
 	aee_rr_rec_gpu_dvfs_status(0x50 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
 
-	if (regulator_is_enabled(g_pmic->reg_vsram_gpu) > 0) {
-		ret = regulator_disable(g_pmic->reg_vsram_gpu);
+	if (regulator_is_enabled(g_pmic->reg_vgpu) > 0) {
+		ret = regulator_disable(g_pmic->reg_vgpu);
 		if (ret) {
-			gpufreq_pr_err("@%s: disable VSRAM_GPU failed, ret = %d\n", __func__, ret);
+			gpufreq_pr_err("@%s: disable VGPU failed, ret = %d\n", __func__, ret);
 			return;
 		}
 	}
