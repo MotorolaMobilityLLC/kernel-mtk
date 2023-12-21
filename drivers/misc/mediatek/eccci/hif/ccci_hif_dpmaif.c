@@ -4599,6 +4599,11 @@ static int dpmaif_pre_stop(unsigned char hif_id)
 {
 	if (hif_id != DPMAIF_HIF_ID)
 		return -1;
+
+	if (dpmaif_ctrl->dpmaif_state == HIFDPMAIF_STATE_PWROFF
+		|| dpmaif_ctrl->dpmaif_state == HIFDPMAIF_STATE_MIN)
+		return 0;
+
 	dpmaif_stop_hw();
 	return 0;
 }
