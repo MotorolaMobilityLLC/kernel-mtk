@@ -186,7 +186,7 @@ enum gce_event_id {
 #define VCU_GCE_WAIT_CALLBACK _IOW('v', 9, struct gce_obj)
 #define VCU_GET_OBJECT		_IOWR('v', 10, struct share_obj)
 #define VCU_GET_LOG_OBJECT	_IOW('v', 11, struct log_test_nofuse)
-#define VCU_SET_LOG_OBJECT	_IOW('v', 12, struct log_test)
+#define VCU_SET_LOG_OBJECT	_IOW('v', 12, struct log_test_nofuse)
 #define VCU_SET_MMAP_TYPE	_IOW('v', 13, struct map_obj)
 
 #define COMPAT_VCU_SET_OBJECT		_IOW('v', 0, struct share_obj)
@@ -223,6 +223,7 @@ struct share_obj {
 };
 
 struct log_test_nofuse {
+	int type; // 0: set log from ks to us; 1: get log from us to ks;
 	char log_info[LOG_INFO_SIZE];
 };
 

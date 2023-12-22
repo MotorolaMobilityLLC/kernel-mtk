@@ -1101,6 +1101,7 @@ const char *v4l2_ctrl_get_name(u32 id)
 	case V4L2_CID_MPEG_MTK_ENCODE_RC_B_FRAME_QP:
 		return "B-Frame QP Value";
 	case V4L2_CID_MPEG_MTK_LOG:	return "Video Log";
+	case V4L2_CID_MPEG_MTK_GET_LOG:	return "Get Video Log";
 	default:
 		return NULL;
 	}
@@ -1139,6 +1140,13 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
 	case V4L2_CID_MPEG_MTK_LOG:
 		*type = V4L2_CTRL_TYPE_STRING;
 		*flags |= V4L2_CTRL_FLAG_WRITE_ONLY;
+		break;
+	case V4L2_CID_MPEG_MTK_GET_LOG:
+		*type = V4L2_CTRL_TYPE_STRING;
+		*flags |= V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_VOLATILE;
+		*min = 0;
+		*max = 1024;
+		*step = 1;
 		break;
 	case V4L2_CID_AUDIO_MUTE:
 	case V4L2_CID_AUDIO_LOUDNESS:

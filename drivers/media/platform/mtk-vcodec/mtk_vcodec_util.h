@@ -13,6 +13,9 @@
 /* #define FPGA_PWRCLK_API_DISABLE */
 /* #define FPGA_INTERRUPT_API_DISABLE */
 
+#define LOG_PARAM_INFO_SIZE 64
+#define LOG_PROPERTY_SIZE 1024
+
 struct mtk_vcodec_mem {
 	size_t length;
 	size_t size;
@@ -157,5 +160,5 @@ void mtk_enc_put_buf(struct mtk_vcodec_ctx *ctx);
 void v4l2_m2m_buf_queue_check(struct v4l2_m2m_ctx *m2m_ctx,
 		void *vbuf);
 void mtk_vcodec_set_log(struct mtk_vcodec_ctx *ctx, char *val);
-
+void mtk_vcodec_get_log(struct mtk_vcodec_ctx *ctx, char *val);
 #endif /* _MTK_VCODEC_UTIL_H_ */

@@ -593,7 +593,13 @@ static int vdec_get_param(unsigned long h_vdec,
 	case GET_PARAM_INPUT_DRIVEN:
 		get_input_driven(inst, out);
 		break;
-
+	case GET_PARAM_DEC_LOG:
+		if (out == NULL) {
+			pr_info("%s, out is null", __func__);
+			return -EINVAL;
+		}
+		ret = vcu_get_log(out, LOG_PROPERTY_SIZE);
+		break;
 	default:
 		mtk_vcodec_err(inst, "invalid get parameter type=%d", type);
 		ret = -EINVAL;
@@ -643,6 +649,13 @@ static int vdec_set_param(unsigned long h_vdec,
 		if (inst->vsi == NULL)
 			return -EINVAL;
 		inst->vsi->dec.fb_num_planes = *(unsigned int *)in;
+		break;
+	case SET_PARAM_DEC_LOG:
+		if (in == NULL) {
+			pr_info("%s, in is null", __func__);
+			return -EINVAL;
+		}
+		ret = vcu_set_log((char *) in);
 		break;
 	default:
 		mtk_vcodec_err(inst, "invalid set parameter type=%d\n", type);
