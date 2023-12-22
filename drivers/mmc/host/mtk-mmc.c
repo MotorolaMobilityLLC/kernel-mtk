@@ -23,7 +23,9 @@
 
 static int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
 static void msdc_request_done(struct msdc_host *host, struct mmc_request *mrq);
-
+#if IS_ENABLED(CONFIG_MMC_DEBUG)
+static void msdc_gpio_of_parse(struct msdc_host *host);
+#endif
 static int msdc_get_gpio_version(void)
 {
 	struct device_node *of_chosen = NULL;
@@ -1631,6 +1633,7 @@ static irqreturn_t msdc_cmdq_irq(struct msdc_host *host, u32 intsts)
 	if (cmd_err || dat_err) {
 		dev_err(host->dev, "cmd_err = %d, dat_err =%d, intsts = 0x%x",
 			cmd_err, dat_err, intsts);
+		msdc_dump_info(NULL, 0, NULL, host);
 	}
 
 	return cqhci_irq(mmc, 0, cmd_err, dat_err);
@@ -2616,6 +2619,11 @@ static int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	struct msdc_host *host = mmc_priv(mmc);
 	int ret = 0;
 
+	pr_info("[msdc%d][%s] autok start, vcore = %d\n",
+		host->id, __func__,
+		host->dvfsrc_vcore_power ?
+		regulator_get_voltage(host->dvfsrc_vcore_power) : -1);
+
 #if IS_ENABLED(CONFIG_MMC_AUTOK)
 	if (host->need_tune) {
 		if (host->id == MSDC_SD) {
@@ -2649,7 +2657,10 @@ static int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 		if (host->id == MSDC_SD)
 			sdcard_reset_tuning(mmc);
 	} else if (!ret) {
-		pr_info("msdc%d autok pass\n", host->id);
+		host->autok_vcore = host->dvfsrc_vcore_power ?
+			regulator_get_voltage(host->dvfsrc_vcore_power) : -1;
+		pr_info("[msdc%d][%s] autok pass, vcore = %d\n", host->id, __func__,
+			host->autok_vcore);
 		host->need_tune = TUNE_AUTOK_PASS;
 	}
 #else
@@ -3006,6 +3017,9 @@ static void msdc_of_property_parse(struct platform_device *pdev,
 		else
 			pr_info("mmc%d: tf version[%s] is supported\n", host->id, tf_ver);
 	}
+#if IS_ENABLED(CONFIG_MMC_DEBUG)
+	msdc_gpio_of_parse(host);
+#endif
 }
 #if !IS_ENABLED(CONFIG_FPGA_EARLY_PORTING)
 static int msdc_of_clock_parse(struct platform_device *pdev,
@@ -3136,6 +3150,26 @@ static const struct swcq_host_ops msdc_swcq_ops = {
 	.err_handle = msdc_swcq_err_handle,
 	.prepare_tuning = msdc_swcq_prepare_tuning,
 };
+#endif
+
+#if IS_ENABLED(CONFIG_MMC_DEBUG)
+static void msdc_gpio_of_parse(struct msdc_host *host)
+{
+	struct mmc_host *mmc = mmc_from_priv(host);
+	struct device *dev = mmc->parent;
+
+	if (device_property_read_u32(dev, "dump-gpio-start",
+		&host->dump_gpio_start))
+		host->dump_gpio_start = 0;
+	if (device_property_read_u32(dev, "dump-gpio-end",
+		&host->dump_gpio_end))
+		host->dump_gpio_end = 0;
+
+	dev_info(host->dev, "msdc_gpio:%d-%d\n" ,
+		host->dump_gpio_start,
+		host->dump_gpio_end
+		);
+}
 #endif
 
 static int msdc_drv_probe(struct platform_device *pdev)
