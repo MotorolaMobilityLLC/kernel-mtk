@@ -21,6 +21,7 @@
 #include <linux/proc_fs.h>
 #include <linux/math64.h>
 #include <linux/of.h>
+#include <linux/regulator/consumer.h>
 
 #include <mtk_gauge_class.h>
 #include <mtk_battery_internal.h>
@@ -48,6 +49,7 @@
 
 static signed int g_hw_ocv_tune_value;
 static bool g_fg_is_charger_exist;
+static struct regulator *reg_vbif28;
 
 struct mt6358_gauge {
 	const char *gauge_dev_name;
@@ -896,6 +898,7 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 	int is_charger_exist;
 	unsigned int temps = 0, vbif28en = 0;
 	unsigned int slp_cur_th = 0;
+	int err;
 
 	temps = pmic_get_register_value(PMIC_RG_FG_OFFSET_SWAP);
 
@@ -908,7 +911,14 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 	pmic_set_register_value(PMIC_RG_BATON_DEBOUNCE_WND, 2);
 
 	vbif28en = pmic_get_register_value(PMIC_RG_LDO_VBIF28_EN);
-	pmic_set_register_value(PMIC_RG_LDO_VBIF28_EN, 1);
+
+	if (vbif28en && (!IS_ERR(reg_vbif28))) {
+		err = regulator_enable(reg_vbif28);
+		if (err)
+			dev_info(&gauge_dev->dev, "fail to enable vbif28 regulator\n");
+	} else
+		dev_info(&gauge_dev->dev, "fail to get vbif28 regulator\n");
+
 	bm_err("set PMIC_RG_LDO_VBIF28_EN from %d,to 1\n", vbif28en);
 
 
@@ -3411,6 +3421,8 @@ static int mt6358_gauge_probe(struct platform_device *pdev)
 
 	mt6358_parse_dt(info, &pdev->dev);
 	platform_set_drvdata(pdev, info);
+
+	reg_vbif28 = devm_regulator_get_optional(&pdev->dev, "vbif28");
 
 	/* Register charger device */
 	info->gauge_dev = gauge_device_register(info->gauge_dev_name,
