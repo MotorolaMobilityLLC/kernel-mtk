@@ -1668,11 +1668,15 @@ static int mtk_phy_power_on(struct phy *phy)
 {
 	struct xsphy_instance *inst = phy_get_drvdata(phy);
 	struct mtk_xsphy *xsphy = dev_get_drvdata(phy->dev.parent);
+	enum phy_mode mode = inst->phy->attrs.mode;
 
 	if (inst->type == PHY_TYPE_USB2) {
 		u2_phy_instance_power_on(xsphy, inst);
 		u2_phy_slew_rate_calibrate(xsphy, inst);
-		u2_phy_props_set(xsphy, inst);
+		if (mode == PHY_MODE_USB_HOST)
+			u2_phy_host_props_set(xsphy, inst);
+		else
+			u2_phy_props_set(xsphy, inst);
 	} else if (inst->type == PHY_TYPE_USB3) {
 		u3_phy_instance_power_on(xsphy, inst);
 		u3_phy_props_set(xsphy, inst);
