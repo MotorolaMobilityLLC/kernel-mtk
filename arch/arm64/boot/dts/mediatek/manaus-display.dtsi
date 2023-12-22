@@ -89,6 +89,10 @@
 
 };
 
+&panel1 {
+	/delete-node/ port@0;
+};
+
 &dsi0 {
 	status = "okay";
 
@@ -98,9 +102,20 @@
 		/delete-property/ reset-gpios;
 		/delete-property/gate-ic;
 
-		compatible = "mot,dummy,vdo,60hz";
+		compatible = "tianma,vtdr6115,vdo,144hz";
 		reg = <0>;
+		pm-enable-gpios = <&pio 164 0>,
+                          <&pio 166 0>,
+                          <&pio 103 0>,
+                          <&pio 165 0>;
+		reset-gpios = <&pio 97 0>;
 		pinctrl-names = "default";
+		lhbm-enable;
+		port {
+			panel_in1: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
 	};
 
 	panel2@0 {
@@ -109,8 +124,8 @@
 		/delete-property/ reset-gpios;
 		/delete-property/gate-ic;
 
-		compatible = "tianma,vtdr6115,vdo,144hz";
-		reg = <2>;
+		compatible = "csot,vtdr6115,vdo,144hz,c7";
+		reg = <1>;
 		pm-enable-gpios = <&pio 164 0>,
                           <&pio 166 0>,
                           <&pio 103 0>,
@@ -131,8 +146,8 @@
 		/delete-property/ reset-gpios;
 		/delete-property/gate-ic;
 
-		compatible = "csot,vtdr6115,vdo,144hz,c7";
-		reg = <3>;
+		compatible = "tianma,vtdr6115,vdo,144hz,u8";
+		reg = <2>;
 		pm-enable-gpios = <&pio 164 0>,
                           <&pio 166 0>,
                           <&pio 103 0>,
@@ -153,8 +168,8 @@
 		/delete-property/ reset-gpios;
 		/delete-property/gate-ic;
 
-		compatible = "tianma,vtdr6115,vdo,144hz,u8";
-		reg = <1>;
+		compatible = "boe,nt37701a,cmd,144hz";
+		reg = <3>;
 		pm-enable-gpios = <&pio 164 0>,
                           <&pio 166 0>,
                           <&pio 103 0>,
@@ -164,28 +179,6 @@
 		lhbm-enable;
 		port {
 			panel_in4: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-	};
-
-	panel5@0 {
-		/delete-property/ compatible;
-		/delete-property/ pm-enable-gpios;
-		/delete-property/ reset-gpios;
-		/delete-property/gate-ic;
-
-		compatible = "boe,nt37701a,cmd,144hz";
-		reg = <4>;
-		pm-enable-gpios = <&pio 164 0>,
-                          <&pio 166 0>,
-                          <&pio 103 0>,
-                          <&pio 165 0>;
-		reset-gpios = <&pio 97 0>;
-		pinctrl-names = "default";
-		lhbm-enable;
-		port {
-			panel_in5: endpoint {
 				remote-endpoint = <&dsi_out>;
 			};
 		};
