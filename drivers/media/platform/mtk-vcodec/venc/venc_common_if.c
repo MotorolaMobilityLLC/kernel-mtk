@@ -448,6 +448,13 @@ static int venc_get_param(unsigned long handle,
 		*(int *)out = inst->vsi->config.maxrefbufFrameNum;
 		break;
 	}
+	case VENC_GET_PARAM_LOG:
+		if (out == NULL) {
+			pr_info("%s, out is null", __func__);
+			return -EINVAL;
+		}
+		vcu_get_log(out, LOG_PROPERTY_SIZE);
+		break;
 
 	default:
 		mtk_vcodec_err(inst, "invalid get parameter type=%d", type);
@@ -466,7 +473,7 @@ static int venc_set_param(unsigned long handle,
 	int ret = 0;
 	struct venc_inst *inst = (struct venc_inst *)handle;
 
-	if (inst == NULL || inst->vsi == NULL)
+	if (inst == NULL || (inst->vsi == NULL && type != VENC_SET_PARAM_LOG))
 		return -EINVAL;
 
 	mtk_vcodec_debug(inst, "->type=%d, ipi_id=%d", type, inst->vcu_inst.id);
@@ -555,7 +562,12 @@ static int venc_set_param(unsigned long handle,
 		ret = vcu_enc_set_param(&inst->vcu_inst, type, enc_prm);
 		break;
 	case VENC_SET_PARAM_LOG:
-		vcu_set_log(enc_prm->log);
+		if (enc_prm == NULL) {
+			pr_info("%s, enc_prm is null", __func__);
+			return -EINVAL;
+		}
+		ret = vcu_set_log(enc_prm->log);
+		break;
 	default:
 		ret = vcu_enc_set_param(&inst->vcu_inst, type, enc_prm);
 		inst->ctx->async_mode = !(inst->vsi->sync_mode);
