@@ -368,17 +368,16 @@ DevmemIntAcquireRemoteCtx_exit:
 			PVR_ASSERT((eError == PVRSRV_OK)
 				   || (eError == PVRSRV_ERROR_RETRY));
 
-			/* Avoid freeing/destroying/releasing the resource a second time below */
-			psContextInt = NULL;
 			/* Release now we have cleaned up creation handles. */
 			UnlockHandle(psConnection->psHandleBase);
 
 		}
 
-		if (psContextInt)
+		else if (psContextInt)
 		{
 			DevmemIntCtxDestroy(psContextInt);
 		}
+
 	}
 
 	return 0;
@@ -402,15 +401,23 @@ PVRSRV_ERROR InitCMMBridge(void)
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_CMM,
 			      PVRSRV_BRIDGE_CMM_DEVMEMINTEXPORTCTX,
-			      PVRSRVBridgeDevmemIntExportCtx, NULL);
+			      PVRSRVBridgeDevmemIntExportCtx, NULL,
+			      sizeof(PVRSRV_BRIDGE_IN_DEVMEMINTEXPORTCTX),
+			      sizeof(PVRSRV_BRIDGE_OUT_DEVMEMINTEXPORTCTX));
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_CMM,
 			      PVRSRV_BRIDGE_CMM_DEVMEMINTUNEXPORTCTX,
-			      PVRSRVBridgeDevmemIntUnexportCtx, NULL);
+			      PVRSRVBridgeDevmemIntUnexportCtx, NULL,
+			      sizeof(PVRSRV_BRIDGE_IN_DEVMEMINTUNEXPORTCTX),
+			      sizeof(PVRSRV_BRIDGE_OUT_DEVMEMINTUNEXPORTCTX));
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_CMM,
 			      PVRSRV_BRIDGE_CMM_DEVMEMINTACQUIREREMOTECTX,
-			      PVRSRVBridgeDevmemIntAcquireRemoteCtx, NULL);
+			      PVRSRVBridgeDevmemIntAcquireRemoteCtx, NULL,
+			      sizeof
+			      (PVRSRV_BRIDGE_IN_DEVMEMINTACQUIREREMOTECTX),
+			      sizeof
+			      (PVRSRV_BRIDGE_OUT_DEVMEMINTACQUIREREMOTECTX));
 
 	return PVRSRV_OK;
 }

@@ -885,3 +885,98 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePVRSRVUpdateOOMStats(IMG_HANDLE
 	return PVRSRV_ERROR_NOT_IMPLEMENTED;
 #endif
 }
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemXIntReserveRange(IMG_HANDLE
+								    hBridge,
+								    IMG_HANDLE
+								    hDevmemServerHeap,
+								    IMG_DEV_VIRTADDR
+								    sAddress,
+								    IMG_DEVMEM_SIZE_T
+								    uiLength,
+								    IMG_HANDLE *
+								    phReservation)
+{
+	PVRSRV_ERROR eError;
+	DEVMEMINT_HEAP *psDevmemServerHeapInt;
+	DEVMEMXINT_RESERVATION *psReservationInt = NULL;
+	PVR_UNREFERENCED_PARAMETER(hBridge);
+
+	psDevmemServerHeapInt = (DEVMEMINT_HEAP *) hDevmemServerHeap;
+
+	eError =
+	    DevmemXIntReserveRange(psDevmemServerHeapInt,
+				   sAddress, uiLength, &psReservationInt);
+
+	*phReservation = psReservationInt;
+	return eError;
+}
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemXIntUnreserveRange(IMG_HANDLE
+								      hBridge,
+								      IMG_HANDLE
+								      hReservation)
+{
+	PVRSRV_ERROR eError;
+	DEVMEMXINT_RESERVATION *psReservationInt;
+	PVR_UNREFERENCED_PARAMETER(hBridge);
+
+	psReservationInt = (DEVMEMXINT_RESERVATION *) hReservation;
+
+	eError = DevmemXIntUnreserveRange(psReservationInt);
+
+	return eError;
+}
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemXIntMapPages(IMG_HANDLE
+								hBridge,
+								IMG_HANDLE
+								hReservation,
+								IMG_HANDLE hPMR,
+								IMG_UINT32
+								ui32PageCount,
+								IMG_UINT32
+								ui32PhysPageOffset,
+								PVRSRV_MEMALLOCFLAGS_T
+								uiFlags,
+								IMG_UINT32
+								ui32VirtPageOffset)
+{
+	PVRSRV_ERROR eError;
+	DEVMEMXINT_RESERVATION *psReservationInt;
+	PMR *psPMRInt;
+	PVR_UNREFERENCED_PARAMETER(hBridge);
+
+	psReservationInt = (DEVMEMXINT_RESERVATION *) hReservation;
+	psPMRInt = (PMR *) hPMR;
+
+	eError =
+	    DevmemXIntMapPages(psReservationInt,
+			       psPMRInt,
+			       ui32PageCount,
+			       ui32PhysPageOffset, uiFlags, ui32VirtPageOffset);
+
+	return eError;
+}
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemXIntUnmapPages(IMG_HANDLE
+								  hBridge,
+								  IMG_HANDLE
+								  hReservation,
+								  IMG_UINT32
+								  ui32VirtPageOffset,
+								  IMG_UINT32
+								  ui32PageCount)
+{
+	PVRSRV_ERROR eError;
+	DEVMEMXINT_RESERVATION *psReservationInt;
+	PVR_UNREFERENCED_PARAMETER(hBridge);
+
+	psReservationInt = (DEVMEMXINT_RESERVATION *) hReservation;
+
+	eError =
+	    DevmemXIntUnmapPages(psReservationInt,
+				 ui32VirtPageOffset, ui32PageCount);
+
+	return eError;
+}
