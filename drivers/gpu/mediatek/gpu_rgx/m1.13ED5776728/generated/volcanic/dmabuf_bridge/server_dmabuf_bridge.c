@@ -548,15 +548,23 @@ PVRSRV_ERROR InitDMABUFBridge(void)
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_DMABUF,
 			      PVRSRV_BRIDGE_DMABUF_PHYSMEMIMPORTDMABUF,
-			      PVRSRVBridgePhysmemImportDmaBuf, NULL);
+			      PVRSRVBridgePhysmemImportDmaBuf, NULL,
+			      sizeof(PVRSRV_BRIDGE_IN_PHYSMEMIMPORTDMABUF),
+			      sizeof(PVRSRV_BRIDGE_OUT_PHYSMEMIMPORTDMABUF));
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_DMABUF,
 			      PVRSRV_BRIDGE_DMABUF_PHYSMEMEXPORTDMABUF,
-			      PVRSRVBridgePhysmemExportDmaBuf, NULL);
+			      PVRSRVBridgePhysmemExportDmaBuf, NULL,
+			      sizeof(PVRSRV_BRIDGE_IN_PHYSMEMEXPORTDMABUF),
+			      sizeof(PVRSRV_BRIDGE_OUT_PHYSMEMEXPORTDMABUF));
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_DMABUF,
 			      PVRSRV_BRIDGE_DMABUF_PHYSMEMIMPORTSPARSEDMABUF,
-			      PVRSRVBridgePhysmemImportSparseDmaBuf, NULL);
+			      PVRSRVBridgePhysmemImportSparseDmaBuf, NULL,
+			      sizeof
+			      (PVRSRV_BRIDGE_IN_PHYSMEMIMPORTSPARSEDMABUF),
+			      sizeof
+			      (PVRSRV_BRIDGE_OUT_PHYSMEMIMPORTSPARSEDMABUF));
 
 	return PVRSRV_OK;
 }

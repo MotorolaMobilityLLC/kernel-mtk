@@ -374,4 +374,43 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePVRSRVUpdateOOMStats(IMG_HANDLE
 								  IMG_PID
 								  ui32pid);
 
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemXIntReserveRange(IMG_HANDLE
+								    hBridge,
+								    IMG_HANDLE
+								    hDevmemServerHeap,
+								    IMG_DEV_VIRTADDR
+								    sAddress,
+								    IMG_DEVMEM_SIZE_T
+								    uiLength,
+								    IMG_HANDLE *
+								    phReservation);
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemXIntUnreserveRange(IMG_HANDLE
+								      hBridge,
+								      IMG_HANDLE
+								      hReservation);
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemXIntMapPages(IMG_HANDLE
+								hBridge,
+								IMG_HANDLE
+								hReservation,
+								IMG_HANDLE hPMR,
+								IMG_UINT32
+								ui32PageCount,
+								IMG_UINT32
+								ui32PhysPageOffset,
+								PVRSRV_MEMALLOCFLAGS_T
+								uiFlags,
+								IMG_UINT32
+								ui32VirtPageOffset);
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemXIntUnmapPages(IMG_HANDLE
+								  hBridge,
+								  IMG_HANDLE
+								  hReservation,
+								  IMG_UINT32
+								  ui32VirtPageOffset,
+								  IMG_UINT32
+								  ui32PageCount);
+
 #endif /* CLIENT_MM_BRIDGE_H */

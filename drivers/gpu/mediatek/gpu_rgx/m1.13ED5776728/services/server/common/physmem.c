@@ -296,10 +296,10 @@ static inline PVRSRV_ERROR _ValidateParams(IMG_UINT32 ui32NumPhysChunks,
 	if (!PMRValidateSize(uiSize))
 	{
 		PVR_DPF((PVR_DBG_ERROR,
-				 "%s: Cancelling allocation request of over 64 GB. "
-				 "This is likely a bug."
-				, __func__));
-		return PVRSRV_ERROR_INVALID_PARAMS;
+				 "PMR size exceeds limit #Chunks: %u ChunkSz %"IMG_UINT64_FMTSPECX"",
+					ui32NumVirtChunks,
+					(IMG_UINT64) 1ULL << uiLog2AllocPageSize));
+		return PVRSRV_ERROR_PMR_TOO_LARGE;
 	}
 
 	/* Fail if requesting coherency on one side but uncached on the other */
