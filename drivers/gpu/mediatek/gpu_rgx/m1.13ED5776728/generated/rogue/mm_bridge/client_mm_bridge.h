@@ -413,4 +413,55 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemXIntUnmapPages(IMG_HANDLE
 								  IMG_UINT32
 								  ui32PageCount);
 
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeChangeSparseMem2(IMG_HANDLE
+							      hBridge,
+							      IMG_HANDLE
+							      hSrvDevMemHeap,
+							      IMG_HANDLE hPMR,
+							      IMG_UINT32
+							      ui32AllocPageCount,
+							      IMG_UINT32 *
+							      pui32AllocPageIndices,
+							      IMG_UINT32
+							      ui32FreePageCount,
+							      IMG_UINT32 *
+							      pui32FreePageIndices,
+							      IMG_UINT32
+							      ui32SparseFlags,
+							      IMG_HANDLE
+							      hReservation,
+							      IMG_UINT64
+							      ui64CPUVAddr);
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemIntReserveRange2(IMG_HANDLE
+								    hBridge,
+								    IMG_HANDLE
+								    hDevmemServerHeap,
+								    IMG_DEV_VIRTADDR
+								    sAddress,
+								    IMG_DEVMEM_SIZE_T
+								    uiLength,
+								    PVRSRV_MEMALLOCFLAGS_T
+								    uiFlags,
+								    IMG_HANDLE *
+								    phReservation);
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemIntUnreserveRange2(IMG_HANDLE
+								      hBridge,
+								      IMG_HANDLE
+								      hReservation);
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemIntMapPMR2(IMG_HANDLE
+							      hBridge,
+							      IMG_HANDLE
+							      hDevmemServerHeap,
+							      IMG_HANDLE
+							      hReservation,
+							      IMG_HANDLE hPMR);
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemIntUnmapPMR2(IMG_HANDLE
+								hBridge,
+								IMG_HANDLE
+								hReservation);
+
 #endif /* CLIENT_MM_BRIDGE_H */
