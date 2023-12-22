@@ -33,6 +33,9 @@
 #include <linux/uidgid.h>
 #include <mtk_thermal_platform_init.h>
 #include <thermal_core.h>
+#include <linux/suspend.h>
+#include <linux/delay.h>
+#include <linux/jiffies.h>
 
 /* ************************************ */
 /* Definition */
@@ -68,6 +71,10 @@
 
 #define MSMA_MAX_HT     (1000000)
 #define MSMA_MIN_HT     (-275000)
+
+static DECLARE_WAIT_QUEUE_HEAD(suspend_wq);
+static atomic_t in_suspend;
+
 
 struct mtk_thermal_cooler_data {
 	struct thermal_zone_device *tz;
@@ -1065,12 +1072,48 @@ static const struct proc_ops _mtm_scen_call_fops = {
 	.proc_release = single_release,
 };
 
+static int mtk_thermal_pm_notify_v1(struct notifier_block *nb,
+			     unsigned long mode, void *_unused)
+{
+	switch (mode) {
+	case PM_SUSPEND_PREPARE:
+		atomic_set(&in_suspend, 1);
+		wake_up(&suspend_wq);
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
 
+static int mtk_thermal_pm_notify_v2(struct notifier_block *nb,
+			     unsigned long mode, void *_unused)
+{
+	switch (mode) {
+	case PM_POST_SUSPEND:
+			atomic_set(&in_suspend, 0);
+			wake_up(&suspend_wq);
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+static struct notifier_block thermal_pm_nb_v1 = {
+	.notifier_call = mtk_thermal_pm_notify_v1,
+	.priority = 3,
+};
+
+static struct notifier_block thermal_pm_nb_v2 = {
+	.notifier_call = mtk_thermal_pm_notify_v2,
+};
 
 /* Init */
 int  mtkthermal_init(void)
 {
 	int err = 0;
+	int result = 0;
 	struct proc_dir_entry *entry;
 	struct proc_dir_entry *dir_entry =
 			mtk_thermal_get_proc_drv_therm_dir_entry();
@@ -1124,6 +1167,15 @@ int  mtkthermal_init(void)
 
 	INIT_DELAYED_WORK(&_mtm_sysinfo_poll_queue, _mtm_update_sysinfo);
 	_mtm_update_sysinfo(NULL);
+
+	result = register_pm_notifier(&thermal_pm_nb_v1);
+	if (result)
+		pr_err("Thermal: Can not register suspend notifier_v1, ret: %d\n", result);
+
+	result = register_pm_notifier(&thermal_pm_nb_v2);
+	if (result)
+		pr_err("Thermal: Can not register suspend notifier_v2, ret: %d\n", result);
+
 	return err;
 }
 
@@ -1475,6 +1527,22 @@ static struct thermal_zone_device_ops mtk_thermal_wrapper_dev_ops = {
 	.notify = mtk_thermal_wrapper_notify,
 };
 
+static void wait_for_resume(void)
+{
+#define TIMEOUT_SEC 5
+	unsigned long timeout = msecs_to_jiffies(TIMEOUT_SEC * 1000);
+	unsigned long start_time = jiffies;
+	unsigned long elapsed_time = 0;
+
+	while (atomic_read(&in_suspend) && elapsed_time < timeout) {
+		wait_event_timeout(suspend_wq, !atomic_read(&in_suspend), timeout - elapsed_time);
+		elapsed_time = jiffies - start_time;
+	}
+
+	if (atomic_read(&in_suspend))
+		atomic_set(&in_suspend, 0);
+}
+
 /*mtk thermal zone register function */
 struct thermal_zone_device *mtk_thermal_zone_device_register_wrapper(
 char *type, int trips, void *devdata,
@@ -1511,6 +1579,8 @@ int tc1, int tc2, int passive_delay, int polling_delay)
 	tzdata->msma_ht[0] = MSMA_MAX_HT;
 #endif
 	mutex_unlock(&tzdata->ma_lock);
+
+	wait_for_resume();
 
 	tz = thermal_zone_device_register(type,
 			trips,	/* /< total number of trip points */
@@ -1595,6 +1665,8 @@ void mtk_thermal_zone_device_unregister_wrapper(struct thermal_zone_device *tz)
 	mutex_unlock(&MTM_GET_TEMP_LOCK);
 
 	THRML_LOG("%s+ tz : %s\n", __func__, type);
+
+	wait_for_resume();
 
 	thermal_zone_device_unregister(tz);
 
@@ -1914,6 +1986,8 @@ struct thermal_cooling_device *mtk_thermal_cooling_device_register_wrapper
 		}
 	}
 
+	wait_for_resume();
+
 	ret = thermal_cooling_device_register(type, mcdata,
 				&mtk_cooling_wrapper_dev_ops);
 
@@ -1970,6 +2044,8 @@ const struct thermal_cooling_device_ops_extra *ops_ext)
 							__func__, mcdata);
 		}
 	}
+
+	wait_for_resume();
 
 	ret = thermal_cooling_device_register(type, mcdata,
 					&mtk_cooling_wrapper_dev_ops);
@@ -2030,6 +2106,8 @@ struct thermal_cooling_device *cdev)
 	mutex_unlock(&MTM_COOLER_LOCK);
 
 	THRML_LOG("%s- mcdata:%p\n", __func__, mcdata);
+
+	wait_for_resume();
 
 	thermal_cooling_device_unregister(cdev);
 
