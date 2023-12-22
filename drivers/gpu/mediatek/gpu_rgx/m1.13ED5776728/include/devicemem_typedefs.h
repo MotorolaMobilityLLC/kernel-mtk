@@ -113,11 +113,7 @@ typedef enum Resize {
 
 	SPARSE_RESIZE_BOTH = ((IMG_UINT8)SPARSE_RESIZE_ALLOC | (IMG_UINT8)SPARSE_RESIZE_FREE),
 
-	/* This should be set to silently swap underlying physical memory
-	 * without disturbing its device or cpu virtual maps.
-	 * This flag is not supported in the case of PDUMP and could lead to
-	 * PDUMP panic when used.
-	 */
+	/* Remap functionality not supported, reserved for compatibility. */
 	SPARSE_REMAP_MEM = 4,
 
 	/* Should be set to get the sparse changes appear in cpu virtual map */

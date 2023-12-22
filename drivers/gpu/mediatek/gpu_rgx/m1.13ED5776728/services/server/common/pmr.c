@@ -1756,8 +1756,8 @@ PMRCpuMapCountDecr(PMR *psPMR)
 	}
 }
 
-static IMG_BOOL
-_PMR_IsMapped(PMR *psPMR)
+IMG_BOOL
+PMR_IsCpuMapped(PMR *psPMR)
 {
 	PVR_ASSERT(psPMR != NULL);
 
@@ -2058,12 +2058,12 @@ PVRSRV_ERROR PMR_ChangeSparseMem(PMR *psPMR,
 {
 	PVRSRV_ERROR eError;
 
-	if (_PMR_IsMapped(psPMR))
+	if (PMR_IsCpuMapped(psPMR))
 	{
 		PVR_DPF((PVR_DBG_ERROR,
-				"%s: This PMR layout cannot be changed - _PMR_IsMapped()=%c",
+				"%s: This PMR layout cannot be changed - PMR_IsCpuMapped()=%c",
 				__func__,
-				_PMR_IsMapped(psPMR) ? 'Y' : 'n'));
+				PMR_IsCpuMapped(psPMR) ? 'Y' : 'n'));
 		return PVRSRV_ERROR_PMR_NOT_PERMITTED;
 	}
 

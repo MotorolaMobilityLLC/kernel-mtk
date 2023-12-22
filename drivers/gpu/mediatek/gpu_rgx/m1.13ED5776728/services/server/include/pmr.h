@@ -75,7 +75,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define PMR_MAX_TRANSLATION_STACK_ALLOC				(32)
 
 /* Maximum size PMR can have is 1G of memory */
-#define PMR_MAX_SUPPORTED_SIZE (0x40000000ULL)
+#define PMR_MAX_SUPPORTED_SIZE IMG_UINT64_C(0x200000000)
 /* Max number of pages in a PMR at 4k page size */
 #define PMR_MAX_SUPPORTED_4K_PAGE_COUNT (PMR_MAX_SUPPORTED_SIZE >> 12ULL)
 
@@ -571,6 +571,9 @@ PMRCpuMapCountIncr(PMR *psPMR);
  */
 void
 PMRCpuMapCountDecr(PMR *psPMR);
+
+IMG_BOOL
+PMR_IsCpuMapped(PMR *psPMR);
 
 PPVRSRV_DEVICE_NODE
 PMR_DeviceNode(const PMR *psPMR);
