@@ -8,6 +8,7 @@
 #include "mtk-mmc-dbg.h"
 #include "rpmb-mtk.h"
 #include "../core/card.h"
+#include "../core/mmc_ops.h"
 #include <linux/arm-smccc.h>
 #include "../core/core.h"
 #include <linux/regulator/consumer.h>
@@ -2759,8 +2760,9 @@ static void msdc_hw_reset(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 
+	dev_info(mmc_dev(mmc), "hw reset device\n");
 	sdr_set_bits(host->base + EMMC_IOCON, 1);
-	udelay(10); /* 10us is enough */
+	mdelay(10); /* 10ms is enough */
 	sdr_clr_bits(host->base + EMMC_IOCON, 1);
 }
 
@@ -2826,6 +2828,26 @@ static void mmc_mtk_crypto_enable(struct mmc_host *mmc)
 	}
 }
 
+static void msdc_enable_rst_n_func(struct mmc_host *mmc, struct mmc_card *card)
+{
+	int ret = 0;
+
+	if(!mmc || !card)
+		return;
+
+	if ((mmc->caps & MMC_CAP_HW_RESET) && !card->ext_csd.rst_n_function) {
+		ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+			EXT_CSD_RST_N_FUNCTION, 1, 1000);
+		if (!ret)
+			card->ext_csd.rst_n_function = 1;
+		else {
+			mmc->caps &= ~MMC_CAP_HW_RESET;
+			dev_info(mmc_dev(mmc), "%s: set ext_csd.rst_n_function = 1 with fail: %d\n",
+				__func__, ret);
+		}
+	}
+}
+
 static void msdc_cqe_enable(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -2843,6 +2865,8 @@ static void msdc_cqe_enable(struct mmc_host *mmc)
 	/* default read data timeout 1s */
 	msdc_set_timeout(host, 1000000000ULL, 0);
 	cqhci_writel(cq_host, 0x40, CQHCI_SSC1);
+
+	msdc_enable_rst_n_func(mmc, mmc->card);
 }
 
 static void msdc_cqe_disable(struct mmc_host *mmc, bool recovery)
