@@ -2699,7 +2699,10 @@ static void moto_sdcard_event_work(struct work_struct *work)
 	struct msdc_host *msdc_host = container_of(work, struct msdc_host, sdcard_hotplut_work.work);
 	struct mmc_host *mmc_host = mmc_from_priv(msdc_host);
 	struct mmc_card *card = mmc_host->card;
-	struct mmc_blk_data *md = dev_get_drvdata(&card->dev);
+	struct mmc_blk_data *md = NULL;
+
+	if (card != NULL)
+		md = dev_get_drvdata(&card->dev);
 
 	if (mmc_card_is_removable(mmc_host)) {
 		if (md != NULL) {
