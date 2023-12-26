@@ -15,7 +15,8 @@
 #include <linux/delay.h>
 #include <mt-plat/upmu_common.h>
 #include "vibrator.h"
-
+#include "vibrator_hal.h"
+#include <linux/regulator/consumer.h>
 struct vibrator_hw *pvib_cust;
 
 static int debug_enable_vib_hal = 1;
@@ -31,20 +32,22 @@ static int debug_enable_vib_hal = 1;
 
 #define OC_INTR_INIT_DELAY      (3)
 
-void vibr_Enable_HW(void)
+void vibr_Enable_HW(struct regulator *reg)
 {
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH
-	pmic_set_register_value(PMIC_RG_LDO_VIBR_EN, 1);
+	if (regulator_enable(reg))
+		pr_notice("set vibr_reg enable failed!\n");
 	mdelay(OC_INTR_INIT_DELAY);
 	pmic_enable_interrupt(INT_VIBR_OC, 1, "vibr");
 #endif
 }
 
-void vibr_Disable_HW(void)
+void vibr_Disable_HW(struct regulator *reg)
 {
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH
 	pmic_enable_interrupt(INT_VIBR_OC, 0, "vibr");
-	pmic_set_register_value(PMIC_RG_LDO_VIBR_EN, 0);
+	if (regulator_disable(reg))
+		pr_notice("set vibr_reg enable failed!\n");
 #endif
 }
 
