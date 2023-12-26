@@ -35,10 +35,10 @@
 #define SUPPORT_144HZ_REFRESH_RATE
 //#define DSC_DISABLE
 //#define LCM_VDO_MODE
-//#define DSC_10BIT
+#define DSC_10BIT
 #ifdef DSC_10BIT
 #define DSC_BITS	10
-#define DSC_CFG		40//2088//40
+#define DSC_CFG		2088//2088//40
 #else
 #define DSC_BITS	8
 #define DSC_CFG		34
@@ -464,15 +464,15 @@ static struct mtk_panel_params ext_params_60hz = {
 			.count = 3,
 			.dsc_pps_params[0] = {
 				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD1E9D9C9,
+				.dsc_pps_para = 0xD209D9E9,
 			},
 			.dsc_pps_params[1] = {
 				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD20DD1E9,
+				.dsc_pps_para = 0xD22BD229,
 			},
 			.dsc_pps_params[2] = {
 				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D230,
+				.dsc_pps_para = 0x0000D271,
 			},
 		},
 	},
@@ -554,15 +554,15 @@ static struct mtk_panel_params ext_params_90hz = {
 			.count = 3,
 			.dsc_pps_params[0] = {
 				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD1E9D9C9,
+				.dsc_pps_para = 0xD209D9E9,
 			},
 			.dsc_pps_params[1] = {
 				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD20DD1E9,
+				.dsc_pps_para = 0xD22BD229,
 			},
 			.dsc_pps_params[2] = {
 				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D230,
+				.dsc_pps_para = 0x0000D271,
 			},
 		},
 	},
@@ -642,15 +642,15 @@ static struct mtk_panel_params ext_params_120hz = {
 			.count = 3,
 			.dsc_pps_params[0] = {
 				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD1E9D9C9,
+				.dsc_pps_para = 0xD209D9E9,
 			},
 			.dsc_pps_params[1] = {
 				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD20DD1E9,
+				.dsc_pps_para = 0xD22BD229,
 			},
 			.dsc_pps_params[2] = {
 				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D230,
+				.dsc_pps_para = 0x0000D271,
 			},
 		},
 	},
@@ -731,15 +731,15 @@ static struct mtk_panel_params ext_params_144hz = {
 			.count = 3,
 			.dsc_pps_params[0] = {
 				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD1E9D9C9,
+				.dsc_pps_para = 0xD209D9E9,
 			},
 			.dsc_pps_params[1] = {
 				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD20DD1E9,
+				.dsc_pps_para = 0xD22BD229,
 			},
 			.dsc_pps_params[2] = {
 				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D230,
+				.dsc_pps_para = 0x0000D271,
 			},
 		},
 	},
@@ -879,15 +879,15 @@ static struct mtk_panel_params ext_params_60hz = {
 			.count = 3,
 			.dsc_pps_params[0] = {
 				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD1E9D9C9,
+				.dsc_pps_para = 0xD209D9E9,
 			},
 			.dsc_pps_params[1] = {
 				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD20DD1E9,
+				.dsc_pps_para = 0xD22BD229,
 			},
 			.dsc_pps_params[2] = {
 				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D230,
+				.dsc_pps_para = 0x0000D271,
 			},
 		},
 	},
@@ -966,15 +966,15 @@ static struct mtk_panel_params ext_params_90hz = {
 			.count = 3,
 			.dsc_pps_params[0] = {
 				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD1E9D9C9,
+				.dsc_pps_para = 0xD209D9E9,
 			},
 			.dsc_pps_params[1] = {
 				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD20DD1E9,
+				.dsc_pps_para = 0xD22BD229,
 			},
 			.dsc_pps_params[2] = {
 				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D230,
+				.dsc_pps_para = 0x0000D271,
 			},
 		},
 	},
@@ -1051,15 +1051,15 @@ static struct mtk_panel_params ext_params_120hz = {
 			.count = 3,
 			.dsc_pps_params[0] = {
 				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD1E9D9C9,
+				.dsc_pps_para = 0xD209D9E9,
 			},
 			.dsc_pps_params[1] = {
 				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD20DD1E9,
+				.dsc_pps_para = 0xD22BD229,
 			},
 			.dsc_pps_params[2] = {
 				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D230,
+				.dsc_pps_para = 0x0000D271,
 			},
 		},
 	},
@@ -1137,15 +1137,15 @@ static struct mtk_panel_params ext_params_144hz = {
 			.count = 3,
 			.dsc_pps_params[0] = {
 				.dsc_pps_idx = 17,
-				.dsc_pps_para = 0xD1E9D9C9,
+				.dsc_pps_para = 0xD209D9E9,
 			},
 			.dsc_pps_params[1] = {
 				.dsc_pps_idx = 18,
-				.dsc_pps_para = 0xD20DD1E9,
+				.dsc_pps_para = 0xD22BD229,
 			},
 			.dsc_pps_params[2] = {
 				.dsc_pps_idx = 19,
-				.dsc_pps_para = 0x0000D230,
+				.dsc_pps_para = 0x0000D271,
 			},
 		},
 	},
