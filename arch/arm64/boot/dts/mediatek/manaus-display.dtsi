@@ -171,9 +171,8 @@
 		compatible = "boe,nt37701a,cmd,144hz";
 		reg = <3>;
 		pm-enable-gpios = <&pio 164 0>,
-                          <&pio 166 0>,
-                          <&pio 103 0>,
-                          <&pio 165 0>;
+                          <&pio 165 0>,
+                          <&pio 166 0>;
 		reset-gpios = <&pio 97 0>;
 		pinctrl-names = "default";
 		lhbm-enable;
