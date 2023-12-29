@@ -209,7 +209,7 @@ static void lcm_panel_init(struct lcm *ctx)
 
     /* Sleep Out */
     lcm_dcs_write_seq_static(ctx, 0x11);
-    msleep(60);
+    msleep(120);
     /* Display On */
     lcm_dcs_write_seq_static(ctx, 0x29);
 
@@ -245,7 +245,7 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 
 	gpio_status = enabled ? 1:0;
 	if (gpio_status) {
-		for (i=0; i < 4; i++) {
+		for (i=0; i < 3; i++) {
 			pm_en_pin = NULL;
 			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_HIGH);
 			if (IS_ERR(pm_en_pin)) {
@@ -254,11 +254,10 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 			}
 			gpiod_set_value(pm_en_pin, gpio_status);
 			devm_gpiod_put(ctx->dev, pm_en_pin);
-			if (i < 2) usleep_range(3000, 3001);
+			usleep_range(1000, 1001);
 		}
 	} else {
-		for (i=3; i >= 0; i--) {
-			if (i == 2) continue;
+		for (i=2; i >= 0; i--) {
 			pm_en_pin = NULL;
 			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_LOW);
 			if (IS_ERR(pm_en_pin)) {
@@ -267,7 +266,7 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 			}
 			gpiod_set_value(pm_en_pin, gpio_status);
 			devm_gpiod_put(ctx->dev, pm_en_pin);
-			usleep_range(3000, 3001);
+			usleep_range(1000, 1001);
 		}
 	}
 	return 0;
@@ -306,12 +305,16 @@ static int lcm_prepare(struct drm_panel *panel)
 	ctx->dc_mode = 0;
 	ctx->current_fps = 120;
 
-	// lcd reset  H -> L -> H
+	// lcd reset L->H -> L -> L
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_LOW);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	usleep_range(2000, 2001);
+	usleep_range(10000, 10001);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(20000, 20001);
+	usleep_range(1000, 1001);
+	gpiod_set_value(ctx->reset_gpio, 0);
+	usleep_range(1000, 1001);
+	gpiod_set_value(ctx->reset_gpio, 1);
+	usleep_range(10000, 10001);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 	// end
 
