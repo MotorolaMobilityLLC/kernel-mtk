@@ -202,9 +202,11 @@ struct gpufreq_core_mask_info g_core_mask_table[] = {
  **************************************************/
 enum gpufreq_segment {
 	ENG_SEGMENT = 0,
-	MT6835_SEGMENT = 1,
-	MT6835M_SEGMENT = 2,
-	MT6835T_SEGMENT = 3,
+	MT6835_23_SEGMENT = 1,
+	MT6835_23P_SEGMENT = 2,
+	MT6835_24_SEGMENT = 3,
+	MT6835_24P_SEGMENT = 4,
+	MT6835_24PP_SEGMENT = 5,
 };
 
 enum gpufreq_clk_src {

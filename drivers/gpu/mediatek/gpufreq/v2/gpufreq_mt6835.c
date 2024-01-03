@@ -3547,15 +3547,21 @@ static void __gpufreq_init_opp_table(void)
 	/* init GPU OPP table */
 	/* init OPP segment range */
 	segment_id = g_gpu.segment_id;
-	/* Next-C+(23E+) GPU FREQ: 962MHz */
-	if (segment_id == MT6835M_SEGMENT)
-		g_gpu.segment_upbound = 10;
-	/* Next-C++(23E++) GPU FREQ: 1100MHz */
-	else if (segment_id == MT6835T_SEGMENT)
-		g_gpu.segment_upbound = 0;
-	/* Next-C(23E) GPU FREQ: 570MHz */
-	else if (segment_id == MT6835_SEGMENT)
+	/* 23E GPU FREQ: 570MHz */
+	if (segment_id == MT6835_23_SEGMENT)
 		g_gpu.segment_upbound = 37;
+	/* 23E+ GPU FREQ: 962MHz */
+	else if (segment_id == MT6835_23P_SEGMENT)
+		g_gpu.segment_upbound = 10;
+	/* 24E GPU FREQ: 1072MHz */
+	else if (segment_id == MT6835_24_SEGMENT)
+		g_gpu.segment_upbound = 2;
+	/* 24E+ GPU FREQ: 1100MHz */
+	else if (segment_id == MT6835_24P_SEGMENT)
+		g_gpu.segment_upbound = 0;
+	/* 24E++ GPU FREQ: 1100MHz */
+	else if (segment_id == MT6835_24PP_SEGMENT)
+		g_gpu.segment_upbound = 0;
 	else
 		g_gpu.segment_upbound = 10;
 	g_gpu.segment_lowbound = NUM_GPU_SIGNED_OPP - 1;
@@ -3653,13 +3659,19 @@ static int __gpufreq_init_segment_id(struct platform_device *pdev)
 
 	switch (efuse_id) {
 	case 0x1:
-		segment_id = MT6835_SEGMENT;
+		segment_id = MT6835_23_SEGMENT;
 		break;
 	case 0x2:
-		segment_id = MT6835M_SEGMENT;
+		segment_id = MT6835_23P_SEGMENT;
 		break;
-	case 0x3:
-		segment_id = MT6835T_SEGMENT;
+	case 0x82:
+		segment_id = MT6835_24_SEGMENT;
+		break;
+	case 0x83:
+		segment_id = MT6835_24P_SEGMENT;
+		break;
+	case 0x84:
+		segment_id = MT6835_24PP_SEGMENT;
 		break;
 	default:
 		segment_id = ENG_SEGMENT;
