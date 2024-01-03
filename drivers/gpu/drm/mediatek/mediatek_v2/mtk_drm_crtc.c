@@ -3867,6 +3867,10 @@ static unsigned int overlap_to_bw(struct drm_crtc *crtc,
 	return bw;
 }
 
+//ref: VCORE DVFS Table
+#define MT6853_ONE_NO_COMPRESS_LAYER_BW_THRESHOLD 2944
+#define MT6853_TWO_NO_COMPRESS_LAYER_BW_THRESHOLD 3433
+#define MT6835_TWO_NO_COMPRESS_LAYER_BW_THRESHOLD 5224
 static void mtk_crtc_update_hrt_state(struct drm_crtc *crtc,
 				      unsigned int frame_weight,
 				      struct mtk_drm_lyeblob_ids *lyeblob_ids,
@@ -3938,8 +3942,7 @@ static void mtk_crtc_update_hrt_state(struct drm_crtc *crtc,
 		output_comp = mtk_ddp_comp_request_output(mtk_crtc);
 
 		if (output_comp && ((output_comp->id == DDP_COMPONENT_DSI0) ||
-				(output_comp->id == DDP_COMPONENT_DSI1))
-				&& !(mtk_dsi_is_cmd_mode(output_comp)))
+				(output_comp->id == DDP_COMPONENT_DSI1)))
 			mtk_ddp_comp_io_cmd(output_comp, NULL,
 				DSI_GET_MODE_BY_MAX_VREFRESH, &mode);
 		if (mode)
@@ -3953,16 +3956,26 @@ static void mtk_crtc_update_hrt_state(struct drm_crtc *crtc,
 
 		/* Workaround for 120hz SMI larb BW limitation */
 		if (crtc_idx == 0 && max_fps == 120) {
-			if (ovl0_2l_no_compress_num == 1 &&
-				bw < 2944) {
-				bw = 2944;
-				DDPINFO("%s CRTC%u dram freq to 1600hz\n",
-					__func__, crtc_idx);
-			} else if (ovl0_2l_no_compress_num == 2 &&
-				bw < 3433) {
-				bw = 3433;
-				DDPINFO("%s CRTC%u dram freq to 2400hz\n",
-					__func__, crtc_idx);
+			if (priv->data->mmsys_id == MMSYS_MT6853 ||
+					priv->data->mmsys_id == MMSYS_MT6833) {
+				if (ovl0_2l_no_compress_num == 1 &&
+					bw < MT6853_ONE_NO_COMPRESS_LAYER_BW_THRESHOLD) {
+					bw = MT6853_ONE_NO_COMPRESS_LAYER_BW_THRESHOLD;
+					DDPINFO("%s CRTC%u dram freq to 1600hz\n",
+						__func__, crtc_idx);
+				} else if (ovl0_2l_no_compress_num == 2 &&
+					bw < MT6853_TWO_NO_COMPRESS_LAYER_BW_THRESHOLD) {
+					bw = MT6853_TWO_NO_COMPRESS_LAYER_BW_THRESHOLD;
+					DDPINFO("%s CRTC%u dram freq to 2400hz\n",
+						__func__, crtc_idx);
+				}
+			} else if (priv->data->mmsys_id == MMSYS_MT6835) {
+				if (ovl0_2l_no_compress_num == 2 &&
+					bw < MT6835_TWO_NO_COMPRESS_LAYER_BW_THRESHOLD) {
+					bw += bw/(frame_weight/400);
+					DDPINFO("%s increase one layer bw to %d\n",
+						__func__, bw);
+				}
 			}
 		}
 	}

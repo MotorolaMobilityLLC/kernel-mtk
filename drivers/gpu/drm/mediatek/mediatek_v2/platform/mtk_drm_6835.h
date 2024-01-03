@@ -197,7 +197,7 @@ extern const struct mtk_disp_ovl_data mt6835_ovl_driver_data;
 // wdma
 extern const struct mtk_disp_wdma_data mt6835_wdma_driver_data;
 // rdma
-extern const struct mtk_disp_rdma_data mt6835_rdma_driver_data;
+extern struct mtk_disp_rdma_data mt6835_rdma_driver_data;
 // rsz
 extern const struct mtk_disp_rsz_data mt6835_rsz_driver_data;
 // postmask
