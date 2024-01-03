@@ -80,10 +80,7 @@ __rpmsg_create_ept(struct mtk_rpmsg_rproc_subdev *mtk_subdev,
 	INIT_LIST_HEAD(&mept->pending_sendq.queue);
 	spin_lock_init(&mept->pending_sendq.queue_lock);
 	init_waitqueue_head(&mept->worker_readwq);
-	init_waitqueue_head(&mept->ccd_paramswq);
 	atomic_set(&mept->ccd_cmd_sent, 0);
-	atomic_set(&mept->worker_read_rdy, 0);
-	atomic_set(&mept->ccd_params_rdy, 0);
 	atomic_set(&mept->ccd_mep_state, CCD_MENDPOINT_CREATED);
 
 	dev_dbg(&pdev->dev, "%s: %d\n", __func__, ept->addr);
@@ -114,15 +111,10 @@ static void mtk_rpmsg_destroy_ept(struct rpmsg_endpoint *ept)
 	struct mtk_ccd_rpmsg_endpoint *mept = to_mtk_rpmsg_endpoint(ept);
 	struct mtk_rpmsg_rproc_subdev *mtk_subdev = mept->mtk_subdev;
 
-	dev_info(&mtk_subdev->pdev->dev,
-		 "%s: src[%d] worker_read_rdy: %d, ccd_cmd_sent: %d\n",
-		 __func__, ept->addr,
-		 atomic_read(&mept->worker_read_rdy),
-		 atomic_read(&mept->ccd_cmd_sent));
+	dev_info(&mtk_subdev->pdev->dev, "%s: src[%d]\n", __func__, ept->addr);
 
 	atomic_set(&mept->ccd_mep_state, CCD_MENDPOINT_DESTROY);
-	if (atomic_read(&mept->worker_read_rdy))
-		wake_up(&mept->worker_readwq);
+	wake_up(&mept->worker_readwq);
 
 	while (atomic_read(&mept->ccd_cmd_sent) > 0) {
 		dev_info(&mtk_subdev->pdev->dev, "%s: cmd_sent: %d\n",
@@ -133,8 +125,9 @@ static void mtk_rpmsg_destroy_ept(struct rpmsg_endpoint *ept)
 					      struct mtk_ccd_params,
 					      list_entry);
 		list_del(&ccd_params->list_entry);
-		atomic_dec(&mept->ccd_cmd_sent);
 		spin_unlock(&mept->pending_sendq.queue_lock);
+
+		atomic_dec(&mept->ccd_cmd_sent);
 
 		/* Directly call callback to return */
 		mutex_lock(&ept->cb_lock);
@@ -429,12 +422,15 @@ mtk_get_client_msgdevice(struct rproc_subdev *subdev,
 	listen_obj_rdy = atomic_read(&mtk_subdev->listen_obj_rdy);
 	if (listen_obj_rdy == CCD_LISTEN_OBJECT_READY) {
 		mutex_unlock(&mtk_subdev->master_listen_lock);
-		ret = wait_event_interruptible
+		ret = wait_event_interruptible_timeout
 			(mtk_subdev->ccd_listen_wq,
 			 (atomic_read(&mtk_subdev->listen_obj_rdy) ==
-			 CCD_LISTEN_OBJECT_PREPARING));
+			 CCD_LISTEN_OBJECT_PREPARING),
+			 msecs_to_jiffies(2000));
 
-		if (ret != 0)
+		if (ret == 0)
+			dev_info(&mtk_subdev->pdev->dev, "%s wait timeout\n", __func__);
+		else if (ret < 0)
 			dev_info(&mtk_subdev->pdev->dev,
 				"ccd listen wait error: %d\n", ret);
 
