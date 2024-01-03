@@ -1688,6 +1688,8 @@ static int venc_vcp_set_param(unsigned long handle,
 		inst->vsi->config.temporal_layer_pcount = enc_prm->temporal_layer_pcount;
 		inst->vsi->config.temporal_layer_bcount = enc_prm->temporal_layer_bcount;
 		inst->vsi->config.max_ltr_num = enc_prm->max_ltr_num;
+		inst->vsi->config.cb_qp_offset = enc_prm->cb_qp_offset;
+		inst->vsi->config.cr_qp_offset = enc_prm->cr_qp_offset;
 
 		if (enc_prm->color_desc) {
 			memcpy(&inst->vsi->config.color_desc,

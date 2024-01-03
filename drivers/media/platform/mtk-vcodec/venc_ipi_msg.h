@@ -473,6 +473,8 @@ struct venc_vcu_config {
 	struct mtk_color_desc color_desc;
 	struct mtk_venc_multi_ref multi_ref;
 	struct mtk_venc_vui_info vui_info;
+	__s32 cb_qp_offset;
+	__s32 cr_qp_offset;
 };
 
 /**

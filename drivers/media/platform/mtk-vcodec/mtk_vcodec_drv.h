@@ -389,6 +389,8 @@ struct mtk_enc_params {
 	unsigned int    max_ltr_num;
 	unsigned int    slice_header_spacing;
 	struct mtk_venc_vui_info vui_info; //data from userspace
+	int             cb_qp_offset;
+	int             cr_qp_offset;
 };
 
 /*
@@ -462,6 +464,8 @@ struct venc_enc_param {
 	struct mtk_venc_multi_ref *multi_ref;
 	struct mtk_venc_vui_info *vui_info;
 	char *log;
+	int cb_qp_offset;
+	int cr_qp_offset;
 };
 
 /*
