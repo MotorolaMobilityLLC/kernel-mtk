@@ -2050,6 +2050,7 @@
       <elf-symbol name='devm_watchdog_register_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd3151ecf'/>
       <elf-symbol name='devres_add' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xee792c9c'/>
       <elf-symbol name='devres_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9deeea92'/>
+      <elf-symbol name='devres_find' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x12e4bc26'/>
       <elf-symbol name='devres_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe93e49c3'/>
       <elf-symbol name='devres_open_group' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9e3598c6'/>
       <elf-symbol name='devres_release' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x42b30b1d'/>
@@ -5027,6 +5028,7 @@
       <elf-symbol name='redirty_page_for_writepage' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x224fc359'/>
       <elf-symbol name='refcount_dec_and_lock' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5e06bc5c'/>
       <elf-symbol name='refcount_dec_and_mutex_lock' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x27c95ba3'/>
+      <elf-symbol name='refcount_dec_if_one' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc6f3b3fc'/>
       <elf-symbol name='refcount_dec_not_one' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x47c20f8a'/>
       <elf-symbol name='refcount_warn_saturate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x296695f'/>
       <elf-symbol name='refresh_frequency_limits' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x84358279'/>
@@ -108190,7 +108192,14 @@
         <parameter type-id='95e97e5e'/>
         <return type-id='95e97e5e'/>
       </function-type>
-      <class-decl name='fscrypt_keyring' is-struct='yes' visibility='default' is-declaration-only='yes' id='dd510bd0'/>
+      <class-decl name='fscrypt_keyring' size-in-bits='8256' is-struct='yes' visibility='default' filepath='fs/crypto/keyring.c' line='30' column='1' id='dd510bd0'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='fs/crypto/keyring.c' line='35' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='key_hashtable' type-id='64f4baeb' visibility='default' filepath='fs/crypto/keyring.c' line='38' column='1'/>
+        </data-member>
+      </class-decl>
       <pointer-type-def type-id='a7d74313' size-in-bits='64' id='dd575c43'/>
       <class-decl name='cstate' size-in-bits='1536' is-struct='yes' visibility='default' filepath='include/net/slhc_vj.h' line='128' column='1' id='dd60e4df'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -119072,35 +119081,7 @@
         <return type-id='48b5725f'/>
       </function-type>
       <pointer-type-def type-id='22c4fd1a' size-in-bits='64' id='ec1a9290'/>
-      <class-decl name='disk_events' size-in-bits='1920' is-struct='yes' visibility='default' filepath='block/disk-events.c' line='10' column='1' id='ec1aac50'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='node' type-id='72f469ec' visibility='default' filepath='block/disk-events.c' line='11' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='disk' type-id='33c599da' visibility='default' filepath='block/disk-events.c' line='12' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='block/disk-events.c' line='13' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='block_mutex' type-id='925167dc' visibility='default' filepath='block/disk-events.c' line='15' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='640'>
-          <var-decl name='block' type-id='95e97e5e' visibility='default' filepath='block/disk-events.c' line='16' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='672'>
-          <var-decl name='pending' type-id='f0981eeb' visibility='default' filepath='block/disk-events.c' line='17' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='704'>
-          <var-decl name='clearing' type-id='f0981eeb' visibility='default' filepath='block/disk-events.c' line='18' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='768'>
-          <var-decl name='poll_msecs' type-id='bd54fe1a' visibility='default' filepath='block/disk-events.c' line='20' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='832'>
-          <var-decl name='dwork' type-id='5ad6e0ef' visibility='default' filepath='block/disk-events.c' line='21' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='disk_events' is-struct='yes' visibility='default' is-declaration-only='yes' id='ec1aac50'/>
       <pointer-type-def type-id='b9157ea1' size-in-bits='64' id='ec2076dd'/>
       <class-decl name='public_key_signature' size-in-bits='640' is-struct='yes' visibility='default' filepath='include/crypto/public_key.h' line='38' column='1' id='ec216e31'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -139832,6 +139813,13 @@
         <parameter type-id='eaa32e2f' name='match_data' filepath='drivers/base/devres.c' line='386' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='devres_find' mangled-name='devres_find' filepath='drivers/base/devres.c' line='281' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devres_find'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/base/devres.c' line='281' column='1'/>
+        <parameter type-id='b6609e5b' name='release' filepath='drivers/base/devres.c' line='281' column='1'/>
+        <parameter type-id='4a798fcf' name='match' filepath='drivers/base/devres.c' line='282' column='1'/>
+        <parameter type-id='eaa32e2f' name='match_data' filepath='drivers/base/devres.c' line='282' column='1'/>
+        <return type-id='eaa32e2f'/>
+      </function-decl>
       <function-decl name='devres_free' mangled-name='devres_free' filepath='drivers/base/devres.c' line='218' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devres_free'>
         <parameter type-id='eaa32e2f' name='res' filepath='drivers/base/devres.c' line='218' column='1'/>
         <return type-id='48b5725f'/>
@@ -155179,6 +155167,10 @@
         <parameter type-id='e0ea832a' name='lock' filepath='lib/refcount.c' line='113' column='1'/>
         <return type-id='b50a4934'/>
       </function-decl>
+      <function-decl name='refcount_dec_if_one' mangled-name='refcount_dec_if_one' filepath='lib/refcount.c' line='55' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='refcount_dec_if_one'>
+        <parameter type-id='35a0b4f8' name='r' filepath='lib/refcount.c' line='55' column='1'/>
+        <return type-id='b50a4934'/>
+      </function-decl>
       <function-decl name='refcount_dec_not_one' mangled-name='refcount_dec_not_one' filepath='lib/refcount.c' line='74' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='refcount_dec_not_one'>
         <parameter type-id='35a0b4f8' name='r' filepath='lib/refcount.c' line='74' column='1'/>
         <return type-id='b50a4934'/>
@@ -165769,7 +165761,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
