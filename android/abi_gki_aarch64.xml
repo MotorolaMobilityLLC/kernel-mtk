@@ -334,6 +334,7 @@
       <elf-symbol name='__skb_get_hash' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7e81b517'/>
       <elf-symbol name='__skb_gso_segment' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb1526bb2'/>
       <elf-symbol name='__skb_pad' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3c27a1cf'/>
+      <elf-symbol name='__skb_vlan_pop' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcdc9a065'/>
       <elf-symbol name='__sock_create' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa138ffba'/>
       <elf-symbol name='__spi_alloc_controller' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x90a816f8'/>
       <elf-symbol name='__spi_register_driver' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9ba73443'/>
@@ -2849,6 +2850,7 @@
       <elf-symbol name='firmware_request_nowarn' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x71952555'/>
       <elf-symbol name='fixed_size_llseek' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x83d79da2'/>
       <elf-symbol name='flow_block_cb_setup_simple' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2b538956'/>
+      <elf-symbol name='flow_rule_alloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2f9b513e'/>
       <elf-symbol name='flow_rule_match_basic' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf675c7d9'/>
       <elf-symbol name='flow_rule_match_eth_addrs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3efafc3'/>
       <elf-symbol name='flow_rule_match_ipv4_addrs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe6a3a3ff'/>
@@ -3344,6 +3346,7 @@
       <elf-symbol name='idr_find' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x20978fb9'/>
       <elf-symbol name='idr_for_each' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1d40b6f3'/>
       <elf-symbol name='idr_get_next' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc57c48a3'/>
+      <elf-symbol name='idr_get_next_ul' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcc1b882a'/>
       <elf-symbol name='idr_preload' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x954f099c'/>
       <elf-symbol name='idr_remove' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7665a95b'/>
       <elf-symbol name='idr_replace' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7b82b9a1'/>
@@ -3668,6 +3671,7 @@
       <elf-symbol name='jiffies64_to_msecs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x92ec510d'/>
       <elf-symbol name='jiffies64_to_nsecs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xee8d74d6'/>
       <elf-symbol name='jiffies_64_to_clock_t' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb1ddf995'/>
+      <elf-symbol name='jiffies_to_clock_t' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7d0db45c'/>
       <elf-symbol name='jiffies_to_msecs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x37befc70'/>
       <elf-symbol name='jiffies_to_usecs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7f24de73'/>
       <elf-symbol name='kasprintf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfb384d37'/>
@@ -4969,6 +4973,7 @@
       <elf-symbol name='radix_tree_tag_clear' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x89434b4b'/>
       <elf-symbol name='radix_tree_tag_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xad6ba40e'/>
       <elf-symbol name='radix_tree_tag_set' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4e20bcf8'/>
+      <elf-symbol name='radix_tree_tagged' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6d5f5b91'/>
       <elf-symbol name='rational_best_approximation' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb0a0da0c'/>
       <elf-symbol name='raw_notifier_call_chain' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa851973a'/>
       <elf-symbol name='raw_notifier_chain_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdc9fa232'/>
@@ -5565,6 +5570,13 @@
       <elf-symbol name='skb_dequeue_tail' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x379bda39'/>
       <elf-symbol name='skb_dump' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdff2136a'/>
       <elf-symbol name='skb_ensure_writable' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x798ed3f9'/>
+      <elf-symbol name='skb_eth_pop' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfed05abf'/>
+      <elf-symbol name='skb_eth_push' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1f5560a0'/>
+      <elf-symbol name='skb_flow_dissect_ct' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc8d45b0e'/>
+      <elf-symbol name='skb_flow_dissect_hash' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x64f146ba'/>
+      <elf-symbol name='skb_flow_dissect_meta' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd57e97e3'/>
+      <elf-symbol name='skb_flow_dissect_tunnel_info' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb763165e'/>
+      <elf-symbol name='skb_flow_dissector_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xabeb9438'/>
       <elf-symbol name='skb_free_datagram' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc56d7559'/>
       <elf-symbol name='skb_page_frag_refill' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc38d3460'/>
       <elf-symbol name='skb_partial_csum_set' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x749b4df6'/>
@@ -5586,6 +5598,8 @@
       <elf-symbol name='skb_trim' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8d82e354'/>
       <elf-symbol name='skb_tstamp_tx' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1f66c42d'/>
       <elf-symbol name='skb_unlink' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3b1d20e2'/>
+      <elf-symbol name='skb_vlan_pop' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x451073ee'/>
+      <elf-symbol name='skb_vlan_push' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x65be0159'/>
       <elf-symbol name='skb_vlan_untag' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x12c8a3e5'/>
       <elf-symbol name='skcipher_alloc_instance_simple' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xca1bd858'/>
       <elf-symbol name='skcipher_register_instance' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x94ff5a19'/>
@@ -6040,12 +6054,33 @@
       <elf-symbol name='tasklet_kill' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xea3c74e'/>
       <elf-symbol name='tasklet_setup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa07d1b3c'/>
       <elf-symbol name='tasklet_unlock_wait' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x350f6ce5'/>
+      <elf-symbol name='tc_cleanup_flow_action' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2e14e65e'/>
+      <elf-symbol name='tc_setup_cb_add' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x67073bee'/>
+      <elf-symbol name='tc_setup_cb_call' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xef4fee1a'/>
+      <elf-symbol name='tc_setup_cb_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5d3fcb4d'/>
+      <elf-symbol name='tc_setup_cb_reoffload' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5bfd45e5'/>
+      <elf-symbol name='tc_setup_flow_action' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xea78fbc2'/>
+      <elf-symbol name='tcf_action_check_ctrlact' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5397e081'/>
       <elf-symbol name='tcf_action_exec' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6c1c1a98'/>
+      <elf-symbol name='tcf_action_set_ctrlact' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x19ed03ab'/>
+      <elf-symbol name='tcf_action_update_stats' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x43426020'/>
+      <elf-symbol name='tcf_chain_put_by_act' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x879b5cab'/>
       <elf-symbol name='tcf_exts_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x56dfe9f6'/>
       <elf-symbol name='tcf_exts_dump' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x98392ab9'/>
       <elf-symbol name='tcf_exts_dump_stats' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x576f4afb'/>
+      <elf-symbol name='tcf_exts_num_actions' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6564cd83'/>
+      <elf-symbol name='tcf_exts_terse_dump' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x38ee82d0'/>
       <elf-symbol name='tcf_exts_validate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9f15665e'/>
+      <elf-symbol name='tcf_generic_walker' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x153d9bec'/>
+      <elf-symbol name='tcf_idr_check_alloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdb8c185a'/>
+      <elf-symbol name='tcf_idr_cleanup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x51bfa8d6'/>
+      <elf-symbol name='tcf_idr_create_from_flags' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x65e93c8f'/>
+      <elf-symbol name='tcf_idr_release' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8af4cef8'/>
+      <elf-symbol name='tcf_idr_search' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x314668be'/>
+      <elf-symbol name='tcf_idrinfo_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdccf0249'/>
       <elf-symbol name='tcf_queue_work' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x29063663'/>
+      <elf-symbol name='tcf_register_action' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd2f4281f'/>
+      <elf-symbol name='tcf_unregister_action' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa7c13d62'/>
       <elf-symbol name='tcp_register_congestion_control' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1c7e3b4f'/>
       <elf-symbol name='tcp_reno_cong_avoid' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5c0b7d1e'/>
       <elf-symbol name='tcp_reno_ssthresh' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x137dcc87'/>
@@ -8063,7 +8098,7 @@
           <var-decl name='num_components' type-id='95e97e5e' visibility='default' filepath='include/sound/soc.h' line='1099' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14272'>
-          <var-decl name='' type-id='ac5ab6ad' visibility='default' filepath='include/sound/soc.h' line='1111' column='1'/>
+          <var-decl name='' type-id='ac5ab6ae' visibility='default' filepath='include/sound/soc.h' line='1111' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14336'>
           <var-decl name='components' type-id='d936a132' visibility='default' filepath='include/sound/soc.h' line='1113' column='1'/>
@@ -8202,6 +8237,7 @@
         <return type-id='95e97e5e'/>
       </function-type>
       <pointer-type-def type-id='fd7e7994' size-in-bits='64' id='016d41e2'/>
+      <pointer-type-def type-id='6e5d2bdc' size-in-bits='64' id='017279ea'/>
       <function-type size-in-bits='64' id='0174792d'>
         <parameter type-id='1b0e1d00'/>
         <parameter type-id='95e97e5e'/>
@@ -8381,7 +8417,7 @@
           <var-decl name='ops' type-id='76e6e22f' visibility='default' filepath='include/sound/soc-topology.h' line='65' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='' type-id='ac5ab6ac' visibility='default' filepath='include/sound/soc-topology.h' line='66' column='1'/>
+          <var-decl name='' type-id='ac5ab6ad' visibility='default' filepath='include/sound/soc-topology.h' line='66' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='448'>
           <var-decl name='private' type-id='eaa32e2f' visibility='default' filepath='include/sound/soc-topology.h' line='70' column='1'/>
@@ -9579,6 +9615,32 @@
       </function-type>
       <pointer-type-def type-id='2058bc87' size-in-bits='64' id='054b2090'/>
       <pointer-type-def type-id='23f8b0bd' size-in-bits='64' id='05594c99'/>
+      <class-decl name='ip_tunnel_key' size-in-bits='448' is-struct='yes' visibility='default' filepath='include/net/ip_tunnels.h' line='39' column='1' id='05607863'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='tun_id' type-id='0899c7ad' visibility='default' filepath='include/net/ip_tunnels.h' line='40' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='u' type-id='ac5ab6a8' visibility='default' filepath='include/net/ip_tunnels.h' line='50' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='320'>
+          <var-decl name='tun_flags' type-id='84a5c3d4' visibility='default' filepath='include/net/ip_tunnels.h' line='51' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='336'>
+          <var-decl name='tos' type-id='f9b06939' visibility='default' filepath='include/net/ip_tunnels.h' line='52' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='344'>
+          <var-decl name='ttl' type-id='f9b06939' visibility='default' filepath='include/net/ip_tunnels.h' line='53' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='352'>
+          <var-decl name='label' type-id='78a133c2' visibility='default' filepath='include/net/ip_tunnels.h' line='54' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='384'>
+          <var-decl name='tp_src' type-id='84a5c3d4' visibility='default' filepath='include/net/ip_tunnels.h' line='55' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='400'>
+          <var-decl name='tp_dst' type-id='84a5c3d4' visibility='default' filepath='include/net/ip_tunnels.h' line='56' column='1'/>
+        </data-member>
+      </class-decl>
       <class-decl name='scmi_msg' size-in-bits='128' is-struct='yes' visibility='default' filepath='drivers/firmware/arm_scmi/common.h' line='139' column='1' id='0569c65f'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='buf' type-id='eaa32e2f' visibility='default' filepath='drivers/firmware/arm_scmi/common.h' line='140' column='1'/>
@@ -10129,6 +10191,7 @@
           <var-decl name='connected_output' type-id='a57789c2' visibility='default' filepath='include/net/neighbour.h' line='174' column='1'/>
         </data-member>
       </class-decl>
+      <pointer-type-def type-id='55d22140' size-in-bits='64' id='06e27406'/>
       <pointer-type-def type-id='d24e4794' size-in-bits='64' id='06f3ff9e'/>
       <pointer-type-def type-id='1d663e95' size-in-bits='64' id='06f4c6ad'/>
       <pointer-type-def type-id='3106563e' size-in-bits='64' id='06f65854'/>
@@ -11735,6 +11798,14 @@
         <parameter type-id='ad61830a'/>
         <return type-id='95e97e5e'/>
       </function-type>
+      <class-decl name='tc_action_net' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/net/act_api.h' line='126' column='1' id='0a7f65bb'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='idrinfo' type-id='5eeecdaa' visibility='default' filepath='include/net/act_api.h' line='127' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='ops' type-id='bdbd4b03' visibility='default' filepath='include/net/act_api.h' line='128' column='1'/>
+        </data-member>
+      </class-decl>
       <function-type size-in-bits='64' id='0a831e58'>
         <parameter type-id='226853d2'/>
         <parameter type-id='f74174a4'/>
@@ -20366,7 +20437,7 @@
           <var-decl name='eht_cap' type-id='203c24ad' visibility='default' filepath='include/net/cfg80211.h' line='434' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='896'>
-          <var-decl name='vendor_elems' type-id='e7f44074' visibility='default' filepath='include/net/cfg80211.h' line='438' column='1'/>
+          <var-decl name='vendor_elems' type-id='e7f44076' visibility='default' filepath='include/net/cfg80211.h' line='438' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1024'>
           <var-decl name='android_backport_reserved1' type-id='91ce1af9' visibility='default' filepath='include/net/cfg80211.h' line='440' column='1'/>
@@ -21531,6 +21602,7 @@
           <var-decl name='tcm_info' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/rtnetlink.h' line='603' column='1'/>
         </data-member>
       </class-decl>
+      <pointer-type-def type-id='713fc6cc' size-in-bits='64' id='22e6df5a'/>
       <function-type size-in-bits='64' id='22ea740f'>
         <parameter type-id='e6b84692'/>
         <parameter type-id='c7cd67fd'/>
@@ -26064,6 +26136,38 @@
           <var-decl name='dp' type-id='756c73a7' visibility='default' filepath='include/linux/phy/phy.h' line='63' column='1'/>
         </data-member>
       </union-decl>
+      <enum-decl name='flow_dissector_key_id' filepath='include/net/flow_dissector.h' line='256' column='1' id='2c7b42ff'>
+        <underlying-type type-id='9cac1fee'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_CONTROL' value='0'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_BASIC' value='1'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_IPV4_ADDRS' value='2'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_IPV6_ADDRS' value='3'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_PORTS' value='4'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_PORTS_RANGE' value='5'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_ICMP' value='6'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_ETH_ADDRS' value='7'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_TIPC' value='8'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_ARP' value='9'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_VLAN' value='10'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_FLOW_LABEL' value='11'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_GRE_KEYID' value='12'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_MPLS_ENTROPY' value='13'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_ENC_KEYID' value='14'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_ENC_IPV4_ADDRS' value='15'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_ENC_IPV6_ADDRS' value='16'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_ENC_CONTROL' value='17'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_ENC_PORTS' value='18'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_MPLS' value='19'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_TCP' value='20'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_IP' value='21'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_CVLAN' value='22'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_ENC_IP' value='23'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_ENC_OPTS' value='24'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_META' value='25'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_CT' value='26'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_HASH' value='27'/>
+        <enumerator name='FLOW_DISSECTOR_KEY_MAX' value='28'/>
+      </enum-decl>
       <class-decl name='drm_scdc' size-in-bits='32' is-struct='yes' visibility='default' filepath='include/drm/drm_connector.h' line='163' column='1' id='2c7c7fd8'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='supported' type-id='b50a4934' visibility='default' filepath='include/drm/drm_connector.h' line='167' column='1'/>
@@ -27218,6 +27322,7 @@
         <return type-id='95e97e5e'/>
       </function-type>
       <pointer-type-def type-id='9502627f' size-in-bits='64' id='2f4077f3'/>
+      <pointer-type-def type-id='0a7f65bb' size-in-bits='64' id='2f42232b'/>
       <function-type size-in-bits='64' id='2f4352a3'>
         <parameter type-id='a2bff676'/>
         <parameter type-id='fea9c20b'/>
@@ -29772,7 +29877,7 @@
           <var-decl name='size' type-id='2f162548' visibility='default' filepath='include/uapi/sound/asoc.h' line='241' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='' type-id='ac5ab6af' visibility='default' filepath='include/uapi/sound/asoc.h' line='242' column='1'/>
+          <var-decl name='' type-id='ac5ab6b0' visibility='default' filepath='include/uapi/sound/asoc.h' line='242' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='usb_config_descriptor' size-in-bits='72' is-struct='yes' visibility='default' filepath='include/uapi/linux/usb/ch9.h' line='349' column='1' id='372ebfa4'>
@@ -34121,7 +34226,20 @@
         <parameter type-id='abd62a96'/>
         <return type-id='95e97e5e'/>
       </function-type>
-      <class-decl name='ip_tunnel_info' is-struct='yes' visibility='default' is-declaration-only='yes' id='4093cbd8'/>
+      <class-decl name='ip_tunnel_info' size-in-bits='640' is-struct='yes' visibility='default' filepath='include/net/ip_tunnels.h' line='69' column='1' id='4093cbd8'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='key' type-id='05607863' visibility='default' filepath='include/net/ip_tunnels.h' line='70' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='448'>
+          <var-decl name='dst_cache' type-id='4d93bd81' visibility='default' filepath='include/net/ip_tunnels.h' line='72' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='576'>
+          <var-decl name='options_len' type-id='f9b06939' visibility='default' filepath='include/net/ip_tunnels.h' line='74' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='584'>
+          <var-decl name='mode' type-id='f9b06939' visibility='default' filepath='include/net/ip_tunnels.h' line='75' column='1'/>
+        </data-member>
+      </class-decl>
       <class-decl name='rpmsg_device_id' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/linux/mod_devicetable.h' line='454' column='1' id='40980961'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='name' type-id='16dc656a' visibility='default' filepath='include/linux/mod_devicetable.h' line='455' column='1'/>
@@ -34987,6 +35105,7 @@
       </class-decl>
       <pointer-type-def type-id='484541f8' size-in-bits='64' id='4315d79a'/>
       <typedef-decl name='get_block_t' type-id='45550f94' filepath='include/linux/fs.h' line='95' column='1' id='4316c9c9'/>
+      <pointer-type-def type-id='45305972' size-in-bits='64' id='431ca588'/>
       <function-type size-in-bits='64' id='4322685c'>
         <parameter type-id='3e31633b'/>
         <return type-id='48b5725f'/>
@@ -38198,6 +38317,7 @@
       </function-type>
       <pointer-type-def type-id='79b655f7' size-in-bits='64' id='4c257c03'/>
       <pointer-type-def type-id='03f3693e' size-in-bits='64' id='4c2e6a7c'/>
+      <typedef-decl name='clock_t' type-id='880ebc01' filepath='include/linux/types.h' line='70' column='1' id='4c3a2c61'/>
       <function-type size-in-bits='64' id='4c42814c'>
         <parameter type-id='442b8d89'/>
         <parameter type-id='bbeb954c'/>
@@ -38483,7 +38603,7 @@
         <return type-id='eaa32e2f'/>
       </function-type>
       <pointer-type-def type-id='148c2b1d' size-in-bits='64' id='4cb5819d'/>
-      <array-type-def dimensions='1' type-id='e7f44072' size-in-bits='13440' id='4cb7c55c'>
+      <array-type-def dimensions='1' type-id='e7f44074' size-in-bits='13440' id='4cb7c55c'>
         <subrange length='15' type-id='7ff19f0f' id='8484ba73'/>
       </array-type-def>
       <function-type size-in-bits='64' id='4cbeea4d'>
@@ -38620,7 +38740,7 @@
           <var-decl name='type' type-id='2f162548' visibility='default' filepath='include/uapi/sound/asoc.h' line='259' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='' type-id='ac5ab6b0' visibility='default' filepath='include/uapi/sound/asoc.h' line='260' column='1'/>
+          <var-decl name='' type-id='ac5ab6b1' visibility='default' filepath='include/uapi/sound/asoc.h' line='260' column='1'/>
         </data-member>
       </class-decl>
       <array-type-def dimensions='1' type-id='f0981eeb' size-in-bits='160' id='4d5a4f46'>
@@ -38674,6 +38794,14 @@
       </class-decl>
       <typedef-decl name='sync_serial_settings' type-id='c37ef5e1' filepath='include/uapi/linux/hdlc/ioctl.h' line='44' column='1' id='4d8b71ac'/>
       <pointer-type-def type-id='100ce309' size-in-bits='64' id='4d8f5625'/>
+      <class-decl name='dst_cache' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/net/dst_cache.h' line='11' column='1' id='4d93bd81'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='cache' type-id='06e27406' visibility='default' filepath='include/net/dst_cache.h' line='12' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='reset_ts' type-id='7359adad' visibility='default' filepath='include/net/dst_cache.h' line='13' column='1'/>
+        </data-member>
+      </class-decl>
       <function-type size-in-bits='64' id='4d94804e'>
         <parameter type-id='40735a95'/>
         <parameter type-id='7ac48c21'/>
@@ -42471,6 +42599,7 @@
       <array-type-def dimensions='1' type-id='e878d564' size-in-bits='1344' id='55d1e02d'>
         <subrange length='3' type-id='7ff19f0f' id='56f209d2'/>
       </array-type-def>
+      <class-decl name='dst_cache_pcpu' is-struct='yes' visibility='default' is-declaration-only='yes' id='55d22140'/>
       <pointer-type-def type-id='42c66597' size-in-bits='64' id='55d37973'/>
       <pointer-type-def type-id='cfdbff8a' size-in-bits='64' id='55e2a83c'/>
       <class-decl name='ipv6_devconf' size-in-bits='2240' is-struct='yes' visibility='default' filepath='include/linux/ipv6.h' line='14' column='1' id='55e8af82'>
@@ -51316,7 +51445,7 @@
           <var-decl name='pmsr_capa' type-id='5abfac26' visibility='default' filepath='include/net/cfg80211.h' line='5766' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11520'>
-          <var-decl name='tid_config_support' type-id='e7f44076' visibility='default' filepath='include/net/cfg80211.h' line='5771' column='1'/>
+          <var-decl name='tid_config_support' type-id='e7f44078' visibility='default' filepath='include/net/cfg80211.h' line='5771' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11712'>
           <var-decl name='max_data_retry_count' type-id='f9b06939' visibility='default' filepath='include/net/cfg80211.h' line='5773' column='1'/>
@@ -51337,7 +51466,7 @@
           <var-decl name='max_num_akm_suites' type-id='1dc6a898' visibility='default' filepath='include/net/cfg80211.h' line='5781' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11968'>
-          <var-decl name='' type-id='ac5ab6a9' visibility='default' filepath='include/net/cfg80211.h' line='5784' column='1'/>
+          <var-decl name='' type-id='ac5ab6aa' visibility='default' filepath='include/net/cfg80211.h' line='5784' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12032'>
           <var-decl name='android_backport_reserved2' type-id='91ce1af9' visibility='default' filepath='include/net/cfg80211.h' line='5785' column='1'/>
@@ -56688,6 +56817,7 @@
           <var-decl name='set_voltages' type-id='f9b06939' visibility='default' filepath='include/linux/phy/phy-dp.h' line='92' column='1'/>
         </data-member>
       </class-decl>
+      <qualified-type-def type-id='6e2b0753' const='yes' id='7572c29a'/>
       <pointer-type-def type-id='fc8e93cb' size-in-bits='64' id='7572cb33'/>
       <array-type-def dimensions='1' type-id='cfff5953' size-in-bits='448' id='75781a60'>
         <subrange length='7' type-id='7ff19f0f' id='16fc326e'/>
@@ -66347,7 +66477,7 @@
           <var-decl name='num_elems' type-id='2f162548' visibility='default' filepath='include/uapi/sound/asoc.h' line='227' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='96'>
-          <var-decl name='' type-id='ac5ab6ae' visibility='default' filepath='include/uapi/sound/asoc.h' line='228' column='1'/>
+          <var-decl name='' type-id='ac5ab6af' visibility='default' filepath='include/uapi/sound/asoc.h' line='228' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='49178f86' size-in-bits='64' id='8a47abc3'/>
@@ -70373,6 +70503,7 @@
         <parameter type-id='6dca061b'/>
         <return type-id='b50a4934'/>
       </function-type>
+      <pointer-type-def type-id='7572c29a' size-in-bits='64' id='93a87b10'/>
       <class-decl name='est_timings' size-in-bits='24' is-struct='yes' visibility='default' filepath='include/drm/drm_edid.h' line='44' column='1' id='93a90c7b'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='t1' type-id='f9b06939' visibility='default' filepath='include/drm/drm_edid.h' line='45' column='1'/>
@@ -72140,6 +72271,7 @@
       <pointer-type-def type-id='3f646ae7' size-in-bits='64' id='981420b7'/>
       <qualified-type-def type-id='972f40bf' const='yes' id='9819baf4'/>
       <pointer-type-def type-id='9df0e286' size-in-bits='64' id='981b2780'/>
+      <pointer-type-def type-id='b2e6acdd' size-in-bits='64' id='982248d5'/>
       <pointer-type-def type-id='962c09bb' size-in-bits='64' id='9822fe67'/>
       <pointer-type-def type-id='e3a1e7d2' size-in-bits='64' id='98252144'/>
       <class-decl name='thermal_instance' size-in-bits='1792' is-struct='yes' visibility='default' filepath='drivers/thermal/thermal_core.h' line='97' column='1' id='98294d42'>
@@ -78515,6 +78647,14 @@
       <pointer-type-def type-id='332a260c' size-in-bits='64' id='a6945abe'/>
       <pointer-type-def type-id='9b941952' size-in-bits='64' id='a69af780'/>
       <pointer-type-def type-id='6d60f45d' size-in-bits='64' id='a6a0d755'/>
+      <class-decl name='flow_dissector_key' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/net/flow_dissector.h' line='293' column='1' id='a6a52ce0'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='key_id' type-id='2c7b42ff' visibility='default' filepath='include/net/flow_dissector.h' line='294' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='offset' type-id='b59d7dce' visibility='default' filepath='include/net/flow_dissector.h' line='295' column='1'/>
+        </data-member>
+      </class-decl>
       <function-type size-in-bits='64' id='a6ad86be'>
         <parameter type-id='13103032'/>
         <parameter type-id='5c0abad8'/>
@@ -83953,19 +84093,19 @@
       </union-decl>
       <union-decl name='__anonymous_union__' size-in-bits='1920' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6159' column='1' id='ac5ab68a'>
         <data-member access='public'>
-          <var-decl name='client' type-id='e7f44078' visibility='default' filepath='include/net/cfg80211.h' line='6164' column='1'/>
+          <var-decl name='client' type-id='e7f4407a' visibility='default' filepath='include/net/cfg80211.h' line='6164' column='1'/>
         </data-member>
         <data-member access='public'>
-          <var-decl name='mesh' type-id='e7f44079' visibility='default' filepath='include/net/cfg80211.h' line='6171' column='1'/>
+          <var-decl name='mesh' type-id='e7f4407b' visibility='default' filepath='include/net/cfg80211.h' line='6171' column='1'/>
         </data-member>
         <data-member access='public'>
-          <var-decl name='ap' type-id='e7f4407a' visibility='default' filepath='include/net/cfg80211.h' line='6176' column='1'/>
+          <var-decl name='ap' type-id='e7f4407c' visibility='default' filepath='include/net/cfg80211.h' line='6176' column='1'/>
         </data-member>
         <data-member access='public'>
-          <var-decl name='ibss' type-id='e7f4407b' visibility='default' filepath='include/net/cfg80211.h' line='6183' column='1'/>
+          <var-decl name='ibss' type-id='e7f4407d' visibility='default' filepath='include/net/cfg80211.h' line='6183' column='1'/>
         </data-member>
         <data-member access='public'>
-          <var-decl name='ocb' type-id='e7f4407c' visibility='default' filepath='include/net/cfg80211.h' line='6186' column='1'/>
+          <var-decl name='ocb' type-id='e7f4407e' visibility='default' filepath='include/net/cfg80211.h' line='6186' column='1'/>
         </data-member>
       </union-decl>
       <union-decl name='__anonymous_union__' size-in-bits='128' is-anonymous='yes' visibility='default' filepath='include/net/xfrm.h' line='157' column='1' id='ac5ab68b'>
@@ -84299,34 +84439,42 @@
           <var-decl name='targinfo' type-id='eaa32e2f' visibility='default' filepath='include/linux/netfilter/x_tables.h' line='36' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='72' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='384' column='1' id='ac5ab6a8'>
+      <union-decl name='__anonymous_union__' size-in-bits='256' is-anonymous='yes' visibility='default' filepath='include/net/ip_tunnels.h' line='41' column='1' id='ac5ab6a8'>
+        <data-member access='public'>
+          <var-decl name='ipv4' type-id='e7f44072' visibility='default' filepath='include/net/ip_tunnels.h' line='45' column='1'/>
+        </data-member>
+        <data-member access='public'>
+          <var-decl name='ipv6' type-id='e7f44073' visibility='default' filepath='include/net/ip_tunnels.h' line='49' column='1'/>
+        </data-member>
+      </union-decl>
+      <union-decl name='__anonymous_union__' size-in-bits='72' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='384' column='1' id='ac5ab6a9'>
         <data-member access='public'>
           <var-decl name='only_20mhz' type-id='17ee5cc6' visibility='default' filepath='include/net/cfg80211.h' line='385' column='1'/>
         </data-member>
         <data-member access='public'>
-          <var-decl name='bw' type-id='e7f44073' visibility='default' filepath='include/net/cfg80211.h' line='390' column='1'/>
+          <var-decl name='bw' type-id='e7f44075' visibility='default' filepath='include/net/cfg80211.h' line='390' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='64' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='5784' column='1' id='ac5ab6a9'>
+      <union-decl name='__anonymous_union__' size-in-bits='64' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='5784' column='1' id='ac5ab6aa'>
         <data-member access='public'>
           <var-decl name='backport' type-id='040fcd9e' visibility='default' filepath='include/net/cfg80211.h' line='5784' column='1'/>
         </data-member>
         <data-member access='public'>
-          <var-decl name='' type-id='e7f44077' visibility='default' filepath='include/net/cfg80211.h' line='5784' column='1'/>
+          <var-decl name='' type-id='e7f44079' visibility='default' filepath='include/net/cfg80211.h' line='5784' column='1'/>
         </data-member>
         <data-member access='public'>
           <var-decl name='' type-id='ac5ab5e2' visibility='default' filepath='include/net/cfg80211.h' line='5784' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='832' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6191' column='1' id='ac5ab6aa'>
+      <union-decl name='__anonymous_union__' size-in-bits='832' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6191' column='1' id='ac5ab6ab'>
         <data-member access='public'>
-          <var-decl name='ap' type-id='e7f4407d' visibility='default' filepath='include/net/cfg80211.h' line='6195' column='1'/>
+          <var-decl name='ap' type-id='e7f4407f' visibility='default' filepath='include/net/cfg80211.h' line='6195' column='1'/>
         </data-member>
         <data-member access='public'>
-          <var-decl name='client' type-id='e7f4407e' visibility='default' filepath='include/net/cfg80211.h' line='6198' column='1'/>
+          <var-decl name='client' type-id='e7f44080' visibility='default' filepath='include/net/cfg80211.h' line='6198' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='128' is-anonymous='yes' visibility='default' filepath='include/net/xfrm.h' line='1409' column='1' id='ac5ab6ab'>
+      <union-decl name='__anonymous_union__' size-in-bits='128' is-anonymous='yes' visibility='default' filepath='include/net/xfrm.h' line='1409' column='1' id='ac5ab6ac'>
         <data-member access='public'>
           <var-decl name='aead' type-id='71694cb7' visibility='default' filepath='include/net/xfrm.h' line='1410' column='1'/>
         </data-member>
@@ -84340,7 +84488,7 @@
           <var-decl name='comp' type-id='b9ac86db' visibility='default' filepath='include/net/xfrm.h' line='1413' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='192' is-anonymous='yes' visibility='default' filepath='include/sound/soc-topology.h' line='66' column='1' id='ac5ab6ac'>
+      <union-decl name='__anonymous_union__' size-in-bits='192' is-anonymous='yes' visibility='default' filepath='include/sound/soc-topology.h' line='66' column='1' id='ac5ab6ad'>
         <data-member access='public'>
           <var-decl name='control' type-id='8a84fb32' visibility='default' filepath='include/sound/soc-topology.h' line='67' column='1'/>
         </data-member>
@@ -84348,7 +84496,7 @@
           <var-decl name='widget' type-id='ca569b91' visibility='default' filepath='include/sound/soc-topology.h' line='68' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='64' is-anonymous='yes' visibility='default' filepath='include/sound/soc.h' line='1111' column='1' id='ac5ab6ad'>
+      <union-decl name='__anonymous_union__' size-in-bits='64' is-anonymous='yes' visibility='default' filepath='include/sound/soc.h' line='1111' column='1' id='ac5ab6ae'>
         <data-member access='public'>
           <var-decl name='dpcm_be_start' type-id='1872161b' visibility='default' filepath='include/sound/soc.h' line='1111' column='1'/>
         </data-member>
@@ -84359,7 +84507,7 @@
           <var-decl name='' type-id='ac5ab5e2' visibility='default' filepath='include/sound/soc.h' line='1111' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='228' column='1' id='ac5ab6ae'>
+      <union-decl name='__anonymous_union__' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='228' column='1' id='ac5ab6af'>
         <data-member access='public'>
           <var-decl name='uuid' type-id='ebaaecd3' visibility='default' filepath='include/uapi/sound/asoc.h' line='229' column='1'/>
         </data-member>
@@ -84370,7 +84518,7 @@
           <var-decl name='string' type-id='e9564905' visibility='default' filepath='include/uapi/sound/asoc.h' line='231' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='242' column='1' id='ac5ab6af'>
+      <union-decl name='__anonymous_union__' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='242' column='1' id='ac5ab6b0'>
         <data-member access='public'>
           <var-decl name='data' type-id='e84913bd' visibility='default' filepath='include/uapi/sound/asoc.h' line='243' column='1'/>
         </data-member>
@@ -84378,7 +84526,7 @@
           <var-decl name='array' type-id='591a7f7d' visibility='default' filepath='include/uapi/sound/asoc.h' line='244' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='1024' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='260' column='1' id='ac5ab6b0'>
+      <union-decl name='__anonymous_union__' size-in-bits='1024' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asoc.h' line='260' column='1' id='ac5ab6b1'>
         <data-member access='public'>
           <var-decl name='data' type-id='28645bde' visibility='default' filepath='include/uapi/sound/asoc.h' line='261' column='1'/>
         </data-member>
@@ -85513,7 +85661,7 @@
       </class-decl>
       <class-decl name='ieee80211_eht_mcs_nss_supp' size-in-bits='72' is-struct='yes' visibility='default' filepath='include/net/cfg80211.h' line='383' column='1' id='ae96296b'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='' type-id='ac5ab6a8' visibility='default' filepath='include/net/cfg80211.h' line='384' column='1'/>
+          <var-decl name='' type-id='ac5ab6a9' visibility='default' filepath='include/net/cfg80211.h' line='384' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='0286989c' size-in-bits='64' id='ae9790c6'/>
@@ -87370,6 +87518,7 @@
         <parameter type-id='d504f73d'/>
         <return type-id='95e97e5e'/>
       </function-type>
+      <qualified-type-def type-id='a6a52ce0' const='yes' id='b2e6acdd'/>
       <pointer-type-def type-id='f3a719f4' size-in-bits='64' id='b2ea0a72'/>
       <function-type size-in-bits='64' id='b2ea0ff9'>
         <parameter type-id='0fbf3cfd'/>
@@ -94583,7 +94732,7 @@
           <var-decl name='last_frame_number' type-id='f0981eeb' visibility='default' filepath='sound/usb/card.h' line='192' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1408'>
-          <var-decl name='dsd_dop' type-id='e7f4407f' visibility='default' filepath='sound/usb/card.h' line='198' column='1'/>
+          <var-decl name='dsd_dop' type-id='e7f44081' visibility='default' filepath='sound/usb/card.h' line='198' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1504'>
           <var-decl name='trigger_tstamp_pending_update' type-id='b50a4934' visibility='default' filepath='sound/usb/card.h' line='200' column='1'/>
@@ -99308,6 +99457,7 @@
         <enumerator name='DMA_RESIDUE_GRANULARITY_SEGMENT' value='1'/>
         <enumerator name='DMA_RESIDUE_GRANULARITY_BURST' value='2'/>
       </enum-decl>
+      <pointer-type-def type-id='09337300' size-in-bits='64' id='cad684c6'/>
       <pointer-type-def type-id='b086bddd' size-in-bits='64' id='cad718c1'/>
       <pointer-type-def type-id='7370d1f4' size-in-bits='64' id='cadab7d6'/>
       <function-type size-in-bits='64' id='cadc2a5d'>
@@ -101668,7 +101818,20 @@
           <var-decl name='init' type-id='b6a95a02' visibility='default' filepath='include/linux/clk-provider.h' line='329' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='action_gate_entry' is-struct='yes' visibility='default' is-declaration-only='yes' id='cf8ff924'/>
+      <class-decl name='action_gate_entry' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/net/tc_act/tc_gate.h' line='10' column='1' id='cf8ff924'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='gate_state' type-id='f9b06939' visibility='default' filepath='include/net/tc_act/tc_gate.h' line='11' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='32'>
+          <var-decl name='interval' type-id='19c2251e' visibility='default' filepath='include/net/tc_act/tc_gate.h' line='12' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='ipv' type-id='a7832498' visibility='default' filepath='include/net/tc_act/tc_gate.h' line='13' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='96'>
+          <var-decl name='maxoctets' type-id='a7832498' visibility='default' filepath='include/net/tc_act/tc_gate.h' line='14' column='1'/>
+        </data-member>
+      </class-decl>
       <enum-decl name='writeback_sync_modes' filepath='include/linux/writeback.h' line='41' column='1' id='cf92d981'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='WB_SYNC_NONE' value='0'/>
@@ -116894,15 +117057,31 @@
           <var-decl name='logflags' type-id='892641a4' visibility='default' filepath='include/net/netfilter/nf_log.h' line='34' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='896' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6189' column='1' id='e7f44072'>
+      <class-decl name='__anonymous_struct__' size-in-bits='64' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/ip_tunnels.h' line='42' column='1' id='e7f44072'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='src' type-id='78a133c2' visibility='default' filepath='include/net/ip_tunnels.h' line='43' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='32'>
+          <var-decl name='dst' type-id='78a133c2' visibility='default' filepath='include/net/ip_tunnels.h' line='44' column='1'/>
+        </data-member>
+      </class-decl>
+      <class-decl name='__anonymous_struct__' size-in-bits='256' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/ip_tunnels.h' line='46' column='1' id='e7f44073'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='src' type-id='f6ed712a' visibility='default' filepath='include/net/ip_tunnels.h' line='47' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='128'>
+          <var-decl name='dst' type-id='f6ed712a' visibility='default' filepath='include/net/ip_tunnels.h' line='48' column='1'/>
+        </data-member>
+      </class-decl>
+      <class-decl name='__anonymous_struct__' size-in-bits='896' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6189' column='1' id='e7f44074'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='addr' type-id='cf1a4160' visibility='default' filepath='include/net/cfg80211.h' line='6190' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='' type-id='ac5ab6aa' visibility='default' filepath='include/net/cfg80211.h' line='6191' column='1'/>
+          <var-decl name='' type-id='ac5ab6ab' visibility='default' filepath='include/net/cfg80211.h' line='6191' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='72' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='386' column='1' id='e7f44073'>
+      <class-decl name='__anonymous_struct__' size-in-bits='72' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='386' column='1' id='e7f44075'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='_80' type-id='a03b9897' visibility='default' filepath='include/net/cfg80211.h' line='387' column='1'/>
         </data-member>
@@ -116913,7 +117092,7 @@
           <var-decl name='_320' type-id='a03b9897' visibility='default' filepath='include/net/cfg80211.h' line='389' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='128' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='435' column='1' id='e7f44074'>
+      <class-decl name='__anonymous_struct__' size-in-bits='128' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='435' column='1' id='e7f44076'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='data' type-id='bbaf3419' visibility='default' filepath='include/net/cfg80211.h' line='436' column='1'/>
         </data-member>
@@ -116921,7 +117100,7 @@
           <var-decl name='len' type-id='f0981eeb' visibility='default' filepath='include/net/cfg80211.h' line='437' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='96' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='5382' column='1' id='e7f44075'>
+      <class-decl name='__anonymous_struct__' size-in-bits='96' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='5382' column='1' id='e7f44077'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='preambles' type-id='19c2251e' visibility='default' filepath='include/net/cfg80211.h' line='5383' column='1'/>
         </data-member>
@@ -116956,7 +117135,7 @@
           <var-decl name='non_trigger_based' type-id='f9b06939' visibility='default' filepath='include/net/cfg80211.h' line='5393' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='192' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='5768' column='1' id='e7f44076'>
+      <class-decl name='__anonymous_struct__' size-in-bits='192' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='5768' column='1' id='e7f44078'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='peer' type-id='91ce1af9' visibility='default' filepath='include/net/cfg80211.h' line='5769' column='1'/>
         </data-member>
@@ -116967,12 +117146,12 @@
           <var-decl name='max_retry' type-id='f9b06939' visibility='default' filepath='include/net/cfg80211.h' line='5770' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='64' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='5784' column='1' id='e7f44077'>
+      <class-decl name='__anonymous_struct__' size-in-bits='64' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='5784' column='1' id='e7f44079'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='android_backport_reserved1' type-id='91ce1af9' visibility='default' filepath='include/net/cfg80211.h' line='5784' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='320' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6160' column='1' id='e7f44078'>
+      <class-decl name='__anonymous_struct__' size-in-bits='320' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6160' column='1' id='e7f4407a'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='connected_addr' type-id='cf1a4160' visibility='default' filepath='include/net/cfg80211.h' line='6161' column='1'/>
         </data-member>
@@ -116983,7 +117162,7 @@
           <var-decl name='ssid_len' type-id='f9b06939' visibility='default' filepath='include/net/cfg80211.h' line='6163' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='1920' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6165' column='1' id='e7f44079'>
+      <class-decl name='__anonymous_struct__' size-in-bits='1920' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6165' column='1' id='e7f4407b'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='beacon_interval' type-id='95e97e5e' visibility='default' filepath='include/net/cfg80211.h' line='6166' column='1'/>
         </data-member>
@@ -117003,7 +117182,7 @@
           <var-decl name='id_up_len' type-id='f9b06939' visibility='default' filepath='include/net/cfg80211.h' line='6170' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='1088' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6172' column='1' id='e7f4407a'>
+      <class-decl name='__anonymous_struct__' size-in-bits='1088' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6172' column='1' id='e7f4407c'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='preset_chandef' type-id='e07d69c8' visibility='default' filepath='include/net/cfg80211.h' line='6173' column='1'/>
         </data-member>
@@ -117014,7 +117193,7 @@
           <var-decl name='ssid_len' type-id='f9b06939' visibility='default' filepath='include/net/cfg80211.h' line='6175' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='1152' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6177' column='1' id='e7f4407b'>
+      <class-decl name='__anonymous_struct__' size-in-bits='1152' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6177' column='1' id='e7f4407d'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='current_bss' type-id='1819dec8' visibility='default' filepath='include/net/cfg80211.h' line='6178' column='1'/>
         </data-member>
@@ -117031,12 +117210,12 @@
           <var-decl name='ssid_len' type-id='f9b06939' visibility='default' filepath='include/net/cfg80211.h' line='6182' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='768' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6184' column='1' id='e7f4407c'>
+      <class-decl name='__anonymous_struct__' size-in-bits='768' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6184' column='1' id='e7f4407e'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='chandef' type-id='e07d69c8' visibility='default' filepath='include/net/cfg80211.h' line='6185' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='832' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6192' column='1' id='e7f4407d'>
+      <class-decl name='__anonymous_struct__' size-in-bits='832' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6192' column='1' id='e7f4407f'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='beacon_interval' type-id='f0981eeb' visibility='default' filepath='include/net/cfg80211.h' line='6193' column='1'/>
         </data-member>
@@ -117044,12 +117223,12 @@
           <var-decl name='chandef' type-id='e07d69c8' visibility='default' filepath='include/net/cfg80211.h' line='6194' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='64' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6196' column='1' id='e7f4407e'>
+      <class-decl name='__anonymous_struct__' size-in-bits='64' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/net/cfg80211.h' line='6196' column='1' id='e7f44080'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='current_bss' type-id='1819dec8' visibility='default' filepath='include/net/cfg80211.h' line='6197' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='__anonymous_struct__' size-in-bits='96' is-struct='yes' is-anonymous='yes' visibility='default' filepath='sound/usb/card.h' line='194' column='1' id='e7f4407f'>
+      <class-decl name='__anonymous_struct__' size-in-bits='96' is-struct='yes' is-anonymous='yes' visibility='default' filepath='sound/usb/card.h' line='194' column='1' id='e7f44081'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='marker' type-id='95e97e5e' visibility='default' filepath='sound/usb/card.h' line='195' column='1'/>
         </data-member>
@@ -117225,7 +117404,7 @@
           <var-decl name='pfkey_supported' type-id='f9b06939' visibility='default' filepath='include/net/xfrm.h' line='1408' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='uinfo' type-id='ac5ab6ab' visibility='default' filepath='include/net/xfrm.h' line='1414' column='1'/>
+          <var-decl name='uinfo' type-id='ac5ab6ac' visibility='default' filepath='include/net/xfrm.h' line='1414' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='320'>
           <var-decl name='desc' type-id='731caba6' visibility='default' filepath='include/net/xfrm.h' line='1415' column='1'/>
@@ -117867,7 +118046,7 @@
           <var-decl name='randomize_mac_addr' type-id='f9b06939' visibility='default' filepath='include/net/cfg80211.h' line='5380' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='ftm' type-id='e7f44075' visibility='default' filepath='include/net/cfg80211.h' line='5394' column='1'/>
+          <var-decl name='ftm' type-id='e7f44077' visibility='default' filepath='include/net/cfg80211.h' line='5394' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='clk_rate_request' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/linux/clk-provider.h' line='56' column='1' id='e9bea70c'>
@@ -129605,6 +129784,11 @@
         <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/skbuff.c' line='1973' column='1'/>
         <parameter type-id='95e97e5e' name='pad' filepath='net/core/skbuff.c' line='1973' column='1'/>
         <parameter type-id='b50a4934' name='free_on_error' filepath='net/core/skbuff.c' line='1973' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__skb_vlan_pop' mangled-name='__skb_vlan_pop' filepath='net/core/skbuff.c' line='5780' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__skb_vlan_pop'>
+        <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/skbuff.c' line='5780' column='1'/>
+        <parameter type-id='26d4d46f' name='vlan_tci' filepath='net/core/skbuff.c' line='5780' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__sock_create' mangled-name='__sock_create' filepath='net/socket.c' line='1413' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__sock_create'>
@@ -144037,6 +144221,10 @@
         <return type-id='95e97e5e'/>
       </function-decl>
       <var-decl name='flow_keys_basic_dissector' type-id='379be6ec' mangled-name='flow_keys_basic_dissector' visibility='default' filepath='net/core/flow_dissector.c' line='1820' column='1' elf-symbol-id='flow_keys_basic_dissector'/>
+      <function-decl name='flow_rule_alloc' mangled-name='flow_rule_alloc' filepath='net/core/flow_offload.c' line='9' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='flow_rule_alloc'>
+        <parameter type-id='f0981eeb' name='num_actions' filepath='net/core/flow_offload.c' line='9' column='1'/>
+        <return type-id='cad684c6'/>
+      </function-decl>
       <function-decl name='flow_rule_match_basic' mangled-name='flow_rule_match_basic' filepath='net/core/flow_offload.c' line='44' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='flow_rule_match_basic'>
         <parameter type-id='c9242457' name='rule' filepath='net/core/flow_offload.c' line='44' column='1'/>
         <parameter type-id='dcf452cc' name='out' filepath='net/core/flow_offload.c' line='45' column='1'/>
@@ -146587,6 +146775,11 @@
         <parameter type-id='7292109c' name='nextid' filepath='lib/idr.c' line='264' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
+      <function-decl name='idr_get_next_ul' mangled-name='idr_get_next_ul' filepath='lib/idr.c' line='227' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='idr_get_next_ul'>
+        <parameter type-id='301185b4' name='idr' filepath='lib/idr.c' line='227' column='1'/>
+        <parameter type-id='1d2c2b85' name='nextid' filepath='lib/idr.c' line='227' column='1'/>
+        <return type-id='eaa32e2f'/>
+      </function-decl>
       <function-decl name='idr_preload' mangled-name='idr_preload' filepath='lib/radix-tree.c' line='1467' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='idr_preload'>
         <parameter type-id='3eb7c31c' name='gfp_mask' filepath='lib/radix-tree.c' line='1467' column='1'/>
         <return type-id='48b5725f'/>
@@ -148302,6 +148495,10 @@
       <function-decl name='jiffies_64_to_clock_t' mangled-name='jiffies_64_to_clock_t' filepath='kernel/time/time.c' line='652' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='jiffies_64_to_clock_t'>
         <parameter type-id='91ce1af9' name='x' filepath='kernel/time/time.c' line='652' column='1'/>
         <return type-id='91ce1af9'/>
+      </function-decl>
+      <function-decl name='jiffies_to_clock_t' mangled-name='jiffies_to_clock_t' filepath='kernel/time/time.c' line='621' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='jiffies_to_clock_t'>
+        <parameter type-id='7359adad' name='x' filepath='kernel/time/time.c' line='621' column='1'/>
+        <return type-id='4c3a2c61'/>
       </function-decl>
       <function-decl name='jiffies_to_msecs' mangled-name='jiffies_to_msecs' filepath='kernel/time/time.c' line='374' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='jiffies_to_msecs'>
         <parameter type-id='9cbd1c16' name='j' filepath='kernel/time/time.c' line='374' column='1'/>
@@ -154949,6 +155146,11 @@
         <parameter type-id='f0981eeb' name='tag' filepath='lib/radix-tree.c' line='966' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
+      <function-decl name='radix_tree_tagged' mangled-name='radix_tree_tagged' filepath='lib/radix-tree.c' line='1454' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='radix_tree_tagged'>
+        <parameter type-id='bb0f13d1' name='root' filepath='lib/radix-tree.c' line='1454' column='1'/>
+        <parameter type-id='f0981eeb' name='tag' filepath='lib/radix-tree.c' line='1454' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='rational_best_approximation' mangled-name='rational_best_approximation' filepath='lib/math/rational.c' line='35' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rational_best_approximation'>
         <parameter type-id='7359adad' name='given_numerator' filepath='lib/math/rational.c' line='36' column='1'/>
         <parameter type-id='7359adad' name='given_denominator' filepath='lib/math/rational.c' line='36' column='1'/>
@@ -157968,6 +158170,50 @@
         <parameter type-id='95e97e5e' name='write_len' filepath='net/core/skbuff.c' line='5765' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='skb_eth_pop' mangled-name='skb_eth_pop' filepath='net/core/skbuff.c' line='5891' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_eth_pop'>
+        <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/skbuff.c' line='5891' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='skb_eth_push' mangled-name='skb_eth_push' filepath='net/core/skbuff.c' line='5918' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_eth_push'>
+        <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/skbuff.c' line='5918' column='1'/>
+        <parameter type-id='354f7eb9' name='dst' filepath='net/core/skbuff.c' line='5918' column='1'/>
+        <parameter type-id='354f7eb9' name='src' filepath='net/core/skbuff.c' line='5919' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='skb_flow_dissect_ct' mangled-name='skb_flow_dissect_ct' filepath='net/core/flow_dissector.c' line='238' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_flow_dissect_ct'>
+        <parameter type-id='11f4a000' name='skb' filepath='net/core/flow_dissector.c' line='238' column='1'/>
+        <parameter type-id='0b8ca8fa' name='flow_dissector' filepath='net/core/flow_dissector.c' line='239' column='1'/>
+        <parameter type-id='eaa32e2f' name='target_container' filepath='net/core/flow_dissector.c' line='240' column='1'/>
+        <parameter type-id='26d4d46f' name='ctinfo_map' filepath='net/core/flow_dissector.c' line='240' column='1'/>
+        <parameter type-id='b59d7dce' name='mapsize' filepath='net/core/flow_dissector.c' line='241' column='1'/>
+        <parameter type-id='b50a4934' name='post_ct' filepath='net/core/flow_dissector.c' line='241' column='1'/>
+        <parameter type-id='1dc6a898' name='zone' filepath='net/core/flow_dissector.c' line='241' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='skb_flow_dissect_hash' mangled-name='skb_flow_dissect_hash' filepath='net/core/flow_dissector.c' line='393' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_flow_dissect_hash'>
+        <parameter type-id='11f4a000' name='skb' filepath='net/core/flow_dissector.c' line='393' column='1'/>
+        <parameter type-id='0b8ca8fa' name='flow_dissector' filepath='net/core/flow_dissector.c' line='394' column='1'/>
+        <parameter type-id='eaa32e2f' name='target_container' filepath='net/core/flow_dissector.c' line='395' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='skb_flow_dissect_meta' mangled-name='skb_flow_dissect_meta' filepath='net/core/flow_dissector.c' line='205' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_flow_dissect_meta'>
+        <parameter type-id='11f4a000' name='skb' filepath='net/core/flow_dissector.c' line='205' column='1'/>
+        <parameter type-id='0b8ca8fa' name='flow_dissector' filepath='net/core/flow_dissector.c' line='206' column='1'/>
+        <parameter type-id='eaa32e2f' name='target_container' filepath='net/core/flow_dissector.c' line='207' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='skb_flow_dissect_tunnel_info' mangled-name='skb_flow_dissect_tunnel_info' filepath='net/core/flow_dissector.c' line='284' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_flow_dissect_tunnel_info'>
+        <parameter type-id='11f4a000' name='skb' filepath='net/core/flow_dissector.c' line='284' column='1'/>
+        <parameter type-id='0b8ca8fa' name='flow_dissector' filepath='net/core/flow_dissector.c' line='285' column='1'/>
+        <parameter type-id='eaa32e2f' name='target_container' filepath='net/core/flow_dissector.c' line='286' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='skb_flow_dissector_init' mangled-name='skb_flow_dissector_init' filepath='net/core/flow_dissector.c' line='43' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_flow_dissector_init'>
+        <parameter type-id='0b8ca8fa' name='flow_dissector' filepath='net/core/flow_dissector.c' line='43' column='1'/>
+        <parameter type-id='982248d5' name='key' filepath='net/core/flow_dissector.c' line='44' column='1'/>
+        <parameter type-id='f0981eeb' name='key_count' filepath='net/core/flow_dissector.c' line='45' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='skb_free_datagram' mangled-name='skb_free_datagram' filepath='net/core/datagram.c' line='323' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_free_datagram'>
         <parameter type-id='f772df6d' name='sk' filepath='net/core/datagram.c' line='323' column='1'/>
         <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/datagram.c' line='323' column='1'/>
@@ -158082,6 +158328,16 @@
         <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/skbuff.c' line='3395' column='1'/>
         <parameter type-id='03c386c6' name='list' filepath='net/core/skbuff.c' line='3395' column='1'/>
         <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='skb_vlan_pop' mangled-name='skb_vlan_pop' filepath='net/core/skbuff.c' line='5819' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_vlan_pop'>
+        <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/skbuff.c' line='5819' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='skb_vlan_push' mangled-name='skb_vlan_push' filepath='net/core/skbuff.c' line='5852' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_vlan_push'>
+        <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/skbuff.c' line='5852' column='1'/>
+        <parameter type-id='84a5c3d4' name='vlan_proto' filepath='net/core/skbuff.c' line='5852' column='1'/>
+        <parameter type-id='1dc6a898' name='vlan_tci' filepath='net/core/skbuff.c' line='5852' column='1'/>
+        <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='skb_vlan_untag' mangled-name='skb_vlan_untag' filepath='net/core/skbuff.c' line='5724' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_vlan_untag'>
         <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/skbuff.c' line='5724' column='1'/>
@@ -160488,12 +160744,88 @@
         <return type-id='48b5725f'/>
       </function-decl>
       <var-decl name='tasklist_lock' type-id='ac16795b' mangled-name='tasklist_lock' visibility='default' filepath='kernel/fork.c' line='147' column='1' elf-symbol-id='tasklist_lock'/>
+      <function-decl name='tc_cleanup_flow_action' mangled-name='tc_cleanup_flow_action' filepath='net/sched/cls_api.c' line='3475' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tc_cleanup_flow_action'>
+        <parameter type-id='22e6df5a' name='flow_action' filepath='net/sched/cls_api.c' line='3475' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='tc_setup_cb_add' mangled-name='tc_setup_cb_add' filepath='net/sched/cls_api.c' line='3294' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tc_setup_cb_add'>
+        <parameter type-id='13ef4686' name='block' filepath='net/sched/cls_api.c' line='3294' column='1'/>
+        <parameter type-id='6dca061b' name='tp' filepath='net/sched/cls_api.c' line='3294' column='1'/>
+        <parameter type-id='b3e12f1c' name='type' filepath='net/sched/cls_api.c' line='3295' column='1'/>
+        <parameter type-id='eaa32e2f' name='type_data' filepath='net/sched/cls_api.c' line='3295' column='1'/>
+        <parameter type-id='b50a4934' name='err_stop' filepath='net/sched/cls_api.c' line='3295' column='1'/>
+        <parameter type-id='f9409001' name='flags' filepath='net/sched/cls_api.c' line='3296' column='1'/>
+        <parameter type-id='807869d3' name='in_hw_count' filepath='net/sched/cls_api.c' line='3296' column='1'/>
+        <parameter type-id='b50a4934' name='rtnl_held' filepath='net/sched/cls_api.c' line='3296' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tc_setup_cb_call' mangled-name='tc_setup_cb_call' filepath='net/sched/cls_api.c' line='3259' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tc_setup_cb_call'>
+        <parameter type-id='13ef4686' name='block' filepath='net/sched/cls_api.c' line='3259' column='1'/>
+        <parameter type-id='b3e12f1c' name='type' filepath='net/sched/cls_api.c' line='3259' column='1'/>
+        <parameter type-id='eaa32e2f' name='type_data' filepath='net/sched/cls_api.c' line='3260' column='1'/>
+        <parameter type-id='b50a4934' name='err_stop' filepath='net/sched/cls_api.c' line='3260' column='1'/>
+        <parameter type-id='b50a4934' name='rtnl_held' filepath='net/sched/cls_api.c' line='3260' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tc_setup_cb_destroy' mangled-name='tc_setup_cb_destroy' filepath='net/sched/cls_api.c' line='3398' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tc_setup_cb_destroy'>
+        <parameter type-id='13ef4686' name='block' filepath='net/sched/cls_api.c' line='3398' column='1'/>
+        <parameter type-id='6dca061b' name='tp' filepath='net/sched/cls_api.c' line='3398' column='1'/>
+        <parameter type-id='b3e12f1c' name='type' filepath='net/sched/cls_api.c' line='3399' column='1'/>
+        <parameter type-id='eaa32e2f' name='type_data' filepath='net/sched/cls_api.c' line='3399' column='1'/>
+        <parameter type-id='b50a4934' name='err_stop' filepath='net/sched/cls_api.c' line='3399' column='1'/>
+        <parameter type-id='f9409001' name='flags' filepath='net/sched/cls_api.c' line='3400' column='1'/>
+        <parameter type-id='807869d3' name='in_hw_count' filepath='net/sched/cls_api.c' line='3400' column='1'/>
+        <parameter type-id='b50a4934' name='rtnl_held' filepath='net/sched/cls_api.c' line='3400' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tc_setup_cb_reoffload' mangled-name='tc_setup_cb_reoffload' filepath='net/sched/cls_api.c' line='3432' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tc_setup_cb_reoffload'>
+        <parameter type-id='13ef4686' name='block' filepath='net/sched/cls_api.c' line='3432' column='1'/>
+        <parameter type-id='6dca061b' name='tp' filepath='net/sched/cls_api.c' line='3432' column='1'/>
+        <parameter type-id='b50a4934' name='add' filepath='net/sched/cls_api.c' line='3433' column='1'/>
+        <parameter type-id='18a1ba64' name='cb' filepath='net/sched/cls_api.c' line='3433' column='1'/>
+        <parameter type-id='b3e12f1c' name='type' filepath='net/sched/cls_api.c' line='3434' column='1'/>
+        <parameter type-id='eaa32e2f' name='type_data' filepath='net/sched/cls_api.c' line='3434' column='1'/>
+        <parameter type-id='eaa32e2f' name='cb_priv' filepath='net/sched/cls_api.c' line='3435' column='1'/>
+        <parameter type-id='f9409001' name='flags' filepath='net/sched/cls_api.c' line='3435' column='1'/>
+        <parameter type-id='807869d3' name='in_hw_count' filepath='net/sched/cls_api.c' line='3435' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tc_setup_flow_action' mangled-name='tc_setup_flow_action' filepath='net/sched/cls_api.c' line='3558' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tc_setup_flow_action'>
+        <parameter type-id='22e6df5a' name='flow_action' filepath='net/sched/cls_api.c' line='3558' column='1'/>
+        <parameter type-id='93a87b10' name='exts' filepath='net/sched/cls_api.c' line='3559' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tcf_action_check_ctrlact' mangled-name='tcf_action_check_ctrlact' filepath='net/sched/act_api.c' line='67' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_action_check_ctrlact'>
+        <parameter type-id='95e97e5e' name='action' filepath='net/sched/act_api.c' line='67' column='1'/>
+        <parameter type-id='6dca061b' name='tp' filepath='net/sched/act_api.c' line='67' column='1'/>
+        <parameter type-id='431ca588' name='newchain' filepath='net/sched/act_api.c' line='68' column='1'/>
+        <parameter type-id='5799dc94' name='extack' filepath='net/sched/act_api.c' line='69' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='tcf_action_exec' mangled-name='tcf_action_exec' filepath='net/sched/act_api.c' line='723' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_action_exec'>
         <parameter type-id='0fbf3cfd' name='skb' filepath='net/sched/act_api.c' line='723' column='1'/>
         <parameter type-id='981420b7' name='actions' filepath='net/sched/act_api.c' line='723' column='1'/>
         <parameter type-id='95e97e5e' name='nr_actions' filepath='net/sched/act_api.c' line='724' column='1'/>
         <parameter type-id='e638cd0c' name='res' filepath='net/sched/act_api.c' line='724' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tcf_action_set_ctrlact' mangled-name='tcf_action_set_ctrlact' filepath='net/sched/act_api.c' line='103' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_action_set_ctrlact'>
+        <parameter type-id='3f646ae7' name='a' filepath='net/sched/act_api.c' line='103' column='1'/>
+        <parameter type-id='95e97e5e' name='action' filepath='net/sched/act_api.c' line='103' column='1'/>
+        <parameter type-id='45305972' name='goto_chain' filepath='net/sched/act_api.c' line='104' column='1'/>
+        <return type-id='45305972'/>
+      </function-decl>
+      <function-decl name='tcf_action_update_stats' mangled-name='tcf_action_update_stats' filepath='net/sched/act_api.c' line='1140' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_action_update_stats'>
+        <parameter type-id='3f646ae7' name='a' filepath='net/sched/act_api.c' line='1140' column='1'/>
+        <parameter type-id='91ce1af9' name='bytes' filepath='net/sched/act_api.c' line='1140' column='1'/>
+        <parameter type-id='91ce1af9' name='packets' filepath='net/sched/act_api.c' line='1140' column='1'/>
+        <parameter type-id='91ce1af9' name='drops' filepath='net/sched/act_api.c' line='1141' column='1'/>
+        <parameter type-id='b50a4934' name='hw' filepath='net/sched/act_api.c' line='1141' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='tcf_chain_put_by_act' mangled-name='tcf_chain_put_by_act' filepath='net/sched/cls_api.c' line='585' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_chain_put_by_act'>
+        <parameter type-id='45305972' name='chain' filepath='net/sched/cls_api.c' line='585' column='1'/>
+        <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='tcf_exts_destroy' mangled-name='tcf_exts_destroy' filepath='net/sched/cls_api.c' line='3027' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_exts_destroy'>
         <parameter type-id='6c257353' name='exts' filepath='net/sched/cls_api.c' line='3027' column='1'/>
@@ -160509,6 +160841,15 @@
         <parameter type-id='6c257353' name='exts' filepath='net/sched/cls_api.c' line='3181' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='tcf_exts_num_actions' mangled-name='tcf_exts_num_actions' filepath='net/sched/cls_api.c' line='3742' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_exts_num_actions'>
+        <parameter type-id='6c257353' name='exts' filepath='net/sched/cls_api.c' line='3742' column='1'/>
+        <return type-id='f0981eeb'/>
+      </function-decl>
+      <function-decl name='tcf_exts_terse_dump' mangled-name='tcf_exts_terse_dump' filepath='net/sched/cls_api.c' line='3155' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_exts_terse_dump'>
+        <parameter type-id='0fbf3cfd' name='skb' filepath='net/sched/cls_api.c' line='3155' column='1'/>
+        <parameter type-id='6c257353' name='exts' filepath='net/sched/cls_api.c' line='3155' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='tcf_exts_validate' mangled-name='tcf_exts_validate' filepath='net/sched/cls_api.c' line='3039' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_exts_validate'>
         <parameter type-id='a2bff676' name='net' filepath='net/sched/cls_api.c' line='3039' column='1'/>
         <parameter type-id='6dca061b' name='tp' filepath='net/sched/cls_api.c' line='3039' column='1'/>
@@ -160519,10 +160860,67 @@
         <parameter type-id='5799dc94' name='extack' filepath='net/sched/cls_api.c' line='3041' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='tcf_generic_walker' mangled-name='tcf_generic_walker' filepath='net/sched/act_api.c' line='401' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_generic_walker'>
+        <parameter type-id='2f42232b' name='tn' filepath='net/sched/act_api.c' line='401' column='1'/>
+        <parameter type-id='0fbf3cfd' name='skb' filepath='net/sched/act_api.c' line='401' column='1'/>
+        <parameter type-id='07b9ee34' name='cb' filepath='net/sched/act_api.c' line='402' column='1'/>
+        <parameter type-id='95e97e5e' name='type' filepath='net/sched/act_api.c' line='402' column='1'/>
+        <parameter type-id='bdbd4b03' name='ops' filepath='net/sched/act_api.c' line='403' column='1'/>
+        <parameter type-id='5799dc94' name='extack' filepath='net/sched/act_api.c' line='404' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tcf_idr_check_alloc' mangled-name='tcf_idr_check_alloc' filepath='net/sched/act_api.c' line='560' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_idr_check_alloc'>
+        <parameter type-id='2f42232b' name='tn' filepath='net/sched/act_api.c' line='560' column='1'/>
+        <parameter type-id='f9409001' name='index' filepath='net/sched/act_api.c' line='560' column='1'/>
+        <parameter type-id='981420b7' name='a' filepath='net/sched/act_api.c' line='561' column='1'/>
+        <parameter type-id='95e97e5e' name='bind' filepath='net/sched/act_api.c' line='561' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tcf_idr_cleanup' mangled-name='tcf_idr_cleanup' filepath='net/sched/act_api.c' line='543' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_idr_cleanup'>
+        <parameter type-id='2f42232b' name='tn' filepath='net/sched/act_api.c' line='543' column='1'/>
+        <parameter type-id='19c2251e' name='index' filepath='net/sched/act_api.c' line='543' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='tcf_idr_create_from_flags' mangled-name='tcf_idr_create_from_flags' filepath='net/sched/act_api.c' line='530' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_idr_create_from_flags'>
+        <parameter type-id='2f42232b' name='tn' filepath='net/sched/act_api.c' line='530' column='1'/>
+        <parameter type-id='19c2251e' name='index' filepath='net/sched/act_api.c' line='530' column='1'/>
+        <parameter type-id='6fcaf91e' name='est' filepath='net/sched/act_api.c' line='531' column='1'/>
+        <parameter type-id='981420b7' name='a' filepath='net/sched/act_api.c' line='531' column='1'/>
+        <parameter type-id='bdbd4b03' name='ops' filepath='net/sched/act_api.c' line='532' column='1'/>
+        <parameter type-id='95e97e5e' name='bind' filepath='net/sched/act_api.c' line='532' column='1'/>
+        <parameter type-id='19c2251e' name='flags' filepath='net/sched/act_api.c' line='533' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tcf_idr_release' mangled-name='tcf_idr_release' filepath='net/sched/act_api.c' line='188' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_idr_release'>
+        <parameter type-id='3f646ae7' name='a' filepath='net/sched/act_api.c' line='188' column='1'/>
+        <parameter type-id='b50a4934' name='bind' filepath='net/sched/act_api.c' line='188' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tcf_idr_search' mangled-name='tcf_idr_search' filepath='net/sched/act_api.c' line='420' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_idr_search'>
+        <parameter type-id='2f42232b' name='tn' filepath='net/sched/act_api.c' line='420' column='1'/>
+        <parameter type-id='981420b7' name='a' filepath='net/sched/act_api.c' line='420' column='1'/>
+        <parameter type-id='19c2251e' name='index' filepath='net/sched/act_api.c' line='420' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tcf_idrinfo_destroy' mangled-name='tcf_idrinfo_destroy' filepath='net/sched/act_api.c' line='607' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_idrinfo_destroy'>
+        <parameter type-id='bdbd4b03' name='ops' filepath='net/sched/act_api.c' line='607' column='1'/>
+        <parameter type-id='5eeecdaa' name='idrinfo' filepath='net/sched/act_api.c' line='608' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='tcf_queue_work' mangled-name='tcf_queue_work' filepath='net/sched/cls_api.c' line='202' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_queue_work'>
         <parameter type-id='b325c82b' name='rwork' filepath='net/sched/cls_api.c' line='202' column='1'/>
         <parameter type-id='72666d3f' name='func' filepath='net/sched/cls_api.c' line='202' column='1'/>
         <return type-id='b50a4934'/>
+      </function-decl>
+      <function-decl name='tcf_register_action' mangled-name='tcf_register_action' filepath='net/sched/act_api.c' line='630' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_register_action'>
+        <parameter type-id='017279ea' name='act' filepath='net/sched/act_api.c' line='630' column='1'/>
+        <parameter type-id='d6907f4c' name='ops' filepath='net/sched/act_api.c' line='631' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='tcf_unregister_action' mangled-name='tcf_unregister_action' filepath='net/sched/act_api.c' line='662' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcf_unregister_action'>
+        <parameter type-id='017279ea' name='act' filepath='net/sched/act_api.c' line='662' column='1'/>
+        <parameter type-id='d6907f4c' name='ops' filepath='net/sched/act_api.c' line='663' column='1'/>
+        <return type-id='95e97e5e'/>
       </function-decl>
       <var-decl name='tcp_hashinfo' type-id='3482ac54' mangled-name='tcp_hashinfo' visibility='default' filepath='net/ipv4/tcp_ipv4.c' line='91' column='1' elf-symbol-id='tcp_hashinfo'/>
       <function-decl name='tcp_register_congestion_control' mangled-name='tcp_register_congestion_control' filepath='net/ipv4/tcp_cong.c' line='70' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tcp_register_congestion_control'>
