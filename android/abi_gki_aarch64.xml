@@ -33,6 +33,7 @@
       <elf-symbol name='__arm_smccc_hvc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x50f85302'/>
       <elf-symbol name='__arm_smccc_smc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf93aae46'/>
       <elf-symbol name='__arm_smccc_sve_check' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3d93c7c2'/>
+      <elf-symbol name='__audit_log_nfcfg' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9968aacb'/>
       <elf-symbol name='__balance_callbacks' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1cbc558d'/>
       <elf-symbol name='__bforget' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5126d49'/>
       <elf-symbol name='__bio_crypt_clone' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x15ea6ecc'/>
@@ -4196,8 +4197,10 @@
       <elf-symbol name='nf_ct_l4proto_find' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x27bd37ee'/>
       <elf-symbol name='nf_register_net_hook' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4796f411'/>
       <elf-symbol name='nf_register_net_hooks' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbba1eb75'/>
+      <elf-symbol name='nf_register_sockopt' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x89a5493e'/>
       <elf-symbol name='nf_unregister_net_hook' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf2c93e7'/>
       <elf-symbol name='nf_unregister_net_hooks' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xaf88a58e'/>
+      <elf-symbol name='nf_unregister_sockopt' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc1798031'/>
       <elf-symbol name='nla_append' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6ef473fe'/>
       <elf-symbol name='nla_find' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcd279169'/>
       <elf-symbol name='nla_memcpy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf1db1704'/>
@@ -6927,6 +6930,7 @@
       <elf-symbol name='vm_unmap_aliases' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc22a3091'/>
       <elf-symbol name='vm_unmap_ram' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3fd2571'/>
       <elf-symbol name='vmalloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd6ee688f'/>
+      <elf-symbol name='vmalloc_node' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x23fd3028'/>
       <elf-symbol name='vmalloc_nr_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7ccb0ada'/>
       <elf-symbol name='vmalloc_to_page' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9fe64cf1'/>
       <elf-symbol name='vmalloc_to_pfn' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3744cf36'/>
@@ -7078,11 +7082,25 @@
       <elf-symbol name='xsk_tx_peek_desc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7b31e057'/>
       <elf-symbol name='xsk_tx_release' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb56581ea'/>
       <elf-symbol name='xsk_uses_need_wakeup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcd50e942'/>
+      <elf-symbol name='xt_check_match' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe8d52d5e'/>
+      <elf-symbol name='xt_check_target' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb856dabb'/>
+      <elf-symbol name='xt_compat_add_offset' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x823edea5'/>
+      <elf-symbol name='xt_compat_calc_jump' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc7fae024'/>
+      <elf-symbol name='xt_compat_flush_offsets' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4e27719'/>
+      <elf-symbol name='xt_compat_init_offsets' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x50873741'/>
+      <elf-symbol name='xt_compat_lock' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa7c94f1d'/>
+      <elf-symbol name='xt_compat_match_offset' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xafb63ea1'/>
+      <elf-symbol name='xt_compat_target_offset' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5c70f562'/>
+      <elf-symbol name='xt_compat_unlock' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd1e246a2'/>
+      <elf-symbol name='xt_data_to_user' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7bce4603'/>
+      <elf-symbol name='xt_find_match' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9e7a7560'/>
       <elf-symbol name='xt_hook_ops_alloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa5a2baf0'/>
       <elf-symbol name='xt_register_match' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd7cb18a9'/>
       <elf-symbol name='xt_register_matches' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x93e58c67'/>
       <elf-symbol name='xt_register_target' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x80fef575'/>
       <elf-symbol name='xt_register_targets' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa7cdd966'/>
+      <elf-symbol name='xt_request_find_match' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe4923439'/>
+      <elf-symbol name='xt_request_find_target' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3b83b7e3'/>
       <elf-symbol name='xt_unregister_match' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb059783e'/>
       <elf-symbol name='xt_unregister_matches' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6c98d4b2'/>
       <elf-symbol name='xt_unregister_target' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf34cef62'/>
@@ -7647,6 +7665,7 @@
       <elf-symbol name='arm64_const_caps_ready' size='16' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x14b89635'/>
       <elf-symbol name='arm64_use_ng_mappings' size='1' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xaf56600a'/>
       <elf-symbol name='arp_tbl' size='568' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7634f81e'/>
+      <elf-symbol name='audit_enabled' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb44e18ea'/>
       <elf-symbol name='avenrun' size='24' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf1e98c74'/>
       <elf-symbol name='balance_push_callback' size='16' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x89cc791d'/>
       <elf-symbol name='balloon_aops' size='208' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf5eb7218'/>
@@ -10934,6 +10953,7 @@
       <pointer-type-def type-id='ba1f090e' size-in-bits='64' id='08e52268'/>
       <pointer-type-def type-id='4ca0c298' size-in-bits='64' id='08e531de'/>
       <pointer-type-def type-id='195ce0ad' size-in-bits='64' id='08ed88d1'/>
+      <pointer-type-def type-id='afa5edfe' size-in-bits='64' id='08f00320'/>
       <enum-decl name='__anonymous_enum__' is-anonymous='yes' filepath='include/net/bluetooth/hci_core.h' line='69' column='1' id='08f5ca17'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='DISCOVERY_STOPPED' value='0'/>
@@ -19241,6 +19261,7 @@
           <var-decl name='ifs_ifsu' type-id='ac5ab686' visibility='default' filepath='include/uapi/linux/if.h' line='222' column='1'/>
         </data-member>
       </class-decl>
+      <pointer-type-def type-id='b30ae843' size-in-bits='64' id='1d062953'/>
       <pointer-type-def type-id='81795b61' size-in-bits='64' id='1d0ab711'/>
       <class-decl name='cgroup_subsys' size-in-bits='1920' is-struct='yes' visibility='default' filepath='include/linux/cgroup-defs.h' line='626' column='1' id='1d115fd5'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -19395,6 +19416,29 @@
           <var-decl name='stats' type-id='3097f179' visibility='default' filepath='mm/zsmalloc.c' line='213' column='1'/>
         </data-member>
       </class-decl>
+      <enum-decl name='audit_nfcfgop' filepath='include/linux/audit.h' line='98' column='1' id='1d29070d'>
+        <underlying-type type-id='9cac1fee'/>
+        <enumerator name='AUDIT_XT_OP_REGISTER' value='0'/>
+        <enumerator name='AUDIT_XT_OP_REPLACE' value='1'/>
+        <enumerator name='AUDIT_XT_OP_UNREGISTER' value='2'/>
+        <enumerator name='AUDIT_NFT_OP_TABLE_REGISTER' value='3'/>
+        <enumerator name='AUDIT_NFT_OP_TABLE_UNREGISTER' value='4'/>
+        <enumerator name='AUDIT_NFT_OP_CHAIN_REGISTER' value='5'/>
+        <enumerator name='AUDIT_NFT_OP_CHAIN_UNREGISTER' value='6'/>
+        <enumerator name='AUDIT_NFT_OP_RULE_REGISTER' value='7'/>
+        <enumerator name='AUDIT_NFT_OP_RULE_UNREGISTER' value='8'/>
+        <enumerator name='AUDIT_NFT_OP_SET_REGISTER' value='9'/>
+        <enumerator name='AUDIT_NFT_OP_SET_UNREGISTER' value='10'/>
+        <enumerator name='AUDIT_NFT_OP_SETELEM_REGISTER' value='11'/>
+        <enumerator name='AUDIT_NFT_OP_SETELEM_UNREGISTER' value='12'/>
+        <enumerator name='AUDIT_NFT_OP_GEN_REGISTER' value='13'/>
+        <enumerator name='AUDIT_NFT_OP_OBJ_REGISTER' value='14'/>
+        <enumerator name='AUDIT_NFT_OP_OBJ_UNREGISTER' value='15'/>
+        <enumerator name='AUDIT_NFT_OP_OBJ_RESET' value='16'/>
+        <enumerator name='AUDIT_NFT_OP_FLOWTABLE_REGISTER' value='17'/>
+        <enumerator name='AUDIT_NFT_OP_FLOWTABLE_UNREGISTER' value='18'/>
+        <enumerator name='AUDIT_NFT_OP_INVALID' value='19'/>
+      </enum-decl>
       <function-type size-in-bits='64' id='1d2b3133'>
         <parameter type-id='74d89ebd'/>
         <parameter type-id='35078cb9'/>
@@ -23570,6 +23614,38 @@
         <parameter type-id='f0981eeb'/>
         <return type-id='95e97e5e'/>
       </function-type>
+      <class-decl name='nf_sockopt_ops' size-in-bits='576' is-struct='yes' visibility='default' filepath='include/linux/netfilter.h' line='166' column='1' id='264b41dc'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='list' type-id='72f469ec' visibility='default' filepath='include/linux/netfilter.h' line='167' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='128'>
+          <var-decl name='pf' type-id='892641a4' visibility='default' filepath='include/linux/netfilter.h' line='169' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='160'>
+          <var-decl name='set_optmin' type-id='95e97e5e' visibility='default' filepath='include/linux/netfilter.h' line='172' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='192'>
+          <var-decl name='set_optmax' type-id='95e97e5e' visibility='default' filepath='include/linux/netfilter.h' line='173' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='256'>
+          <var-decl name='set' type-id='08f00320' visibility='default' filepath='include/linux/netfilter.h' line='174' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='320'>
+          <var-decl name='get_optmin' type-id='95e97e5e' visibility='default' filepath='include/linux/netfilter.h' line='176' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='352'>
+          <var-decl name='get_optmax' type-id='95e97e5e' visibility='default' filepath='include/linux/netfilter.h' line='177' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='384'>
+          <var-decl name='get' type-id='7f21d801' visibility='default' filepath='include/linux/netfilter.h' line='178' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='448'>
+          <var-decl name='owner' type-id='2730d015' visibility='default' filepath='include/linux/netfilter.h' line='180' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='512'>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/netfilter.h' line='182' column='1'/>
+        </data-member>
+      </class-decl>
       <pointer-type-def type-id='99cd308f' size-in-bits='64' id='264baaf7'/>
       <pointer-type-def type-id='29c8c1c5' size-in-bits='64' id='264d5ec9'/>
       <class-decl name='regmap_async' size-in-bits='256' is-struct='yes' visibility='default' filepath='drivers/base/regmap/internal.h' line='43' column='1' id='26527266'>
@@ -52577,7 +52653,7 @@
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='ec84183d' size-in-bits='64' id='6af1ec35'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1507' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1508' column='1'/>
         </data-member>
@@ -57300,6 +57376,7 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='2157493d' size-in-bits='64' id='772c77c9'/>
+      <pointer-type-def type-id='264b41dc' size-in-bits='64' id='77316f2a'/>
       <function-type size-in-bits='64' id='77328cce'>
         <parameter type-id='a6711537'/>
         <parameter type-id='b64ad7cb'/>
@@ -58431,6 +58508,13 @@
         <parameter type-id='890caaa5'/>
         <parameter type-id='91ce1af9'/>
         <parameter type-id='91ce1af9'/>
+        <return type-id='95e97e5e'/>
+      </function-type>
+      <function-type size-in-bits='64' id='79d34285'>
+        <parameter type-id='f772df6d'/>
+        <parameter type-id='95e97e5e'/>
+        <parameter type-id='eaa32e2f'/>
+        <parameter type-id='7292109c'/>
         <return type-id='95e97e5e'/>
       </function-type>
       <pointer-type-def type-id='d800b1bf' size-in-bits='64' id='79dbccfb'/>
@@ -60996,6 +61080,7 @@
         </data-member>
       </class-decl>
       <qualified-type-def type-id='8e5ae04f' const='yes' id='7f2104b8'/>
+      <pointer-type-def type-id='79d34285' size-in-bits='64' id='7f21d801'/>
       <class-decl name='linux_xfrm_mib' size-in-bits='1856' is-struct='yes' visibility='default' filepath='include/net/snmp.h' line='110' column='1' id='7f2c5e96'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='mibs' type-id='4fbdefa2' visibility='default' filepath='include/net/snmp.h' line='111' column='1'/>
@@ -75218,6 +75303,7 @@
       </class-decl>
       <pointer-type-def type-id='ccdf2931' size-in-bits='64' id='9e4db581'/>
       <pointer-type-def type-id='3e497762' size-in-bits='64' id='9e5416b4'/>
+      <pointer-type-def type-id='fa0eab7f' size-in-bits='64' id='9e5d4fa7'/>
       <pointer-type-def type-id='acc63fdf' size-in-bits='64' id='9e6a6c02'/>
       <pointer-type-def type-id='5352365e' size-in-bits='64' id='9e6bb89c'/>
       <pointer-type-def type-id='fdb55010' size-in-bits='64' id='9e6d4b4e'/>
@@ -86062,6 +86148,13 @@
       </function-type>
       <pointer-type-def type-id='34c8e7e1' size-in-bits='64' id='af92413d'/>
       <qualified-type-def type-id='0c842ad9' const='yes' id='afa36b70'/>
+      <function-type size-in-bits='64' id='afa5edfe'>
+        <parameter type-id='f772df6d'/>
+        <parameter type-id='95e97e5e'/>
+        <parameter type-id='298d29fd'/>
+        <parameter type-id='f0981eeb'/>
+        <return type-id='95e97e5e'/>
+      </function-type>
       <pointer-type-def type-id='e7e14410' size-in-bits='64' id='afa767ca'/>
       <class-decl name='rt_mutex_waiter' size-in-bits='704' is-struct='yes' visibility='default' filepath='kernel/locking/rtmutex_common.h' line='33' column='1' id='afb04a62'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -127933,6 +128026,14 @@
         <parameter type-id='95e97e5e' name='node' filepath='net/core/skbuff.c' line='398' column='1'/>
         <return type-id='0fbf3cfd'/>
       </function-decl>
+      <function-decl name='__audit_log_nfcfg' mangled-name='__audit_log_nfcfg' filepath='kernel/auditsc.c' line='2643' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__audit_log_nfcfg'>
+        <parameter type-id='80f4b756' name='name' filepath='kernel/auditsc.c' line='2643' column='1'/>
+        <parameter type-id='f9b06939' name='af' filepath='kernel/auditsc.c' line='2643' column='1'/>
+        <parameter type-id='f0981eeb' name='nentries' filepath='kernel/auditsc.c' line='2643' column='1'/>
+        <parameter type-id='1d29070d' name='op' filepath='kernel/auditsc.c' line='2644' column='1'/>
+        <parameter type-id='3eb7c31c' name='gfp' filepath='kernel/auditsc.c' line='2644' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='__balance_callbacks' mangled-name='__balance_callbacks' filepath='kernel/sched/core.c' line='4844' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__balance_callbacks'>
         <parameter type-id='6ed6b432' name='rq' filepath='kernel/sched/core.c' line='4844' column='1'/>
         <return type-id='48b5725f'/>
@@ -134669,6 +134770,7 @@
         <parameter type-id='d504f73d' name='n' filepath='kernel/notifier.c' line='162' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <var-decl name='audit_enabled' type-id='19c2251e' mangled-name='audit_enabled' visibility='default' filepath='kernel/audit.c' line='72' column='1' elf-symbol-id='audit_enabled'/>
       <function-decl name='autoremove_wake_function' mangled-name='autoremove_wake_function' filepath='kernel/sched/wait.c' line='418' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='autoremove_wake_function'>
         <parameter type-id='db9d03e3' name='wq_entry' filepath='kernel/sched/wait.c' line='418' column='1'/>
         <parameter type-id='f0981eeb' name='mode' filepath='kernel/sched/wait.c' line='418' column='1'/>
@@ -151133,6 +151235,10 @@
         <parameter type-id='f0981eeb' name='n' filepath='net/netfilter/core.c' line='552' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='nf_register_sockopt' mangled-name='nf_register_sockopt' filepath='net/netfilter/nf_sockopt.c' line='25' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='nf_register_sockopt'>
+        <parameter type-id='77316f2a' name='reg' filepath='net/netfilter/nf_sockopt.c' line='25' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='nf_unregister_net_hook' mangled-name='nf_unregister_net_hook' filepath='net/netfilter/core.c' line='493' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='nf_unregister_net_hook'>
         <parameter type-id='a2bff676' name='net' filepath='net/netfilter/core.c' line='493' column='1'/>
         <parameter type-id='27db53a1' name='reg' filepath='net/netfilter/core.c' line='493' column='1'/>
@@ -151142,6 +151248,10 @@
         <parameter type-id='a2bff676' name='net' filepath='net/netfilter/core.c' line='571' column='1'/>
         <parameter type-id='27db53a1' name='reg' filepath='net/netfilter/core.c' line='571' column='1'/>
         <parameter type-id='f0981eeb' name='hookcount' filepath='net/netfilter/core.c' line='572' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='nf_unregister_sockopt' mangled-name='nf_unregister_sockopt' filepath='net/netfilter/nf_sockopt.c' line='54' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='nf_unregister_sockopt'>
+        <parameter type-id='77316f2a' name='reg' filepath='net/netfilter/nf_sockopt.c' line='54' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='nla_append' mangled-name='nla_append' filepath='lib/nlattr.c' line='1116' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='nla_append'>
@@ -165260,6 +165370,11 @@
         <parameter type-id='7359adad' name='size' filepath='mm/vmalloc.c' line='3182' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
+      <function-decl name='vmalloc_node' mangled-name='vmalloc_node' filepath='mm/vmalloc.c' line='3257' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='vmalloc_node'>
+        <parameter type-id='7359adad' name='size' filepath='mm/vmalloc.c' line='3257' column='1'/>
+        <parameter type-id='95e97e5e' name='node' filepath='mm/vmalloc.c' line='3257' column='1'/>
+        <return type-id='eaa32e2f'/>
+      </function-decl>
       <function-decl name='vmalloc_nr_pages' mangled-name='vmalloc_nr_pages' filepath='mm/vmalloc.c' line='803' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='vmalloc_nr_pages'>
         <return type-id='7359adad'/>
       </function-decl>
@@ -166036,6 +166151,70 @@
         <parameter type-id='81e0c1b8' name='pool' filepath='net/xdp/xsk.c' line='91' column='1'/>
         <return type-id='b50a4934'/>
       </function-decl>
+      <function-decl name='xt_check_match' mangled-name='xt_check_match' filepath='net/netfilter/x_tables.c' line='480' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_check_match'>
+        <parameter type-id='1d062953' name='par' filepath='net/netfilter/x_tables.c' line='480' column='1'/>
+        <parameter type-id='f0981eeb' name='size' filepath='net/netfilter/x_tables.c' line='481' column='1'/>
+        <parameter type-id='1dc6a898' name='proto' filepath='net/netfilter/x_tables.c' line='481' column='1'/>
+        <parameter type-id='b50a4934' name='inv_proto' filepath='net/netfilter/x_tables.c' line='481' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='xt_check_target' mangled-name='xt_check_target' filepath='net/netfilter/x_tables.c' line='1000' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_check_target'>
+        <parameter type-id='9e5d4fa7' name='par' filepath='net/netfilter/x_tables.c' line='1000' column='1'/>
+        <parameter type-id='f0981eeb' name='size' filepath='net/netfilter/x_tables.c' line='1001' column='1'/>
+        <parameter type-id='1dc6a898' name='proto' filepath='net/netfilter/x_tables.c' line='1001' column='1'/>
+        <parameter type-id='b50a4934' name='inv_proto' filepath='net/netfilter/x_tables.c' line='1001' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='xt_compat_add_offset' mangled-name='xt_compat_add_offset' filepath='net/netfilter/x_tables.c' line='665' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_compat_add_offset'>
+        <parameter type-id='892641a4' name='af' filepath='net/netfilter/x_tables.c' line='665' column='1'/>
+        <parameter type-id='f0981eeb' name='offset' filepath='net/netfilter/x_tables.c' line='665' column='1'/>
+        <parameter type-id='95e97e5e' name='delta' filepath='net/netfilter/x_tables.c' line='665' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='xt_compat_calc_jump' mangled-name='xt_compat_calc_jump' filepath='net/netfilter/x_tables.c' line='699' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_compat_calc_jump'>
+        <parameter type-id='892641a4' name='af' filepath='net/netfilter/x_tables.c' line='699' column='1'/>
+        <parameter type-id='f0981eeb' name='offset' filepath='net/netfilter/x_tables.c' line='699' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='xt_compat_flush_offsets' mangled-name='xt_compat_flush_offsets' filepath='net/netfilter/x_tables.c' line='686' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_compat_flush_offsets'>
+        <parameter type-id='892641a4' name='af' filepath='net/netfilter/x_tables.c' line='686' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='xt_compat_init_offsets' mangled-name='xt_compat_init_offsets' filepath='net/netfilter/x_tables.c' line='717' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_compat_init_offsets'>
+        <parameter type-id='f9b06939' name='af' filepath='net/netfilter/x_tables.c' line='717' column='1'/>
+        <parameter type-id='f0981eeb' name='number' filepath='net/netfilter/x_tables.c' line='717' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='xt_compat_lock' mangled-name='xt_compat_lock' filepath='net/netfilter/x_tables.c' line='1306' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_compat_lock'>
+        <parameter type-id='892641a4' name='af' filepath='net/netfilter/x_tables.c' line='1306' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='xt_compat_match_offset' mangled-name='xt_compat_match_offset' filepath='net/netfilter/x_tables.c' line='744' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_compat_match_offset'>
+        <parameter type-id='1ecd1044' name='match' filepath='net/netfilter/x_tables.c' line='744' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='xt_compat_target_offset' mangled-name='xt_compat_target_offset' filepath='net/netfilter/x_tables.c' line='1124' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_compat_target_offset'>
+        <parameter type-id='b7f14b36' name='target' filepath='net/netfilter/x_tables.c' line='1124' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='xt_compat_unlock' mangled-name='xt_compat_unlock' filepath='net/netfilter/x_tables.c' line='1312' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_compat_unlock'>
+        <parameter type-id='892641a4' name='af' filepath='net/netfilter/x_tables.c' line='1312' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='xt_data_to_user' mangled-name='xt_data_to_user' filepath='net/netfilter/x_tables.c' line='312' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_data_to_user'>
+        <parameter type-id='eaa32e2f' name='dst' filepath='net/netfilter/x_tables.c' line='312' column='1'/>
+        <parameter type-id='eaa32e2f' name='src' filepath='net/netfilter/x_tables.c' line='312' column='1'/>
+        <parameter type-id='95e97e5e' name='usersize' filepath='net/netfilter/x_tables.c' line='313' column='1'/>
+        <parameter type-id='95e97e5e' name='size' filepath='net/netfilter/x_tables.c' line='313' column='1'/>
+        <parameter type-id='95e97e5e' name='aligned_size' filepath='net/netfilter/x_tables.c' line='313' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='xt_find_match' mangled-name='xt_find_match' filepath='net/netfilter/x_tables.c' line='197' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_find_match'>
+        <parameter type-id='f9b06939' name='af' filepath='net/netfilter/x_tables.c' line='197' column='1'/>
+        <parameter type-id='80f4b756' name='name' filepath='net/netfilter/x_tables.c' line='197' column='1'/>
+        <parameter type-id='f9b06939' name='revision' filepath='net/netfilter/x_tables.c' line='197' column='1'/>
+        <return type-id='e25f5feb'/>
+      </function-decl>
       <function-decl name='xt_hook_ops_alloc' mangled-name='xt_hook_ops_alloc' filepath='net/netfilter/x_tables.c' line='1732' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_hook_ops_alloc'>
         <parameter type-id='e52e19bf' name='table' filepath='net/netfilter/x_tables.c' line='1732' column='1'/>
         <parameter type-id='c8f8b049' name='fn' filepath='net/netfilter/x_tables.c' line='1732' column='1'/>
@@ -166058,6 +166237,18 @@
         <parameter type-id='49ac960b' name='target' filepath='net/netfilter/x_tables.c' line='112' column='1'/>
         <parameter type-id='f0981eeb' name='n' filepath='net/netfilter/x_tables.c' line='112' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='xt_request_find_match' mangled-name='xt_request_find_match' filepath='net/netfilter/x_tables.c' line='228' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_request_find_match'>
+        <parameter type-id='b96825af' name='nfproto' filepath='net/netfilter/x_tables.c' line='228' column='1'/>
+        <parameter type-id='80f4b756' name='name' filepath='net/netfilter/x_tables.c' line='228' column='1'/>
+        <parameter type-id='b96825af' name='revision' filepath='net/netfilter/x_tables.c' line='228' column='1'/>
+        <return type-id='e25f5feb'/>
+      </function-decl>
+      <function-decl name='xt_request_find_target' mangled-name='xt_request_find_target' filepath='net/netfilter/x_tables.c' line='275' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_request_find_target'>
+        <parameter type-id='f9b06939' name='af' filepath='net/netfilter/x_tables.c' line='275' column='1'/>
+        <parameter type-id='80f4b756' name='name' filepath='net/netfilter/x_tables.c' line='275' column='1'/>
+        <parameter type-id='f9b06939' name='revision' filepath='net/netfilter/x_tables.c' line='275' column='1'/>
+        <return type-id='49ac960b'/>
       </function-decl>
       <var-decl name='xt_tee_enabled' type-id='00205383' mangled-name='xt_tee_enabled' visibility='default' filepath='net/netfilter/x_tables.c' line='1322' column='1' elf-symbol-id='xt_tee_enabled'/>
       <function-decl name='xt_unregister_match' mangled-name='xt_unregister_match' filepath='net/netfilter/x_tables.c' line='151' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xt_unregister_match'>
