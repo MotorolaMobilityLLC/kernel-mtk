@@ -2253,6 +2253,7 @@
       <elf-symbol name='drm_atomic_get_crtc_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x49669785'/>
       <elf-symbol name='drm_atomic_get_new_bridge_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xff7e86a9'/>
       <elf-symbol name='drm_atomic_get_new_connector_for_encoder' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x81fc00ee'/>
+      <elf-symbol name='drm_atomic_get_new_private_obj_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x13a14d37'/>
       <elf-symbol name='drm_atomic_get_old_connector_for_encoder' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x86d4e7b2'/>
       <elf-symbol name='drm_atomic_get_plane_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x70492d3a'/>
       <elf-symbol name='drm_atomic_get_private_obj_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbce6de0b'/>
@@ -2471,6 +2472,7 @@
       <elf-symbol name='drm_flip_work_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x737100b1'/>
       <elf-symbol name='drm_flip_work_queue' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdcb59b84'/>
       <elf-symbol name='drm_format_info' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6ef2f78e'/>
+      <elf-symbol name='drm_format_info_min_pitch' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb22dfd68'/>
       <elf-symbol name='drm_framebuffer_cleanup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa5b980b1'/>
       <elf-symbol name='drm_framebuffer_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x41266544'/>
       <elf-symbol name='drm_framebuffer_lookup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd29fffb9'/>
@@ -141239,6 +141241,11 @@
         <parameter type-id='74d89ebd' name='encoder' filepath='drivers/gpu/drm/drm_atomic.c' line='963' column='1'/>
         <return type-id='4db02c58'/>
       </function-decl>
+      <function-decl name='drm_atomic_get_new_private_obj_state' mangled-name='drm_atomic_get_new_private_obj_state' filepath='drivers/gpu/drm/drm_atomic.c' line='896' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_atomic_get_new_private_obj_state'>
+        <parameter type-id='e3dd029e' name='state' filepath='drivers/gpu/drm/drm_atomic.c' line='896' column='1'/>
+        <parameter type-id='11c98e9a' name='obj' filepath='drivers/gpu/drm/drm_atomic.c' line='897' column='1'/>
+        <return type-id='4ea020ae'/>
+      </function-decl>
       <function-decl name='drm_atomic_get_old_connector_for_encoder' mangled-name='drm_atomic_get_old_connector_for_encoder' filepath='drivers/gpu/drm/drm_atomic.c' line='928' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_atomic_get_old_connector_for_encoder'>
         <parameter type-id='e3dd029e' name='state' filepath='drivers/gpu/drm/drm_atomic.c' line='928' column='1'/>
         <parameter type-id='74d89ebd' name='encoder' filepath='drivers/gpu/drm/drm_atomic.c' line='929' column='1'/>
@@ -142357,6 +142364,12 @@
       <function-decl name='drm_format_info' mangled-name='drm_format_info' filepath='drivers/gpu/drm/drm_fourcc.c' line='299' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_format_info'>
         <parameter type-id='19c2251e' name='format' filepath='drivers/gpu/drm/drm_fourcc.c' line='299' column='1'/>
         <return type-id='f10b2208'/>
+      </function-decl>
+      <function-decl name='drm_format_info_min_pitch' mangled-name='drm_format_info_min_pitch' filepath='drivers/gpu/drm/drm_fourcc.c' line='384' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_format_info_min_pitch'>
+        <parameter type-id='f10b2208' name='info' filepath='drivers/gpu/drm/drm_fourcc.c' line='384' column='1'/>
+        <parameter type-id='95e97e5e' name='plane' filepath='drivers/gpu/drm/drm_fourcc.c' line='385' column='1'/>
+        <parameter type-id='f0981eeb' name='buffer_width' filepath='drivers/gpu/drm/drm_fourcc.c' line='385' column='1'/>
+        <return type-id='9c313c2d'/>
       </function-decl>
       <function-decl name='drm_framebuffer_cleanup' mangled-name='drm_framebuffer_cleanup' filepath='drivers/gpu/drm/drm_framebuffer.c' line='944' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_framebuffer_cleanup'>
         <parameter type-id='7b332e1c' name='fb' filepath='drivers/gpu/drm/drm_framebuffer.c' line='944' column='1'/>
@@ -166489,6 +166502,7 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
+
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
