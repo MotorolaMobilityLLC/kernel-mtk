@@ -33,9 +33,9 @@ static long acc_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 	int err = 0, status = 0;
 	uint32_t flag = 0;
 	char strbuf[64];
-	int32_t data_buf[3] = {0};
+	int32_t data_buf[4] = {0};
 	struct SENSOR_DATA sensor_data = {0};
-
+	struct SENSOR_CALI_DATA sensor_cali_data = {0};
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok((void __user *)arg,
 				 _IOC_SIZE(cmd));
@@ -162,6 +162,27 @@ static long acc_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 		if (copy_to_user(ptr, &sensor_data, sizeof(sensor_data)))
 			return -EFAULT;
 		return 0;
+  	case GSENSOR_IOCTL_GET_CALI_NOWAIT:
+  		if (accel_factory.fops != NULL &&
+  		    accel_factory.fops->get_cali != NULL) {
+  			err = accel_factory.fops->get_cali_nowait(data_buf);
+  			if (err < 0) {
+  				pr_err("GSENSOR_IOCTL_GET_CALI_NOWAIT FAIL!\n");
+  				return -EINVAL;
+  			}
+  		} else {
+  			pr_err("GSENSOR_IOCTL_GET_CALI_NOWAIT NULL\n");
+  			return -EINVAL;
+  		}
+  		pr_debug("GSENSOR_IOCTL_GET_CALI_NOWAIT: (%d, %d, %d, %d)!\n", data_buf[0],
+  			data_buf[1], data_buf[2], data_buf[3]);
+  		sensor_cali_data.x = data_buf[0];
+  		sensor_cali_data.y = data_buf[1];
+  		sensor_cali_data.z = data_buf[2];
+  		sensor_cali_data.status = data_buf[3];
+  		if (copy_to_user(ptr, &sensor_cali_data, sizeof(sensor_cali_data)))
+  			return -EFAULT;
+  		return 0;
 	case GSENSOR_IOCTL_ENABLE_CALI:
 		if (accel_factory.fops != NULL &&
 		    accel_factory.fops->enable_calibration != NULL) {
