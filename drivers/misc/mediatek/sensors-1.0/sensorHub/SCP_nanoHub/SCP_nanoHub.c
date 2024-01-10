@@ -2052,6 +2052,15 @@ int sensor_set_cmd_to_hub(uint8_t sensorType,
 			len = offsetof(struct SCP_SENSOR_HUB_SET_CUST_REQ,
 				custData) + sizeof(req.set_cust_req.getInfo);
 			break;
+		case CUST_ACTION_SET_CALI:
+			req.set_cust_req.setCali.action = CUST_ACTION_SET_CALI;
+			req.set_cust_req.setCali.int32_data[0] =
+				*((int32_t *) data);
+			printk("[%s] Pressure Cali offset:%d\n", __func__,
+				req.set_cust_req.setCali.int32_data[0]);
+			len = offsetof(struct SCP_SENSOR_HUB_SET_CUST_REQ,
+				custData) + sizeof(req.set_cust_req.setCali);
+			break;
 		default:
 			return -1;
 		}

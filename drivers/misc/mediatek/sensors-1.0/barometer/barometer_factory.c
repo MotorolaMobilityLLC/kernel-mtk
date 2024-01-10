@@ -33,6 +33,7 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 	void __user *ptr = (void __user *)arg;
 	int data = 0;
 	uint32_t flag = 0;
+	int32_t caliData = 0;
 
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok((void __user *)arg,
@@ -95,9 +96,41 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 			pr_err("BAROMETER_IOCTL_ENABLE_CALI NULL\n");
 			return -EINVAL;
 		}
-		return 0;
+		return 0;	
 	case BAROMETER_GET_TEMP_DATA:
 		return 0;
+  	case BAROMETER_IOCTL_SET_CALI:
+  		if (copy_from_user(&caliData, ptr, sizeof(caliData)))
+  			return -EFAULT;
+  		if (baro_factory.fops != NULL &&
+  		    baro_factory.fops->set_cali != NULL) {
+  			err = baro_factory.fops->set_cali(caliData);
+  			if (err < 0) {
+  				pr_err(
+  					"BAROMETER_IOCTL_SET_CALI fail!\n");
+  				return -EINVAL;
+  			}
+  		} else {
+  			pr_err("BAROMETER_IOCTL_SET_CALI NULL\n");
+  			return -EINVAL;
+  		}
+  		return 0;
+  	case BAROMETER_IOCTL_GET_CALI:
+  		if (baro_factory.fops != NULL &&
+  		    baro_factory.fops->get_cali != NULL) {
+  			err = baro_factory.fops->get_cali(&data);
+  			if (err < 0) {
+  				pr_err(
+  					"BAROMETER_IOCTL_GET_CALI read data fail!\n");
+  				return -EINVAL;
+  			}
+  			if (copy_to_user(ptr, &data, sizeof(data)))
+  				return -EFAULT;
+  		} else {
+  			pr_err("BAROMETER_IOCTL_GET_CALI NULL\n");
+  			return -EINVAL;
+  		}
+  		return 0;
 	default:
 		pr_err("unknown IOCTL: 0x%08x\n", cmd);
 		return -ENOIOCTLCMD;

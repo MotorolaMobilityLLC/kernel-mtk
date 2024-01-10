@@ -36,6 +36,8 @@ struct barohub_ipi_data {
 	atomic_t scp_init_done;
 	bool factory_enable;
 	bool android_enable;
+	int32_t static_cali[2]; //[0]reference, [1]offset
+	uint8_t config_flush_action;
 };
 
 static struct barohub_ipi_data *obj_ipi_data;
@@ -198,6 +200,12 @@ static int baro_recv_data(struct data_unit_t *event, void *reserved)
 			READ_ONCE(obj->android_enable) == true)
 		err = baro_data_report(event->pressure_t.pressure, 2,
 			(int64_t)event->time_stamp);
+	else if (event->flush_action == CALI_ACTION) {
+		err = baro_cali_report(event->data);
+		obj->static_cali[0] = event->data[0];
+		obj->static_cali[1] = event->data[1];
+		obj->config_flush_action = CALI_ACTION;
+	}
 	return err;
 }
 static int barohub_factory_enable_sensor(bool enabledisable,
@@ -253,12 +261,24 @@ static int barohub_factory_clear_cali(void)
 {
 	return 0;
 }
-static int barohub_factory_set_cali(int32_t offset)
+static int barohub_factory_set_cali(int32_t ref)
 {
-	return 0;
+	int value[2] = {ref, 0};
+	printk("[%s] ref:%d\n", __func__, ref);
+	return sensor_cfg_to_hub(ID_PRESSURE, (uint8_t *)value, sizeof(value));
 }
 static int barohub_factory_get_cali(int32_t *offset)
 {
+	struct barohub_ipi_data *obj = obj_ipi_data;
+	if (obj->config_flush_action == CALI_ACTION){
+		//offset[0] = obj->config_data[1];   // get offset value
+		offset[0] = obj->static_cali[1];   // get offset value
+		obj->config_flush_action = 255;
+	}else{
+		offset[0] = 0x7FFFFFFF;
+		pr_err("barohub_factory_get_cali fail,return an invalid offset\n");
+		return -1;
+	}
 	return 0;
 }
 static int barohub_factory_do_self_test(void)
@@ -366,6 +386,17 @@ static int barohub_get_data(int *value, int *status)
 
 	return 0;
 }
+static int barohub_set_cali(uint8_t *data, uint8_t count)
+{
+	int32_t *buf = (int32_t *)data;
+	struct barohub_ipi_data *obj = obj_ipi_data;
+
+	if(count >= sizeof(obj->static_cali)){
+		obj->static_cali[0] = buf[0];
+		obj->static_cali[1] = buf[1];
+	}
+	return sensor_cfg_to_hub(ID_PRESSURE, data, count);
+}
 static int scp_ready_event(uint8_t event, void *ptr)
 {
 	struct barohub_ipi_data *obj = obj_ipi_data;
@@ -437,6 +468,7 @@ static int barohub_probe(struct platform_device *pdev)
 	ctl.set_delay = barohub_set_delay;
 	ctl.batch = barohub_batch;
 	ctl.flush = barohub_flush;
+	ctl.set_cali = barohub_set_cali;
 #if defined CONFIG_MTK_SCP_SENSORHUB_V1
 	ctl.is_report_input_direct = false;
 	ctl.is_support_batch = false;

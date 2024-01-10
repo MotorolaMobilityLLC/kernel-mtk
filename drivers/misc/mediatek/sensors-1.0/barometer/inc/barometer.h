@@ -58,6 +58,7 @@ struct baro_control_path {
 		     int64_t maxBatchReportLatencyNs);
 	int (*flush)(void); /* open data rerport to HAL */
 	int (*baroess_data_fifo)(void);
+	int (*set_cali)(uint8_t *data, uint8_t count);
 	bool is_report_input_direct;
 	bool is_support_batch;
 	bool is_use_common_factory;
@@ -117,6 +118,7 @@ struct baro_context {
 extern int baro_driver_add(struct baro_init_info *obj);
 extern int baro_data_report(int value, int status, int64_t nt);
 extern int baro_flush_report(void);
+extern int baro_cali_report(int *value);
 extern int baro_register_control_path(struct baro_control_path *ctl);
 extern int baro_register_data_path(struct baro_data_path *data);
 extern int baro_probe(void);
