@@ -50,6 +50,20 @@ s32 cmdq_sec_init_context(struct cmdq_sec_tee_context *tee)
 	}
 #endif
 #endif
+#else
+#if IS_ENABLED(CONFIG_MICROTRUST_TEE_SUPPORT)
+	while (!is_teei_ready()) {
+		cmdq_msg("[SEC][TEE] Microtrust TEE is not ready, wait...");
+		msleep(1000);
+	}
+#endif
+#if IS_ENABLED(CONFIG_TRUSTONIC_TEE_SUPPORT)
+	while (!is_mobicore_ready()) {
+		cmdq_msg("[SEC][TEE] Trustonic TEE is not ready, wait...");
+		msleep(1000);
+	}
+#endif
+#endif
 
 	cmdq_msg("[SEC][TEE] TEE is ready!");
 
@@ -154,17 +168,10 @@ s32 cmdq_sec_execute_session(struct cmdq_sec_tee_context *tee,
 	u64 ts = sched_clock();
 
 	memset(&operation, 0, sizeof(struct TEEC_Operation));
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
-	operation.param_types = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INOUT,
-		mem_ex1 ? TEEC_MEMREF_PARTIAL_INOUT : TEEC_NONE,
-		mem_ex2 ? TEEC_MEMREF_PARTIAL_INOUT : TEEC_NONE,
-		TEEC_NONE);
-#else
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INOUT,
 		mem_ex1 ? TEEC_MEMREF_PARTIAL_INOUT : TEEC_NONE,
 		mem_ex2 ? TEEC_MEMREF_PARTIAL_INOUT : TEEC_NONE,
 		TEEC_NONE);
-#endif
 	operation.params[0].memref.parent = &tee->shared_mem[0];
 	operation.params[0].memref.size = tee->shared_mem[0].size;
 	operation.params[0].memref.offset = 0;

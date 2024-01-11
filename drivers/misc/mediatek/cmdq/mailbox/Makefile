@@ -31,7 +31,9 @@ include $(srctree)/drivers/tee/gpapi/Makefile.client.include
 ifneq ($(filter y m, $(CONFIG_MICROTRUST_TEE_SUPPORT)),)
 include $(srctree)/drivers/tee/teei/Makefile.include
 endif # CONFIG_MICROTRUST_TEE_SUPPORT
+ifneq ($(filter y m, $(CONFIG_TRUSTONIC_TEE_SUPPORT)),)
 include $(srctree)/drivers/tee/gud/Makefile.include
+endif # !CONFIG_TRUSTONIC_TEE_SUPPORT
 ccflags-y += -DCMDQ_GP_SUPPORT
 else
 ifneq ($(filter y m, $(CONFIG_MICROTRUST_TEE_SUPPORT)),)
