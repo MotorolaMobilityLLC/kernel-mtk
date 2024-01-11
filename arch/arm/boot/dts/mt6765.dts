@@ -4644,6 +4644,15 @@ initcall_debug=1 pelt=8 clk_ignore_unused=1";
 		compatible = "medaitek,svp";
 	};
 
+	drm_wv: drm_wv {
+ 		compatible = "mediatek,drm_wv";
+ 		status = "okay";
+ 	};
+
+ 	mtee_svp: mtee_svp {
+ 		compatible = "mediatek,svp";
+ 	};
+
 	met {
 		met_emi: met-emi {
 			compatible = "mediatek,met_emi";

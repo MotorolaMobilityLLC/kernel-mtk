@@ -11,8 +11,12 @@
 
 #if IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
 #include "tee_client_api.h"
+#if IS_ENABLED(CONFIG_MICROTRUST_TEE_SUPPORT)
 #include "teei_client_main.h"
+#endif
+#if IS_ENABLED(CONFIG_TRUSTONIC_TEE_SUPPORT)
 #include "mobicore_driver_api.h"
+#endif
 #else
 #include "tee_client_api.h"
 #if IS_ENABLED(CONFIG_MICROTRUST_TEE_SUPPORT)
