@@ -52,6 +52,26 @@ struct hlt {
 	unsigned int cabc_mode;
 };
 
+static struct mtk_panel_para_table panel_cabc_ui[] = {
+       {2, {0x55, 0x01}},
+};
+
+static struct mtk_panel_para_table panel_cabc_mv[] = {
+       {2, {0x55, 0x03}},
+};
+
+static struct mtk_panel_para_table panel_cabc_disable[] = {
+       {2, {0x55, 0x00}},
+};
+
+static struct mtk_panel_para_table panel_hbm_on[] = {
+       {3, {0x51, 0x0F, 0xFF}}, //100% PWM
+};
+
+static struct mtk_panel_para_table panel_hbm_off[] = {
+       {3, {0x51, 0x06, 0x66}},
+};
+
 #define hlt_dcs_write_seq(ctx, seq...)                                     \
 	({                                                                     \
 		const u8 d[] = {seq};                                          \
@@ -425,12 +445,129 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 	return 0;
 }
 
+static int panel_cabc_set_cmdq(struct hlt *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable = NULL;
+
+	if (cabc_mode > 3) {
+		pr_info("%s: invalid CABC mode:%d, return\n", __func__, cabc_mode);
+		return -1;
+	}
+
+	switch (cabc_mode) {
+		case 0:
+			para_count = sizeof(panel_cabc_ui) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_ui;
+			break;
+		case 1:
+			para_count = sizeof(panel_cabc_mv) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_mv;
+			break;
+		case 2:
+			para_count = sizeof(panel_cabc_disable) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_disable;
+			break;
+		default:
+			break;
+	}
+
+	if (pTable) {
+		pr_info("%s: set CABC mode :%d", __func__, cabc_mode);
+		cb(dsi, handle, pTable, para_count);
+	}
+	else
+		pr_info("%s: CABC mode:%d not support", __func__, cabc_mode);
+
+	return 0;
+}
+
+static int panel_hbm_set_cmdq(struct hlt *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable = NULL;
+
+	if (hbm_state > 1) {
+		pr_info("%s: invalid hbm_state:%d, return\n", __func__, hbm_state);
+		return -1;
+	}
+
+	switch (hbm_state) {
+		case 1:
+			para_count = sizeof(panel_hbm_on) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_hbm_on;
+			pr_info("%s: set HBM on", __func__);
+			break;
+		case 0:
+			para_count = sizeof(panel_hbm_off) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_hbm_off;
+			pr_info("%s: set HBM off", __func__);
+			break;
+		default:
+			break;
+	}
+
+	if (pTable) {
+		cb(dsi, handle, pTable, para_count);
+	}
+	else
+		pr_info("%s: HBM pTable null, hbm_state:%s", __func__, hbm_state);
+
+	return 0;
+}
+
+static int panel_feature_set(struct drm_panel *panel, void *dsi,
+			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
+{
+	struct hlt *ctx = panel_to_hlt(panel);
+	int ret = -1;
+
+	if (!cb)
+		return -1;
+
+	if (!ctx->enabled) {
+		pr_info("%s: skip set feature %d to %d, panel not enabled\n", __func__, param_info.param_idx, param_info.value);
+		return -1;
+	}
+
+	pr_info("%s: start set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+
+	switch (param_info.param_idx) {
+		case PARAM_CABC:
+			if (ctx->cabc_mode != param_info.value) {
+				ctx->cabc_mode = param_info.value;
+				panel_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set CABC to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else
+				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
+			break;
+		case PARAM_HBM:
+			if (ctx->hbm_mode != param_info.value) {
+				ctx->hbm_mode = param_info.value;
+				panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set HBM to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else
+				pr_info("%s: skip same HBM mode:%d\n", __func__, ctx->hbm_mode);
+			break;
+		default:
+			pr_info("%s: skip unsupport feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+			break;
+	}
+
+	return ret;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
 //	.ata_check = panel_ata_check,
 	.set_gesture_flag = hlt_set_gesture_flag,
 	.set_backlight_cmdq = hlt_setbacklight_cmdq,
+	.panel_feature_set = panel_feature_set,
 };
 #endif
 
