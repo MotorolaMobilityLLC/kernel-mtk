@@ -152,11 +152,11 @@ static void hlt_panel_init(struct hlt *ctx)
 		return;
 	}
 	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(5000,5001);
+	usleep_range(10000,10001);
 	gpiod_set_value(ctx->reset_gpio, 0);
 	usleep_range(5000,5001);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(20000,20001);
+	usleep_range(35000,35001);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
@@ -228,7 +228,7 @@ static int hlt_unprepare(struct drm_panel *panel)
 	msleep(5);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
-	ret = sm5109_bias_power_disable(5);
+	ret = sm5109_bias_power_disable(3);
 	}
 
 
@@ -247,8 +247,8 @@ static int hlt_prepare(struct drm_panel *panel)
 		return 0;
 
 	gpiod_set_value(ctx->reset_gpio, 0);
-	msleep(3);
-	ret = sm5109_bias_power_enable(15,15,5);
+	usleep_range(5000,5001);
+	ret = sm5109_bias_power_enable(14,14,3);
 
 	//lcm_power_enable();
 	hlt_panel_init(ctx);
