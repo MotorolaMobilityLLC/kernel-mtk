@@ -291,7 +291,7 @@ static int hlt_enable(struct drm_panel *panel)
 	return 0;
 }
 
-static const struct drm_display_mode default_mode = {
+static const struct drm_display_mode display_mode_60hz = {
 	.clock = 137199,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
@@ -303,10 +303,22 @@ static const struct drm_display_mode default_mode = {
 	.vtotal = FRAME_HEIGHT + MODE_60_VFP + VSA + VBP,
 };
 
+static const struct drm_display_mode display_mode_90hz = {
+	.clock = 137199,
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_90_HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_90_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_90_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_90_VFP + VSA + VBP,
+};
+
 #if defined(CONFIG_MTK_PANEL_EXT)
-static struct mtk_panel_params ext_params = {
+static struct mtk_panel_params ext_params_60 = {
 	//.pll_clk = 300,
-	.data_rate = 900,
+	.data_rate = MODE_60_DATA_RATE,
 	//.vfp_low_power = 840,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -361,26 +373,65 @@ static struct mtk_panel_params ext_params = {
 	.lfr_minimum_fps = 60,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
-#if 0
-	.dyn = {
-		.switch_en = 1,
-		.pll_clk = 580,
-		.vfp_lp_dyn = 888,
-		.hfp = 800,
-		.vfp = 54,
+};
+
+static struct mtk_panel_params ext_params_90 = {
+	//.pll_clk = 300,
+	.data_rate = MODE_90_DATA_RATE,
+	//.vfp_low_power = 840,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
 	},
-	.dyn_fps = {
-		.dfps_cmd_table[0] = {0, 2, {0xFF, 0x25} },
-		.dfps_cmd_table[1] = {0, 2, {0xFB, 0x01} },
-		.dfps_cmd_table[2] = {0, 2, {0x18, 0x22} },
-		/*switch page for esd check*/
-		.dfps_cmd_table[3] = {0, 2, {0xFF, 0x10} },
-		.dfps_cmd_table[4] = {0, 2, {0xFB, 0x01} },
+	.lane_swap_en = 0,
+	.lp_perline_en = 0,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.lcm_index = 1,
+
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable                =  DSC_ENABLE,
+		.ver                   =  DSC_VER,
+		.slice_mode            =  DSC_SLICE_MODE,
+		.rgb_swap              =  DSC_RGB_SWAP,
+		.dsc_cfg               =  DSC_DSC_CFG,
+		.rct_on                =  DSC_RCT_ON,
+		.bit_per_channel       =  DSC_BIT_PER_CHANNEL,
+		.dsc_line_buf_depth    =  DSC_DSC_LINE_BUF_DEPTH,
+		.bp_enable             =  DSC_BP_ENABLE,
+		.bit_per_pixel         =  DSC_BIT_PER_PIXEL,
+		.pic_height            =  FRAME_HEIGHT,
+		.pic_width             =  FRAME_WIDTH,
+		.slice_height          =  DSC_SLICE_HEIGHT,
+		.slice_width           =  DSC_SLICE_WIDTH,
+		.chunk_size            =  DSC_CHUNK_SIZE,
+		.xmit_delay            =  DSC_XMIT_DELAY,
+		.dec_delay             =  DSC_DEC_DELAY,
+		.scale_value           =  DSC_SCALE_VALUE,
+		.increment_interval    =  DSC_INCREMENT_INTERVAL,
+		.decrement_interval    =  DSC_DECREMENT_INTERVAL,
+		.line_bpg_offset       =  DSC_LINE_BPG_OFFSET,
+		.nfl_bpg_offset        =  DSC_NFL_BPG_OFFSET,
+		.slice_bpg_offset      =  DSC_SLICE_BPG_OFFSET,
+		.initial_offset        =  DSC_INITIAL_OFFSET,
+		.final_offset          =  DSC_FINAL_OFFSET,
+		.flatness_minqp        =  DSC_FLATNESS_MINQP,
+		.flatness_maxqp        =  DSC_FLATNESS_MAXQP,
+		.rc_model_size         =  DSC_RC_MODEL_SIZE,
+		.rc_edge_factor        =  DSC_RC_EDGE_FACTOR,
+		.rc_quant_incr_limit0  =  DSC_RC_QUANT_INCR_LIMIT0,
+		.rc_quant_incr_limit1  =  DSC_RC_QUANT_INCR_LIMIT1,
+		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
+		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
-	.data_rate = DATA_RATE,
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_0_FPS,
-#endif
+	.lfr_enable = 1,
+	.lfr_minimum_fps = MODE_90_FPS,
+	.max_bl_level = 2047,
+	.hbm_type = HBM_MODE_DCS_I2C,
 };
 
 static int hlt_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
@@ -419,18 +470,14 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 	struct mtk_panel_ext *ext = find_panel_ext(panel);
 	int ret = 0;
 	struct drm_display_mode *m = get_mode_by_id(connector, mode);
-	int flag=0;
-	
-	
-	flag=drm_mode_vrefresh(m);
 
-	if (!m)
-		return ret;
-
-	if (drm_mode_vrefresh(m) == 60)
-		ext->params = &ext_params;
+	if (drm_mode_vrefresh(m) == MODE_60_FPS)
+		ext->params = &ext_params_60;
+	else if (drm_mode_vrefresh(m) == MODE_90_FPS)
+		ext->params = &ext_params_90;
 	else
 		ret = 1;
+
 	return ret;
 }
 static int panel_ext_reset(struct drm_panel *panel, int on)
@@ -574,18 +621,32 @@ static struct mtk_panel_funcs ext_funcs = {
 static int hlt_get_modes(struct drm_panel *panel,
 						struct drm_connector *connector)
 {
-	struct drm_display_mode *mode;
+	struct drm_display_mode *mode_60hz;
+	struct drm_display_mode *mode_90hz;
 
-	mode = drm_mode_duplicate(connector->dev, &default_mode);
-	if (!mode) {
+	mode_60hz = drm_mode_duplicate(connector->dev, &display_mode_60hz);
+	if (!mode_60hz) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
-			default_mode.hdisplay, default_mode.vdisplay,
-			drm_mode_vrefresh(&default_mode));
+			display_mode_60hz.hdisplay, display_mode_60hz.vdisplay,
+			drm_mode_vrefresh(&display_mode_60hz));
 		return -ENOMEM;
 	}
-	drm_mode_set_name(mode);
-	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
-	drm_mode_probed_add(connector, mode);
+	drm_mode_set_name(mode_60hz);
+	mode_60hz->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+	drm_mode_probed_add(connector, mode_60hz);
+
+
+	mode_90hz = drm_mode_duplicate(connector->dev, &display_mode_90hz);
+	printk("[%d  %s]disp mode:%d\n",__LINE__, __FUNCTION__,mode_90hz);
+	if (!mode_90hz) {
+		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			display_mode_90hz.hdisplay, display_mode_90hz.vdisplay,
+			drm_mode_vrefresh(&display_mode_90hz));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_90hz);
+	mode_90hz->type = DRM_MODE_TYPE_DRIVER;
+	drm_mode_probed_add(connector, mode_90hz);
 
 	connector->display_info.width_mm = 68;
 	connector->display_info.height_mm = 150;
@@ -670,7 +731,7 @@ static int hlt_probe(struct mipi_dsi_device *dsi)
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 	mtk_panel_tch_handle_reg(&ctx->panel);
-	ret = mtk_panel_ext_create(dev, &ext_params, &ext_funcs, &ctx->panel);
+	ret = mtk_panel_ext_create(dev, &ext_params_60, &ext_funcs, &ctx->panel);
 	if (ret < 0)
 		return ret;
 
