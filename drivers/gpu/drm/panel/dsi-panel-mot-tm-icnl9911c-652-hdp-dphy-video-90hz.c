@@ -50,6 +50,7 @@ struct tianma {
 	int error;
 	unsigned int hbm_mode;
 	unsigned int cabc_mode;
+	unsigned char vref_reg_buf;
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
@@ -230,6 +231,31 @@ static void tianma_dcs_write(struct tianma *ctx, const void *data, size_t len)
 	}
 }
 
+static void kernel_vref_reg_update(struct tianma *ctx)
+{
+	int ret = 0;
+	char *vref_f6_reg_start=NULL;
+	char *temp;
+	char vref_f6_reg[8]={'\0'};
+
+	if(!ctx->vref_reg_buf) {
+		vref_f6_reg_start = strstr(saved_command_line, "vref_reg=");
+		if(vref_f6_reg_start == NULL){
+			pr_err("[LCM]command_line have no vref_reg info.\n");
+			return;
+		}
+		temp = vref_f6_reg_start + strlen("vref_reg=");
+		memcpy(vref_f6_reg, temp, 4);
+
+		ret =  kstrtou8(vref_f6_reg, 0, &ctx->vref_reg_buf);
+		if (ret != 0){
+			pr_err("[LCM]Convert vref_f6_reg string to unsigned int error.\n");
+		}
+	}
+
+	tianma_dcs_write_seq(ctx, 0xF6, (const u8)ctx->vref_reg_buf);
+	pr_info("[LCM kernel] write vref_reg_buf_F6 = 0x%02x.\n", ctx->vref_reg_buf);
+}
 
 static void tianma_panel_init(struct tianma *ctx)
 {
@@ -248,9 +274,33 @@ static void tianma_panel_init(struct tianma *ctx)
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
+	// password_open_and_offset_code
+	tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A, 0x59); //password open
+	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5, 0xA6); //password open
+	tianma_dcs_write_seq_static(ctx, 0xBD, 0xE9, 0x02, 0x4E);
+	tianma_dcs_write_seq_static(ctx, 0xBE, 0x63, 0x6D);
+	tianma_dcs_write_seq_static(ctx, 0xC1, 0xC0, 0x20, 0x20, 0x96, 0x04, 0x30, 0x30, 0x04, 0x2A, 0x40, 0x36, 0x00, 0x07, 0xCF, 0xFF, 0xFF, 0x7C, 0x01, 0xC0);
+	tianma_dcs_write_seq_static(ctx, 0xCB, 0x05, 0x40, 0x55, 0x40, 0x04, 0x40, 0x35, 0x43, 0x43, 0x50, 0x1E, 0x40, 0x40, 0x43, 0x43, 0x64, 0x23, 0x40, 0x40, 0x22, 0x04);
+	tianma_dcs_write_seq_static(ctx, 0xFA, 0x45, 0x93, 0x01);
+
+	// kernel_vref_reg_update
+	kernel_vref_reg_update(ctx);
+
+	// password_close_code
+	tianma_dcs_write_seq_static(ctx, 0xF1, 0x5A, 0x59); //password close
+	tianma_dcs_write_seq_static(ctx, 0xF0, 0xA5, 0xA6); //password close
+
+	// init_setting
 	tianma_dcs_write_seq_static(ctx, 0x35, 0x00);           // MIPI_DCS_SET_TEAR_ON
 	tianma_dcs_write_seq_static(ctx, 0x55, 0x01);           // MIPI_DCS_WRITE_POWER_SAVE
 	tianma_dcs_write_seq_static(ctx, 0x53, 0x2C);           // MIPI_DCS_WRITE_CONTROL_DISPLAY
+
+	tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A, 0x59);
+	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5, 0xA6);
+	tianma_dcs_write_seq_static(ctx, 0xE0, 0x30, 0x00, 0x80, 0x88, 0x11, 0x3F, 0x22, 0x62, 0xDF, 0xA0, 0x04, 0xCC, 0x01, 0xFF, 0xF6, 0xFF, 0xF0, 0xFD, 0xFF, 0xFD, 0xF8, 0xF5, 0xFC, 0xFC, 0xFD, 0xFF);
+	tianma_dcs_write_seq_static(ctx, 0xE1, 0xEF, 0xFE, 0xFE, 0xFE, 0xFE, 0xEE, 0xF0, 0x20, 0x33, 0xFF, 0x00, 0x00, 0x6A, 0x90, 0xC0, 0x0D, 0x6A, 0xF0, 0x3E, 0xFF, 0x00, 0x07, 0xD0);
+	tianma_dcs_write_seq_static(ctx, 0xD0, 0x80, 0x0D, 0xFF, 0x0F, 0x61, 0x0B, 0x08, 0x04);
+
 	tianma_dcs_write_seq_static(ctx, 0x11, 0x00);           // MIPI_DCS_EXIT_SLEEP_MODE
 	usleep_range(20000,20001);
 	tianma_dcs_write_seq_static(ctx, 0x29, 0x00);           // MIPI_DCS_SET_DISPLAY_ON
@@ -806,6 +856,7 @@ static int tianma_probe(struct mipi_dsi_device *dsi)
 	}
 	devm_gpiod_put(dev, ctx->reset_gpio);
 
+	ctx->vref_reg_buf = 0x00;
 	ctx->prepared = true;
 	ctx->enabled = true;
 	drm_panel_init(&ctx->panel, dev, &tianma_drm_funcs, DRM_MODE_CONNECTOR_DSI);
