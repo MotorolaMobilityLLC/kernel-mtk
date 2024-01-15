@@ -134,6 +134,7 @@
 		compatible = "tm,icnl9911c,vdo,90hz";
 		reg = <1>;
 		reset-gpios = <&pio 45 0>;
+		ldo_en-gpios = <&pio 165 0>;
 		pinctrl-names = "default";
 		port {
 			panel_in1: endpoint {
@@ -151,6 +152,7 @@
 		compatible = "hlt,ft8006s,vdo,90hz";
 		reg = <2>;
 		reset-gpios = <&pio 45 0>;
+		ldo_en-gpios = <&pio 165 0>;
 		pinctrl-names = "default";
 		port {
 			panel_in2: endpoint {
