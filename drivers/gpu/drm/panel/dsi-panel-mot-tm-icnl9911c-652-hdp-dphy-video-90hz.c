@@ -380,7 +380,7 @@ static int tianma_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode display_mode_60hz = {
-	.clock = 137199,
+	.clock = 123631,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -392,7 +392,7 @@ static const struct drm_display_mode display_mode_60hz = {
 };
 
 static const struct drm_display_mode display_mode_90hz = {
-	.clock = 137199,
+	.clock = 123631,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
