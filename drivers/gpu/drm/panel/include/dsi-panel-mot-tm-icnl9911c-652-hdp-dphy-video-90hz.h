@@ -25,38 +25,23 @@
 #define VSA                         4
 #define VBP                         32
 
-/*Parameter setting for mode 0 Start*/
+/*Parameter setting for mode 60Hz Start*/
 #define MODE_60_FPS                  60
 #define MODE_60_VFP                  1040
 #define MODE_60_HFP                  24
-#define MODE_60_DATA_RATE            900
-/*Parameter setting for mode 0 End*/
+#define MODE_60_DATA_RATE            800
+/*Parameter setting for mode 60Hz End*/
 
-/*Parameter setting for mode 1 Start*/
-#define MODE_90_FPS                  60
-#define MODE_90_VFP                  1213
+/*Parameter setting for mode 90Hz Start*/
+#define MODE_90_FPS                  90
+#define MODE_90_VFP                  150
 #define MODE_90_HFP                  24
-#define MODE_90_DATA_RATE            900
-/*Parameter setting for mode 1 End*/
+#define MODE_90_DATA_RATE            800
+/*Parameter setting for mode 90Hz End*/
 
-/*Parameter setting for mode 2 Start*/
-#define MODE_120_FPS                  60
-#define MODE_120_VFP                  1213
-#define MODE_120_HFP                  24
-#define MODE_120_DATA_RATE            900
-/*Parameter setting for mode 2 End*/
-
-/*Parameter setting for mode 3 Start*/
-#define MODE_30_FPS                  60
-#define MODE_30_VFP                  1213
-#define MODE_30_HFP                  24
-
-#define MODE_30_DATA_RATE            900
-/*Parameter setting for mode 3 End*/
 #define LFR_EN                      0
+
 /* DSC RELATED */
-
-
 #define DSC_ENABLE                  0
 #define DSC_VER                     17
 #define DSC_SLICE_MODE              1
