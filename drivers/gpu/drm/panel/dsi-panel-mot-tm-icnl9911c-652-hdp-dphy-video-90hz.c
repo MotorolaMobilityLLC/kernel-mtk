@@ -43,6 +43,7 @@ struct tianma {
 	struct backlight_device *backlight;
 	struct gpio_desc *pm_enable_gpio;
 	struct gpio_desc *reset_gpio;
+	struct gpio_desc *ldo_en_gpio;
 
 	bool prepared;
 	bool enabled;
@@ -356,17 +357,30 @@ static int tianma_unprepare(struct drm_panel *panel)
 
 	if(tp_gesture_flag == 0)
 	{
-	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->reset_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
-			__func__, PTR_ERR(ctx->reset_gpio));
-		return -1;
-	}
-	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(5);
-	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+		ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
+		if (IS_ERR(ctx->reset_gpio)) {
+			dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
+				__func__, PTR_ERR(ctx->reset_gpio));
+			return -1;
+		}
 
-	ret = sm5109_bias_power_disable(5);
+		ctx->ldo_en_gpio = devm_gpiod_get(ctx->dev, "ldo_en", GPIOD_OUT_HIGH);
+		if (IS_ERR(ctx->ldo_en_gpio)) {
+			dev_err(ctx->dev, "%s: cannot get ldo_en_gpio %ld\n",
+				__func__, PTR_ERR(ctx->ldo_en_gpio));
+			return -1;
+		}
+
+		gpiod_set_value(ctx->reset_gpio, 1);
+		msleep(5);
+		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+
+		ret = sm5109_bias_power_disable(5);
+
+		msleep(1);
+		gpiod_set_value(ctx->ldo_en_gpio, 0);
+		msleep(5);
+		devm_gpiod_put(ctx->dev, ctx->ldo_en_gpio);
 	}
 
 
@@ -383,6 +397,16 @@ static int tianma_prepare(struct drm_panel *panel)
 	pr_info("%s\n", __func__);
 	if (ctx->prepared)
 		return 0;
+
+	ctx->ldo_en_gpio = devm_gpiod_get(ctx->dev, "ldo_en", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->ldo_en_gpio)) {
+		dev_err(ctx->dev, "%s: cannot get ldo_en_gpio %ld\n",
+			__func__, PTR_ERR(ctx->ldo_en_gpio));
+	}
+
+	gpiod_set_value(ctx->ldo_en_gpio, 1);
+	devm_gpiod_put(ctx->dev, ctx->ldo_en_gpio);
+	msleep(1);
 
 	gpiod_set_value(ctx->reset_gpio, 0);
 	msleep(3);
@@ -855,6 +879,14 @@ static int tianma_probe(struct mipi_dsi_device *dsi)
 		return PTR_ERR(ctx->reset_gpio);
 	}
 	devm_gpiod_put(dev, ctx->reset_gpio);
+
+	ctx->ldo_en_gpio = devm_gpiod_get(dev, "ldo_en", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->ldo_en_gpio)) {
+	        dev_err(dev, "cannot get ldo_en-gpios %ld\n",
+	                PTR_ERR(ctx->ldo_en_gpio));
+	        return PTR_ERR(ctx->ldo_en_gpio);
+	}
+	devm_gpiod_put(dev, ctx->ldo_en_gpio);
 
 	ctx->vref_reg_buf = 0x00;
 	ctx->prepared = true;
