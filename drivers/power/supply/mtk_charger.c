@@ -5309,7 +5309,7 @@ static void mmi_typec_connecter_otp(struct mtk_charger *info)
 {
 	int ts;
 
-	if (info->typecotp_charger && ! info->typecotp_use_thermal_cooling) {
+	if (info->typecotp_charger && ! info->typecotp_use_thermal_cooling && !info->mmi.factory_mode) {
 		ts = mmi_get_typec_temp(info);
 		chr_err("otp_temp:%d\n", ts);
 
