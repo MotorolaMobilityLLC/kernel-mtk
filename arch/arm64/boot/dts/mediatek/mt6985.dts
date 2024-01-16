@@ -5576,6 +5576,8 @@
 				<&pericfg_ao_clk CLK_PERAO_DMA_B>;
 			clock-names = "main", "dma";
 			clock-div = <1>;
+			ch-offset-i2c = <0x100>;
+			ch-offset-scp = <0x200>;
 			scl-gpio-id = <185>;
 			sda-gpio-id = <186>;
 		};
@@ -5643,6 +5645,8 @@
 				<&pericfg_ao_clk CLK_PERAO_DMA_B>;
 			clock-names = "main", "dma";
 			clock-div = <1>;
+			ch-offset-i2c = <0x100>;
+			ch-offset-scp = <0x200>;
 			scl-gpio-id = <181>;
 			sda-gpio-id = <182>;
 		};
@@ -5656,6 +5660,8 @@
 				<&pericfg_ao_clk CLK_PERAO_DMA_B>;
 			clock-names = "main", "dma";
 			clock-div = <1>;
+			ch-offset-i2c = <0x100>;
+			ch-offset-scp = <0x200>;
 			scl-gpio-id = <179>;
 			sda-gpio-id = <180>;
 		};
@@ -5735,8 +5741,8 @@
 			clock-names = "main", "dma";
 			clock-div = <1>;
 			clk_src_in_hz = <130000000>;
-			ch_offset_i2c = <0x200>;
-			ch_offset_dma = <0x80>;
+			ch-offset-i2c = <0x200>;
+			ch-offset-dma = <0x80>;
 			scl-gpio-id = <49>;
 			sda-gpio-id = <50>;
 		};
