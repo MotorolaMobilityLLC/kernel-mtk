@@ -26,6 +26,8 @@
 #include <linux/scatterlist.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
+#include <linux/spinlock.h>
+#include <linux/sched/clock.h>
 
 #define I2C_CONFERR			(1 << 9)
 #define I2C_RS_TRANSFER			(1 << 4)
@@ -59,7 +61,6 @@
 #define I2C_RD_TRANAC_VALUE		0x0001
 #define I2C_SCL_MIS_COMP_VALUE		0x0000
 #define I2C_CHN_CLR_FLAG		0x0000
-#define I2C_DEBUGCTRL_BUS		0x0004
 
 #define I2C_DMA_CON_TX			0x0000
 #define I2C_DMA_CON_RX			0x0001
@@ -99,6 +100,8 @@
 #define I2C_CLK_ADJUST_THRESH		100000000
 
 #define I2C_OFFSET_SCP			0x200
+#define I2C_OFFSET_AP			0x100
+#define SHADOW_REG_MODE			(0x1 << 1)
 #define I2C_CCU_INTR_EN         0x2
 #define I2C_MCU_INTR_EN         0x1
 #define I2C_FIFO_DATA_LEN_MASK	0x001f
@@ -242,7 +245,7 @@ static const u16 mt_i2c_regs_v2[] = {
 	[OFFSET_FIFO_STAT] = 0xf4,
 	[OFFSET_FIFO_THRESH] = 0xf8,
 	[OFFSET_DCM_EN] = 0xf88,
-	[OFFSET_MULTI_DMA] = 0xf8c,
+	[OFFSET_MULTI_DMA] = 0x8c,
 };
 
 struct mtk_i2c_compatible {
@@ -295,6 +298,7 @@ struct mtk_i2c {
 	unsigned int speed_hz;		/* The speed in transfer */
 	unsigned int clk_src_in_hz;
 	unsigned int ch_offset_i2c;
+	unsigned int ch_offset_scp;
 	unsigned int ch_offset_dma;
 	enum mtk_trans_op op;
 	u16 timing_reg;
@@ -307,6 +311,14 @@ struct mtk_i2c {
 	bool master_code_sended;
 	struct mtk_i2c_ac_timing ac_timing;
 	const struct mtk_i2c_compatible *dev_comp;
+	spinlock_t multi_host_lock;
+	u16 clk_flag;
+	u16 timeout_flag;
+	u16 complete_flag;
+	u16 clk_ex_flag;
+	unsigned long long complete_time;
+	unsigned long complete_ns;
+	u16 last_addr;
 };
 
 /**
@@ -548,20 +560,34 @@ static void mtk_i2c_writew(struct mtk_i2c *i2c, u16 val,
 	writew(val, i2c->base + i2c->ch_offset_i2c + i2c->dev_comp->regs[reg]);
 }
 
-static u16 mtk_i2c_readw_shadow(struct mtk_i2c *i2c, enum I2C_REGS_OFFSET reg)
-{
-	return readw(i2c->base + i2c->dev_comp->regs[reg]);
-}
-
 static void mtk_i2c_writew_shadow(struct mtk_i2c *i2c, u16 val,
 			   enum I2C_REGS_OFFSET reg)
 {
 	writew(val, i2c->base + i2c->dev_comp->regs[reg]);
 }
 
+static u16 mtk_i2c_readw_shadow(struct mtk_i2c *i2c, enum I2C_REGS_OFFSET reg)
+{
+	return readw(i2c->base + i2c->dev_comp->regs[reg]);
+}
+
+static u16 mtk_i2c_readw_scp(struct mtk_i2c *i2c, enum I2C_REGS_OFFSET reg)
+{
+	return readw(i2c->base + i2c->ch_offset_scp + i2c->dev_comp->regs[reg]);
+}
+
+static void mtk_i2c_writew_scp(struct mtk_i2c *i2c, u16 val,
+			   enum I2C_REGS_OFFSET reg)
+{
+	writew(val, i2c->base + i2c->ch_offset_scp + i2c->dev_comp->regs[reg]);
+}
+
 static int mtk_i2c_clock_enable(struct mtk_i2c *i2c)
 {
 	int ret;
+
+	if (i2c->ch_offset_i2c == I2C_OFFSET_AP)
+		i2c->clk_flag = 1;
 
 	ret = clk_prepare_enable(i2c->clk_dma);
 	if (ret)
@@ -570,6 +596,9 @@ static int mtk_i2c_clock_enable(struct mtk_i2c *i2c)
 	ret = clk_prepare_enable(i2c->clk_main);
 	if (ret)
 		goto err_main;
+
+	if (i2c->ch_offset_i2c == I2C_OFFSET_AP)
+		i2c->clk_flag = 2;
 
 	if (i2c->have_pmic) {
 		ret = clk_prepare_enable(i2c->clk_pmic);
@@ -604,15 +633,88 @@ static void mtk_i2c_clock_disable(struct mtk_i2c *i2c)
 	if (i2c->have_pmic)
 		clk_disable_unprepare(i2c->clk_pmic);
 
+	if (i2c->ch_offset_i2c == I2C_OFFSET_AP)
+		i2c->clk_flag = 3;
+
 	clk_disable_unprepare(i2c->clk_main);
 	clk_disable_unprepare(i2c->clk_dma);
+
+	if (i2c->ch_offset_i2c == I2C_OFFSET_AP)
+		i2c->clk_flag = 4;
 }
+
+int mtk_i2c_clock_enable_ex(struct i2c_adapter *adap)
+{
+	int ret = 0;
+	unsigned long flags;
+	struct mtk_i2c *i2c = i2c_get_adapdata(adap);
+
+	if (!i2c) {
+		ret = -EINVAL;
+		goto err;
+	}
+
+	ret = mtk_i2c_clock_enable(i2c);
+	if (ret) {
+		dev_info(i2c->dev, "[clk_enable]:i2c clock enable failed.\n");
+		goto err;
+	}
+
+	if (i2c->ch_offset_i2c == I2C_OFFSET_AP) {
+		i2c->clk_ex_flag = 1;
+		spin_lock_irqsave(&i2c->multi_host_lock, flags);
+		if (mtk_i2c_readw(i2c, OFFSET_TIMING) == 0) {
+			mtk_i2c_writew_shadow(i2c, SHADOW_REG_MODE, OFFSET_MULTI_DMA);
+			/* Make sure shadow reg mode is ready before writing register */
+			mb();
+			mtk_i2c_writew(i2c, i2c->ac_timing.htiming, OFFSET_TIMING);
+		}
+		spin_unlock_irqrestore(&i2c->multi_host_lock, flags);
+	}
+err:
+	return ret;
+}
+EXPORT_SYMBOL(mtk_i2c_clock_enable_ex);
+
+int mtk_i2c_clock_disable_ex(struct i2c_adapter *adap)
+{
+	int ret = 0;
+	struct mtk_i2c *i2c = i2c_get_adapdata(adap);
+
+	if (!i2c) {
+		ret = -EINVAL;
+		goto err;
+	}
+
+	mtk_i2c_clock_disable(i2c);
+
+err:
+	return ret;
+}
+EXPORT_SYMBOL(mtk_i2c_clock_disable_ex);
 
 static void mtk_i2c_init_hw(struct mtk_i2c *i2c)
 {
 	u16 control_reg;
 	u16 intr_stat_reg;
-	u16 debugctrl_reg;
+	u16 intr_stat_reg_scp;
+	unsigned long flags;
+
+	if (i2c->ch_offset_i2c == I2C_OFFSET_AP) {
+		spin_lock_irqsave(&i2c->multi_host_lock, flags);
+		if (mtk_i2c_readw(i2c, OFFSET_TIMING) == 0) {
+			mtk_i2c_writew_shadow(i2c, SHADOW_REG_MODE, OFFSET_MULTI_DMA);
+			/* Make sure shadow reg mode is ready before writing register */
+			mb();
+			mtk_i2c_writew(i2c, I2C_MCU_INTR_EN, OFFSET_MCU_INTR);
+			mtk_i2c_writew_scp(i2c, I2C_CCU_INTR_EN, OFFSET_MCU_INTR);
+			mtk_i2c_writew(i2c, i2c->ac_timing.htiming, OFFSET_TIMING);
+		}
+		intr_stat_reg_scp = mtk_i2c_readw_scp(i2c, OFFSET_INTR_STAT);
+		if (intr_stat_reg_scp & I2C_CONFERR)
+			mtk_i2c_writew_scp(i2c, I2C_CONFERR, OFFSET_INTR_STAT);
+		spin_unlock_irqrestore(&i2c->multi_host_lock, flags);
+	}
 
 	mtk_i2c_writew(i2c, I2C_CHN_CLR_FLAG, OFFSET_START);
 	intr_stat_reg = mtk_i2c_readw(i2c, OFFSET_INTR_STAT);
@@ -639,11 +741,7 @@ static void mtk_i2c_init_hw(struct mtk_i2c *i2c)
 	/* config scp i2c ch2 intr to ap */
 	if (i2c->ch_offset_i2c == I2C_OFFSET_SCP)
 		mtk_i2c_writew(i2c, I2C_CCU_INTR_EN, OFFSET_MCU_INTR);
-	if ((i2c->ch_offset_i2c != I2C_OFFSET_SCP) &&
-		(mtk_i2c_readw_shadow(i2c, OFFSET_DMA_FSM_DEBUG) & I2C_I3C_EN)) {
-		debugctrl_reg = mtk_i2c_readw_shadow(i2c, OFFSET_DEBUGCTRL);
-		mtk_i2c_writew_shadow(i2c, debugctrl_reg & (~I2C_DEBUGCTRL_BUS), OFFSET_DEBUGCTRL);
-	}
+
 	/* Set ioconfig */
 	if (i2c->use_push_pull)
 		mtk_i2c_writew(i2c, I2C_IO_CONFIG_PUSH_PULL, OFFSET_IO_CONFIG);
@@ -1108,6 +1206,10 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 	bool isDMA = false;
 	int i = 0;
 	int ret;
+	u16 intr_stata;
+	u16 intr_mask;
+	u16 intr_statb;
+	u16 intr_stat_reg_chn;
 
 	i2c->irq_stat = 0;
 
@@ -1446,10 +1548,17 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 
 	if (ret == 0) {
 		u16 start_reg = mtk_i2c_readw(i2c, OFFSET_START);
+		intr_stata = mtk_i2c_readw(i2c, OFFSET_INTR_STAT);
+		intr_mask = mtk_i2c_readw(i2c, OFFSET_INTR_MASK);
 		mtk_i2c_writew(i2c, 0, OFFSET_INTR_MASK);
-		if (i2c->ch_offset_i2c != 0)
+		if (i2c->ch_offset_i2c != 0) {
 			mtk_i2c_writew_shadow(i2c, I2C_FSM_RST | I2C_SOFT_RST, OFFSET_SOFTRESET);
-		dev_dbg(i2c->dev, "addr: %x, transfer timeout\n", msgs->addr);
+			udelay(50);
+			intr_stat_reg_chn = mtk_i2c_readw_shadow(i2c, OFFSET_INTR_STAT);
+			if (intr_stat_reg_chn & I2C_CONFERR)
+				mtk_i2c_writew_shadow(i2c, I2C_CONFERR, OFFSET_INTR_STAT);
+		}
+		dev_info(i2c->dev, "addr: %x, transfer timeout\n", msgs->addr);
 		mtk_i2c_dump_reg(i2c);
 		mtk_i2c_gpio_dump(i2c);
 		if (i2c->ch_offset_i2c) {
@@ -1461,18 +1570,27 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 		mtk_i2c_init_hw(i2c);
 		if ((i2c->ch_offset_i2c) && (start_reg & I2C_RESUME_ARBIT)) {
 			mtk_i2c_writew_shadow(i2c, I2C_RESUME_ARBIT, OFFSET_START);
-			dev_dbg(i2c->dev, "bus channel transferred\n");
+			dev_info(i2c->dev, "bus channel transferred\n");
 		}
+		intr_statb = mtk_i2c_readw(i2c, OFFSET_INTR_STAT);
+
+		if (i2c->ch_offset_i2c == I2C_OFFSET_AP)
+			i2c->timeout_flag = 2;
+
+		dev_info(i2c->dev, "intr_stata=0x%x, intr_mask=0x%x, intr_statb=0x%x,last_addr=0x%x\n",
+			intr_stata, intr_mask, intr_statb, i2c->last_addr);
 
 		return -ETIMEDOUT;
+
 	}
 
 	if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)) {
-		dev_dbg(i2c->dev, "addr: %x, transfer ACK error\n", msgs->addr);
+		i2c->last_addr = mtk_i2c_readw(i2c, OFFSET_SLAVE_ADDR1);
+		dev_info(i2c->dev, "addr: %x, transfer ACK error\n", msgs->addr);
 		mtk_i2c_init_hw(i2c);
 		if (i2c->ch_offset_i2c) {
 			mtk_i2c_writew_shadow(i2c, I2C_RESUME_ARBIT, OFFSET_START);
-			dev_dbg(i2c->dev, "bus channel transferred\n");
+			dev_info(i2c->dev, "bus channel transferred\n");
 		}
 		return -ENXIO;
 	}
@@ -1490,6 +1608,14 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 			ptr++;
 		}
 	}
+	if (i2c->ch_offset_i2c == I2C_OFFSET_AP) {
+		i2c->complete_flag = 3;
+		i2c->complete_time = sched_clock();
+		i2c->complete_ns = do_div(i2c->complete_time, 1000000000);
+	}
+
+	i2c->last_addr = mtk_i2c_readw(i2c, OFFSET_SLAVE_ADDR1);
+
 	return 0;
 }
 
@@ -1506,6 +1632,19 @@ static int mtk_i2c_transfer(struct i2c_adapter *adap,
 	ret = mtk_i2c_clock_enable(i2c);
 	if (ret)
 		return ret;
+
+	if ((i2c->ch_offset_i2c == I2C_OFFSET_AP) && (i2c->timeout_flag == 2)) {
+		dev_info(i2c->dev,"%s: i2c->clk_flag=%d, i2c->timeout_flag=%d, i2c->complete_flag=%d\n",
+			__func__, i2c->clk_flag, i2c->timeout_flag, i2c->complete_flag);
+		dev_info(i2c->dev,"%s: i2c->clk_ex_flag = %d, i2c_complete_t:[%5lu.%06lu]",
+			__func__, i2c->clk_ex_flag, (unsigned long)i2c->complete_time, i2c->complete_ns / 1000);
+	}
+
+	if (i2c->ch_offset_i2c == I2C_OFFSET_AP) {
+		i2c->timeout_flag = 1;
+		i2c->complete_flag = 1;
+	}
+
 
 	i2c->master_code_sended = false;
 	i2c->auto_restart = i2c->dev_comp->auto_restart;
@@ -1612,6 +1751,14 @@ static irqreturn_t mtk_i2c_irq(int irqno, void *dev_id)
 	intr_stat = mtk_i2c_readw(i2c, OFFSET_INTR_STAT);
 	mtk_i2c_writew(i2c, intr_stat, OFFSET_INTR_STAT);
 
+	if (i2c->ch_offset_i2c == I2C_OFFSET_AP) {
+		if ((i2c->timeout_flag == 2) || (i2c->complete_flag == 3)) {
+			dev_info(i2c->dev,"%s: i2c->clk_flag=%d, i2c->timeout_flag=%d, i2c->complete_flag=%d\n",
+				__func__, i2c->clk_flag, i2c->timeout_flag, i2c->complete_flag);
+			dev_info(i2c->dev,"%s: i2c->clk_ex_flag = %d, i2c_complete_t:[%5lu.%06lu]",
+				__func__, i2c->clk_ex_flag, (unsigned long)i2c->complete_time, i2c->complete_ns / 1000);
+		}
+	}
 	/*
 	 * when occurs ack error, i2c controller generate two interrupts
 	 * first is the ack error interrupt, then the complete interrupt
@@ -1662,10 +1809,11 @@ static int mtk_i2c_parse_dt(struct device_node *np, struct mtk_i2c *i2c)
 		return -EINVAL;
 
 	of_property_read_u32(np, "clk_src_in_hz", &i2c->clk_src_in_hz);
-	of_property_read_u32(np, "ch_offset_i2c", &i2c->ch_offset_i2c);
-	of_property_read_u32(np, "ch_offset_dma", &i2c->ch_offset_dma);
-	dev_dbg(i2c->dev, "clk_src=%d,ch_offset_i2c=0x%x, ch_offset_dma=0x%x\n",
-			i2c->clk_src_in_hz, i2c->ch_offset_i2c, i2c->ch_offset_dma);
+	of_property_read_u32(np, "ch-offset-i2c", &i2c->ch_offset_i2c);
+	of_property_read_u32(np, "ch-offset-scp", &i2c->ch_offset_scp);
+	of_property_read_u32(np, "ch-offset-dma", &i2c->ch_offset_dma);
+	dev_info(i2c->dev, "clk_src=%d,ch_offset_i2c=0x%x, ch_offset_dma=0x%x, ch_offset_scp=0x%x\n",
+			i2c->clk_src_in_hz, i2c->ch_offset_i2c, i2c->ch_offset_dma, i2c->ch_offset_scp);
 	i2c->have_pmic = of_property_read_bool(np, "mediatek,have-pmic");
 	i2c->use_push_pull =
 		of_property_read_bool(np, "mediatek,use-push-pull");
@@ -1703,6 +1851,8 @@ static int mtk_i2c_probe(struct platform_device *pdev)
 
 	init_completion(&i2c->msg_complete);
 
+	spin_lock_init(&i2c->multi_host_lock);
+
 	i2c->dev_comp = of_device_get_match_data(&pdev->dev);
 	i2c->adap.dev.of_node = pdev->dev.of_node;
 	i2c->dev = &pdev->dev;
@@ -1713,6 +1863,13 @@ static int mtk_i2c_probe(struct platform_device *pdev)
 	i2c->adap.timeout = 2 * HZ;
 	i2c->adap.retries = 1;
 	i2c->adap.bus_regulator = devm_regulator_get_optional(&pdev->dev, "vbus");
+	i2c->clk_flag = 0;
+	i2c->timeout_flag = 0;
+	i2c->complete_flag = 0;
+	i2c->clk_ex_flag = 0;
+	i2c->complete_time = 0;
+	i2c->complete_ns = 0;
+	i2c->last_addr = 0;
 	if (IS_ERR(i2c->adap.bus_regulator)) {
 		if (PTR_ERR(i2c->adap.bus_regulator) == -ENODEV)
 			i2c->adap.bus_regulator = NULL;
@@ -1830,7 +1987,8 @@ static int mtk_i2c_suspend_noirq(struct device *dev)
 {
 	struct mtk_i2c *i2c = dev_get_drvdata(dev);
 
-	i2c_mark_adapter_suspended(&i2c->adap);
+	if (i2c->ch_offset_i2c != I2C_OFFSET_SCP)
+		i2c_mark_adapter_suspended(&i2c->adap);
 
 	return 0;
 }
@@ -1840,17 +1998,19 @@ static int mtk_i2c_resume_noirq(struct device *dev)
 	int ret;
 	struct mtk_i2c *i2c = dev_get_drvdata(dev);
 
-	ret = mtk_i2c_clock_enable(i2c);
-	if (ret) {
-		dev_err(dev, "clock enable failed!\n");
-		return ret;
+	if (i2c->ch_offset_i2c != I2C_OFFSET_SCP) {
+		ret = mtk_i2c_clock_enable(i2c);
+		if (ret) {
+			dev_info(dev, "clock enable failed!\n");
+			return ret;
+		}
+
+		mtk_i2c_init_hw(i2c);
+
+		mtk_i2c_clock_disable(i2c);
+
+		i2c_mark_adapter_resumed(&i2c->adap);
 	}
-
-	mtk_i2c_init_hw(i2c);
-
-	mtk_i2c_clock_disable(i2c);
-
-	i2c_mark_adapter_resumed(&i2c->adap);
 
 	return 0;
 }
