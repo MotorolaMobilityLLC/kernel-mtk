@@ -870,6 +870,9 @@ static int mmdvfs_pm_notifier(struct notifier_block *notifier, unsigned long pm_
 		mmdvfs_reset_ccu();
 		mmdvfs_reset_vcp();
 		break;
+	case PM_POST_SUSPEND:
+		mmdvfs_rst_clk_done = false;
+		break;
 	}
 	return NOTIFY_DONE;
 }
