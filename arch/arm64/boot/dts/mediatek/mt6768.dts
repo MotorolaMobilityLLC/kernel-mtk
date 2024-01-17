@@ -1380,8 +1380,8 @@ transparent_hugepage=never";
 		compatible = "mediatek,dcm";
 	};
 
-	hacc@1000a000 {
-		compatible = "mediatek,hacc";
+	masp@1000a000 {
+		compatible = "mediatek,masp";
 		reg = <0 0x1000a000 0 0x1000>;
 		interrupts = <GIC_SPI 203 IRQ_TYPE_LEVEL_HIGH 0>;
 	};
