@@ -297,6 +297,7 @@ X(194, RGXFW_GROUP_MAIN, RGXFW_SF_MAIN_ECC_FAULT, "ECC fault GPU=0x%08x FW=0x%08
 X(195, RGXFW_GROUP_MAIN, RGXFW_SF_MAIN_PROCESS_XPU_EVENT, "Processing XPU event on DM = %d", 1) \
 X(196, RGXFW_GROUP_MAIN, RGXFW_SF_MAIN_VZ_WDG_TRIGGER, "OSid %u failed to respond to the virtualisation watchdog in time. Timestamp of its last input = %u", 2) \
 X(197, RGXFW_GROUP_MAIN, RGXFW_SF_MAIN_HWR_HIT_LOCKUP, "GPU-%d has locked up (see HWR logs for more info)", 1) \
+X(198, RGXFW_GROUP_MAIN, RGXFW_SF_MAIN_ZERO_LM, "Zeroing local memory after context storing FWCtx = 0x%08.8x", 1) \
 \
 X(  1, RGXFW_GROUP_MTS, RGXFW_SF_MTS_BG_KICK_DEPRECATED, "Bg Task DM = %u, counted = %d", 2) \
 X(  2, RGXFW_GROUP_MTS, RGXFW_SF_MTS_BG_COMPLETE_DEPRECATED, "Bg Task complete DM = %u", 1) \

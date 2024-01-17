@@ -404,6 +404,9 @@ DevmemIntReservationRelease(DEVMEMINT_RESERVATION2 *psDevmemReservation);
 PVRSRV_ERROR
 DevmemIntUnreserveRange2(DEVMEMINT_RESERVATION2 *psDevmemReservation);
 
+PVRSRV_ERROR
+DevmemIntGetReservationData(DEVMEMINT_RESERVATION2* psReservation, PMR** ppsPMR, IMG_DEV_VIRTADDR* psDevVAddr);
+
 /*************************************************************************/ /*!
  * @Function    DevmemXIntReserveRange()
  * @Description Indicates that the specified range should be reserved from the
