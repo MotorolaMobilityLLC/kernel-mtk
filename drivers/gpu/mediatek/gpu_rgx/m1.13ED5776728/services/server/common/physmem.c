@@ -285,10 +285,10 @@ PVRSRV_ERROR PhysMemValidateParams(IMG_UINT32 ui32NumPhysChunks,
 		#undef X
 			break;
 		default:
+			/* print as 64-bit value to avoid Smatch warning */
 			PVR_DPF((PVR_DBG_ERROR,
-			         "%s: Page size of %u is invalid.",
-			         __func__,
-			         1 << uiLog2AllocPageSize));
+			        "page size of %" IMG_UINT64_FMTSPEC " is invalid.",
+			        IMG_UINT64_C(1) << uiLog2AllocPageSize));
 			return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
@@ -296,9 +296,9 @@ PVRSRV_ERROR PhysMemValidateParams(IMG_UINT32 ui32NumPhysChunks,
 	if (!PMRValidateSize(uiSize))
 	{
 		PVR_DPF((PVR_DBG_ERROR,
-				 "PMR size exceeds limit #Chunks: %u ChunkSz %"IMG_UINT64_FMTSPECX"",
-					ui32NumVirtChunks,
-					(IMG_UINT64) 1ULL << uiLog2AllocPageSize));
+				"PMR size exceeds limit #Chunks: %u ChunkSz 0x%"IMG_UINT64_FMTSPECX,
+				ui32NumVirtChunks,
+				(IMG_UINT64)IMG_UINT64_C(1) << uiLog2AllocPageSize));
 		return PVRSRV_ERROR_PMR_TOO_LARGE;
 	}
 
