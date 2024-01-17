@@ -26,29 +26,6 @@
 	};
 };
 
-&charger {
-	/* typec otp */
-	typecotp_charger = <1>;
-};
-
-&mt6375_chg {
-	io-channels = <&mt6375_adc MT6375_ADC_CHGVIN>,
-					<&mt6375_adc MT6375_ADC_VSYS>,
-					<&mt6375_adc MT6375_ADC_VBAT>,
-					<&mt6375_adc MT6375_ADC_IBUS>,
-					<&mt6375_adc MT6375_ADC_IBAT>,
-					<&mt6375_adc MT6375_ADC_TEMPJC>,
-					<&mt6375_adc MT6375_ADC_USBDP>,
-					<&mt6375_adc MT6375_ADC_USBDM>,
-					<&mt6375_adc MT6375_ADC_VREFTS>,
-					<&mt6375_adc MT6375_ADC_TS>;
-	typecotp_chg = <1>;
-};
-
-&mt6375_typec {
-	typecotp_tcpc = <1>;
-};
-
 #include <manaus_dvt2/cust.dtsi>
 #include "mediatek/cust_mt6879_camera_v4l2_manaus.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
