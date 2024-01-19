@@ -3657,6 +3657,7 @@
       <elf-symbol name='is_bad_inode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8da8fb9d'/>
       <elf-symbol name='is_console_locked' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x944a564d'/>
       <elf-symbol name='is_dma_buf_file' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb18b0a9d'/>
+      <elf-symbol name='is_transparent_hugepage' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfe3de759'/>
       <elf-symbol name='is_virtio_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xce1c13ab'/>
       <elf-symbol name='is_vmalloc_addr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc31db0ce'/>
       <elf-symbol name='isolate_and_split_free_page' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeda66b42'/>
@@ -52669,7 +52670,7 @@
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='ec84183d' size-in-bits='64' id='6af1ec35'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1507' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1508' column='1'/>
         </data-member>
@@ -148541,6 +148542,10 @@
         <parameter type-id='77e79a4b' name='file' filepath='drivers/dma-buf/dma-buf.c' line='479' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='is_transparent_hugepage' mangled-name='is_transparent_hugepage' filepath='mm/huge_memory.c' line='532' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='is_transparent_hugepage'>
+        <parameter type-id='02f11ed4' name='page' filepath='mm/huge_memory.c' line='532' column='1'/>
+        <return type-id='b50a4934'/>
+      </function-decl>
       <function-decl name='is_virtio_device' mangled-name='is_virtio_device' filepath='drivers/virtio/virtio.c' line='439' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='is_virtio_device'>
         <parameter type-id='fa0b179b' name='dev' filepath='drivers/virtio/virtio.c' line='439' column='1'/>
         <return type-id='b50a4934'/>
@@ -155765,8 +155770,8 @@
         <parameter type-id='d504f73d' name='nb' filepath='net/core/netevent.c' line='28' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='register_oom_notifier' mangled-name='register_oom_notifier' filepath='mm/oom_kill.c' line='1075' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='register_oom_notifier'>
-        <parameter type-id='d504f73d' name='nb' filepath='mm/oom_kill.c' line='1075' column='1'/>
+      <function-decl name='register_oom_notifier' mangled-name='register_oom_notifier' filepath='mm/oom_kill.c' line='1080' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='register_oom_notifier'>
+        <parameter type-id='d504f73d' name='nb' filepath='mm/oom_kill.c' line='1080' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='register_pernet_device' mangled-name='register_pernet_device' filepath='net/core/net_namespace.c' line='1303' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='register_pernet_device'>
@@ -162906,8 +162911,8 @@
         <parameter type-id='d504f73d' name='nb' filepath='net/core/netevent.c' line='44' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='unregister_oom_notifier' mangled-name='unregister_oom_notifier' filepath='mm/oom_kill.c' line='1081' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='unregister_oom_notifier'>
-        <parameter type-id='d504f73d' name='nb' filepath='mm/oom_kill.c' line='1081' column='1'/>
+      <function-decl name='unregister_oom_notifier' mangled-name='unregister_oom_notifier' filepath='mm/oom_kill.c' line='1086' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='unregister_oom_notifier'>
+        <parameter type-id='d504f73d' name='nb' filepath='mm/oom_kill.c' line='1086' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='unregister_pernet_device' mangled-name='unregister_pernet_device' filepath='net/core/net_namespace.c' line='1324' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='unregister_pernet_device'>
