@@ -853,12 +853,12 @@ static int mtkts_mbtherm_unbind(struct thermal_zone_device *thermal,
 	return 0;
 }
 
-static int mtkts_mbtherm_get_mode(struct thermal_zone_device *thermal,
+/*static int mtkts_mbtherm_get_mode(struct thermal_zone_device *thermal,
 				  enum thermal_device_mode *mode)
 {
 	*mode = (kernelmode) ? THERMAL_DEVICE_ENABLED : THERMAL_DEVICE_DISABLED;
 	return 0;
-}
+}*/
 
 static int mtkts_mbtherm_set_mode(struct thermal_zone_device *thermal,
 				  enum thermal_device_mode mode)
@@ -893,8 +893,7 @@ static struct thermal_zone_device_ops mtkts_mbtherm_dev_ops = {
 	.bind = mtkts_mbtherm_bind,
 	.unbind = mtkts_mbtherm_unbind,
 	.get_temp = mtkts_mbtherm_get_temp,
-	.get_mode = mtkts_mbtherm_get_mode,
-	.set_mode = mtkts_mbtherm_set_mode,
+	.change_mode = mtkts_mbtherm_set_mode,
 	.get_trip_type = mtkts_mbtherm_get_trip_type,
 	.get_trip_temp = mtkts_mbtherm_get_trip_temp,
 	.get_crit_temp = mtkts_mbtherm_get_crit_temp,
@@ -1322,13 +1321,12 @@ static int mtkts_mbtherm_open(struct inode *inode, struct file *file)
 	return single_open(file, mtkts_mbtherm_read, NULL);
 }
 
-static const struct file_operations mtkts_mbtherm_fops = {
-	.owner = THIS_MODULE,
-	.open = mtkts_mbtherm_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.write = mtkts_mbtherm_write,
-	.release = single_release,
+static const struct proc_ops mtkts_mbtherm_fops = {
+	.proc_open = mtkts_mbtherm_open,
+	.proc_read = seq_read,
+	.proc_lseek = seq_lseek,
+	.proc_write = mtkts_mbtherm_write,
+	.proc_release = single_release,
 };
 
 
@@ -1337,13 +1335,12 @@ static int mtkts_mbtherm_param_open(struct inode *inode, struct file *file)
 	return single_open(file, mtkts_mbtherm_param_read, NULL);
 }
 
-static const struct file_operations mtkts_mbtherm_param_fops = {
-	.owner = THIS_MODULE,
-	.open = mtkts_mbtherm_param_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.write = mtkts_mbtherm_param_write,
-	.release = single_release,
+static const struct proc_ops mtkts_mbtherm_param_fops = {
+	.proc_open = mtkts_mbtherm_param_open,
+	.proc_read = seq_read,
+	.proc_lseek = seq_lseek,
+	.proc_write = mtkts_mbtherm_param_write,
+	.proc_release = single_release,
 };
 
 
