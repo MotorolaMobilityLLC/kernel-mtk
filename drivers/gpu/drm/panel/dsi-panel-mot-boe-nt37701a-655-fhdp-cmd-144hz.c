@@ -1213,8 +1213,6 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
 	ctx->current_bl = bl_level;
 
-	if (!bl_level) ctx->hbm_mode = 0;
-
 	return 0;
 }
 
@@ -1387,11 +1385,14 @@ static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, ui
 	if (on) {
 		para_count = sizeof(panel_lhbm_on) / sizeof(struct mtk_panel_para_table);
 		pTable = panel_lhbm_on;
+		cb(dsi, handle, pTable, para_count);
 	} else {
 		para_count = sizeof(panel_lhbm_off) / sizeof(struct mtk_panel_para_table);
 		pTable = panel_lhbm_off;
+		cb(dsi, handle, pTable, para_count);
+		usleep_range(5000, 5010);
+		cb(dsi, handle, pTable, para_count);
 	}
-	cb(dsi, handle, pTable, para_count);
 	pr_info("%s: para_count %d\n", __func__, para_count);
 	return 0;
 
