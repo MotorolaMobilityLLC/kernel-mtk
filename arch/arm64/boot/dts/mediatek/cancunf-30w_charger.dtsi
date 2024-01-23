@@ -411,8 +411,8 @@
 
 &charger_cooler {
 	bootmode = <&chosen>;
-	mmi,thermal-mitigation = <(-1) 5200000 4700000 4000000 3000000
-				2000000 1000000 800000 500000>;
+	mmi,thermal-mitigation = <(-1) 5200000 4700000 4200000 4000000 3400000 3000000 2500000
+				2000000 1800000 1000000 800000 500000>;
 	mmi,thermal-charger-pump-support;
 };
 
