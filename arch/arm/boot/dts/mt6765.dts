@@ -2966,6 +2966,12 @@ initcall_debug=1 pelt=8 clk_ignore_unused=1";
 		interconnects = <&auxadc 2>;
 	};
 
+        tboard_thermistor4: thermal-sensor4 {
+                compatible = "mediatek,mtboard-thermistor4";
+                io-channels = <&auxadc 3>;
+                io-channel-names = "thermistor-ch3";
+                interconnects = <&auxadc 3>;
+        };
 
 	btif@1100c000 {
 		compatible = "mediatek,btif";
