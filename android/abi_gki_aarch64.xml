@@ -4153,6 +4153,7 @@
       <elf-symbol name='netdev_notify_peers' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7ca14329'/>
       <elf-symbol name='netdev_pick_tx' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeedccd78'/>
       <elf-symbol name='netdev_printk' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcdbfec89'/>
+      <elf-symbol name='netdev_reset_tc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4048046a'/>
       <elf-symbol name='netdev_rss_key_fill' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x467df16d'/>
       <elf-symbol name='netdev_rx_handler_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xead7afa1'/>
       <elf-symbol name='netdev_rx_handler_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeb2621b'/>
@@ -4550,6 +4551,7 @@
       <elf-symbol name='pci_msix_vec_count' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x318b655f'/>
       <elf-symbol name='pci_num_vf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcc98e799'/>
       <elf-symbol name='pci_pio_to_address' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf05fbf09'/>
+      <elf-symbol name='pci_prepare_to_sleep' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7728e981'/>
       <elf-symbol name='pci_read_config_byte' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcc72f8ab'/>
       <elf-symbol name='pci_read_config_dword' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x69797f86'/>
       <elf-symbol name='pci_read_config_word' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb78d00'/>
@@ -102224,7 +102226,7 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='4e13c9d9' size-in-bits='64' id='d064f511'/>
-      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/power/../base.h' line='88' column='1' id='d066d157'>
+      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/base.h' line='88' column='1' id='d066d157'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='klist_children' type-id='6160a6ce' visibility='default' filepath='drivers/base/base.h' line='89' column='1'/>
         </data-member>
@@ -151051,6 +151053,10 @@
         <parameter is-variadic='yes'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='netdev_reset_tc' mangled-name='netdev_reset_tc' filepath='net/core/dev.c' line='2822' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='netdev_reset_tc'>
+        <parameter type-id='68a2d05b' name='dev' filepath='net/core/dev.c' line='2822' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='netdev_rss_key_fill' mangled-name='netdev_rss_key_fill' filepath='net/ethtool/ioctl.c' line='1038' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='netdev_rss_key_fill'>
         <parameter type-id='eaa32e2f' name='buffer' filepath='net/ethtool/ioctl.c' line='1038' column='1'/>
         <parameter type-id='b59d7dce' name='len' filepath='net/ethtool/ioctl.c' line='1038' column='1'/>
@@ -153131,6 +153137,10 @@
       <function-decl name='pci_pio_to_address' mangled-name='pci_pio_to_address' filepath='drivers/pci/pci.c' line='4103' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pci_pio_to_address'>
         <parameter type-id='7359adad' name='pio' filepath='drivers/pci/pci.c' line='4103' column='1'/>
         <return type-id='2522883d'/>
+      </function-decl>
+      <function-decl name='pci_prepare_to_sleep' mangled-name='pci_prepare_to_sleep' filepath='drivers/pci/pci.c' line='2637' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pci_prepare_to_sleep'>
+        <parameter type-id='85196e3f' name='dev' filepath='drivers/pci/pci.c' line='2637' column='1'/>
+        <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='pci_read_config_byte' mangled-name='pci_read_config_byte' filepath='drivers/pci/access.c' line='526' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pci_read_config_byte'>
         <parameter type-id='947f31e6' name='dev' filepath='drivers/pci/access.c' line='526' column='1'/>
@@ -166515,6 +166525,7 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
+
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
