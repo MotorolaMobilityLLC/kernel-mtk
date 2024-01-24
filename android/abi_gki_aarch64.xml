@@ -5731,12 +5731,15 @@
       <elf-symbol name='ufshcd_alloc_host' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x57f9b97'/>
       <elf-symbol name='ufshcd_auto_hibern8_update' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc16cbeff'/>
       <elf-symbol name='ufshcd_bkops_ctrl' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9da76035'/>
+      <elf-symbol name='ufshcd_complete_requests' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdac8b246'/>
       <elf-symbol name='ufshcd_config_pwr_mode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb40401db'/>
       <elf-symbol name='ufshcd_dealloc_host' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x26267833'/>
       <elf-symbol name='ufshcd_delay_us' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x723b1abf'/>
       <elf-symbol name='ufshcd_dme_get_attr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1108b959'/>
       <elf-symbol name='ufshcd_dme_set_attr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc1ba1599'/>
       <elf-symbol name='ufshcd_dump_regs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6605adad'/>
+      <elf-symbol name='ufshcd_err_handling_prepare' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8a859165'/>
+      <elf-symbol name='ufshcd_err_handling_unprepare' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe41cd645'/>
       <elf-symbol name='ufshcd_fixup_dev_quirks' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc4e74b30'/>
       <elf-symbol name='ufshcd_get_local_unipro_ver' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa59b3f84'/>
       <elf-symbol name='ufshcd_get_pwr_dev_param' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xff85cd6b'/>
@@ -141570,8 +141573,8 @@
         <parameter type-id='d504f73d' name='nb' filepath='net/core/netevent.c' line='28' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='register_oom_notifier' mangled-name='register_oom_notifier' filepath='mm/oom_kill.c' line='1075' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='register_oom_notifier'>
-        <parameter type-id='d504f73d' name='nb' filepath='mm/oom_kill.c' line='1075' column='1'/>
+      <function-decl name='register_oom_notifier' mangled-name='register_oom_notifier' filepath='mm/oom_kill.c' line='1080' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='register_oom_notifier'>
+        <parameter type-id='d504f73d' name='nb' filepath='mm/oom_kill.c' line='1080' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='register_pernet_device' mangled-name='register_pernet_device' filepath='net/core/net_namespace.c' line='1316' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='register_pernet_device'>
@@ -147628,6 +147631,10 @@
         <parameter type-id='462d2624' name='status' filepath='drivers/scsi/ufs/ufshcd.c' line='5496' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='ufshcd_complete_requests' mangled-name='ufshcd_complete_requests' filepath='drivers/scsi/ufs/ufshcd.c' line='5806' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_complete_requests'>
+        <parameter type-id='442b8d89' name='hba' filepath='drivers/scsi/ufs/ufshcd.c' line='5806' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='ufshcd_config_pwr_mode' mangled-name='ufshcd_config_pwr_mode' filepath='drivers/scsi/ufs/ufshcd.c' line='4366' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_config_pwr_mode'>
         <parameter type-id='442b8d89' name='hba' filepath='drivers/scsi/ufs/ufshcd.c' line='4366' column='1'/>
         <parameter type-id='35f4156d' name='desired_pwr_mode' filepath='drivers/scsi/ufs/ufshcd.c' line='4367' column='1'/>
@@ -147663,6 +147670,14 @@
         <parameter type-id='b59d7dce' name='len' filepath='drivers/scsi/ufs/ufshcd.c' line='103' column='1'/>
         <parameter type-id='80f4b756' name='prefix' filepath='drivers/scsi/ufs/ufshcd.c' line='104' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='ufshcd_err_handling_prepare' mangled-name='ufshcd_err_handling_prepare' filepath='drivers/scsi/ufs/ufshcd.c' line='5926' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_err_handling_prepare'>
+        <parameter type-id='442b8d89' name='hba' filepath='drivers/scsi/ufs/ufshcd.c' line='5926' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='ufshcd_err_handling_unprepare' mangled-name='ufshcd_err_handling_unprepare' filepath='drivers/scsi/ufs/ufshcd.c' line='5963' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_err_handling_unprepare'>
+        <parameter type-id='442b8d89' name='hba' filepath='drivers/scsi/ufs/ufshcd.c' line='5963' column='1'/>
+        <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='ufshcd_fixup_dev_quirks' mangled-name='ufshcd_fixup_dev_quirks' filepath='drivers/scsi/ufs/ufshcd.c' line='7472' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_fixup_dev_quirks'>
         <parameter type-id='442b8d89' name='hba' filepath='drivers/scsi/ufs/ufshcd.c' line='7472' column='1'/>
@@ -147937,8 +147952,8 @@
         <parameter type-id='d504f73d' name='nb' filepath='net/core/netevent.c' line='44' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='unregister_oom_notifier' mangled-name='unregister_oom_notifier' filepath='mm/oom_kill.c' line='1081' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='unregister_oom_notifier'>
-        <parameter type-id='d504f73d' name='nb' filepath='mm/oom_kill.c' line='1081' column='1'/>
+      <function-decl name='unregister_oom_notifier' mangled-name='unregister_oom_notifier' filepath='mm/oom_kill.c' line='1086' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='unregister_oom_notifier'>
+        <parameter type-id='d504f73d' name='nb' filepath='mm/oom_kill.c' line='1086' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='unregister_pernet_device' mangled-name='unregister_pernet_device' filepath='net/core/net_namespace.c' line='1337' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='unregister_pernet_device'>
