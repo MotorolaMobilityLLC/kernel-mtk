@@ -396,6 +396,7 @@ static struct mtk_panel_params ext_params_60 = {
 	.lfr_minimum_fps = 60,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
+	.panel_name = "hlt_ft8006s_hdp_vid",
 };
 
 static struct mtk_panel_params ext_params_90 = {
@@ -455,6 +456,7 @@ static struct mtk_panel_params ext_params_90 = {
 	.lfr_minimum_fps = MODE_90_FPS,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
+	.panel_name = "hlt_ft8006s_hdp_vid",
 };
 
 static int hlt_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
