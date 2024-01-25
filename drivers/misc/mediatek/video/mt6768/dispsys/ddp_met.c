@@ -114,7 +114,6 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 		ovl_get_info(ovl_infos[i].ovl_idx, &(ovlInfo[layer_pos]));
 
 		for (j = 0; j < ovl_infos[i].layer_num; j++) {
-			layer_idx++;
 
 			if (memcmp(&(ovlInfo[layer_idx]),
 				&(old_ovlInfo[layer_idx]),
@@ -123,6 +122,7 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 
 			if (ovlInfo[layer_idx].layer_en)
 				b_layer_changed = 1;
+			layer_idx++;
 		}
 
 		/*store old value*/
