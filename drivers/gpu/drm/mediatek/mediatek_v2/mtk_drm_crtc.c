@@ -3971,7 +3971,8 @@ static void mtk_crtc_update_hrt_state(struct drm_crtc *crtc,
 				}
 			} else if (priv->data->mmsys_id == MMSYS_MT6835) {
 				if (ovl0_2l_no_compress_num == 2 &&
-					bw < MT6835_TWO_NO_COMPRESS_LAYER_BW_THRESHOLD) {
+					bw < MT6835_TWO_NO_COMPRESS_LAYER_BW_THRESHOLD &&
+					frame_weight != 0) {
 					bw += bw/(frame_weight/400);
 					DDPINFO("%s increase one layer bw to %d\n",
 						__func__, bw);
