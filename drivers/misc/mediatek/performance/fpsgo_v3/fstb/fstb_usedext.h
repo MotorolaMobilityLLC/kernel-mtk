@@ -94,6 +94,7 @@ struct FSTB_POWERFPS_LIST {
 };
 
 struct FSTB_NOTIFIER_PUSH_TAG {
+	int tgid;
 	int pid;
 	unsigned long long bufid;
 	unsigned long long cur_queue_end_ts;

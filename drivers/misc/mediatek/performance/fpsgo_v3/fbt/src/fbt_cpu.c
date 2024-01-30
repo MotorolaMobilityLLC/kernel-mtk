@@ -1167,7 +1167,6 @@ static int fbt_get_dep_list(struct render_info *thr)
 {
 	int pid;
 	int count = 0;
-	int ret_size;
 	struct fpsgo_loading *dep_new, *dep_only_old, *dep_old_need_reset;
 	int ret = 0;
 
@@ -1200,21 +1199,8 @@ static int fbt_get_dep_list(struct render_info *thr)
 		goto EXIT;
 	}
 
-	count = fpsgo_fbt2xgf_get_dep_list_num(pid, thr->buffer_id);
-	if (count <= 0) {
-		ret = 3;
-		goto EXIT;
-	}
-
-	count = clamp(count, 1, MAX_DEP_NUM);
-
-	ret_size = fpsgo_fbt2xgf_get_dep_list(pid, count,
+	count = fpsgo_fbt2xgf_get_dep_list(pid, MAX_DEP_NUM,
 		dep_new, thr->buffer_id);
-
-	if (ret_size == 0 || ret_size != count) {
-		ret = 4;
-		goto EXIT;
-	}
 
 	sort(dep_new, count, sizeof(struct fpsgo_loading), __cmp1, NULL);
 

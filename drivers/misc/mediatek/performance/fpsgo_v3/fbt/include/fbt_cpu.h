@@ -9,7 +9,6 @@
 #include "fpsgo_base.h"
 #include "fbt_cpu_ctrl.h"
 
-extern int fpsgo_fbt2xgf_get_dep_list_num(int pid, unsigned long long bufID);
 extern int fpsgo_fbt2xgf_get_dep_list(int pid, int count,
 		struct fpsgo_loading *arr, unsigned long long bufID);
 

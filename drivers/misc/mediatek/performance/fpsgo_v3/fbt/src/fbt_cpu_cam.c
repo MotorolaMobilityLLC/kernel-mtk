@@ -929,7 +929,7 @@ static int _fbt_cam_frame_start(int group_id, int *dep_list, int dep_list_num,
 	unsigned long long *cpu_time, unsigned long long *q2q_time, long *area)
 {
 	int i;
-	int ret = XGF_NOTIFY_OK;
+	int ret = 0;
 	unsigned long long tmp_runtime = 0, total_runtime = 0;
 	struct fbt_cam_frame *r, **rframe;
 	struct fbt_cam_thread *iter1;
@@ -940,7 +940,7 @@ static int _fbt_cam_frame_start(int group_id, int *dep_list, int dep_list_num,
 
 	if (find_fbt_cam_frame(group_id, rframe)) {
 		if (new_fbt_cam_frame(group_id, dep_list, dep_list_num, ts, rframe)) {
-			ret = XGF_PARAM_ERR;
+			ret = -EINVAL;
 			goto out;
 		}
 
@@ -986,14 +986,14 @@ out:
 static int _fbt_cam_frame_end(unsigned int group_id, unsigned long long ts)
 {
 	int i;
-	int ret = XGF_NOTIFY_OK;
+	int ret = 0;
 	unsigned long long tmp_runtime = 0, total_runtime = 0;
 	struct fbt_cam_frame *r, **rframe;
 
 	mutex_lock(&fbt_cam_frame_lock);
 	rframe = &r;
 	if (find_fbt_cam_frame(group_id, rframe)) {
-		ret = XGF_THREAD_NOT_FOUND;
+		ret = -EINVAL;
 		mutex_unlock(&fbt_cam_frame_lock);
 		goto out;
 	}
@@ -1129,7 +1129,7 @@ static int xgff_boost_startend(unsigned int startend, int group_id,
 	struct fpsgo_loading *tmp_dep_list;
 
 	if (!fpsgo_is_enable())
-		return XGF_DISABLE;
+		return -EINVAL;
 
 	if (fbt_cam_idle_cnt) {
 		fbt_cam_idle_cnt = 0;
@@ -1171,7 +1171,7 @@ static int xgff_boost_startend(unsigned int startend, int group_id,
 	rframe = &r;
 	if (find_fbt_cam_frame(group_id, rframe)) {
 		mutex_unlock(&fbt_cam_frame_lock);
-		return XGF_THREAD_NOT_FOUND;
+		return -EINVAL;
 	}
 
 	r->target_time = target_time;

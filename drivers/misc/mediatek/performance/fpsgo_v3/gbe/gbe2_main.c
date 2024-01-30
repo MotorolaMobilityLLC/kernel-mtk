@@ -343,10 +343,7 @@ void fpsgo_comp2gbe_frame_update(int pid, unsigned long long bufID)
 
 	switch (iter->state) {
 	case NEW_RENDER:
-		iter->dep_num = gbe2xgf_get_dep_list_num(pid, bufID);
-		iter->dep_num = iter->dep_num > MAX_DEP_NUM ?
-			MAX_DEP_NUM : iter->dep_num;
-		gbe2xgf_get_dep_list(pid, iter->dep_num, iter->dep, bufID);
+		iter->dep_num = gbe2xgf_get_dep_list(pid, MAX_DEP_NUM, iter->dep, bufID);
 		update_runtime(iter);
 
 		gbe_trace_count(iter->pid, iter->bufID,
@@ -364,10 +361,7 @@ void fpsgo_comp2gbe_frame_update(int pid, unsigned long long bufID)
 			HRTIMER_MODE_REL);
 		break;
 	case FPS_UPDATE:
-		iter->dep_num = gbe2xgf_get_dep_list_num(pid, bufID);
-		iter->dep_num = iter->dep_num > MAX_DEP_NUM ?
-			MAX_DEP_NUM : iter->dep_num;
-		gbe2xgf_get_dep_list(pid, iter->dep_num, iter->dep, bufID);
+		iter->dep_num = gbe2xgf_get_dep_list(pid, MAX_DEP_NUM, iter->dep, bufID);
 		update_runtime(iter);
 
 		hrtimer_cancel(&iter->timer1);

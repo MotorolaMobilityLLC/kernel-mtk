@@ -215,7 +215,6 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 	unsigned long long identifier)
 {
 	struct render_info *f_render;
-	int xgf_ret = 0;
 	int check_render;
 	int ret;
 
@@ -263,10 +262,10 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 			f_render->queue_SF, f_render->api,
 			f_render->hwui, f_render->sbe_control_flag,
 			f_render->control_pid_flag);
+	f_render->t_enqueue_start = enqueue_start_time;
 
 	switch (f_render->frame_type) {
 	case NON_VSYNC_ALIGNED_TYPE:
-		f_render->t_enqueue_start = enqueue_start_time;
 		FPSGO_COM_TRACE(
 			"pid[%d] type[%d] enqueue_s:%llu",
 			pid, f_render->frame_type,
@@ -274,24 +273,15 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 		FPSGO_COM_TRACE("update pid[%d] tgid[%d] buffer_id:%llu api:%d",
 			f_render->pid, f_render->tgid,
 			f_render->buffer_id, f_render->api);
-		xgf_ret =
-			fpsgo_comp2xgf_qudeq_notify(pid, f_render->buffer_id,
-					XGF_QUEUE_START, NULL,
-					enqueue_start_time, 0);
 
 		break;
 	case BY_PASS_TYPE:
-		f_render->t_enqueue_start = enqueue_start_time;
 		fpsgo_systrace_c_fbt(pid, f_render->buffer_id,
 			f_render->queue_SF, "bypass_sf");
 		fpsgo_systrace_c_fbt(pid, f_render->buffer_id,
 			f_render->api, "bypass_api");
 		fpsgo_systrace_c_fbt(pid, f_render->buffer_id,
 			f_render->hwui, "bypass_hwui");
-		xgf_ret =
-			fpsgo_comp2xgf_qudeq_notify(pid, f_render->buffer_id,
-					XGF_QUEUE_START, NULL,
-					enqueue_start_time, 1);
 		break;
 	default:
 		FPSGO_COM_TRACE("type not found pid[%d] type[%d]",
@@ -311,9 +301,10 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 	struct hwui_info *h_info;
 	struct sbe_info *s_info;
 	struct fps_control_pid_info *f_info;
-	int xgf_ret = 0;
 	int check_render;
 	unsigned long long running_time = 0;
+	unsigned long long raw_runtime = 0;
+	unsigned long long enq_running_time = 0;
 	int ret;
 
 	FPSGO_COM_TRACE("%s pid[%d] id %llu", __func__, pid, identifier);
@@ -381,13 +372,14 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 			pid, f_render->frame_type,
 			enqueue_end_time, f_render->enqueue_length);
 
-		fpsgo_comp2fstb_prepare_calculate_target_fps(pid, f_render->buffer_id,
-			enqueue_end_time);
-
-		xgf_ret =
-			fpsgo_comp2xgf_qudeq_notify(pid, f_render->buffer_id,
-					XGF_QUEUE_END, &running_time,
-					enqueue_end_time, 0);
+		fpsgo_comp2fstb_prepare_calculate_target_fps(pid,
+			f_render->buffer_id, enqueue_end_time);
+		fpsgo_comp2xgf_qudeq_notify(pid, f_render->buffer_id,
+			&raw_runtime, &running_time, &enq_running_time,
+			0, f_render->t_enqueue_end,
+			f_render->t_dequeue_start, f_render->t_dequeue_end,
+			f_render->t_enqueue_start, f_render->t_enqueue_end,
+			0);
 		f_render->enqueue_length_real = f_render->enqueue_length;
 		fpsgo_systrace_c_fbt_debug(pid, f_render->buffer_id,
 			f_render->enqueue_length_real, "enq_length_real");
@@ -420,9 +412,12 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 			"pid[%d] type[%d] enqueue_e:%llu enqueue_l:%llu",
 			pid, f_render->frame_type,
 			enqueue_end_time, f_render->enqueue_length);
-		xgf_ret =
-			fpsgo_comp2xgf_qudeq_notify(pid, f_render->buffer_id,
-					XGF_QUEUE_END, &running_time, enqueue_end_time, 1);
+		fpsgo_comp2xgf_qudeq_notify(pid, f_render->buffer_id,
+			&raw_runtime, &running_time, &enq_running_time,
+			0, f_render->t_enqueue_end,
+			f_render->t_dequeue_start, f_render->t_dequeue_end,
+			f_render->t_enqueue_start, f_render->t_enqueue_end,
+			1);
 		f_render->enqueue_length_real = f_render->enqueue_length;
 		fpsgo_systrace_c_fbt_debug(pid, f_render->buffer_id,
 			f_render->enqueue_length_real, "enq_length_real");
@@ -454,7 +449,6 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 	unsigned long long identifier)
 {
 	struct render_info *f_render;
-	int xgf_ret = 0;
 	int check_render;
 	int ret;
 
@@ -504,23 +498,14 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 			f_render->queue_SF, f_render->api,
 			f_render->hwui, f_render->sbe_control_flag,
 			f_render->control_pid_flag);
+	f_render->t_dequeue_start = dequeue_start_time;
 
 	switch (f_render->frame_type) {
-	case NON_VSYNC_ALIGNED_TYPE:
-		f_render->t_dequeue_start = dequeue_start_time;
+	case NON_VSYNC_ALIGNED_TYPE:		
 		FPSGO_COM_TRACE("pid[%d] type[%d] dequeue_s:%llu",
 			pid, f_render->frame_type, dequeue_start_time);
-		xgf_ret =
-			fpsgo_comp2xgf_qudeq_notify(pid, f_render->buffer_id,
-					XGF_DEQUEUE_START, NULL,
-					dequeue_start_time, 0);
 		break;
 	case BY_PASS_TYPE:
-		f_render->t_dequeue_start = dequeue_start_time;
-		xgf_ret =
-			fpsgo_comp2xgf_qudeq_notify(pid, f_render->buffer_id,
-					XGF_DEQUEUE_START, NULL,
-					dequeue_start_time, 1);
 		break;
 	default:
 		FPSGO_COM_TRACE("type not found pid[%d] type[%d]",
@@ -538,7 +523,6 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 	unsigned long long identifier)
 {
 	struct render_info *f_render;
-	int xgf_ret = 0;
 	int check_render;
 	int ret;
 
@@ -582,30 +566,20 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 			f_render->queue_SF, f_render->api,
 			f_render->hwui, f_render->sbe_control_flag,
 			f_render->control_pid_flag);
+	f_render->t_dequeue_end = dequeue_end_time;
+	f_render->dequeue_length = dequeue_end_time - f_render->t_dequeue_start;
 
 	switch (f_render->frame_type) {
 	case NON_VSYNC_ALIGNED_TYPE:
-		f_render->t_dequeue_end = dequeue_end_time;
-		f_render->dequeue_length =
-			dequeue_end_time - f_render->t_dequeue_start;
 		FPSGO_COM_TRACE(
 			"pid[%d] type[%d] dequeue_e:%llu dequeue_l:%llu",
 			pid, f_render->frame_type,
 			dequeue_end_time, f_render->dequeue_length);
-		xgf_ret =
-			fpsgo_comp2xgf_qudeq_notify(pid, f_render->buffer_id,
-				XGF_DEQUEUE_END, NULL, dequeue_end_time, 0);
 		fpsgo_comp2fbt_deq_end(f_render, dequeue_end_time);
 		fpsgo_systrace_c_fbt_debug(-300, 0, f_render->dequeue_length,
 			"%d_%d-dequeue_length", pid, f_render->frame_type);
 		break;
 	case BY_PASS_TYPE:
-		f_render->t_dequeue_end = dequeue_end_time;
-		f_render->dequeue_length =
-			dequeue_end_time - f_render->t_dequeue_start;
-		xgf_ret =
-			fpsgo_comp2xgf_qudeq_notify(pid, f_render->buffer_id,
-				XGF_DEQUEUE_END, NULL, dequeue_end_time, 1);
 		break;
 	default:
 		FPSGO_COM_TRACE("type not found pid[%d] type[%d]",
