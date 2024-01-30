@@ -786,12 +786,23 @@ struct mtk_fence_buf_info *mtk_fence_prepare_buf(struct drm_device *dev,
 	unsigned int timeline_id = 0;
 	struct mtk_fence_buf_info *buf_info = NULL;
 	struct fence_data data;
+	struct dma_buf *dmabuf = NULL;
 	struct mtk_fence_info *layer_info = NULL;
 	struct mtk_fence_session_sync_info *session_info = NULL;
 	struct dma_fence *fence = NULL;
 
 	if (buf == NULL) {
 		DDPPR_ERR("Prepare Buffer, buf is NULL!!\n");
+		return NULL;
+	}
+	if (buf->ion_fd < 0) {
+		DDPPR_ERR("Prepare Buffer, ion_fd is invalid!\n");
+		return NULL;
+	}
+
+	dmabuf = mtk_drm_gem_ion_import_handle(buf->ion_fd);
+	if (dmabuf == NULL) {
+		DDPPR_ERR("import buf handle fail\n");
 		return NULL;
 	}
 
@@ -802,6 +813,7 @@ struct mtk_fence_buf_info *mtk_fence_prepare_buf(struct drm_device *dev,
 
 	if (layer_info == NULL) {
 		DDPPR_ERR("%s:%d layer_info is null\n", __func__, __LINE__);
+		mtk_drm_gem_ion_free_handle(dmabuf, __func__, __LINE__);
 		return NULL;
 	}
 
@@ -809,6 +821,7 @@ struct mtk_fence_buf_info *mtk_fence_prepare_buf(struct drm_device *dev,
 		DDPPR_ERR(
 			"FATAL ERROR, sync info not inited, session_id=0x%08x|layer_id=%d\n",
 			session_id, timeline_id);
+		mtk_drm_gem_ion_free_handle(dmabuf, __func__, __LINE__);
 		return NULL;
 	}
 
@@ -828,15 +841,9 @@ struct mtk_fence_buf_info *mtk_fence_prepare_buf(struct drm_device *dev,
 			  mtk_fence_session_mode_spy(session_id),
 			  MTK_SESSION_DEV(session_id), timeline_id, ret);
 	}
+	buf_info->buf_hnd = dmabuf;
 	buf_info->fence = data.fence;
 	buf_info->idx = data.value;
-
-	if (buf->ion_fd >= 0)
-		buf_info->buf_hnd = mtk_drm_gem_ion_import_handle(buf->ion_fd);
-	if (buf_info->buf_hnd == NULL) {
-		DDPPR_ERR("import buf handle fail\n");
-		return NULL;
-	}
 
 	buf_info->mva_offset = 0;
 	buf_info->trigger_ticket = 0;
