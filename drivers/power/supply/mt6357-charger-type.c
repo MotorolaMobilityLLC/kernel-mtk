@@ -676,10 +676,12 @@ static int psy_chr_type_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
+		mutex_lock(&info->attach_lock);
 		if (info->type == POWER_SUPPLY_USB_TYPE_UNKNOWN)
 			val->intval = 0;
 		else
 			val->intval = 1;
+		mutex_unlock(&info->attach_lock);
 		break;
 	case POWER_SUPPLY_PROP_TYPE:
 		 val->intval = info->psy_desc.type;
@@ -768,6 +770,7 @@ static int mt_ac_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
+		mutex_lock(&info->attach_lock);
 		val->intval = 0;
 		/* Force to 1 in all charger type */
 		if (info->type != POWER_SUPPLY_USB_TYPE_UNKNOWN)
@@ -776,6 +779,7 @@ static int mt_ac_get_property(struct power_supply *psy,
 		if ((info->type == POWER_SUPPLY_USB_TYPE_SDP) ||
 			(info->type == POWER_SUPPLY_USB_TYPE_CDP))
 			val->intval = 0;
+		mutex_unlock(&info->attach_lock);
 		break;
 	default:
 		return -EINVAL;
@@ -797,11 +801,13 @@ static int mt_usb_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
+		mutex_lock(&info->attach_lock);
 		if ((info->type == POWER_SUPPLY_USB_TYPE_SDP) ||
 			(info->type == POWER_SUPPLY_USB_TYPE_CDP))
 			val->intval = 1;
 		else
 			val->intval = 0;
+		mutex_unlock(&info->attach_lock);
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		val->intval = 500000;
