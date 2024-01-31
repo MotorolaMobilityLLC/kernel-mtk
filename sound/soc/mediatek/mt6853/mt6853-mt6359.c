@@ -32,8 +32,7 @@
 static const char *const mt6853_spk_type_str[] = {MTK_SPK_NOT_SMARTPA_STR,
 						  MTK_SPK_RICHTEK_RT5509_STR,
 						  MTK_SPK_MEDIATEK_MT6660_STR,
-						  MTK_SPK_NXP_TFA98XX_STR,
-						  MTK_SPK_AW_AWINIC_STR
+						  MTK_SPK_NXP_TFA98XX_STR
 						  };
 static const char *const
 	mt6853_spk_i2s_type_str[] = {MTK_SPK_I2S_0_STR,
@@ -792,8 +791,13 @@ static struct snd_soc_dai_link mt6853_mt6359_dai_links[] = {
 	{
 		.name = "I2S3",
 		.cpu_dai_name = "I2S3",
+#ifdef CONFIG_SND_SOC_AW882XX_KERNEL
+		.codec_dai_name = "aw882xx-aif-6-34",
+		.codec_name = "aw882xx_smartpa.6-0034",
+#else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
+#endif
 		.no_pcm = 1,
 		.dpcm_playback = 1,
 		.ignore_suspend = 1,
@@ -802,8 +806,13 @@ static struct snd_soc_dai_link mt6853_mt6359_dai_links[] = {
 	{
 		.name = "I2S0",
 		.cpu_dai_name = "I2S0",
+#ifdef CONFIG_SND_SOC_AW882XX_KERNEL
+		.codec_dai_name = "aw882xx-aif-6-34",
+		.codec_name = "aw882xx_smartpa.6-0034",
+#else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
+#endif
 		.no_pcm = 1,
 		.dpcm_capture = 1,
 		.ignore_suspend = 1,

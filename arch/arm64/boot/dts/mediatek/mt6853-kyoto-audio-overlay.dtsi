@@ -47,13 +47,11 @@
 &i2c6 {
 	/* AWINIC AW882XX mono Smart PA */
 	speaker_amp: aw882xx_smartpa@34 {
-		compatible = "mediatek,speaker_amp";
+               compatible = "awinic,aw882xx_smartpa";
 		#sound-dai-cells = <0>;
 		reg = <0x34>;
 		reset-gpio = <&pio 0 0>;
 		irq-gpio = <&pio 32 0x0>;
-		monitor-flag = <1>;
-		aw-cali-mode = "aw_misc";
 		status = "okay";
 	};
 };
