@@ -172,6 +172,10 @@ static void lcm_panel_init(struct lcm *ctx)
 										0x2A,0xF4,0x2A,0xF4,0x4B,0x34,0x63,0x74,0x00,0x00,0x00,0x00,0x00,0x00);
 #endif
 
+	lcm_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x12);
+	lcm_dcs_write_seq_static(ctx, 0x65, 0x10);
+	lcm_dcs_write_seq_static(ctx, 0xd9, 0x2d);
+
 	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x80);
 	lcm_dcs_write_seq_static(ctx, 0x65, 0x0e);
 	lcm_dcs_write_seq_static(ctx, 0xf9, 0xb9);
@@ -196,6 +200,10 @@ static void lcm_panel_init(struct lcm *ctx)
 
 	/* Display On */
 	lcm_dcs_write_seq_static(ctx, 0x29);
+
+	lcm_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x12);
+	lcm_dcs_write_seq_static(ctx, 0x65, 0x10);
+	lcm_dcs_write_seq_static(ctx, 0xd9, 0x29);
 
 	pr_info("%s tm vtdr6115-\n", __func__);
 }
