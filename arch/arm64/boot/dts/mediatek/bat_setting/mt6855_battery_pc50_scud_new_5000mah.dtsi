@@ -10,11 +10,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-serialnum_3 = "SB18E04471";
+serialnum_1 = "SB18E04471";
 
-battery3_profile_t0_num = <100>;
-battery3_profile_t0_col = <4>;
-battery3_profile_t0 =
+battery1_profile_t0_num = <100>;
+battery1_profile_t0_col = <4>;
+battery1_profile_t0 =
 	<
 	0	44239	853	853
 	510	44134	853	853
@@ -117,9 +117,9 @@ battery3_profile_t0 =
 	50010	30468	6170	6170
 	50520	30468	6170	6170
 >;
-battery3_profile_t1_num = <100>;
-battery3_profile_t1_col = <4>;
-battery3_profile_t1 =
+battery1_profile_t1_num = <100>;
+battery1_profile_t1_col = <4>;
+battery1_profile_t1 =
 <
 	0	44487	1395	1270
 	510	44340	1395	1330
@@ -222,9 +222,9 @@ battery3_profile_t1 =
 	50010	33690	2131	1308
 	50520	30567	6418	1470
 >;
-battery3_profile_t2_num = <100>;
-battery3_profile_t2_col = <4>;
-battery3_profile_t2 =
+battery1_profile_t2_num = <100>;
+battery1_profile_t2_col = <4>;
+battery1_profile_t2 =
 <
 	0	44469	3380	2840
 	510	44332	3380	2863
@@ -327,9 +327,9 @@ battery3_profile_t2 =
 	50010	34753	16883	890
 	50520	34753	16883	890
 >;
-battery3_profile_t3_num = <100>;
-battery3_profile_t3_col = <4>;
-battery3_profile_t3 =
+battery1_profile_t3_num = <100>;
+battery1_profile_t3_col = <4>;
+battery1_profile_t3 =
 <
 	0	44494	6200	6200
 	510	44325	6200	6200
@@ -432,9 +432,9 @@ battery3_profile_t3 =
 	50010	36210	20525	20525
 	50520	36210	20525	20525
 >;
-battery3_profile_t4_num = <100>;
-battery3_profile_t4_col = <4>;
-battery3_profile_t4 =
+battery1_profile_t4_num = <100>;
+battery1_profile_t4_col = <4>;
+battery1_profile_t4 =
 <
 	0	44515	10183	10183
 	510	44304	10183	10183
