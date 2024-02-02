@@ -126,7 +126,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_gain = 1024, /*16x gain*/
 		.min_gain_iso = 100,
 		.gain_step = 2,
-		.gain_type = 4,
+		.gain_type = 2,
 		.max_frame_length = 0xfffb,
 		.ae_shut_delay_frame = 0,
 		.ae_sensor_gain_delay_frame = 0,
@@ -520,13 +520,13 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
 
-	if (gain < (BASEGAIN * 2) || gain > 32 * (BASEGAIN * 2)) {
+	if (gain < (BASEGAIN * 2) || gain > 16 * (BASEGAIN * 2)) {
 		pr_debug("Error gain setting");
 
 		if (gain < (BASEGAIN * 2))
 			gain = (BASEGAIN * 2);
-		else if (gain > 32 * (BASEGAIN * 2))
-			gain = 32 * (BASEGAIN * 2);
+		else if (gain > 16 * (BASEGAIN * 2))
+			gain = 16 * (BASEGAIN * 2);
 	}
 
 	reg_gain = gain2reg(gain);
