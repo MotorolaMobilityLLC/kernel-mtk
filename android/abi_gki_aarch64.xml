@@ -3084,6 +3084,7 @@
       <elf-symbol name='get_options' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x868acba5'/>
       <elf-symbol name='get_page_owner_handle' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbdd70345'/>
       <elf-symbol name='get_pfnblock_flags_mask' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9ea4e9c5'/>
+      <elf-symbol name='get_phy_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfade3ab2'/>
       <elf-symbol name='get_pid_task' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbc24e309'/>
       <elf-symbol name='get_random_bytes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x79aa04a2'/>
       <elf-symbol name='get_random_u32' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd36dc10c'/>
@@ -4145,6 +4146,7 @@
       <elf-symbol name='netdev_alert' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x566d55f6'/>
       <elf-symbol name='netdev_change_features' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x40ff75de'/>
       <elf-symbol name='netdev_err' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xba0644ae'/>
+      <elf-symbol name='netdev_features_change' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfecb1d05'/>
       <elf-symbol name='netdev_increment_features' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x69668826'/>
       <elf-symbol name='netdev_info' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x20612ead'/>
       <elf-symbol name='netdev_lower_state_changed' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8409b196'/>
@@ -4648,6 +4650,8 @@
       <elf-symbol name='phy_configure' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x97193103'/>
       <elf-symbol name='phy_connect' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe1fcf7d'/>
       <elf-symbol name='phy_connect_direct' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9bc0dad5'/>
+      <elf-symbol name='phy_device_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb93b7a79'/>
+      <elf-symbol name='phy_device_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd19242af'/>
       <elf-symbol name='phy_disconnect' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9b52345f'/>
       <elf-symbol name='phy_do_ioctl_running' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x60a63009'/>
       <elf-symbol name='phy_drivers_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1ff0f85d'/>
@@ -4670,6 +4674,7 @@
       <elf-symbol name='phy_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfb37cdbd'/>
       <elf-symbol name='phy_init_eee' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc593a230'/>
       <elf-symbol name='phy_init_hw' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6483697c'/>
+      <elf-symbol name='phy_lookup_setting' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6209f49'/>
       <elf-symbol name='phy_loopback' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5a64a11f'/>
       <elf-symbol name='phy_mac_interrupt' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7f6d58db'/>
       <elf-symbol name='phy_mii_ioctl' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4c57db73'/>
@@ -4693,6 +4698,7 @@
       <elf-symbol name='phy_reset_after_clk_enable' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xda95abbe'/>
       <elf-symbol name='phy_resolve_aneg_linkmode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x52caeadc'/>
       <elf-symbol name='phy_resolve_aneg_pause' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x270d182d'/>
+      <elf-symbol name='phy_restart_aneg' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x81830cca'/>
       <elf-symbol name='phy_restore_page' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe8f5f405'/>
       <elf-symbol name='phy_resume' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x86345800'/>
       <elf-symbol name='phy_save_page' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd31d94f9'/>
@@ -25296,48 +25302,48 @@
           <var-decl name='use_time' type-id='d3130597' visibility='default' filepath='include/uapi/linux/xfrm.h' line='81' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='kernfs_node' size-in-bits='1088' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='129' column='1' id='29d79af7'>
+      <class-decl name='kernfs_node' size-in-bits='1088' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='130' column='1' id='29d79af7'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='count' type-id='49178f86' visibility='default' filepath='include/linux/kernfs.h' line='130' column='1'/>
+          <var-decl name='count' type-id='49178f86' visibility='default' filepath='include/linux/kernfs.h' line='131' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='active' type-id='49178f86' visibility='default' filepath='include/linux/kernfs.h' line='131' column='1'/>
+          <var-decl name='active' type-id='49178f86' visibility='default' filepath='include/linux/kernfs.h' line='132' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='parent' type-id='150efd3f' visibility='default' filepath='include/linux/kernfs.h' line='141' column='1'/>
+          <var-decl name='parent' type-id='150efd3f' visibility='default' filepath='include/linux/kernfs.h' line='142' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='name' type-id='80f4b756' visibility='default' filepath='include/linux/kernfs.h' line='142' column='1'/>
+          <var-decl name='name' type-id='80f4b756' visibility='default' filepath='include/linux/kernfs.h' line='143' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='rb' type-id='2a8a6332' visibility='default' filepath='include/linux/kernfs.h' line='144' column='1'/>
+          <var-decl name='rb' type-id='2a8a6332' visibility='default' filepath='include/linux/kernfs.h' line='145' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='ns' type-id='eaa32e2f' visibility='default' filepath='include/linux/kernfs.h' line='146' column='1'/>
+          <var-decl name='ns' type-id='eaa32e2f' visibility='default' filepath='include/linux/kernfs.h' line='147' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='448'>
-          <var-decl name='hash' type-id='f0981eeb' visibility='default' filepath='include/linux/kernfs.h' line='147' column='1'/>
+          <var-decl name='hash' type-id='f0981eeb' visibility='default' filepath='include/linux/kernfs.h' line='148' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='512'>
-          <var-decl name='' type-id='ac5ab637' visibility='default' filepath='include/linux/kernfs.h' line='148' column='1'/>
+          <var-decl name='' type-id='ac5ab637' visibility='default' filepath='include/linux/kernfs.h' line='149' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='768'>
-          <var-decl name='priv' type-id='eaa32e2f' visibility='default' filepath='include/linux/kernfs.h' line='154' column='1'/>
+          <var-decl name='priv' type-id='eaa32e2f' visibility='default' filepath='include/linux/kernfs.h' line='155' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='832'>
-          <var-decl name='id' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='160' column='1'/>
+          <var-decl name='id' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='161' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='896'>
-          <var-decl name='flags' type-id='8efea9e5' visibility='default' filepath='include/linux/kernfs.h' line='162' column='1'/>
+          <var-decl name='flags' type-id='8efea9e5' visibility='default' filepath='include/linux/kernfs.h' line='163' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='912'>
-          <var-decl name='mode' type-id='2594b00f' visibility='default' filepath='include/linux/kernfs.h' line='163' column='1'/>
+          <var-decl name='mode' type-id='2594b00f' visibility='default' filepath='include/linux/kernfs.h' line='164' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='960'>
-          <var-decl name='iattr' type-id='1f4b5d14' visibility='default' filepath='include/linux/kernfs.h' line='164' column='1'/>
+          <var-decl name='iattr' type-id='1f4b5d14' visibility='default' filepath='include/linux/kernfs.h' line='165' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1024'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='166' column='1'/>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='167' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='557c51cd' size-in-bits='64' id='29e425c9'/>
@@ -35184,18 +35190,18 @@
         <return type-id='95e97e5e'/>
       </function-type>
       <pointer-type-def type-id='b1837ffb' size-in-bits='64' id='43023603'/>
-      <class-decl name='kernfs_elem_dir' size-in-bits='256' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='92' column='1' id='4303ca40'>
+      <class-decl name='kernfs_elem_dir' size-in-bits='256' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='93' column='1' id='4303ca40'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='subdirs' type-id='7359adad' visibility='default' filepath='include/linux/kernfs.h' line='93' column='1'/>
+          <var-decl name='subdirs' type-id='7359adad' visibility='default' filepath='include/linux/kernfs.h' line='94' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='children' type-id='dec44472' visibility='default' filepath='include/linux/kernfs.h' line='95' column='1'/>
+          <var-decl name='children' type-id='dec44472' visibility='default' filepath='include/linux/kernfs.h' line='96' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='root' type-id='e18defdb' visibility='default' filepath='include/linux/kernfs.h' line='101' column='1'/>
+          <var-decl name='root' type-id='e18defdb' visibility='default' filepath='include/linux/kernfs.h' line='102' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='rev' type-id='7359adad' visibility='default' filepath='include/linux/kernfs.h' line='106' column='1'/>
+          <var-decl name='rev' type-id='7359adad' visibility='default' filepath='include/linux/kernfs.h' line='107' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='484541f8' size-in-bits='64' id='4315d79a'/>
@@ -36610,33 +36616,33 @@
         <parameter type-id='26a90f95'/>
         <return type-id='95e97e5e'/>
       </function-type>
-      <class-decl name='kernfs_root' size-in-bits='832' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='193' column='1' id='471fc91b'>
+      <class-decl name='kernfs_root' size-in-bits='832' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='194' column='1' id='471fc91b'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='kn' type-id='150efd3f' visibility='default' filepath='include/linux/kernfs.h' line='195' column='1'/>
+          <var-decl name='kn' type-id='150efd3f' visibility='default' filepath='include/linux/kernfs.h' line='196' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='flags' type-id='f0981eeb' visibility='default' filepath='include/linux/kernfs.h' line='196' column='1'/>
+          <var-decl name='flags' type-id='f0981eeb' visibility='default' filepath='include/linux/kernfs.h' line='197' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='ino_idr' type-id='37ce495e' visibility='default' filepath='include/linux/kernfs.h' line='199' column='1'/>
+          <var-decl name='ino_idr' type-id='37ce495e' visibility='default' filepath='include/linux/kernfs.h' line='200' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='320'>
-          <var-decl name='last_id_lowbits' type-id='19c2251e' visibility='default' filepath='include/linux/kernfs.h' line='200' column='1'/>
+          <var-decl name='last_id_lowbits' type-id='19c2251e' visibility='default' filepath='include/linux/kernfs.h' line='201' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='352'>
-          <var-decl name='id_highbits' type-id='19c2251e' visibility='default' filepath='include/linux/kernfs.h' line='201' column='1'/>
+          <var-decl name='id_highbits' type-id='19c2251e' visibility='default' filepath='include/linux/kernfs.h' line='202' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='syscall_ops' type-id='fefa8c5f' visibility='default' filepath='include/linux/kernfs.h' line='202' column='1'/>
+          <var-decl name='syscall_ops' type-id='fefa8c5f' visibility='default' filepath='include/linux/kernfs.h' line='203' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='448'>
-          <var-decl name='supers' type-id='72f469ec' visibility='default' filepath='include/linux/kernfs.h' line='205' column='1'/>
+          <var-decl name='supers' type-id='72f469ec' visibility='default' filepath='include/linux/kernfs.h' line='206' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='576'>
-          <var-decl name='deactivate_waitq' type-id='b5ab048f' visibility='default' filepath='include/linux/kernfs.h' line='207' column='1'/>
+          <var-decl name='deactivate_waitq' type-id='b5ab048f' visibility='default' filepath='include/linux/kernfs.h' line='208' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='768'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='209' column='1'/>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='210' column='1'/>
         </data-member>
       </class-decl>
       <union-decl name='ufs_crypto_capabilities' size-in-bits='32' visibility='default' filepath='drivers/scsi/ufs/ufshci.h' line='303' column='1' id='4721c843'>
@@ -38030,6 +38036,7 @@
       <qualified-type-def type-id='eacd353c' const='yes' id='4b09229d'/>
       <pointer-type-def type-id='da3c754a' size-in-bits='64' id='4b0aea04'/>
       <qualified-type-def type-id='6110442c' const='yes' id='4b11cd33'/>
+      <qualified-type-def type-id='983f0f8f' const='yes' id='4b188e44'/>
       <typedef-decl name='x25_hdlc_proto' type-id='1df0a5e7' filepath='include/uapi/linux/hdlc/ioctl.h' line='89' column='1' id='4b1b543a'/>
       <qualified-type-def type-id='d2bd1e05' const='yes' id='4b1c1612'/>
       <typedef-decl name='pte_t' type-id='c50bf92f' filepath='arch/arm64/include/asm/pgtable-types.h' line='23' column='1' id='4b2795fc'/>
@@ -48122,48 +48129,48 @@
       <qualified-type-def type-id='0ee978f1' const='yes' id='60f31a4e'/>
       <pointer-type-def type-id='b83c8287' size-in-bits='64' id='60f4096f'/>
       <pointer-type-def type-id='484cd8ba' size-in-bits='64' id='60f8eab0'/>
-      <class-decl name='kernfs_open_file' size-in-bits='1536' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='212' column='1' id='60fb5bfa'>
+      <class-decl name='kernfs_open_file' size-in-bits='1536' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='218' column='1' id='60fb5bfa'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='kn' type-id='150efd3f' visibility='default' filepath='include/linux/kernfs.h' line='214' column='1'/>
+          <var-decl name='kn' type-id='150efd3f' visibility='default' filepath='include/linux/kernfs.h' line='220' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='file' type-id='77e79a4b' visibility='default' filepath='include/linux/kernfs.h' line='215' column='1'/>
+          <var-decl name='file' type-id='77e79a4b' visibility='default' filepath='include/linux/kernfs.h' line='221' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='seq_file' type-id='f8dc9def' visibility='default' filepath='include/linux/kernfs.h' line='216' column='1'/>
+          <var-decl name='seq_file' type-id='f8dc9def' visibility='default' filepath='include/linux/kernfs.h' line='222' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='priv' type-id='eaa32e2f' visibility='default' filepath='include/linux/kernfs.h' line='217' column='1'/>
+          <var-decl name='priv' type-id='eaa32e2f' visibility='default' filepath='include/linux/kernfs.h' line='223' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='mutex' type-id='925167dc' visibility='default' filepath='include/linux/kernfs.h' line='220' column='1'/>
+          <var-decl name='mutex' type-id='925167dc' visibility='default' filepath='include/linux/kernfs.h' line='226' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='640'>
-          <var-decl name='prealloc_mutex' type-id='925167dc' visibility='default' filepath='include/linux/kernfs.h' line='221' column='1'/>
+          <var-decl name='prealloc_mutex' type-id='925167dc' visibility='default' filepath='include/linux/kernfs.h' line='227' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1024'>
-          <var-decl name='event' type-id='95e97e5e' visibility='default' filepath='include/linux/kernfs.h' line='222' column='1'/>
+          <var-decl name='event' type-id='95e97e5e' visibility='default' filepath='include/linux/kernfs.h' line='228' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1088'>
-          <var-decl name='list' type-id='72f469ec' visibility='default' filepath='include/linux/kernfs.h' line='223' column='1'/>
+          <var-decl name='list' type-id='72f469ec' visibility='default' filepath='include/linux/kernfs.h' line='229' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1216'>
-          <var-decl name='prealloc_buf' type-id='26a90f95' visibility='default' filepath='include/linux/kernfs.h' line='224' column='1'/>
+          <var-decl name='prealloc_buf' type-id='26a90f95' visibility='default' filepath='include/linux/kernfs.h' line='230' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1280'>
-          <var-decl name='atomic_write_len' type-id='b59d7dce' visibility='default' filepath='include/linux/kernfs.h' line='226' column='1'/>
+          <var-decl name='atomic_write_len' type-id='b59d7dce' visibility='default' filepath='include/linux/kernfs.h' line='232' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1344'>
-          <var-decl name='mmapped' type-id='b50a4934' visibility='default' filepath='include/linux/kernfs.h' line='227' column='1'/>
+          <var-decl name='mmapped' type-id='b50a4934' visibility='default' filepath='include/linux/kernfs.h' line='233' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1345'>
-          <var-decl name='released' type-id='b50a4934' visibility='default' filepath='include/linux/kernfs.h' line='228' column='1'/>
+          <var-decl name='released' type-id='b50a4934' visibility='default' filepath='include/linux/kernfs.h' line='234' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1408'>
-          <var-decl name='vm_ops' type-id='9be87662' visibility='default' filepath='include/linux/kernfs.h' line='229' column='1'/>
+          <var-decl name='vm_ops' type-id='9be87662' visibility='default' filepath='include/linux/kernfs.h' line='235' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1472'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='231' column='1'/>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='237' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='e5ceda9f' size-in-bits='64' id='6100aa9b'/>
@@ -52672,7 +52679,7 @@
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='ec84183d' size-in-bits='64' id='6af1ec35'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1507' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1508' column='1'/>
         </data-member>
@@ -70060,33 +70067,33 @@
       <pointer-type-def type-id='136fe2b5' size-in-bits='64' id='91e93e11'/>
       <pointer-type-def type-id='c8df6a78' size-in-bits='64' id='91e97dfa'/>
       <pointer-type-def type-id='d919518f' size-in-bits='64' id='91ea7193'/>
-      <class-decl name='kernfs_syscall_ops' size-in-bits='576' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='176' column='1' id='91f5bcb7'>
+      <class-decl name='kernfs_syscall_ops' size-in-bits='576' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='177' column='1' id='91f5bcb7'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='show_options' type-id='efd5496b' visibility='default' filepath='include/linux/kernfs.h' line='177' column='1'/>
+          <var-decl name='show_options' type-id='efd5496b' visibility='default' filepath='include/linux/kernfs.h' line='178' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='mkdir' type-id='58d10a98' visibility='default' filepath='include/linux/kernfs.h' line='179' column='1'/>
+          <var-decl name='mkdir' type-id='58d10a98' visibility='default' filepath='include/linux/kernfs.h' line='180' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='rmdir' type-id='0b56752f' visibility='default' filepath='include/linux/kernfs.h' line='181' column='1'/>
+          <var-decl name='rmdir' type-id='0b56752f' visibility='default' filepath='include/linux/kernfs.h' line='182' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='rename' type-id='aea90108' visibility='default' filepath='include/linux/kernfs.h' line='182' column='1'/>
+          <var-decl name='rename' type-id='aea90108' visibility='default' filepath='include/linux/kernfs.h' line='183' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='show_path' type-id='26692209' visibility='default' filepath='include/linux/kernfs.h' line='184' column='1'/>
+          <var-decl name='show_path' type-id='26692209' visibility='default' filepath='include/linux/kernfs.h' line='185' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='320'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='187' column='1'/>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='188' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='188' column='1'/>
+          <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='189' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='448'>
-          <var-decl name='android_kabi_reserved3' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='189' column='1'/>
+          <var-decl name='android_kabi_reserved3' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='190' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='512'>
-          <var-decl name='android_kabi_reserved4' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='190' column='1'/>
+          <var-decl name='android_kabi_reserved4' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='191' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='ethtool_ts_info' size-in-bits='352' is-struct='yes' visibility='default' filepath='include/uapi/linux/ethtool.h' line='1336' column='1' id='91f77fa3'>
@@ -72520,6 +72527,17 @@
         </data-member>
         <data-member access='public' layout-offset-in-bits='1472'>
           <var-decl name='prepare' type-id='f9b06939' visibility='default' filepath='include/net/macsec.h' line='258' column='1'/>
+        </data-member>
+      </class-decl>
+      <class-decl name='phy_setting' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/linux/phy.h' line='935' column='1' id='983f0f8f'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='speed' type-id='19c2251e' visibility='default' filepath='include/linux/phy.h' line='936' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='32'>
+          <var-decl name='duplex' type-id='f9b06939' visibility='default' filepath='include/linux/phy.h' line='937' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='40'>
+          <var-decl name='bit' type-id='f9b06939' visibility='default' filepath='include/linux/phy.h' line='938' column='1'/>
         </data-member>
       </class-decl>
       <function-type size-in-bits='64' id='98408d8f'>
@@ -75170,18 +75188,18 @@
       </class-decl>
       <qualified-type-def type-id='b683d7fe' const='yes' id='9e02903b'/>
       <pointer-type-def type-id='73adb477' size-in-bits='64' id='9e036c13'/>
-      <class-decl name='kernfs_elem_attr' size-in-bits='256' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='113' column='1' id='9e04468e'>
+      <class-decl name='kernfs_elem_attr' size-in-bits='256' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='114' column='1' id='9e04468e'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='ops' type-id='d37373f6' visibility='default' filepath='include/linux/kernfs.h' line='114' column='1'/>
+          <var-decl name='ops' type-id='d37373f6' visibility='default' filepath='include/linux/kernfs.h' line='115' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='open' type-id='627d9f9e' visibility='default' filepath='include/linux/kernfs.h' line='115' column='1'/>
+          <var-decl name='open' type-id='627d9f9e' visibility='default' filepath='include/linux/kernfs.h' line='116' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='size' type-id='69bf7bee' visibility='default' filepath='include/linux/kernfs.h' line='116' column='1'/>
+          <var-decl name='size' type-id='69bf7bee' visibility='default' filepath='include/linux/kernfs.h' line='117' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='notify_next' type-id='150efd3f' visibility='default' filepath='include/linux/kernfs.h' line='117' column='1'/>
+          <var-decl name='notify_next' type-id='150efd3f' visibility='default' filepath='include/linux/kernfs.h' line='118' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='module_param_attrs' size-in-bits='384' is-struct='yes' visibility='default' filepath='kernel/params.c' line='547' column='1' id='9e045430'>
@@ -78366,6 +78384,7 @@
           <var-decl name='async_todo' type-id='72f469ec' visibility='default' filepath='drivers/android/binder_internal.h' line='269' column='1'/>
         </data-member>
       </class-decl>
+      <pointer-type-def type-id='4b188e44' size-in-bits='64' id='a5a8372a'/>
       <qualified-type-def type-id='f817de22' const='yes' id='a5b2ff47'/>
       <function-type size-in-bits='64' id='a5b67631'>
         <parameter type-id='8898134d'/>
@@ -83341,15 +83360,15 @@
           <var-decl name='next' type-id='c77a71ce' visibility='default' filepath='include/linux/jump_label.h' line='105' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='256' is-anonymous='yes' visibility='default' filepath='include/linux/kernfs.h' line='148' column='1' id='ac5ab637'>
+      <union-decl name='__anonymous_union__' size-in-bits='256' is-anonymous='yes' visibility='default' filepath='include/linux/kernfs.h' line='149' column='1' id='ac5ab637'>
         <data-member access='public'>
-          <var-decl name='dir' type-id='4303ca40' visibility='default' filepath='include/linux/kernfs.h' line='149' column='1'/>
+          <var-decl name='dir' type-id='4303ca40' visibility='default' filepath='include/linux/kernfs.h' line='150' column='1'/>
         </data-member>
         <data-member access='public'>
-          <var-decl name='symlink' type-id='c8685ef0' visibility='default' filepath='include/linux/kernfs.h' line='150' column='1'/>
+          <var-decl name='symlink' type-id='c8685ef0' visibility='default' filepath='include/linux/kernfs.h' line='151' column='1'/>
         </data-member>
         <data-member access='public'>
-          <var-decl name='attr' type-id='9e04468e' visibility='default' filepath='include/linux/kernfs.h' line='151' column='1'/>
+          <var-decl name='attr' type-id='9e04468e' visibility='default' filepath='include/linux/kernfs.h' line='152' column='1'/>
         </data-member>
       </union-decl>
       <union-decl name='__anonymous_union__' size-in-bits='64' is-anonymous='yes' visibility='default' filepath='include/linux/key.h' line='111' column='1' id='ac5ab638'>
@@ -85490,48 +85509,48 @@
           <var-decl name='keycode' type-id='19c2251e' visibility='default' filepath='include/media/rc-map.h' line='142' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='kernfs_ops' size-in-bits='896' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='234' column='1' id='ae89b201'>
+      <class-decl name='kernfs_ops' size-in-bits='896' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='240' column='1' id='ae89b201'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='open' type-id='964d2eb6' visibility='default' filepath='include/linux/kernfs.h' line='239' column='1'/>
+          <var-decl name='open' type-id='964d2eb6' visibility='default' filepath='include/linux/kernfs.h' line='245' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='release' type-id='f1825e09' visibility='default' filepath='include/linux/kernfs.h' line='240' column='1'/>
+          <var-decl name='release' type-id='f1825e09' visibility='default' filepath='include/linux/kernfs.h' line='246' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='seq_show' type-id='0131eb61' visibility='default' filepath='include/linux/kernfs.h' line='253' column='1'/>
+          <var-decl name='seq_show' type-id='0131eb61' visibility='default' filepath='include/linux/kernfs.h' line='259' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='seq_start' type-id='a46b05a0' visibility='default' filepath='include/linux/kernfs.h' line='255' column='1'/>
+          <var-decl name='seq_start' type-id='a46b05a0' visibility='default' filepath='include/linux/kernfs.h' line='261' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='seq_next' type-id='b6ba26fa' visibility='default' filepath='include/linux/kernfs.h' line='256' column='1'/>
+          <var-decl name='seq_next' type-id='b6ba26fa' visibility='default' filepath='include/linux/kernfs.h' line='262' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='320'>
-          <var-decl name='seq_stop' type-id='6ba28d1c' visibility='default' filepath='include/linux/kernfs.h' line='257' column='1'/>
+          <var-decl name='seq_stop' type-id='6ba28d1c' visibility='default' filepath='include/linux/kernfs.h' line='263' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='read' type-id='17b1add7' visibility='default' filepath='include/linux/kernfs.h' line='259' column='1'/>
+          <var-decl name='read' type-id='17b1add7' visibility='default' filepath='include/linux/kernfs.h' line='265' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='448'>
-          <var-decl name='atomic_write_len' type-id='b59d7dce' visibility='default' filepath='include/linux/kernfs.h' line='269' column='1'/>
+          <var-decl name='atomic_write_len' type-id='b59d7dce' visibility='default' filepath='include/linux/kernfs.h' line='275' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='512'>
-          <var-decl name='prealloc' type-id='b50a4934' visibility='default' filepath='include/linux/kernfs.h' line='276' column='1'/>
+          <var-decl name='prealloc' type-id='b50a4934' visibility='default' filepath='include/linux/kernfs.h' line='282' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='576'>
-          <var-decl name='write' type-id='17b1add7' visibility='default' filepath='include/linux/kernfs.h' line='277' column='1'/>
+          <var-decl name='write' type-id='17b1add7' visibility='default' filepath='include/linux/kernfs.h' line='283' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='640'>
-          <var-decl name='poll' type-id='b347e5ac' visibility='default' filepath='include/linux/kernfs.h' line='280' column='1'/>
+          <var-decl name='poll' type-id='b347e5ac' visibility='default' filepath='include/linux/kernfs.h' line='286' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='704'>
-          <var-decl name='mmap' type-id='f9e738c5' visibility='default' filepath='include/linux/kernfs.h' line='283' column='1'/>
+          <var-decl name='mmap' type-id='f9e738c5' visibility='default' filepath='include/linux/kernfs.h' line='289' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='768'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='289' column='1'/>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='295' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='832'>
-          <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='290' column='1'/>
+          <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/linux/kernfs.h' line='296' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='sk_buff' size-in-bits='1920' is-struct='yes' visibility='default' filepath='include/linux/skbuff.h' line='765' column='1' id='ae8bfcdd'>
@@ -98888,9 +98907,9 @@
           <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='drivers/usb/host/xhci.h' line='1668' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='kernfs_elem_symlink' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='109' column='1' id='c8685ef0'>
+      <class-decl name='kernfs_elem_symlink' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/linux/kernfs.h' line='110' column='1' id='c8685ef0'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='target_kn' type-id='150efd3f' visibility='default' filepath='include/linux/kernfs.h' line='110' column='1'/>
+          <var-decl name='target_kn' type-id='150efd3f' visibility='default' filepath='include/linux/kernfs.h' line='111' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='wiphy_iftype_akm_suites' size-in-bits='192' is-struct='yes' visibility='default' filepath='include/net/cfg80211.h' line='5406' column='1' id='c86a8a16'>
@@ -145619,6 +145638,12 @@
         <parameter type-id='7359adad' name='mask' filepath='mm/page_alloc.c' line='594' column='1'/>
         <return type-id='7359adad'/>
       </function-decl>
+      <function-decl name='get_phy_device' mangled-name='get_phy_device' filepath='drivers/net/phy/phy_device.c' line='886' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='get_phy_device'>
+        <parameter type-id='ff47b24b' name='bus' filepath='drivers/net/phy/phy_device.c' line='886' column='1'/>
+        <parameter type-id='95e97e5e' name='addr' filepath='drivers/net/phy/phy_device.c' line='886' column='1'/>
+        <parameter type-id='b50a4934' name='is_c45' filepath='drivers/net/phy/phy_device.c' line='886' column='1'/>
+        <return type-id='7efbcaaf'/>
+      </function-decl>
       <function-decl name='get_pid_task' mangled-name='get_pid_task' filepath='kernel/pid.c' line='449' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='get_pid_task'>
         <parameter type-id='b94e5398' name='pid' filepath='kernel/pid.c' line='449' column='1'/>
         <parameter type-id='ce78cf46' name='type' filepath='kernel/pid.c' line='449' column='1'/>
@@ -148779,25 +148804,25 @@
         <parameter type-id='45c08bac' name='how' filepath='net/socket.c' line='3571' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='kernfs_find_and_get_ns' mangled-name='kernfs_find_and_get_ns' filepath='fs/kernfs/dir.c' line='867' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernfs_find_and_get_ns'>
-        <parameter type-id='150efd3f' name='parent' filepath='fs/kernfs/dir.c' line='867' column='1'/>
-        <parameter type-id='80f4b756' name='name' filepath='fs/kernfs/dir.c' line='868' column='1'/>
-        <parameter type-id='eaa32e2f' name='ns' filepath='fs/kernfs/dir.c' line='868' column='1'/>
+      <function-decl name='kernfs_find_and_get_ns' mangled-name='kernfs_find_and_get_ns' filepath='fs/kernfs/dir.c' line='868' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernfs_find_and_get_ns'>
+        <parameter type-id='150efd3f' name='parent' filepath='fs/kernfs/dir.c' line='868' column='1'/>
+        <parameter type-id='80f4b756' name='name' filepath='fs/kernfs/dir.c' line='869' column='1'/>
+        <parameter type-id='eaa32e2f' name='ns' filepath='fs/kernfs/dir.c' line='869' column='1'/>
         <return type-id='150efd3f'/>
       </function-decl>
       <function-decl name='kernfs_get' mangled-name='kernfs_get' filepath='fs/kernfs/dir.c' line='501' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernfs_get'>
         <parameter type-id='150efd3f' name='kn' filepath='fs/kernfs/dir.c' line='501' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='kernfs_notify' mangled-name='kernfs_notify' filepath='fs/kernfs/file.c' line='913' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernfs_notify'>
-        <parameter type-id='150efd3f' name='kn' filepath='fs/kernfs/file.c' line='913' column='1'/>
+      <function-decl name='kernfs_notify' mangled-name='kernfs_notify' filepath='fs/kernfs/file.c' line='915' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernfs_notify'>
+        <parameter type-id='150efd3f' name='kn' filepath='fs/kernfs/file.c' line='915' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='kernfs_path_from_node' mangled-name='kernfs_path_from_node' filepath='fs/kernfs/dir.c' line='218' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernfs_path_from_node'>
-        <parameter type-id='150efd3f' name='to' filepath='fs/kernfs/dir.c' line='218' column='1'/>
-        <parameter type-id='150efd3f' name='from' filepath='fs/kernfs/dir.c' line='218' column='1'/>
-        <parameter type-id='26a90f95' name='buf' filepath='fs/kernfs/dir.c' line='219' column='1'/>
-        <parameter type-id='b59d7dce' name='buflen' filepath='fs/kernfs/dir.c' line='219' column='1'/>
+      <function-decl name='kernfs_path_from_node' mangled-name='kernfs_path_from_node' filepath='fs/kernfs/dir.c' line='217' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernfs_path_from_node'>
+        <parameter type-id='150efd3f' name='to' filepath='fs/kernfs/dir.c' line='217' column='1'/>
+        <parameter type-id='150efd3f' name='from' filepath='fs/kernfs/dir.c' line='217' column='1'/>
+        <parameter type-id='26a90f95' name='buf' filepath='fs/kernfs/dir.c' line='218' column='1'/>
+        <parameter type-id='b59d7dce' name='buflen' filepath='fs/kernfs/dir.c' line='218' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='kernfs_put' mangled-name='kernfs_put' filepath='fs/kernfs/dir.c' line='516' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kernfs_put'>
@@ -151019,6 +151044,10 @@
         <parameter type-id='2ce52478' name='dev' filepath='net/core/dev.c' line='11524' column='1'/>
         <parameter type-id='80f4b756' name='fmt' filepath='net/core/dev.c' line='11524' column='1'/>
         <parameter is-variadic='yes'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='netdev_features_change' mangled-name='netdev_features_change' filepath='net/core/dev.c' line='1395' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='netdev_features_change'>
+        <parameter type-id='68a2d05b' name='dev' filepath='net/core/dev.c' line='1395' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='netdev_increment_features' mangled-name='netdev_increment_features' filepath='net/core/dev.c' line='11389' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='netdev_increment_features'>
@@ -153517,70 +153546,70 @@
         <parameter type-id='91ce1af9' name='flags' filepath='kernel/events/ring_buffer.c' line='334' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='perf_event_addr_filters_sync' mangled-name='perf_event_addr_filters_sync' filepath='kernel/events/core.c' line='3192' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_addr_filters_sync'>
-        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='3192' column='1'/>
+      <function-decl name='perf_event_addr_filters_sync' mangled-name='perf_event_addr_filters_sync' filepath='kernel/events/core.c' line='3207' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_addr_filters_sync'>
+        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='3207' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='perf_event_create_kernel_counter' mangled-name='perf_event_create_kernel_counter' filepath='kernel/events/core.c' line='12607' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_create_kernel_counter'>
-        <parameter type-id='20862e61' name='attr' filepath='kernel/events/core.c' line='12607' column='1'/>
-        <parameter type-id='95e97e5e' name='cpu' filepath='kernel/events/core.c' line='12607' column='1'/>
-        <parameter type-id='f23e2572' name='task' filepath='kernel/events/core.c' line='12608' column='1'/>
-        <parameter type-id='20a2e4e6' name='overflow_handler' filepath='kernel/events/core.c' line='12609' column='1'/>
-        <parameter type-id='eaa32e2f' name='context' filepath='kernel/events/core.c' line='12610' column='1'/>
+      <function-decl name='perf_event_create_kernel_counter' mangled-name='perf_event_create_kernel_counter' filepath='kernel/events/core.c' line='12622' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_create_kernel_counter'>
+        <parameter type-id='20862e61' name='attr' filepath='kernel/events/core.c' line='12622' column='1'/>
+        <parameter type-id='95e97e5e' name='cpu' filepath='kernel/events/core.c' line='12622' column='1'/>
+        <parameter type-id='f23e2572' name='task' filepath='kernel/events/core.c' line='12623' column='1'/>
+        <parameter type-id='20a2e4e6' name='overflow_handler' filepath='kernel/events/core.c' line='12624' column='1'/>
+        <parameter type-id='eaa32e2f' name='context' filepath='kernel/events/core.c' line='12625' column='1'/>
         <return type-id='2bf16f59'/>
       </function-decl>
-      <function-decl name='perf_event_disable' mangled-name='perf_event_disable' filepath='kernel/events/core.c' line='2554' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_disable'>
-        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='2554' column='1'/>
+      <function-decl name='perf_event_disable' mangled-name='perf_event_disable' filepath='kernel/events/core.c' line='2569' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_disable'>
+        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='2569' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='perf_event_enable' mangled-name='perf_event_enable' filepath='kernel/events/core.c' line='3092' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_enable'>
-        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='3092' column='1'/>
+      <function-decl name='perf_event_enable' mangled-name='perf_event_enable' filepath='kernel/events/core.c' line='3107' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_enable'>
+        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='3107' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='perf_event_pause' mangled-name='perf_event_pause' filepath='kernel/events/core.c' line='5572' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_pause'>
-        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='5572' column='1'/>
-        <parameter type-id='b50a4934' name='reset' filepath='kernel/events/core.c' line='5572' column='1'/>
+      <function-decl name='perf_event_pause' mangled-name='perf_event_pause' filepath='kernel/events/core.c' line='5587' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_pause'>
+        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='5587' column='1'/>
+        <parameter type-id='b50a4934' name='reset' filepath='kernel/events/core.c' line='5587' column='1'/>
         <return type-id='91ce1af9'/>
       </function-decl>
-      <function-decl name='perf_event_read_local' mangled-name='perf_event_read_local' filepath='kernel/events/core.c' line='4524' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_read_local'>
-        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='4524' column='1'/>
-        <parameter type-id='3df9fd28' name='value' filepath='kernel/events/core.c' line='4524' column='1'/>
-        <parameter type-id='3df9fd28' name='enabled' filepath='kernel/events/core.c' line='4525' column='1'/>
-        <parameter type-id='3df9fd28' name='running' filepath='kernel/events/core.c' line='4525' column='1'/>
+      <function-decl name='perf_event_read_local' mangled-name='perf_event_read_local' filepath='kernel/events/core.c' line='4539' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_read_local'>
+        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='4539' column='1'/>
+        <parameter type-id='3df9fd28' name='value' filepath='kernel/events/core.c' line='4539' column='1'/>
+        <parameter type-id='3df9fd28' name='enabled' filepath='kernel/events/core.c' line='4540' column='1'/>
+        <parameter type-id='3df9fd28' name='running' filepath='kernel/events/core.c' line='4540' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='perf_event_read_value' mangled-name='perf_event_read_value' filepath='kernel/events/core.c' line='5330' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_read_value'>
-        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='5330' column='1'/>
-        <parameter type-id='3df9fd28' name='enabled' filepath='kernel/events/core.c' line='5330' column='1'/>
-        <parameter type-id='3df9fd28' name='running' filepath='kernel/events/core.c' line='5330' column='1'/>
+      <function-decl name='perf_event_read_value' mangled-name='perf_event_read_value' filepath='kernel/events/core.c' line='5345' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_read_value'>
+        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='5345' column='1'/>
+        <parameter type-id='3df9fd28' name='enabled' filepath='kernel/events/core.c' line='5345' column='1'/>
+        <parameter type-id='3df9fd28' name='running' filepath='kernel/events/core.c' line='5345' column='1'/>
         <return type-id='91ce1af9'/>
       </function-decl>
-      <function-decl name='perf_event_release_kernel' mangled-name='perf_event_release_kernel' filepath='kernel/events/core.c' line='5183' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_release_kernel'>
-        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='5183' column='1'/>
+      <function-decl name='perf_event_release_kernel' mangled-name='perf_event_release_kernel' filepath='kernel/events/core.c' line='5198' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_release_kernel'>
+        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='5198' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='perf_event_update_userpage' mangled-name='perf_event_update_userpage' filepath='kernel/events/core.c' line='5953' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_update_userpage'>
-        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='5953' column='1'/>
+      <function-decl name='perf_event_update_userpage' mangled-name='perf_event_update_userpage' filepath='kernel/events/core.c' line='5968' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_event_update_userpage'>
+        <parameter type-id='2bf16f59' name='event' filepath='kernel/events/core.c' line='5968' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='perf_get_aux' mangled-name='perf_get_aux' filepath='kernel/events/ring_buffer.c' line='557' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_get_aux'>
         <parameter type-id='d3b23a45' name='handle' filepath='kernel/events/ring_buffer.c' line='557' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
-      <function-decl name='perf_pmu_migrate_context' mangled-name='perf_pmu_migrate_context' filepath='kernel/events/core.c' line='12686' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_pmu_migrate_context'>
-        <parameter type-id='0906f5b9' name='pmu' filepath='kernel/events/core.c' line='12686' column='1'/>
-        <parameter type-id='95e97e5e' name='src_cpu' filepath='kernel/events/core.c' line='12686' column='1'/>
-        <parameter type-id='95e97e5e' name='dst_cpu' filepath='kernel/events/core.c' line='12686' column='1'/>
+      <function-decl name='perf_pmu_migrate_context' mangled-name='perf_pmu_migrate_context' filepath='kernel/events/core.c' line='12701' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_pmu_migrate_context'>
+        <parameter type-id='0906f5b9' name='pmu' filepath='kernel/events/core.c' line='12701' column='1'/>
+        <parameter type-id='95e97e5e' name='src_cpu' filepath='kernel/events/core.c' line='12701' column='1'/>
+        <parameter type-id='95e97e5e' name='dst_cpu' filepath='kernel/events/core.c' line='12701' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='perf_pmu_register' mangled-name='perf_pmu_register' filepath='kernel/events/core.c' line='11155' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_pmu_register'>
-        <parameter type-id='0906f5b9' name='pmu' filepath='kernel/events/core.c' line='11155' column='1'/>
-        <parameter type-id='80f4b756' name='name' filepath='kernel/events/core.c' line='11155' column='1'/>
-        <parameter type-id='95e97e5e' name='type' filepath='kernel/events/core.c' line='11155' column='1'/>
+      <function-decl name='perf_pmu_register' mangled-name='perf_pmu_register' filepath='kernel/events/core.c' line='11170' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_pmu_register'>
+        <parameter type-id='0906f5b9' name='pmu' filepath='kernel/events/core.c' line='11170' column='1'/>
+        <parameter type-id='80f4b756' name='name' filepath='kernel/events/core.c' line='11170' column='1'/>
+        <parameter type-id='95e97e5e' name='type' filepath='kernel/events/core.c' line='11170' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='perf_pmu_unregister' mangled-name='perf_pmu_unregister' filepath='kernel/events/core.c' line='11291' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_pmu_unregister'>
-        <parameter type-id='0906f5b9' name='pmu' filepath='kernel/events/core.c' line='11291' column='1'/>
+      <function-decl name='perf_pmu_unregister' mangled-name='perf_pmu_unregister' filepath='kernel/events/core.c' line='11306' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_pmu_unregister'>
+        <parameter type-id='0906f5b9' name='pmu' filepath='kernel/events/core.c' line='11306' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='perf_trace_buf_alloc' mangled-name='perf_trace_buf_alloc' filepath='kernel/trace/trace_event_perf.c' line='396' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_trace_buf_alloc'>
@@ -153589,15 +153618,15 @@
         <parameter type-id='7292109c' name='rctxp' filepath='kernel/trace/trace_event_perf.c' line='396' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
-      <function-decl name='perf_trace_run_bpf_submit' mangled-name='perf_trace_run_bpf_submit' filepath='kernel/events/core.c' line='9793' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_trace_run_bpf_submit'>
-        <parameter type-id='eaa32e2f' name='raw_data' filepath='kernel/events/core.c' line='9793' column='1'/>
-        <parameter type-id='95e97e5e' name='size' filepath='kernel/events/core.c' line='9793' column='1'/>
-        <parameter type-id='95e97e5e' name='rctx' filepath='kernel/events/core.c' line='9793' column='1'/>
-        <parameter type-id='23d6768c' name='call' filepath='kernel/events/core.c' line='9794' column='1'/>
-        <parameter type-id='91ce1af9' name='count' filepath='kernel/events/core.c' line='9794' column='1'/>
-        <parameter type-id='4616a179' name='regs' filepath='kernel/events/core.c' line='9795' column='1'/>
-        <parameter type-id='030d0b18' name='head' filepath='kernel/events/core.c' line='9795' column='1'/>
-        <parameter type-id='f23e2572' name='task' filepath='kernel/events/core.c' line='9796' column='1'/>
+      <function-decl name='perf_trace_run_bpf_submit' mangled-name='perf_trace_run_bpf_submit' filepath='kernel/events/core.c' line='9808' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='perf_trace_run_bpf_submit'>
+        <parameter type-id='eaa32e2f' name='raw_data' filepath='kernel/events/core.c' line='9808' column='1'/>
+        <parameter type-id='95e97e5e' name='size' filepath='kernel/events/core.c' line='9808' column='1'/>
+        <parameter type-id='95e97e5e' name='rctx' filepath='kernel/events/core.c' line='9808' column='1'/>
+        <parameter type-id='23d6768c' name='call' filepath='kernel/events/core.c' line='9809' column='1'/>
+        <parameter type-id='91ce1af9' name='count' filepath='kernel/events/core.c' line='9809' column='1'/>
+        <parameter type-id='4616a179' name='regs' filepath='kernel/events/core.c' line='9810' column='1'/>
+        <parameter type-id='030d0b18' name='head' filepath='kernel/events/core.c' line='9810' column='1'/>
+        <parameter type-id='f23e2572' name='task' filepath='kernel/events/core.c' line='9811' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='pfn_is_map_memory' mangled-name='pfn_is_map_memory' filepath='arch/arm64/mm/init.c' line='205' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pfn_is_map_memory'>
@@ -153635,6 +153664,14 @@
         <parameter type-id='7efbcaaf' name='phydev' filepath='drivers/net/phy/phy_device.c' line='1050' column='1'/>
         <parameter type-id='548eee3a' name='handler' filepath='drivers/net/phy/phy_device.c' line='1051' column='1'/>
         <parameter type-id='d61bf978' name='interface' filepath='drivers/net/phy/phy_device.c' line='1052' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='phy_device_free' mangled-name='phy_device_free' filepath='drivers/net/phy/phy_device.c' line='202' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='phy_device_free'>
+        <parameter type-id='7efbcaaf' name='phydev' filepath='drivers/net/phy/phy_device.c' line='202' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='phy_device_register' mangled-name='phy_device_register' filepath='drivers/net/phy/phy_device.c' line='924' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='phy_device_register'>
+        <parameter type-id='7efbcaaf' name='phydev' filepath='drivers/net/phy/phy_device.c' line='924' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='phy_disconnect' mangled-name='phy_disconnect' filepath='drivers/net/phy/phy_device.c' line='1118' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='phy_disconnect'>
@@ -153743,6 +153780,13 @@
       <function-decl name='phy_init_hw' mangled-name='phy_init_hw' filepath='drivers/net/phy/phy_device.c' line='1166' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='phy_init_hw'>
         <parameter type-id='7efbcaaf' name='phydev' filepath='drivers/net/phy/phy_device.c' line='1166' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='phy_lookup_setting' mangled-name='phy_lookup_setting' filepath='drivers/net/phy/phy-core.c' line='200' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='phy_lookup_setting'>
+        <parameter type-id='95e97e5e' name='speed' filepath='drivers/net/phy/phy-core.c' line='200' column='1'/>
+        <parameter type-id='95e97e5e' name='duplex' filepath='drivers/net/phy/phy-core.c' line='200' column='1'/>
+        <parameter type-id='f9b37274' name='mask' filepath='drivers/net/phy/phy-core.c' line='200' column='1'/>
+        <parameter type-id='b50a4934' name='exact' filepath='drivers/net/phy/phy-core.c' line='200' column='1'/>
+        <return type-id='a5a8372a'/>
       </function-decl>
       <function-decl name='phy_loopback' mangled-name='phy_loopback' filepath='drivers/net/phy/phy_device.c' line='1832' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='phy_loopback'>
         <parameter type-id='7efbcaaf' name='phydev' filepath='drivers/net/phy/phy_device.c' line='1832' column='1'/>
@@ -153869,6 +153913,10 @@
       <function-decl name='phy_resolve_aneg_pause' mangled-name='phy_resolve_aneg_pause' filepath='drivers/net/phy/phy-core.c' line='342' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='phy_resolve_aneg_pause'>
         <parameter type-id='7efbcaaf' name='phydev' filepath='drivers/net/phy/phy-core.c' line='342' column='1'/>
         <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='phy_restart_aneg' mangled-name='phy_restart_aneg' filepath='drivers/net/phy/phy.c' line='151' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='phy_restart_aneg'>
+        <parameter type-id='7efbcaaf' name='phydev' filepath='drivers/net/phy/phy.c' line='151' column='1'/>
+        <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='phy_restore_page' mangled-name='phy_restore_page' filepath='drivers/net/phy/phy-core.c' line='826' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='phy_restore_page'>
         <parameter type-id='7efbcaaf' name='phydev' filepath='drivers/net/phy/phy-core.c' line='826' column='1'/>
