@@ -1979,6 +1979,8 @@
       <elf-symbol name='devm_memremap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x141fa271'/>
       <elf-symbol name='devm_memunmap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xefbaf87d'/>
       <elf-symbol name='devm_mfd_add_devices' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8d59838e'/>
+      <elf-symbol name='devm_mipi_dsi_attach' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xee4d481'/>
+      <elf-symbol name='devm_mipi_dsi_device_register_full' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x28bc2a46'/>
       <elf-symbol name='devm_nvmem_cell_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x824eae6'/>
       <elf-symbol name='devm_nvmem_device_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x91113400'/>
       <elf-symbol name='devm_nvmem_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x146a70ae'/>
@@ -139792,6 +139794,17 @@
         <parameter type-id='95e97e5e' name='irq_base' filepath='drivers/mfd/mfd-core.c' line='423' column='1'/>
         <parameter type-id='7544e824' name='domain' filepath='drivers/mfd/mfd-core.c' line='423' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='devm_mipi_dsi_attach' mangled-name='devm_mipi_dsi_attach' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='413' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_mipi_dsi_attach'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='413' column='1'/>
+        <parameter type-id='182be7cc' name='dsi' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='414' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='devm_mipi_dsi_device_register_full' mangled-name='devm_mipi_dsi_device_register_full' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='274' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_mipi_dsi_device_register_full'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='274' column='1'/>
+        <parameter type-id='c149fe34' name='host' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='275' column='1'/>
+        <parameter type-id='4b2c3420' name='info' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='276' column='1'/>
+        <return type-id='182be7cc'/>
       </function-decl>
       <function-decl name='devm_nvmem_cell_get' mangled-name='devm_nvmem_cell_get' filepath='drivers/nvmem/core.c' line='1301' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_nvmem_cell_get'>
         <parameter type-id='fa0b179b' name='dev' filepath='drivers/nvmem/core.c' line='1301' column='1'/>
