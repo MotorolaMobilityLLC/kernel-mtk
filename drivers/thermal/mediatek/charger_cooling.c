@@ -23,12 +23,22 @@ struct charger_cooler_info {
 
 static struct charger_cooler_info charger_cl_data;
 /* < -1 is unlimit, unit is uA. */
+
+#ifdef CONFIG_MOTO_THERMAL_CHARGER_STATE_NUM
+static  int master_charger_state_to_current_limit[CHARGER_STATE_NUM] = {
+        -1, 2600000, 2200000, 1800000, 1400000, 1000000, 700000, 500000, 0
+};
+static const int slave_charger_state_to_current_limit[CHARGER_STATE_NUM] = {
+        -1, 1800000, 1600000, 1400000, 1200000, 1000000, 700000, 500000, 0
+};
+#else
 static  int master_charger_state_to_current_limit[CHARGER_STATE_NUM] = {
 	-1, 5200000, 4600000, 4200000, 3800000, 3400000, 3000000, 2600000, 2200000, 1800000, 1400000, 1000000, 700000, 500000, 0
 };
 static const int slave_charger_state_to_current_limit[CHARGER_STATE_NUM] = {
 	-1, 5200000, 4600000, 4200000, 3800000, 3400000, 3000000, 2600000, 2200000, 1800000, 1400000, 1000000, 700000, 500000, 0
 };
+#endif
 
 /*==================================================
  * cooler callback functions
