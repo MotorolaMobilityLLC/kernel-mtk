@@ -39,6 +39,8 @@ subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/ois/dw9781
 
 ifeq ($(CONFIG_ARCH_MOTO_PROJECT),"corfu")
 obj-y += corfu/
+else ifeq ($(CONFIG_ARCH_MOTO_PROJECT),"kyoto")
+obj-y += kyoto/
 else
 
 obj-$(CONFIG_MTK_LENS)    += mainaf.o
@@ -89,4 +91,4 @@ mainaf-y  += common/gt9768af/GT9768AF.o
 mainaf-y  += common/gt9772af/GT9772AF.o
 mainaf-y  += common/mot_dw9800vaf/MOT_DW9800VAF.o
 
-endif # CONFIG_ARCH_MOTO_PROJECT == corfu
+endif # CONFIG_ARCH_MOTO_PROJECT == corfu & kyoto
