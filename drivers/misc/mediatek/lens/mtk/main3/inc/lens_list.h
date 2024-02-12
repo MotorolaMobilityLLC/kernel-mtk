@@ -53,4 +53,8 @@ extern int MOT_DW9714VAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 				int *pAF_Opened);
 extern int MOT_DW9714VAF_GetFileName(unsigned char *pFileName);
 
+#if defined(CONFIG_MOT_KYOTO)
+extern void mot_af_poweron(int state);
+#endif
+
 #endif
