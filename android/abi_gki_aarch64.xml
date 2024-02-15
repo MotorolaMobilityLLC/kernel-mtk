@@ -764,6 +764,7 @@
       <elf-symbol name='__traceiter_android_vh_sysrq_crash' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x40207816'/>
       <elf-symbol name='__traceiter_android_vh_task_blocks_on_rtmutex' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6e6d9dd0'/>
       <elf-symbol name='__traceiter_android_vh_test_clear_look_around_ref' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf0e40b05'/>
+      <elf-symbol name='__traceiter_android_vh_thermal_pm_notify_suspend' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3c80ee81'/>
       <elf-symbol name='__traceiter_android_vh_thermal_power_cap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x73b88f94'/>
       <elf-symbol name='__traceiter_android_vh_thermal_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc9b6b745'/>
       <elf-symbol name='__traceiter_android_vh_thermal_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x11150fce'/>
@@ -7586,6 +7587,7 @@
       <elf-symbol name='__tracepoint_android_vh_sysrq_crash' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1ce924b5'/>
       <elf-symbol name='__tracepoint_android_vh_task_blocks_on_rtmutex' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5494b8bf'/>
       <elf-symbol name='__tracepoint_android_vh_test_clear_look_around_ref' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4ffca4ae'/>
+      <elf-symbol name='__tracepoint_android_vh_thermal_pm_notify_suspend' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8224984a'/>
       <elf-symbol name='__tracepoint_android_vh_thermal_power_cap' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf1fd6b34'/>
       <elf-symbol name='__tracepoint_android_vh_thermal_register' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x52c84ba9'/>
       <elf-symbol name='__tracepoint_android_vh_thermal_unregister' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5ba0a594'/>
@@ -9677,7 +9679,7 @@
           <var-decl name='e_perm' type-id='8efea9e5' visibility='default' filepath='include/linux/posix_acl.h' line='22' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='' type-id='ac5ab696' visibility='default' filepath='include/linux/posix_acl.h' line='23' column='1'/>
+          <var-decl name='' type-id='ac5ab697' visibility='default' filepath='include/linux/posix_acl.h' line='23' column='1'/>
         </data-member>
       </class-decl>
       <array-type-def dimensions='1' type-id='98553e10' size-in-bits='6528' id='05487c29'>
@@ -22252,7 +22254,7 @@
       </function-type>
       <class-decl name='fid' size-in-bits='160' is-struct='yes' visibility='default' filepath='include/linux/exportfs.h' line='118' column='1' id='2437c5c4'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='' type-id='ac5ab697' visibility='default' filepath='include/linux/exportfs.h' line='119' column='1'/>
+          <var-decl name='' type-id='ac5ab695' visibility='default' filepath='include/linux/exportfs.h' line='119' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='5895f71c' size-in-bits='64' id='243d1e96'/>
@@ -79266,7 +79268,7 @@
           <var-decl name='prefix_len' type-id='8f048e17' visibility='default' filepath='include/net/addrconf.h' line='32' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='24'>
-          <var-decl name='' type-id='ac5ab695' visibility='default' filepath='include/net/addrconf.h' line='39' column='1'/>
+          <var-decl name='' type-id='ac5ab696' visibility='default' filepath='include/net/addrconf.h' line='39' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
           <var-decl name='valid' type-id='78a133c2' visibility='default' filepath='include/net/addrconf.h' line='58' column='1'/>
@@ -84383,23 +84385,7 @@
           <var-decl name='key' type-id='5867ed7f' visibility='default' filepath='include/linux/cleancache.h' line='26' column='1'/>
         </data-member>
       </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='8' is-anonymous='yes' visibility='default' filepath='include/net/addrconf.h' line='39' column='1' id='ac5ab695'>
-        <data-member access='public'>
-          <var-decl name='flags' type-id='8f048e17' visibility='default' filepath='include/net/addrconf.h' line='40' column='1'/>
-        </data-member>
-        <data-member access='public'>
-          <var-decl name='' type-id='e7f4406f' visibility='default' filepath='include/net/addrconf.h' line='41' column='1'/>
-        </data-member>
-      </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='32' is-anonymous='yes' visibility='default' filepath='include/linux/posix_acl.h' line='23' column='1' id='ac5ab696'>
-        <data-member access='public'>
-          <var-decl name='e_uid' type-id='d80b72e6' visibility='default' filepath='include/linux/posix_acl.h' line='24' column='1'/>
-        </data-member>
-        <data-member access='public'>
-          <var-decl name='e_gid' type-id='094d8048' visibility='default' filepath='include/linux/posix_acl.h' line='25' column='1'/>
-        </data-member>
-      </union-decl>
-      <union-decl name='__anonymous_union__' size-in-bits='160' is-anonymous='yes' visibility='default' filepath='include/linux/exportfs.h' line='119' column='1' id='ac5ab697'>
+      <union-decl name='__anonymous_union__' size-in-bits='160' is-anonymous='yes' visibility='default' filepath='include/linux/exportfs.h' line='119' column='1' id='ac5ab695'>
         <data-member access='public'>
           <var-decl name='i32' type-id='e7f44046' visibility='default' filepath='include/linux/exportfs.h' line='125' column='1'/>
         </data-member>
@@ -84408,6 +84394,22 @@
         </data-member>
         <data-member access='public'>
           <var-decl name='raw' type-id='d5016f6f' visibility='default' filepath='include/linux/exportfs.h' line='134' column='1'/>
+        </data-member>
+      </union-decl>
+      <union-decl name='__anonymous_union__' size-in-bits='8' is-anonymous='yes' visibility='default' filepath='include/net/addrconf.h' line='39' column='1' id='ac5ab696'>
+        <data-member access='public'>
+          <var-decl name='flags' type-id='8f048e17' visibility='default' filepath='include/net/addrconf.h' line='40' column='1'/>
+        </data-member>
+        <data-member access='public'>
+          <var-decl name='' type-id='e7f4406f' visibility='default' filepath='include/net/addrconf.h' line='41' column='1'/>
+        </data-member>
+      </union-decl>
+      <union-decl name='__anonymous_union__' size-in-bits='32' is-anonymous='yes' visibility='default' filepath='include/linux/posix_acl.h' line='23' column='1' id='ac5ab697'>
+        <data-member access='public'>
+          <var-decl name='e_uid' type-id='d80b72e6' visibility='default' filepath='include/linux/posix_acl.h' line='24' column='1'/>
+        </data-member>
+        <data-member access='public'>
+          <var-decl name='e_gid' type-id='094d8048' visibility='default' filepath='include/linux/posix_acl.h' line='25' column='1'/>
         </data-member>
       </union-decl>
       <union-decl name='__anonymous_union__' size-in-bits='128' is-anonymous='yes' visibility='default' filepath='include/uapi/linux/bpf.h' line='5627' column='1' id='ac5ab698'>
@@ -127999,7 +128001,7 @@
       <pointer-type-def type-id='46f53066' size-in-bits='64' id='fffb07a4'/>
       <qualified-type-def type-id='55efd1a3' const='yes' id='fffdaf52'/>
       <var-decl name='GKI_struct_blk_mq_alloc_data' type-id='17c43c95' mangled-name='GKI_struct_blk_mq_alloc_data' visibility='default' filepath='block/vendor_hooks.c' line='23' column='1' elf-symbol-id='GKI_struct_blk_mq_alloc_data'/>
-      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='498' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
+      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='499' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
       <var-decl name='GKI_struct_selinux_state' type-id='4ae52763' mangled-name='GKI_struct_selinux_state' visibility='default' filepath='security/selinux/vendor_hooks.c' line='21' column='1' elf-symbol-id='GKI_struct_selinux_state'/>
       <function-decl name='I_BDEV' mangled-name='I_BDEV' filepath='block/bdev.c' line='42' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='I_BDEV'>
         <parameter type-id='7e666abe' name='inode' filepath='block/bdev.c' line='42' column='1'/>
@@ -132712,6 +132714,12 @@
         <parameter type-id='02f11ed4' name='page' filepath='include/trace/hooks/mm.h' line='235' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_thermal_pm_notify_suspend' mangled-name='__traceiter_android_vh_thermal_pm_notify_suspend' filepath='include/trace/hooks/thermal.h' line='66' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_thermal_pm_notify_suspend'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/thermal.h' line='66' column='1'/>
+        <parameter type-id='404b1300' name='tz' filepath='include/trace/hooks/thermal.h' line='66' column='1'/>
+        <parameter type-id='7292109c' name='irq_wakeable' filepath='include/trace/hooks/thermal.h' line='66' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_thermal_power_cap' mangled-name='__traceiter_android_vh_thermal_power_cap' filepath='include/trace/hooks/thermal.h' line='45' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_thermal_power_cap'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/thermal.h' line='45' column='1'/>
         <parameter type-id='f9409001' name='power_range' filepath='include/trace/hooks/thermal.h' line='45' column='1'/>
@@ -133886,6 +133894,7 @@
       <var-decl name='__tracepoint_android_vh_sysrq_crash' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_sysrq_crash' visibility='default' filepath='include/trace/hooks/sysrqcrash.h' line='13' column='1' elf-symbol-id='__tracepoint_android_vh_sysrq_crash'/>
       <var-decl name='__tracepoint_android_vh_task_blocks_on_rtmutex' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_task_blocks_on_rtmutex' visibility='default' filepath='include/trace/hooks/dtask.h' line='111' column='1' elf-symbol-id='__tracepoint_android_vh_task_blocks_on_rtmutex'/>
       <var-decl name='__tracepoint_android_vh_test_clear_look_around_ref' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_test_clear_look_around_ref' visibility='default' filepath='include/trace/hooks/mm.h' line='235' column='1' elf-symbol-id='__tracepoint_android_vh_test_clear_look_around_ref'/>
+      <var-decl name='__tracepoint_android_vh_thermal_pm_notify_suspend' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_thermal_pm_notify_suspend' visibility='default' filepath='include/trace/hooks/thermal.h' line='66' column='1' elf-symbol-id='__tracepoint_android_vh_thermal_pm_notify_suspend'/>
       <var-decl name='__tracepoint_android_vh_thermal_power_cap' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_thermal_power_cap' visibility='default' filepath='include/trace/hooks/thermal.h' line='45' column='1' elf-symbol-id='__tracepoint_android_vh_thermal_power_cap'/>
       <var-decl name='__tracepoint_android_vh_thermal_register' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_thermal_register' visibility='default' filepath='include/trace/hooks/thermal.h' line='29' column='1' elf-symbol-id='__tracepoint_android_vh_thermal_register'/>
       <var-decl name='__tracepoint_android_vh_thermal_unregister' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_thermal_unregister' visibility='default' filepath='include/trace/hooks/thermal.h' line='33' column='1' elf-symbol-id='__tracepoint_android_vh_thermal_unregister'/>
