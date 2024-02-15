@@ -512,4 +512,12 @@
 &mmc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
+
+
+/* disable manual mrdump start */
+&mrdump_ext_rst {
+	force_mode = "EINT";
+};
+/* disable manual mrdump end */
+
 /*End of this file, DO NOT ADD ANYTHING HERE*/
