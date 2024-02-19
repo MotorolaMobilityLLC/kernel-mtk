@@ -521,6 +521,7 @@
       <elf-symbol name='__traceiter_android_vh_audio_usb_offload_suspend' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x99827837'/>
       <elf-symbol name='__traceiter_android_vh_audio_usb_offload_synctype' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe2e8b7e4'/>
       <elf-symbol name='__traceiter_android_vh_binder_alloc_new_buf_locked' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2a27381c'/>
+      <elf-symbol name='__traceiter_android_vh_binder_buffer_release' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd47eccc'/>
       <elf-symbol name='__traceiter_android_vh_binder_del_ref' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x475c909a'/>
       <elf-symbol name='__traceiter_android_vh_binder_free_buf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcc7c644e'/>
       <elf-symbol name='__traceiter_android_vh_binder_free_proc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x37b10c54'/>
@@ -7344,6 +7345,7 @@
       <elf-symbol name='__tracepoint_android_vh_audio_usb_offload_suspend' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x43ea6495'/>
       <elf-symbol name='__tracepoint_android_vh_audio_usb_offload_synctype' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc6e4f0c5'/>
       <elf-symbol name='__tracepoint_android_vh_binder_alloc_new_buf_locked' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2c7faf0'/>
+      <elf-symbol name='__tracepoint_android_vh_binder_buffer_release' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeabc28db'/>
       <elf-symbol name='__tracepoint_android_vh_binder_del_ref' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xefc746ba'/>
       <elf-symbol name='__tracepoint_android_vh_binder_free_buf' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf64d3ead'/>
       <elf-symbol name='__tracepoint_android_vh_binder_free_proc' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9e624858'/>
@@ -17509,9 +17511,6 @@
       </array-type-def>
       <pointer-type-def type-id='32406f0a' size-in-bits='64' id='187ae308'/>
       <pointer-type-def type-id='22b04425' size-in-bits='64' id='187c2c79'/>
-      <array-type-def dimensions='1' type-id='7359adad' size-in-bits='8192' id='187c43b2'>
-        <subrange length='128' type-id='7ff19f0f' id='1eb1687a'/>
-      </array-type-def>
       <function-type size-in-bits='64' id='187fa8c7'>
         <parameter type-id='6dca061b'/>
         <parameter type-id='4c98e95d'/>
@@ -68623,17 +68622,7 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='d6574e69' size-in-bits='64' id='8f19938d'/>
-      <class-decl name='iova_cpu_rcache' size-in-bits='192' is-struct='yes' visibility='default' filepath='drivers/iommu/iova.c' line='905' column='1' id='8f19d02e'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='drivers/iommu/iova.c' line='906' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='loaded' type-id='0a981d27' visibility='default' filepath='drivers/iommu/iova.c' line='907' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='prev' type-id='0a981d27' visibility='default' filepath='drivers/iommu/iova.c' line='908' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='iova_cpu_rcache' is-struct='yes' visibility='default' is-declaration-only='yes' id='8f19d02e'/>
       <pointer-type-def type-id='734a42c0' size-in-bits='64' id='8f20abb2'/>
       <typedef-decl name='__poll_t' type-id='f0981eeb' filepath='include/uapi/linux/types.h' line='52' column='1' id='8f254b08'/>
       <pointer-type-def type-id='73627a37' size-in-bits='64' id='8f2ea2db'/>
@@ -110933,14 +110922,7 @@
         <return type-id='b50a4934'/>
       </function-type>
       <typedef-decl name='seqcount_t' type-id='3a74ff0b' filepath='include/linux/seqlock.h' line='70' column='1' id='e14c3b11'/>
-      <class-decl name='iova_magazine' size-in-bits='8256' is-struct='yes' visibility='default' filepath='drivers/iommu/iova.c' line='900' column='1' id='e14d461f'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='size' type-id='7359adad' visibility='default' filepath='drivers/iommu/iova.c' line='901' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='pfns' type-id='187c43b2' visibility='default' filepath='drivers/iommu/iova.c' line='902' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='iova_magazine' is-struct='yes' visibility='default' is-declaration-only='yes' id='e14d461f'/>
       <class-decl name='hlist_head' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/linux/types.h' line='182' column='1' id='e151255a'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='first' type-id='08cbad52' visibility='default' filepath='include/linux/types.h' line='183' column='1'/>
@@ -131191,6 +131173,14 @@
         <parameter type-id='95e97e5e' name='is_async' filepath='include/trace/hooks/binder.h' line='84' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_binder_buffer_release' mangled-name='__traceiter_android_vh_binder_buffer_release' filepath='include/trace/hooks/binder.h' line='129' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_buffer_release'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='129' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='129' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='129' column='1'/>
+        <parameter type-id='5819e862' name='buffer' filepath='include/trace/hooks/binder.h' line='129' column='1'/>
+        <parameter type-id='b50a4934' name='buffer_t_present' filepath='include/trace/hooks/binder.h' line='129' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_binder_del_ref' mangled-name='__traceiter_android_vh_binder_del_ref' filepath='include/trace/hooks/binder.h' line='106' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_del_ref'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='106' column='1'/>
         <parameter type-id='f23e2572' name='proc' filepath='include/trace/hooks/binder.h' line='106' column='1'/>
@@ -133651,6 +133641,7 @@
       <var-decl name='__tracepoint_android_vh_audio_usb_offload_suspend' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_audio_usb_offload_suspend' visibility='default' filepath='include/trace/hooks/audio_usboffload.h' line='42' column='1' elf-symbol-id='__tracepoint_android_vh_audio_usb_offload_suspend'/>
       <var-decl name='__tracepoint_android_vh_audio_usb_offload_synctype' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_audio_usb_offload_synctype' visibility='default' filepath='include/trace/hooks/audio_usboffload.h' line='30' column='1' elf-symbol-id='__tracepoint_android_vh_audio_usb_offload_synctype'/>
       <var-decl name='__tracepoint_android_vh_binder_alloc_new_buf_locked' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_alloc_new_buf_locked' visibility='default' filepath='include/trace/hooks/binder.h' line='84' column='1' elf-symbol-id='__tracepoint_android_vh_binder_alloc_new_buf_locked'/>
+      <var-decl name='__tracepoint_android_vh_binder_buffer_release' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_buffer_release' visibility='default' filepath='include/trace/hooks/binder.h' line='129' column='1' elf-symbol-id='__tracepoint_android_vh_binder_buffer_release'/>
       <var-decl name='__tracepoint_android_vh_binder_del_ref' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_del_ref' visibility='default' filepath='include/trace/hooks/binder.h' line='106' column='1' elf-symbol-id='__tracepoint_android_vh_binder_del_ref'/>
       <var-decl name='__tracepoint_android_vh_binder_free_buf' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_free_buf' visibility='default' filepath='include/trace/hooks/binder.h' line='125' column='1' elf-symbol-id='__tracepoint_android_vh_binder_free_buf'/>
       <var-decl name='__tracepoint_android_vh_binder_free_proc' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_free_proc' visibility='default' filepath='include/trace/hooks/binder.h' line='72' column='1' elf-symbol-id='__tracepoint_android_vh_binder_free_proc'/>
