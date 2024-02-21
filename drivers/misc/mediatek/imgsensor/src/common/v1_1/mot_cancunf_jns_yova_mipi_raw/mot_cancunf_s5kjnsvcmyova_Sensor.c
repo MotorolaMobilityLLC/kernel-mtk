@@ -1894,14 +1894,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_BINNING_TYPE:
 		switch (*(feature_data + 1)) {
 			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			case MSDK_SCENARIO_ID_CUSTOM1:
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+				*feature_return_para_32 = 4;
+				break;
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			case MSDK_SCENARIO_ID_CUSTOM1:
 			default:
 				*feature_return_para_32 = 1;
-			break;
+				break;
 		}
 		*feature_para_len = 4;
 		break;
