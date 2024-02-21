@@ -453,6 +453,7 @@ struct mmi_params {
 	int			typec_rp_max_current;
 
 	int			pd_pmax_mw;
+	int			power_max_design_mw;
 	struct adapter_auth_data	apdo_cap;
 	int			pd_cap_max_watt;
 	int			vbus_h;

@@ -98,6 +98,7 @@
 	mmi,lower-limit-capacity = <60>;
 	mmi,min-cp-therm-current-ua = <900000>;
 	enable-pdtest-mode = <1>;
+	mmi,power-max-design-mw = <30000>;
 };
 
 &mmi_pehv {

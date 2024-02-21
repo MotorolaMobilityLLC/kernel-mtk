@@ -3984,7 +3984,7 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 	return power_watt;
 }
 
-#define MMI_BATT_UEVENT_NUM (5)
+#define MMI_BATT_UEVENT_NUM (6)
 static void mmi_updata_batt_status(struct mtk_charger *info)
 {
 	static struct power_supply	*batt_psy;
@@ -3993,6 +3993,7 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 	char *chrg_lpd_string = NULL;
 	char *chrg_vbus_string = NULL;
 	char *chrg_pmax_mw = NULL;
+	char *chrg_pmax_design_string = NULL;
 	char *batt_string = NULL;
 	char *envp[MMI_BATT_UEVENT_NUM + 1];
 	int rc;
@@ -4020,6 +4021,7 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 		chrg_lpd_string = &batt_string[CHG_SHOW_MAX_SIZE * 2];
 		chrg_vbus_string = &batt_string[CHG_SHOW_MAX_SIZE * 3];
 		chrg_pmax_mw = &batt_string[CHG_SHOW_MAX_SIZE * 4];
+		chrg_pmax_design_string = &batt_string[CHG_SHOW_MAX_SIZE * 5];
 
 		scnprintf(chrg_rate_string, CHG_SHOW_MAX_SIZE,
 			  "POWER_SUPPLY_CHARGE_RATE=%s",
@@ -4038,12 +4040,16 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 		scnprintf(chrg_pmax_mw, CHG_SHOW_MAX_SIZE,
 			  "POWER_SUPPLY_POWER_WATT=%d", mmi_check_power_watt(info, false));
 
+		scnprintf(chrg_pmax_design_string, CHG_SHOW_MAX_SIZE,
+			  "POWER_SUPPLY_POWER_WATT_DESIGN=%d", info->mmi.power_max_design_mw / 1000);
+
 		envp[0] = chrg_rate_string;
 		envp[1] = batt_age_string;
 		envp[2] = chrg_lpd_string;
 		envp[3] = chrg_vbus_string;
 		envp[4] = chrg_pmax_mw;
-		envp[5] = NULL;
+		envp[5] = chrg_pmax_design_string;
+		envp[MMI_BATT_UEVENT_NUM] = NULL;
 		kobject_uevent_env(&batt_psy->dev.kobj, KOBJ_CHANGE, envp);
 		kfree(batt_string);
 	}
@@ -5013,6 +5019,11 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 				  &info->mmi.pd_pmax_mw);
 	if (rc)
 		info->mmi.pd_pmax_mw = 30000;
+
+	rc = of_property_read_u32(node, "mmi,power-max-design-mw",
+				  &info->mmi.power_max_design_mw);
+	if (rc)
+		info->mmi.power_max_design_mw = info->mmi.pd_pmax_mw;
 
 	rc = of_property_read_u32(node, "mmi,pd_vbus_upper_bound",
 				  &info->mmi.vbus_h);
