@@ -545,8 +545,12 @@
 };
 
 &camera_af_hw_node {
-	pinctrl-names = "cam0_ldo_vcamaf_0", "cam0_ldo_vcamaf_1";
+	pinctrl-names =
+		"camaf_m1_gpio_off", "camaf_m1_gpio_on",
+		"camaf_m3_gpio_off", "camaf_m3_gpio_on";
 	pinctrl-0 = <&camera_pins_cam0_vcamaf_0>;
 	pinctrl-1 = <&camera_pins_cam0_vcamaf_1>;
+	pinctrl-2 = <&camera_pins_cam0_vcamaf_0>;
+	pinctrl-3 = <&camera_pins_cam0_vcamaf_1>;
         status = "okay";
  };

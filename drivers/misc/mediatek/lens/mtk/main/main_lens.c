@@ -268,7 +268,14 @@ static void camaf_power_off(void)
 	if (vcamaf_pio && vcamaf_pio_off) {
 		ret = pinctrl_select_state(vcamaf_pio, vcamaf_pio_off);
 		LOG_INF("pinctrl disable (%d)\n", ret);
+#if defined(CONFIG_MACH_MT6853)
+		devm_pinctrl_put(vcamaf_pio);
+		vcamaf_pio = NULL;
+		vcamaf_pio_off = NULL;
+		vcamaf_pio_on = NULL;
+#endif
 	}
+
 }
 
 #ifdef CONFIG_MACH_MT6765
