@@ -359,7 +359,8 @@
 };
 
 &camera_af_hw_node {
-	vcamaf-supply = <&mt_pmic_vcamio_ldo_reg>;
+	camaf_m1_pmic-supply = <&mt_pmic_vcamio_ldo_reg>;
+	camaf_m3_pmic-supply = <&mt_pmic_vcamio_ldo_reg>;
 	status = "okay";
 };
 
