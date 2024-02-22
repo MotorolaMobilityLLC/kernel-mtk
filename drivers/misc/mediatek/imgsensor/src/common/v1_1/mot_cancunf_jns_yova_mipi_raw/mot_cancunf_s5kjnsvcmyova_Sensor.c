@@ -354,10 +354,11 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 kal_uint16 mot_cancunf_s5kjns_vcm_yova_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
-	kal_uint32 tosend, IDX;
+	kal_uint32 tosend, IDX, is_end;
 	kal_uint16 addr = 0, addr_last = 0, data;
 	tosend = 0;
 	IDX = 0;
+	is_end = 0;
 
 	addr = para[IDX];
 	puSendCmd[tosend++] = (char)(addr >> 8);
@@ -368,9 +369,16 @@ kal_uint16 mot_cancunf_s5kjns_vcm_yova_burst_write_cmos_sensor(kal_uint16 *para,
 			puSendCmd[tosend++] = (char)(data >> 8);
 			puSendCmd[tosend++] = (char)(data & 0xFF);
 			IDX += 2;
-			addr_last = para[IDX];
+
+			if (IDX == len) {
+				is_end = 1;
+			}
+			else {
+				addr_last = para[IDX];
+			}
 		}
-		if ((I2C_BUFFER_LEN - tosend) < 3 || IDX == len || addr != addr_last) {
+
+		if ((I2C_BUFFER_LEN - tosend) < 3 || IDX == len || addr != addr_last || is_end) {
 			imgsensor_i2c_write(
 				get_i2c_cfg(),
 				puSendCmd,
