@@ -12,6 +12,7 @@
 
 #include "mt6765-moto-common-overlay.dtsi"
 #include "mt6765-moto-maui-fps.dtsi"
+#include "mt6765-moto-memory.dtsi"
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/mt6765-pinfunc.h>
@@ -359,6 +360,18 @@
 	};
 };
 /* AUDIO end */
+
+/* SVP */
+&mtee_svp {
+	svp: SecureVideoPath {
+		compatible = "mediatek,mtk_sec_video_path_support";
+	};
+};
+
+/* Trustonic Mobicore real driver */
+&mobicore {
+	trustonic,real-drv = <1>;
+};
 
 &regulator_vibrator {
 	min-volt = <3000000>;
