@@ -269,6 +269,19 @@ aliases {
 				<1>; /*MTK_DRM_OPT_SHARE_SRAM*/
 		};
 
+		disp_mtee_sec: disp_mtee_sec {
+			compatible = "mediatek,disp_mtee";
+
+			mediatek,mailbox-gce = <&gce>;
+			mboxes = <&gce_mbox_sec 8 0 CMDQ_THR_PRIO_3>,
+				<&gce_mbox_sec 9 0 CMDQ_THR_PRIO_3>,
+				<&gce_mbox_sec 9 0 CMDQ_THR_PRIO_3>;
+
+			gce-client-names = "CLIENT_SEC_CFG0",
+					"CLIENT_SEC_CFG1",
+					"CLIENT_SEC_CFG2";
+		};
+
 		disp_mutex0: disp_mutex0@14001000 {
 			compatible = "mediatek,disp_mutex0",
 					"mediatek,mt6765-disp-mutex";
@@ -967,14 +980,6 @@ initcall_debug=1 pelt=8 clk_ignore_unused=1";
 			size = <0 0x10000000>;
 			alignment = <0 0x1000000>;
 			alloc-range = <0 0xc0000000 0 0x10000000>;
-		};
-
-		ion-carveout-heap {
-			compatible = "mediatek,ion-carveout-heap";
-			no-map;
-			size = <0 0x5000>;
-			alignment = <0 0x1000>;
-			alloc-ranges = <0 0xc0000000 0 0x10000000>;
 		};
 
 	};
@@ -1740,6 +1745,38 @@ initcall_debug=1 pelt=8 clk_ignore_unused=1";
 		compatible = "mediatek,mt6765-iommu-debug";
 	};
 
+	secure_m4u {
+		compatible = "mediatek,secure_m4u";
+		mediatek,mm_m4u = <&iommu>;
+		interrupts = <GIC_SPI 158 IRQ_TYPE_LEVEL_HIGH 0>; /* sec mm m4u */
+		iommus = <&iommu M4U_PORT_VENC_RCPU>,
+			 <&iommu M4U_PORT_DISP_2L_OVL0_LARB0>;
+	};
+
+	mtk_iommu_tee_debug {
+		compatible = "mediatek,mt6765-iommu-tee-debug";
+	};
+
+	mtk_sec_dmaheap {
+		compatible = "mediatek,dmaheap-region-base";
+		iommus = <&iommu M4U_PORT_DISP_OVL0>;
+	};
+
+	mtk_dmabufheap_debug0: dmaheap_test0{
+			compatible = "mediatek, mtk_dmabufheap, iommu0";
+			iommus = <&iommu M4U_PORT_DISP_WDMA0>;
+	};
+
+	mtk_dmabufheap_debug1: dmaheap_test1{
+			compatible = "mediatek, mtk_dmabufheap, iommu1";
+			iommus = <&iommu M4U_PORT_DISP_FAKE0>;
+	};
+
+	iommu_test {
+			compatible = "mediatek,ktf-iommu-test";
+			iommus = <&iommu M4U_PORT_DISP_OVL0>;
+	};
+
 	devapc@10207000 {
 		compatible = "mediatek,devapc";
 		reg = <0 0x10207000 0 0x1000>;
@@ -2292,7 +2329,8 @@ initcall_debug=1 pelt=8 clk_ignore_unused=1";
 			<&infracfg_ao CLK_IFR_GCE_26M>;
 		clock-names = "GCE", "GCE_TIMER";
 		mediatek,mailbox-gce = <&gce_mbox>;
-		mboxes = <&gce_mbox 11 0 CMDQ_THR_PRIO_1>,
+		mboxes = <&gce_mbox_sec 10 0 CMDQ_THR_PRIO_1>,
+		        <&gce_mbox 11 0 CMDQ_THR_PRIO_1>,
 			<&gce_mbox 12 0 CMDQ_THR_PRIO_1>;
 		interconnects =
 			<&mmqos MASTER_LARB_PORT(M4U_PORT_MDP_RDMA0)
@@ -2349,6 +2387,15 @@ initcall_debug=1 pelt=8 clk_ignore_unused=1";
 			<&infracfg_ao CLK_IFR_GCE_26M>;
 		clock-names = "gce", "gce-timer";
 		skip-poll-sleep;
+	};
+
+	gce_mbox_sec: gce_mbox_sec@10238000 {
+		compatible = "mediatek,mailbox-gce-sec";
+		reg = <0 0x10238000 0 0x4000>;
+		#mbox-cells = <3>;
+		mboxes = <&gce_mbox 15 CMDQ_NO_TIMEOUT CMDQ_THR_PRIO_1>;
+		clocks = <&infracfg_ao CLK_IFR_GCE>;
+		clock-names = "gce";
 	};
 
 	cmdq-test {
