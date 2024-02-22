@@ -982,14 +982,6 @@ initcall_debug=1 pelt=8 clk_ignore_unused=1";
 			alloc-range = <0 0xc0000000 0 0x10000000>;
 		};
 
-		ion-carveout-heap {
-			compatible = "mediatek,ion-carveout-heap";
-			no-map;
-			size = <0 0x5000>;
-			alignment = <0 0x1000>;
-			alloc-ranges = <0 0xc0000000 0 0x10000000>;
-		};
-
 	};
 
 	cpu_dbgapb: cpu_dbgapb@0d410000 {
@@ -1764,6 +1756,25 @@ initcall_debug=1 pelt=8 clk_ignore_unused=1";
 
 	mtk_iommu_debug {
 		compatible = "mediatek,mt6765-iommu-debug";
+	};
+
+	mtk_iommu_tee_debug {
+		compatible = "mediatek,mt6765-iommu-tee-debug";
+	};
+
+	mtk_dmabufheap_debug0: dmaheap_test0{
+			compatible = "mediatek, mtk_dmabufheap, iommu0";
+			iommus = <&iommu M4U_PORT_DISP_WDMA0>;
+	};
+
+	mtk_dmabufheap_debug1: dmaheap_test1{
+			compatible = "mediatek, mtk_dmabufheap, iommu1";
+			iommus = <&iommu M4U_PORT_DISP_FAKE0>;
+	};
+
+	iommu_test {
+			compatible = "mediatek,ktf-iommu-test";
+			iommus = <&iommu M4U_PORT_DISP_OVL0>;
 	};
 
 	devapc@10207000 {
