@@ -119,7 +119,7 @@
 		mmi,sync_boardtemp_to_fg;
 		mmi,ui_full_soc = <97>;
 		mmi,shutdown_vol_threshold = <3400>;
-		mmi,soc100_curr_threshod = <1900>;
+		mmi,soc100_curr_threshod = <1900000>;
 };
 
 &pio {
