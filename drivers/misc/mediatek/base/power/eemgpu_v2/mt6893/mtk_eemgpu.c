@@ -2925,7 +2925,8 @@ static ssize_t eemg_setmargin_proc_write(struct file *file,
 			const char __user *buffer, size_t count, loff_t *pos)
 {
 	int ret;
-	int aging_val[2];
+	const int AGING_VAL_SIZE = 2;
+	int aging_val[AGING_VAL_SIZE];
 	int i = 0;
 	int start_oft, end_oft;
 	char *buf = (char *) __get_free_page(GFP_USER);
@@ -2957,8 +2958,8 @@ static ssize_t eemg_setmargin_proc_write(struct file *file,
 		ret = -EINVAL;
 
 	while ((tok = strsep(&buf, " ")) != NULL) {
-		if (i == 3) {
-			eemg_error("number of arguments > 3!\n");
+		if (i == AGING_VAL_SIZE) {
+			eemg_error("number of arguments >= 2!\n");
 			goto out;
 		}
 
