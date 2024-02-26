@@ -210,4 +210,6 @@
 	>;
         #include "bat_setting/mt6768_battery_table_PG50_ATL_5000mah_ext.dtsi"
 	#include "bat_setting/mt6768_battery_table_PG50_SCUD_5000mah_ext.dtsi"
+        #include "bat_setting/mt6768_battery_table_PG50_ATL_new_5000mah_ext.dtsi"
+	#include "bat_setting/mt6768_battery_table_PG50_SCUD_new_5000mah_ext.dtsi"
 };
