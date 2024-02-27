@@ -2621,7 +2621,7 @@ static int mt_ul_src_dmic_event(struct snd_soc_dapm_widget *w,
 				     0x80);
 
 		regmap_update_bits(priv->regmap, MT6368_AFE_UL_SRC_CON1,
-				   0xf7, 0x0);
+				   0xf4, 0x0);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		regmap_write(priv->regmap,
