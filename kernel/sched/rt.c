@@ -2186,6 +2186,7 @@ retry:
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 			ts[10] = sched_clock();
 #endif
+			preempt_disable();
 			raw_spin_rq_unlock(rq);
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 			ts[11] = sched_clock();
@@ -2195,6 +2196,7 @@ retry:
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 			ts[12] = sched_clock();
 #endif
+			preempt_enable();
 			raw_spin_rq_lock(rq);
 		}
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
@@ -2630,9 +2632,11 @@ skip:
 		double_unlock_balance(this_rq, src_rq);
 
 		if (push_task) {
+			preempt_disable();
 			raw_spin_rq_unlock(this_rq);
 			stop_one_cpu_nowait(src_rq->cpu, push_cpu_stop,
 					    push_task, &src_rq->push_work);
+			preempt_enable();
 			raw_spin_rq_lock(this_rq);
 		}
 	}
