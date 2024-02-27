@@ -8,6 +8,8 @@
 
 #include <linux/usb/quirks.h>
 #include "quirks.h"
+#include "xhci-mtk.h"
+#include "xhci-trace.h"
 
 struct usb_audio_quirk_flags_table {
 	u32 id;
@@ -123,4 +125,44 @@ void xhci_mtk_sound_usb_connect(void *unused, struct usb_interface *intf, struct
 		return;
 
 	snd_usb_init_quirk_flags(chip);
+}
+
+static void xhci_trace_ep0_urb(void *data, struct urb *urb)
+{
+	struct device *hcd_dev = (struct device *)data;
+	struct usb_ctrlrequest *ctrl = NULL;
+	struct usb_host_config *config = NULL;
+	struct usb_interface_descriptor *intf_desc = NULL;
+	int config_num, i;
+
+	if (!urb || !urb->setup_packet || !urb->dev) {
+		dev_dbg(hcd_dev, "%s urb/setup pkt/device can't be NULL\n", __func__);
+		return;
+	}
+
+	ctrl = (struct usb_ctrlrequest *)urb->setup_packet;
+	if (ctrl->bRequest != USB_REQ_SET_INTERFACE || ctrl->wValue == 0) {
+		dev_dbg(hcd_dev, "%s it's not ep0 transfer request\n", __func__);
+		return;
+	}
+
+	config = urb->dev->config;
+	if (!config)
+		return;
+	config_num = urb->dev->descriptor.bNumConfigurations;
+
+	for (i = 0; i < config_num; i++, config++) {
+		if (config && config->desc.bNumInterfaces > 0)
+			intf_desc = &config->intf_cache[0]->altsetting->desc;
+		if (intf_desc && intf_desc->bInterfaceClass == USB_CLASS_AUDIO) {
+			dev_dbg(hcd_dev, "delay 5ms for UAC device\n");
+			mdelay(5);
+			return;
+		}
+	}
+}
+
+void xhci_mtk_trace_init(struct device *dev)
+{
+	WARN_ON(register_trace_xhci_urb_enqueue_(xhci_trace_ep0_urb, dev));
 }

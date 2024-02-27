@@ -879,6 +879,8 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 	pm_runtime_put_autosuspend(dev);
 	pm_runtime_forbid(dev);
 
+	xhci_mtk_trace_init(dev);
+
 	return 0;
 
 dealloc_usb3_hcd:
