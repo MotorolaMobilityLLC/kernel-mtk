@@ -15,5 +15,6 @@
 void xhci_mtk_apply_quirk(struct usb_device *udev);
 void xhci_mtk_sound_usb_connect(void *unused, struct usb_interface *intf, struct snd_usb_audio *chip);
 void xhci_mtk_trace_init(struct device *dev);
+void xhci_mtk_trace_deinit(struct device *dev);
 
 #endif

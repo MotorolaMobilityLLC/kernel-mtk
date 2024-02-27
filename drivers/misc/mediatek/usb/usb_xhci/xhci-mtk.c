@@ -872,8 +872,6 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 
 	xhci_mtk_procfs_init(mtk);
 
-	WARN_ON(register_trace_android_vh_audio_usb_offload_connect(xhci_mtk_sound_usb_connect, NULL));
-
 	device_enable_async_suspend(dev);
 	pm_runtime_mark_last_busy(dev);
 	pm_runtime_put_autosuspend(dev);
@@ -935,11 +933,12 @@ static int xhci_mtk_remove(struct platform_device *pdev)
 	xhci_mtk_ldos_disable(mtk);
 	xhci_mtk_procfs_exit(mtk);
 
-	unregister_trace_android_vh_audio_usb_offload_connect(xhci_mtk_sound_usb_connect, NULL);
 
 	pm_runtime_disable(dev);
 	pm_runtime_put_noidle(dev);
 	pm_runtime_set_suspended(dev);
+
+	xhci_mtk_trace_deinit(dev);
 
 	return 0;
 }

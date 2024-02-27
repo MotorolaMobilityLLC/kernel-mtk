@@ -7,6 +7,7 @@
  */
 
 #include <linux/usb/quirks.h>
+#include <trace/hooks/audio_usboffload.h>
 #include "quirks.h"
 #include "xhci-mtk.h"
 #include "xhci-trace.h"
@@ -165,4 +166,11 @@ static void xhci_trace_ep0_urb(void *data, struct urb *urb)
 void xhci_mtk_trace_init(struct device *dev)
 {
 	WARN_ON(register_trace_xhci_urb_enqueue_(xhci_trace_ep0_urb, dev));
+	WARN_ON(register_trace_android_vh_audio_usb_offload_connect(xhci_mtk_sound_usb_connect, NULL));
+}
+
+void xhci_mtk_trace_deinit(struct device *dev)
+{
+	WARN_ON(unregister_trace_xhci_urb_enqueue_(xhci_trace_ep0_urb, dev));
+	unregister_trace_android_vh_audio_usb_offload_connect(xhci_mtk_sound_usb_connect, NULL);
 }
