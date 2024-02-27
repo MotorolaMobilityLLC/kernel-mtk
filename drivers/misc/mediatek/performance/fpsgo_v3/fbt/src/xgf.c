@@ -472,7 +472,7 @@ static void xgf_delete_policy_cmd(struct xgf_policy_cmd *iter)
 			return;
 	}
 
-	if (RB_EMPTY_ROOT(&xgf_policy_cmd_tree))
+	if (total_xgf_policy_cmd_num <= 0)
 		return;
 
 	rbn = rb_first(&xgf_policy_cmd_tree);
@@ -1544,7 +1544,6 @@ static int xgff_get_start_runtime(int rpid, unsigned long long queueid,
 	unsigned long long runtime = 0;
 	struct task_struct *p;
 
-	*count_dep_runtime = 0;
 	if (!dep_runtime || !count_dep_runtime) {
 		ret = -EINVAL;
 		goto out;
@@ -1555,6 +1554,7 @@ static int xgff_get_start_runtime(int rpid, unsigned long long queueid,
 		goto out;
 	}
 
+	*count_dep_runtime = 0;
 	for (i = 0; i < deplist_size; i++) {
 		rcu_read_lock();
 		p = find_task_by_vpid(deplist[i]);
@@ -1574,8 +1574,7 @@ static int xgff_get_start_runtime(int rpid, unsigned long long queueid,
 	}
 
 out:
-	xgf_trace("[XGFF][%s] ret=%d, frame_id=%lu, count_dep=%d", __func__, ret,
-		frameid, *count_dep_runtime);
+	xgf_trace("[XGFF][%s] ret=%d, frame_id=%lu", __func__, ret, frameid);
 	return ret;
 }
 
