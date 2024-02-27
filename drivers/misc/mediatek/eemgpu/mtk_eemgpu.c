@@ -65,6 +65,7 @@
 #define LVTS_COEFF_B_X_1000                      (250460)
 #define DEFAULT_EFUSE_GOLDEN_TEMP                (50)
 #define WAIT_TIME       (2500000)
+#define AGING_VAL_SIZE        (2)
 
 enum thermal_bank_name {
 	THERMAL_BANK0 = 0,
@@ -2550,7 +2551,7 @@ static ssize_t eemg_setmargin_proc_write(struct file *file,
 			const char __user *buffer, size_t count, loff_t *pos)
 {
 	int ret;
-	int aging_val[2];
+	int aging_val[AGING_VAL_SIZE];
 	int i = 0;
 	int start_oft, end_oft;
 	char *buf = (char *) __get_free_page(GFP_USER);
@@ -2582,8 +2583,8 @@ static ssize_t eemg_setmargin_proc_write(struct file *file,
 		ret = -EINVAL;
 
 	while ((tok = strsep(&buf, " ")) != NULL) {
-		if (i == 3) {
-			eemg_error("number of arguments > 3!\n");
+		if (i == AGING_VAL_SIZE) {
+			eemg_error("number of arguments >= 2!\n");
 			goto out;
 		}
 
