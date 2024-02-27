@@ -437,6 +437,7 @@ static struct IspWorkqueTable dip_workque[DIP_IRQ_TYPE_AMOUNT] = {
 
 static DEFINE_MUTEX(gDipMutex);
 static DEFINE_MUTEX(DipMutexbuf); /*GKI AOSP ION*/
+static DEFINE_MUTEX(DipClk);
 
 #ifdef CONFIG_OF
 
@@ -4438,11 +4439,15 @@ static void DIP_EnableClock(bool En)
 		/*LOG_INF("CCF:prepare_enable clk");*/
 		spin_lock(&(IspInfo.SpinLockClock));
 		G_u4DipEnClkCnt++;
-		LOG_INF("Camera clock enabled. G_u4DipEnClkCnt: %d.", G_u4DipEnClkCnt);
-		spin_unlock(&(IspInfo.SpinLockClock));
-		if (G_u4DipEnClkCnt == 1) {
+		// LOG_INF("Camera clock enabled. G_u4DipEnClkCnt: %d.", G_u4DipEnClkCnt);
+        if (G_u4DipEnClkCnt == 1) {
+			spin_unlock(&(IspInfo.SpinLockClock));
+		 	mutex_lock(&(DipClk));
 			Prepare_Enable_ccf_clock(); /* !!cannot be used in spinlock!! */
 			DIP_Load_InitialSettings();
+			mutex_unlock(&(DipClk));
+        } else {
+		spin_unlock(&(IspInfo.SpinLockClock));
 		}
 
 #endif
@@ -4470,11 +4475,15 @@ static void DIP_EnableClock(bool En)
 		/*LOG_INF("CCF:disable_unprepare clk\n");*/
 		spin_lock(&(IspInfo.SpinLockClock));
 		G_u4DipEnClkCnt--;
-		LOG_INF("Camera clock disabled. G_u4DipEnClkCnt: %d.", G_u4DipEnClkCnt);
+		// LOG_INF("Camera clock disabled. G_u4DipEnClkCnt: %d.", G_u4DipEnClkCnt);
+        if (G_u4DipEnClkCnt == 0) {
+			spin_unlock(&(IspInfo.SpinLockClock));
+			mutex_lock(&(DipClk));
+			Disable_Unprepare_ccf_clock(); /* !!cannot be used in spinlock!! */
+			mutex_unlock(&(DipClk));
+		} else {
 		spin_unlock(&(IspInfo.SpinLockClock));
-		if (G_u4DipEnClkCnt == 0)
-			Disable_Unprepare_ccf_clock();
-		/* !!cannot be used in spinlock!! */
+		}
 #endif
 	}
 }
@@ -7549,8 +7558,6 @@ static int dip_suspend_pm_event(struct notifier_block *notifier,
 	case PM_POST_SUSPEND:    /*after resume*/
 		if (g_u4DipCnt > 0) {
 			DIP_EnableClock(MTRUE);
-			if (G_u4DipEnClkCnt == 1)
-				DIP_Load_InitialSettings();
 			g_u4DipCnt--;
 		}
 		if (g_DIP_PMState == 1) {
