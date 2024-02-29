@@ -494,7 +494,6 @@ static long m4u_ioctl(struct file *filp,
 	switch (cmd) {
 #if IS_ENABLED(CONFIG_TRUSTONIC_TEE_SUPPORT) || \
 	IS_ENABLED(CONFIG_MICROTRUST_TEE_SUPPORT)
-	#if IS_ENABLED(CONFIG_COMPAT)
 	case MTK_M4U_T_SEC_INIT:
 		{
 			pr_info("MTK M4U ioctl : MTK_M4U_T_SEC_INIT command!! 0x%x\n",
@@ -504,7 +503,6 @@ static long m4u_ioctl(struct file *filp,
 			mutex_unlock(&gM4u_sec_init);
 		}
 		break;
-	#endif
 #endif
 	default:
 		pr_err("MTK M4U ioctl:No such command(0x%x)!!\n", cmd);
