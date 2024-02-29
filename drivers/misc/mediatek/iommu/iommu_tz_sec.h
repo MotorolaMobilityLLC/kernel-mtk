@@ -42,9 +42,7 @@ struct m4u_device {
 #define MTK_M4U_MAGICNO 'g'
 #define COMPAT_MTK_M4U_T_SEC_INIT     _IOW(MTK_M4U_MAGICNO, 50, int)
 
-#if IS_ENABLED(CONFIG_COMPAT)
 #define MTK_M4U_T_SEC_INIT            _IOW(MTK_M4U_MAGICNO, 50, int)
-#endif
 
 #define TA_UUID "98fb95bcb4bf42d26473eae48690d7ea"
 #define TDRV_UUID "9073F03A9618383BB1856EB3F990BABD"
