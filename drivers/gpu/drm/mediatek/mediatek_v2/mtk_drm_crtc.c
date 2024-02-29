@@ -1964,6 +1964,11 @@ static void mtk_crtc_cwb_set_sec(struct drm_crtc *crtc)
 			cwb_info->is_sec = true;
 		}
 	}
+	if (mtk_crtc->sec_on) {
+		DDPINFO("%s:%d skip cwb addon connect due to sec on\n",
+				__func__, __LINE__);
+		cwb_info->is_sec = true;
+	}
 }
 
 static void calc_mml_config(struct drm_crtc *crtc,
@@ -2397,6 +2402,12 @@ _mtk_crtc_wb_addon_module_connect(
 	if (index != 0 || mtk_crtc_is_dc_mode(crtc) ||
 		!state->prop_val[CRTC_PROP_OUTPUT_ENABLE])
 		return;
+
+	if (mtk_crtc->sec_on) {
+		DDPINFO("%s:%d skip wb addon connect due to sec on\n",
+				__func__, __LINE__);
+		return;
+	}
 
 	addon_data = mtk_addon_get_scenario_data(__func__, crtc,
 						WDMA_WRITE_BACK_OVL);
@@ -9585,8 +9596,10 @@ int mtk_crtc_gce_flush(struct drm_crtc *crtc, void *gce_cb,
 		wb_cb_data = kmalloc(sizeof(*wb_cb_data), GFP_KERNEL);
 
 		mtk_crtc_pkt_create(&handle, crtc, client);
-		cmdq_pkt_wfe(handle, mtk_crtc->gce_obj.event[EVENT_WDMA0_EOF]);
-		_mtk_crtc_wb_addon_module_disconnect(crtc, mtk_crtc->ddp_mode, handle);
+		if (!mtk_crtc->sec_on) {
+			cmdq_pkt_wfe(handle, mtk_crtc->gce_obj.event[EVENT_WDMA0_EOF]);
+			_mtk_crtc_wb_addon_module_disconnect(crtc, mtk_crtc->ddp_mode, handle);
+		}
 
 		wb_cb_data->cmdq_handle = handle;
 		wb_cb_data->crtc = crtc;
