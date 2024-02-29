@@ -484,7 +484,11 @@ static void __exit mtk_disp_sec_exit(void)
 	platform_driver_unregister(&disp_sec_drv);
 }
 
+#if IS_BUILTIN(CONFIG_DRM_MEDIATEK)
+late_initcall_sync(mtk_disp_sec_init);
+#else
 module_init(mtk_disp_sec_init);
+#endif
 module_exit(mtk_disp_sec_exit);
 
 MODULE_AUTHOR("Aaron Chung <Aaron.Chung@mediatek.com>");
