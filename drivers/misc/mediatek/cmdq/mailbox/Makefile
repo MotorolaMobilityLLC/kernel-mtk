@@ -46,7 +46,9 @@ endif # !CONFIG_MTK_TEE_GP_COORDINATOR
 
 ifneq ($(filter y m, $(CONFIG_MTK_GZ_TZ_SYSTEM)),)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/geniezone/public
+ifneq ($(filter y m, $(CONFIG_MICROTRUST_TEE_SUPPORT)),)
 ccflags-y += -DCMDQ_SECURE_MTEE_SUPPORT
+endif # CONFIG_MICROTRUST_TEE_SUPPORT
 endif # CONFIG_MTK_GZ_TZ_SYSTEM
 
 obj-$(CONFIG_MTK_CMDQ_MBOX_EXT) += cmdq-sec-drv.o
@@ -54,7 +56,9 @@ ifneq ($(filter y m, $(CONFIG_MTK_TEE_GP_COORDINATOR)),)
 cmdq-sec-drv-y += cmdq-sec-gp.o
 endif # !CONFIG_MTK_TEE_GP_COORDINATOR
 ifneq ($(filter y m, $(CONFIG_MTK_GZ_TZ_SYSTEM)),)
+ifneq ($(filter y m, $(CONFIG_MICROTRUST_TEE_SUPPORT)),)
 cmdq-sec-drv-y += cmdq_sec_mtee.o
+endif #CONFIG_MICROTRUST_TEE_SUPPORT
 endif # !CONFIG_MTK_GZ_TZ_SYSTEM
 cmdq-sec-drv-y += cmdq-sec-mailbox.o
 cmdq-sec-drv-y += cmdq-sec-helper.o
