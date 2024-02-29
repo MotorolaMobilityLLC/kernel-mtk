@@ -430,7 +430,8 @@ static irqreturn_t mtk_disp_rdma_irq_handler(int irq, void *dev_id)
 			  mtk_dump_comp_str(rdma), priv->underflow_cnt);
 		if (mtk_crtc)
 			drm_priv = mtk_crtc->base.dev->dev_private;
-		if (drm_priv && drm_priv->data->mmsys_id == MMSYS_MT6768)
+		if (drm_priv && (drm_priv->data->mmsys_id == MMSYS_MT6768 ||
+			 drm_priv->data->mmsys_id == MMSYS_MT6765))
 			DDPMSG("%s: pix(%d,%d,%d,%d)\n", mtk_dump_comp_str(rdma),
 				readl(MT6768_DISP_REG_RDMA_IN_P_CNT + rdma->regs),
 				readl(MT6768_DISP_REG_RDMA_IN_LINE_CNT + rdma->regs),
@@ -676,7 +677,8 @@ void mtk_rdma_cal_golden_setting(struct mtk_ddp_comp *comp,
 		gs[GS_RDMA_SRAM_SEL] = 1;
 		set_share_sram(1);
 	} else {
-		if (priv->data->mmsys_id == MMSYS_MT6768 && if_fps == 90) {
+		if ((priv->data->mmsys_id == MMSYS_MT6768 ||
+                     priv->data->mmsys_id == MMSYS_MT6765) && if_fps == 90) {
 			pre_ultra_low_us = 55;
 			pre_ultra_high_us = 65;
 			ultra_low_us = 45;
@@ -1947,12 +1949,12 @@ const struct mtk_disp_rdma_data mt6739_rdma_driver_data = {
 
 const struct mtk_disp_rdma_data mt6765_rdma_driver_data = {
 	.fifo_size = SZ_1K * 6,
-	.pre_ultra_low_us = 60,
-	.pre_ultra_high_us = 70,
-	.ultra_low_us = 40,
-	.ultra_high_us = 60,
-	.urgent_low_us = 30,
-	.urgent_high_us = 35,
+	.pre_ultra_low_us = 80,
+	.pre_ultra_high_us = 90,
+	.ultra_low_us = 60,
+	.ultra_high_us = 80,
+	.urgent_low_us = 43,
+	.urgent_high_us = 58,
 	.sodi_config = mt6765_mtk_sodi_config,
 	.shadow_update_reg = 0x00bc,
 	.support_shadow = false,
