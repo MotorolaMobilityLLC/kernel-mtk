@@ -611,6 +611,15 @@ int charger_dev_is_vbuslowerr(struct charger_device *chg_dev, bool *err)
 }
 EXPORT_SYMBOL(charger_dev_is_vbuslowerr);
 
+int charger_dev_is_vbushigherr(struct charger_device *chg_dev, bool *err)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL &&
+	    chg_dev->ops->is_vbushigherr)
+		return chg_dev->ops->is_vbushigherr(chg_dev, err);
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_is_vbushigherr);
+
 int charger_dev_init_chip(struct charger_device *chg_dev)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&
