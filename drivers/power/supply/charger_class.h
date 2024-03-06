@@ -160,6 +160,7 @@ struct charger_ops {
 	int (*set_vbusovp_alarm)(struct charger_device *dev, u32 uV);
 	int (*reset_vbusovp_alarm)(struct charger_device *dev);
 	int (*is_vbuslowerr)(struct charger_device *dev, bool *err);
+	int (*is_vbushigherr)(struct charger_device *dev, bool *err);
 	int (*init_chip)(struct charger_device *dev);
 	int (*enable_auto_trans)(struct charger_device *dev, bool en);
 	int (*set_auto_trans)(struct charger_device *dev, uint32_t uV, bool en);
@@ -388,6 +389,7 @@ extern int charger_dev_set_vbusovp_alarm(struct charger_device *chg_dev,
 					 u32 uV);
 extern int charger_dev_reset_vbusovp_alarm(struct charger_device *chg_dev);
 extern int charger_dev_is_vbuslowerr(struct charger_device *chg_dev, bool *err);
+extern int charger_dev_is_vbushigherr(struct charger_device *chg_dev, bool *err);
 extern int charger_dev_init_chip(struct charger_device *chg_dev);
 
 /* TypeC */
