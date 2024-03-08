@@ -167,6 +167,8 @@ static bool dis_micbias_done;
 static char accdet_log_buf[1280];
 static bool debug_thread_en;
 static bool dump_reg;
+static bool accdet_init_done = false;
+static struct wait_queue_head waitq;
 static struct task_struct *thread;
 
 static u32 button_press_debounce = 0x400;
@@ -1309,6 +1311,9 @@ static void accdet_work_callback(struct work_struct *work)
 {
 	u32 pre_cable_type = accdet->cable_type;
 
+	if (!accdet_init_done) {
+		wait_event(waitq, accdet_init_done);
+	}
 	__pm_stay_awake(accdet->wake_lock);
 	check_cable_type();
 
@@ -1986,6 +1991,9 @@ int mt6357_accdet_init(struct snd_soc_component *component,
 
 	snd_soc_component_set_jack(component, &accdet->jack, NULL);
 
+	accdet_init_done = true;
+	wake_up(&waitq);
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(mt6357_accdet_init);
@@ -2192,6 +2200,8 @@ static int accdet_probe(struct platform_device *pdev)
 	micbias_timer.expires = jiffies + MICBIAS_DISABLE_TIMER;
 	timer_setup(&accdet_init_timer, delay_init_timerhandler, 0);
 	accdet_init_timer.expires = jiffies + ACCDET_INIT_WAIT_TIMER;
+
+	init_waitqueue_head(&waitq);
 
 	/* Create workqueue */
 	accdet->delay_init_workqueue =
