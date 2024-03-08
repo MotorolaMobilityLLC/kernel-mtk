@@ -313,6 +313,7 @@
       <elf-symbol name='__reset_control_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x780bad9b'/>
       <elf-symbol name='__rht_bucket_nested' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd0d156e9'/>
       <elf-symbol name='__rt_mutex_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4512f79b'/>
+      <elf-symbol name='__rtnl_link_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x22e43ed'/>
       <elf-symbol name='__rtnl_link_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x87dbed01'/>
       <elf-symbol name='__sbitmap_queue_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc76f8048'/>
       <elf-symbol name='__scsi_add_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7d636246'/>
@@ -4162,6 +4163,7 @@
       <elf-symbol name='neigh_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5b9af7c0'/>
       <elf-symbol name='neigh_lookup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbd123eda'/>
       <elf-symbol name='neigh_resolve_output' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x263ad084'/>
+      <elf-symbol name='neigh_xmit' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xee2aba15'/>
       <elf-symbol name='net_ratelimit' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf6ebc03b'/>
       <elf-symbol name='net_selftest' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xca8083a2'/>
       <elf-symbol name='net_selftest_get_count' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8e6b1a9e'/>
@@ -4198,6 +4200,7 @@
       <elf-symbol name='netif_device_detach' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x273edf0c'/>
       <elf-symbol name='netif_napi_add' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6baaaa36'/>
       <elf-symbol name='netif_receive_skb' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x825a356'/>
+      <elf-symbol name='netif_receive_skb_core' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa9163593'/>
       <elf-symbol name='netif_receive_skb_list' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6b8bf149'/>
       <elf-symbol name='netif_rx' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3a829981'/>
       <elf-symbol name='netif_rx_ni' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2880f4f8'/>
@@ -129893,6 +129896,10 @@
         <parameter type-id='a57283f9' name='key' filepath='kernel/locking/rtmutex_api.c' line='197' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='__rtnl_link_register' mangled-name='__rtnl_link_register' filepath='net/core/rtnetlink.c' line='374' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__rtnl_link_register'>
+        <parameter type-id='959ab461' name='ops' filepath='net/core/rtnetlink.c' line='374' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__rtnl_link_unregister' mangled-name='__rtnl_link_unregister' filepath='net/core/rtnetlink.c' line='434' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__rtnl_link_unregister'>
         <parameter type-id='959ab461' name='ops' filepath='net/core/rtnetlink.c' line='434' column='1'/>
         <return type-id='48b5725f'/>
@@ -151209,6 +151216,13 @@
         <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/neighbour.c' line='1477' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='neigh_xmit' mangled-name='neigh_xmit' filepath='net/core/neighbour.c' line='2996' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='neigh_xmit'>
+        <parameter type-id='95e97e5e' name='index' filepath='net/core/neighbour.c' line='2996' column='1'/>
+        <parameter type-id='68a2d05b' name='dev' filepath='net/core/neighbour.c' line='2996' column='1'/>
+        <parameter type-id='eaa32e2f' name='addr' filepath='net/core/neighbour.c' line='2997' column='1'/>
+        <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/neighbour.c' line='2997' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <var-decl name='net_namespace_list' type-id='72f469ec' mangled-name='net_namespace_list' visibility='default' filepath='net/core/net_namespace.c' line='36' column='1' elf-symbol-id='net_namespace_list'/>
       <var-decl name='net_ns_type_operations' type-id='a4a37730' mangled-name='net_ns_type_operations' visibility='default' filepath='net/core/net-sysfs.c' line='1859' column='1' elf-symbol-id='net_ns_type_operations'/>
       <function-decl name='net_ratelimit' mangled-name='net_ratelimit' filepath='net/core/utils.c' line='38' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='net_ratelimit'>
@@ -151391,6 +151405,10 @@
       </function-decl>
       <function-decl name='netif_receive_skb' mangled-name='netif_receive_skb' filepath='net/core/dev.c' line='5742' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='netif_receive_skb'>
         <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/dev.c' line='5742' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='netif_receive_skb_core' mangled-name='netif_receive_skb_core' filepath='net/core/dev.c' line='5509' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='netif_receive_skb_core'>
+        <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/dev.c' line='5509' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='netif_receive_skb_list' mangled-name='netif_receive_skb_list' filepath='net/core/dev.c' line='5765' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='netif_receive_skb_list'>
