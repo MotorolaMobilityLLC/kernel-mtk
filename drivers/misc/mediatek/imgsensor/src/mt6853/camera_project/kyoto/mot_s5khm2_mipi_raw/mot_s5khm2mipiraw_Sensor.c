@@ -365,7 +365,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	LOG_INF_N("enable: %d\n", enable);
 
 	if (enable) {
-		write_cmos_sensor(0x0600, 0x0003); //100% Color bar
+		write_cmos_sensor(0x0600, 0x0001); //Solid Color
 	} else {
 		write_cmos_sensor(0x0600, 0x0000); //No pattern
 	}
