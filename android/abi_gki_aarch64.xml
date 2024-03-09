@@ -771,6 +771,7 @@
       <elf-symbol name='__traceiter_android_vh_thermal_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x11150fce'/>
       <elf-symbol name='__traceiter_android_vh_timer_calc_index' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x110d6b1e'/>
       <elf-symbol name='__traceiter_android_vh_try_cma_fallback' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8348fb40'/>
+      <elf-symbol name='__traceiter_android_vh_try_fixup_sea' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x595525b6'/>
       <elf-symbol name='__traceiter_android_vh_try_to_freeze_todo' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd1146850'/>
       <elf-symbol name='__traceiter_android_vh_try_to_freeze_todo_logging' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7632c0b1'/>
       <elf-symbol name='__traceiter_android_vh_try_to_freeze_todo_unfrozen' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc521cf0b'/>
@@ -7595,6 +7596,7 @@
       <elf-symbol name='__tracepoint_android_vh_thermal_unregister' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5ba0a594'/>
       <elf-symbol name='__tracepoint_android_vh_timer_calc_index' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8c419ab6'/>
       <elf-symbol name='__tracepoint_android_vh_try_cma_fallback' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6fea66e8'/>
+      <elf-symbol name='__tracepoint_android_vh_try_fixup_sea' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x834ac862'/>
       <elf-symbol name='__tracepoint_android_vh_try_to_freeze_todo' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7736a58d'/>
       <elf-symbol name='__tracepoint_android_vh_try_to_freeze_todo_logging' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xebf22921'/>
       <elf-symbol name='__tracepoint_android_vh_try_to_freeze_todo_unfrozen' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x420e27e1'/>
@@ -102312,7 +102314,7 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='4e13c9d9' size-in-bits='64' id='d064f511'/>
-      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/base.h' line='88' column='1' id='d066d157'>
+      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/power/../base.h' line='88' column='1' id='d066d157'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='klist_children' type-id='6160a6ce' visibility='default' filepath='drivers/base/base.h' line='89' column='1'/>
         </data-member>
@@ -128003,7 +128005,7 @@
       <pointer-type-def type-id='46f53066' size-in-bits='64' id='fffb07a4'/>
       <qualified-type-def type-id='55efd1a3' const='yes' id='fffdaf52'/>
       <var-decl name='GKI_struct_blk_mq_alloc_data' type-id='17c43c95' mangled-name='GKI_struct_blk_mq_alloc_data' visibility='default' filepath='block/vendor_hooks.c' line='23' column='1' elf-symbol-id='GKI_struct_blk_mq_alloc_data'/>
-      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='500' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
+      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='501' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
       <var-decl name='GKI_struct_selinux_state' type-id='4ae52763' mangled-name='GKI_struct_selinux_state' visibility='default' filepath='security/selinux/vendor_hooks.c' line='21' column='1' elf-symbol-id='GKI_struct_selinux_state'/>
       <function-decl name='I_BDEV' mangled-name='I_BDEV' filepath='block/bdev.c' line='42' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='I_BDEV'>
         <parameter type-id='7e666abe' name='inode' filepath='block/bdev.c' line='42' column='1'/>
@@ -132758,6 +132760,14 @@
         <parameter type-id='d8e6b335' name='try_cma' filepath='include/trace/hooks/mm.h' line='245' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_try_fixup_sea' mangled-name='__traceiter_android_vh_try_fixup_sea' filepath='include/trace/hooks/fault.h' line='37' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_try_fixup_sea'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/fault.h' line='37' column='1'/>
+        <parameter type-id='7359adad' name='addr' filepath='include/trace/hooks/fault.h' line='37' column='1'/>
+        <parameter type-id='7359adad' name='esr' filepath='include/trace/hooks/fault.h' line='37' column='1'/>
+        <parameter type-id='4616a179' name='regs' filepath='include/trace/hooks/fault.h' line='37' column='1'/>
+        <parameter type-id='d8e6b335' name='can_fixup' filepath='include/trace/hooks/fault.h' line='37' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_try_to_freeze_todo' mangled-name='__traceiter_android_vh_try_to_freeze_todo' filepath='include/trace/hooks/power.h' line='19' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_try_to_freeze_todo'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/power.h' line='19' column='1'/>
         <parameter type-id='f0981eeb' name='todo' filepath='include/trace/hooks/power.h' line='19' column='1'/>
@@ -133911,6 +133921,7 @@
       <var-decl name='__tracepoint_android_vh_thermal_unregister' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_thermal_unregister' visibility='default' filepath='include/trace/hooks/thermal.h' line='33' column='1' elf-symbol-id='__tracepoint_android_vh_thermal_unregister'/>
       <var-decl name='__tracepoint_android_vh_timer_calc_index' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_timer_calc_index' visibility='default' filepath='include/trace/hooks/timer.h' line='12' column='1' elf-symbol-id='__tracepoint_android_vh_timer_calc_index'/>
       <var-decl name='__tracepoint_android_vh_try_cma_fallback' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_cma_fallback' visibility='default' filepath='include/trace/hooks/mm.h' line='245' column='1' elf-symbol-id='__tracepoint_android_vh_try_cma_fallback'/>
+      <var-decl name='__tracepoint_android_vh_try_fixup_sea' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_fixup_sea' visibility='default' filepath='include/trace/hooks/fault.h' line='37' column='1' elf-symbol-id='__tracepoint_android_vh_try_fixup_sea'/>
       <var-decl name='__tracepoint_android_vh_try_to_freeze_todo' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_to_freeze_todo' visibility='default' filepath='include/trace/hooks/power.h' line='19' column='1' elf-symbol-id='__tracepoint_android_vh_try_to_freeze_todo'/>
       <var-decl name='__tracepoint_android_vh_try_to_freeze_todo_logging' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_to_freeze_todo_logging' visibility='default' filepath='include/trace/hooks/power.h' line='23' column='1' elf-symbol-id='__tracepoint_android_vh_try_to_freeze_todo_logging'/>
       <var-decl name='__tracepoint_android_vh_try_to_freeze_todo_unfrozen' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_to_freeze_todo_unfrozen' visibility='default' filepath='include/trace/hooks/power.h' line='27' column='1' elf-symbol-id='__tracepoint_android_vh_try_to_freeze_todo_unfrozen'/>
@@ -166831,7 +166842,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
