@@ -2265,7 +2265,7 @@ void fbt_set_render_last_cb(struct render_info *thr, unsigned long long ts_ns)
 static int fbt_get_target_cluster(unsigned int blc_wt)
 {
 	int cluster = min_cap_cluster;
-	int i = max_cap_cluster;
+	int i = max_cap_cluster < cluster_num ? max_cap_cluster : cluster_num - 1;
 	int order = (max_cap_cluster > min_cap_cluster)?1:0;
 
 	while (i != min_cap_cluster) {
@@ -2274,9 +2274,9 @@ static int fbt_get_target_cluster(unsigned int blc_wt)
 			break;
 		}
 
-		if (order)
+		if (order && i > 0)
 			i--;
-		else
+		else if(i < cluster_num - 1)
 			i++;
 	}
 
