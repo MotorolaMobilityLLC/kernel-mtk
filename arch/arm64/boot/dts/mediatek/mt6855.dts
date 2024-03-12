@@ -557,7 +557,7 @@
 			clock-frequency = <2000000000>;
 			capacity-dmips-mhz = <407>;
 			#cooling-cells = <2>;
-			cpu-idle-states = <&cpuoff_l &clusteroff_l &mcusysoff
+			cpu-idle-states = <&cpuoff_l &mcusysoff
 						&system_mem &system_pll &system_bus
 						&s2idle>;
 		};
@@ -570,7 +570,7 @@
 			clock-frequency = <2000000000>;
 			capacity-dmips-mhz = <407>;
 			#cooling-cells = <2>;
-			cpu-idle-states = <&cpuoff_l &clusteroff_l &mcusysoff
+			cpu-idle-states = <&cpuoff_l &mcusysoff
 						&system_mem &system_pll &system_bus
 						&s2idle>;
 		};
@@ -583,7 +583,7 @@
 			clock-frequency = <2000000000>;
 			capacity-dmips-mhz = <407>;
 			#cooling-cells = <2>;
-			cpu-idle-states = <&cpuoff_l &clusteroff_l &mcusysoff
+			cpu-idle-states = <&cpuoff_l &mcusysoff
 						&system_mem &system_pll &system_bus
 						&s2idle>;
 		};
@@ -596,7 +596,7 @@
 			clock-frequency = <2000000000>;
 			capacity-dmips-mhz = <407>;
 			#cooling-cells = <2>;
-			cpu-idle-states = <&cpuoff_l &clusteroff_l &mcusysoff
+			cpu-idle-states = <&cpuoff_l &mcusysoff
 						&system_mem &system_pll &system_bus
 						&s2idle>;
 		};
@@ -609,7 +609,7 @@
 			clock-frequency = <2000000000>;
 			capacity-dmips-mhz = <407>;
 			#cooling-cells = <2>;
-			cpu-idle-states = <&cpuoff_l &clusteroff_l &mcusysoff
+			cpu-idle-states = <&cpuoff_l &mcusysoff
 						&system_mem &system_pll &system_bus
 						&s2idle>;
 		};
@@ -622,7 +622,7 @@
 			clock-frequency = <2000000000>;
 			capacity-dmips-mhz = <407>;
 			#cooling-cells = <2>;
-			cpu-idle-states = <&cpuoff_l &clusteroff_l &mcusysoff
+			cpu-idle-states = <&cpuoff_l &mcusysoff
 						&system_mem &system_pll &system_bus
 						&s2idle>;
 		};
@@ -635,7 +635,7 @@
 			clock-frequency = <2200000000>;
 			capacity-dmips-mhz = <1024>;
 			#cooling-cells = <2>;
-			cpu-idle-states = <&cpuoff_b &clusteroff_b &mcusysoff
+			cpu-idle-states = <&cpuoff_b &mcusysoff
 						&system_mem &system_pll &system_bus
 						&s2idle>;
 		};
@@ -648,7 +648,7 @@
 			clock-frequency = <2200000000>;
 			capacity-dmips-mhz = <1024>;
 			#cooling-cells = <2>;
-			cpu-idle-states = <&cpuoff_b &clusteroff_b &mcusysoff
+			cpu-idle-states = <&cpuoff_b &mcusysoff
 						&system_mem &system_pll &system_bus
 						&s2idle>;
 		};
