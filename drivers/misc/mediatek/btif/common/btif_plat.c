@@ -274,7 +274,7 @@ struct _MTK_BTIF_INFO_STR_ *hal_btif_info_get(void)
  *  0 means success, negative means fail
  *****************************************************************************/
 #if !defined(CONFIG_MTK_CLKMGR)
-int hal_btif_clk_get_and_prepare(struct platform_device *pdev)
+int hal_btif_clk_get(struct platform_device *pdev)
 {
 		int i_ret = -1;
 
@@ -290,6 +290,12 @@ int hal_btif_clk_get_and_prepare(struct platform_device *pdev)
 			return PTR_ERR(clk_btif_apdma);
 		}
 		BTIF_ERR_FUNC("[CCF]clk_btif_apdma=%p\n", clk_btif_apdma);
+		return i_ret;
+}
+
+int hal_btif_clk_prepare(void)
+{
+		int i_ret = -1;
 
 		i_ret = clk_prepare(clk_btif);
 		if (i_ret != 0) {
@@ -302,8 +308,10 @@ int hal_btif_clk_get_and_prepare(struct platform_device *pdev)
 			BTIF_ERR_FUNC("clk_prepare failed! ret:%d\n", i_ret);
 			return i_ret;
 		}
+		pr_info("%s ok\n", __func__);
 		return i_ret;
 }
+
 /*****************************************************************************
  * FUNCTION
  *  hal_btif_clk_unprepare

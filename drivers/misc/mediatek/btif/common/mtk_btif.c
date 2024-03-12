@@ -349,10 +349,8 @@ static int mtk_btif_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, &g_btif[0]);
 	g_btif[0].private_data = (struct device *)&pdev->dev;
 
-#if !defined(CONFIG_MTK_CLKMGR)
-	hal_btif_clk_get_and_prepare(pdev);
-#endif
 	mtk_btif_set_debug_register(pdev);
+	hal_btif_clk_get(pdev);
 
 	btif_probed = 1;
 
@@ -1655,6 +1653,9 @@ int btif_open(struct _mtk_btif_ *p_btif)
 /*hold state mechine lock*/
 	if (_btif_state_hold(p_btif))
 		return E_BTIF_INTR;
+
+	hal_btif_clk_prepare();
+
 /*disable deepidle*/
 	_btif_dpidle_notify_ctrl(p_btif, BTIF_DPIDLE_DISABLE);
 
@@ -1705,6 +1706,8 @@ int btif_close(struct _mtk_btif_ *p_btif)
 
 	btif_log_buf_disable(&p_btif->tx_log);
 	btif_log_buf_disable(&p_btif->rx_log);
+
+	hal_btif_clk_unprepare();
 
 	BTIF_STATE_RELEASE(p_btif);
 
@@ -3621,9 +3624,6 @@ static void BTIF_exit(void)
 		mutex_destroy(&g_btif[index].ops_mtx);
 	}
 
-#if !defined(CONFIG_MTK_CLKMGR)
-		hal_btif_clk_unprepare();
-#endif
 
 	driver_remove_file(&mtk_btif_dev_drv.driver, &driver_attr_flag);
 	platform_driver_unregister(&mtk_btif_dev_drv);
