@@ -925,6 +925,11 @@ static void msdc_start_data(struct msdc_host *host, struct mmc_request *mrq,
 	dev_dbg(host->dev, "DMA start\n");
 	dev_dbg(host->dev, "%s: cmd=%d DMA data: %d blocks; read=%d\n",
 			__func__, cmd->opcode, data->blocks, read);
+#if IS_ENABLED(CONFIG_MMC_MTK_SW_CQHCI)
+	if (cmd->opcode == MMC_EXECUTE_READ_TASK ||
+		cmd->opcode == MMC_EXECUTE_WRITE_TASK)
+		msdc_request_done(host, mrq);
+#endif
 }
 
 static int msdc_auto_cmd_done(struct msdc_host *host, int events,
@@ -1463,7 +1468,6 @@ static void msdc_data_xfer_next(struct msdc_host *host,
 			!= MMC_SWCQ_TASK_IDLE) {
 			atomic_set(&swcq_host->ongoing_task.done, 1);
 			wake_up_interruptible(&swcq_host->wait_dat_trans);
-			msdc_request_done(host, mrq);
 			return;
 		}
 	}
