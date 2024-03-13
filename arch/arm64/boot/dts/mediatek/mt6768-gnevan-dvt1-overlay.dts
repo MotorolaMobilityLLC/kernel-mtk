@@ -1,0 +1,30 @@
+/* Copyright (c) 2021, Motorola Mobility Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include "mediatek/mt6768-gnevan-common-overlay.dtsi"
+/* Board match root node */
+/ {
+	fragment@model {
+		target-path = "/";
+		__overlay__ {
+			mot,model = "gnevan";
+			mot,board-id = <0x48 0xB100>;
+		};
+	};
+};
+#include "mediatek/mt6768-gnevan-camera-sensor-evb-overlay.dtsi"
+#include "mediatek/mt6768-gnevan-display-dvt1-overlay.dtsi"
+#include <gnevan_dvt1/cust.dtsi>
+/*End of this file, DO NOT ADD ANYTHING HERE*/

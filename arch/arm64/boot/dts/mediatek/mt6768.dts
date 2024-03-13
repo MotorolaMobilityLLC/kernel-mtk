@@ -3121,6 +3121,108 @@ transparent_hugepage=never";
 		io-channel-names = "thermistor-ch1";
 	};
 
+	vtskin: vtskin {
+		compatible = "mediatek,mt6893-virtual-tskin";
+
+		 num-sensor =  <4>;
+		#thermal-sensor-cells = <1>;
+
+		vtskin-max {
+
+			ref-num = <2>;
+			operation = "OP_MAX";
+			vtskin_coef_0{
+				sensor-name = "vtskin1";
+				sensor-coeff = <0>;
+			};
+			vtskin_coef_1{
+				sensor-name = "vtskin2";
+				sensor-coeff = <0>;
+			};
+
+		};
+
+		vtskin1 {
+			ref-num = <4>;
+			operation = "OP_COEF";
+
+			vtskin_coef_0{
+				sensor-name  = "mtktscpu";
+				sensor-coeff = <2>;
+			};
+
+			vtskin_coef_1{
+				sensor-name  = "mtktsAP";
+				sensor-coeff  = <3>;
+			};
+
+			vtskin_coef_2{
+				sensor-name  = "mtktsbtsnrpa";
+				sensor-coeff = <4>;
+			};
+
+			vtskin_coef_3{
+				sensor-name  = "mtktswmt";
+				sensor-coeff  = <5>;
+			};
+
+		};
+
+		vtskin2{
+
+			ref-num = <4>;
+			operation = "OP_COEF";
+			vtskin_coef_0{
+				sensor-name  = "mtktscpu";
+				sensor-coeff  = <3>;
+			};
+
+			vtskin_coef_1{
+				sensor-name  = "mtktsAP";
+				sensor-coeff = <4>;
+			};
+
+			vtskin_coef_2{
+				sensor-name = "mtktsbtsnrpa";
+				sensor-coeff = <5>;
+			};
+
+			vtskin_coef_3{
+				sensor-name  = "mtktswmt";
+				sensor-coeff = <8>;
+			};
+
+		};
+
+		vtskin3{
+
+			ref-num = <4>;
+			operation = "OP_COEF";
+
+			vtskin_coef_0{
+				sensor-name  = "mtktscpu";
+				sensor-coeff  = <1>;
+			};
+
+			vtskin_coef_1{
+				sensor-name  = "mtktsAP";
+				sensor-coeff = <6>;
+			};
+
+			vtskin_coef_2{
+				sensor-name = "mtktsbtsnrpa";
+				sensor-coeff = <8>;
+			};
+
+			vtskin_coef_3{
+				sensor-name  = "mtktswmt";
+				sensor-coeff = <7>;
+			};
+
+		};
+
+	};
+
 	drcc: drcc {
 		compatible = "mediatek,drcc";
 		state = <255>;
@@ -3495,6 +3597,11 @@ transparent_hugepage=never";
 		pinctrl-17 = <&vow_dat_miso_on>;
 		pinctrl-18 = <&vow_clk_miso_off>;
 		pinctrl-19 = <&vow_clk_miso_on>;
+	};
+
+	mt6358_snd: mt6358_snd {
+		compatible = "mediatek,mt6358-sound";
+		mediatek,pwrap-regmap = <&pwrap>;
 	};
 
 	sound: sound {
@@ -4028,6 +4135,18 @@ transparent_hugepage=never";
 			"TOP_ULPOSC1_D2",
 			"TOP_ULPOSC1_D8";
 	};
+
+	/* modify by wt.longyili for swtp start */
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+	swtp_1: swtp_1 {
+		compatible = "mediatek, swtp1-eint";
+	};
+	swtp_2: swtp_2 {
+		compatible = "mediatek, swtp2-eint";
+	};
+	/* modify by wt.longyili for swtp end */
 
 	mm_mutex@14016000 {
 		compatible = "mediatek,mm_mutex";
@@ -4677,12 +4796,26 @@ transparent_hugepage=never";
 		};
 	};
 
+	flashlights_ocp8135: flashlights_ocp8135 {
+		compatible = "mediatek,flashlights_ocp8135";
+		decouple = <0>;
+		channel@1 {
+			type = <0>;
+			ct = <0>;
+			part = <0>;
+		};
+	};
+
 	camera_af_hw_node: camera_af_hw_node {
 		compatible = "mediatek,camera_af_lens";
 	};
 
 	mtk_composite_v4l2_1: mtk_composite_v4l2_1 {
 		compatible = "mediatek,mtk_composite_v4l2_1";
+	};
+
+	evt_dvt_camera: evt_dvt_camera {
+		compatible = "mediatek,compatible_camera";
 	};
 
 	camsv1@1a050000 {
@@ -5566,3 +5699,5 @@ transparent_hugepage=never";
 	md_vmodem = <750000 750000>;
 };
 
+/* Motorola base dts override */
+//#include "mediatek/mt6768-moto-base.dtsi"

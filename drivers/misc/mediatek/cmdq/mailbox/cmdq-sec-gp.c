@@ -31,6 +31,7 @@ s32 cmdq_sec_init_context(struct cmdq_sec_tee_context *tee)
 
 	/* In 32 bit project, we need CONFIG_MTK_TEE_GP_COORDINATOR but
 	CONFIG_MICROTRUST_TEE_SUPPORT is disabled */
+#if IS_ENABLED(CONFIG_MTK_TEE_GP_COORDINATOR)
 #if IS_ENABLED(CONFIG_TRUSTONIC_TEE_SUPPORT) && IS_ENABLED(CONFIG_MICROTRUST_TEE_SUPPORT)
 	while (!is_teei_ready() && !is_mobicore_ready()) {
 		cmdq_msg("[SEC][TEE] TEE is not ready, wait...");

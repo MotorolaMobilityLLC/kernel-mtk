@@ -566,7 +566,7 @@ static ssize_t situproxcal_store(struct device *dev, struct device_attribute *at
 	int err = 0;
 	uint8_t type = (uint8_t)buf[0];
 	pr_err("sensor_cfg_to_hub proxcal type = %d\n",type);
-	err = sensor_cfg_to_hub(ID_PROXCAL, (uint8_t *)&type, sizeof(uint8_t));
+//	err = sensor_cfg_to_hub(ID_PROXCAL, (uint8_t *)&type, sizeof(uint8_t));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub proxcal fail\n");
 

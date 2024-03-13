@@ -356,18 +356,18 @@
 			regulator-max-microvolt = <3300000>;
 			regulator-enable-ramp-delay = <44>;
 		};
-		mt_pmic_vsim1_ldo_reg: ldo_vsim1 {
-			regulator-name = "vsim1";
-			regulator-min-microvolt = <1700000>;
-			regulator-max-microvolt = <3100000>;
-			regulator-enable-ramp-delay = <264>;
-		};
-		mt_pmic_vsim2_ldo_reg: ldo_vsim2 {
-			regulator-name = "vsim2";
-			regulator-min-microvolt = <1700000>;
-			regulator-max-microvolt = <3100000>;
-			regulator-enable-ramp-delay = <264>;
-		};
+	//	mt_pmic_vsim1_ldo_reg: ldo_vsim1 {
+	//		regulator-name = "vsim1";
+	//		regulator-min-microvolt = <1700000>;
+	//		regulator-max-microvolt = <3100000>;
+	//		regulator-enable-ramp-delay = <264>;
+	//	};
+	//	mt_pmic_vsim2_ldo_reg: ldo_vsim2 {
+	//		regulator-name = "vsim2";
+	//		regulator-min-microvolt = <1700000>;
+	//		regulator-max-microvolt = <3100000>;
+	//		regulator-enable-ramp-delay = <264>;
+	//	};
 		mt_pmic_vibr_ldo_reg: ldo_vibr {
 			regulator-name = "vibr";
 			regulator-min-microvolt = <1200000>;
