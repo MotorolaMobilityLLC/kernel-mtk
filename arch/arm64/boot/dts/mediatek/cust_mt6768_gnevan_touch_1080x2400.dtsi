@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright (c) 2022 MediaTek Inc.
+ *
+ */
+
+&spi2 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	touch@0 {
+		compatible = "tchip,ilitek", "novatek,NVT-ts-spi";
+		reg = <0>;
+		status = "okay";
+                spi-max-frequency = <10000000>;
+
+		//ilitek
+		touch,irq-gpio = <&pio 0 0x0>;
+		touch,reset-gpio = <&pio 23 0x0>;
+		touch,psy-name = "battery";
+		ili,dda-device-info = "ilitek-ts for Geneva4G";
+		ilitek,report_gesture_key;
+
+		//novatek
+		novatek,reset-gpio = <&pio 23 0x0>;
+		novatek,irq-gpio = <&pio 0 0x0>;
+		novatek,panel-supplier = "csot";
+		novatek,fw_ic_info = "nt36672c", "nt36672n";
+		novatek,dda-device-info = "novatek-ts for Geneva4G";
+		novatek,usb_charger;
+		novatek,report_gesture_key = <1>;
+		novatek,panel_wakeup = <1>;
+
+		/* 672A, 525B, 675, 526, 672C, 523 */
+		novatek,swrst-n8-addr = <0x03F0FE>;
+		novatek,spi-rd-fast-addr = <0x03F310>;
+
+	};
+};
+
+
+/*
+&pio {
+	ctp_pins_default: eint0default {
+	};
+	ctp_pins_eint_as_int: eint1touch@0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO0__FUNC_GPIO0>;
+			input-enable;
+		};
+	};
+	ctp_pins_eint_output0: eintoutput0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO0__FUNC_GPIO0>;
+			output-low;
+		};
+	};
+	ctp_pins_eint_output1: eintoutput1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO0__FUNC_GPIO0>;
+			output-high;
+		};
+	};
+	ctp_pins_rst_output0: rstoutput0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO23__FUNC_GPIO23>;
+			output-low;
+		};
+	};
+	ctp_pins_rst_output1: rstoutput1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO23__FUNC_GPIO23>;
+			output-high;
+		};
+	};
+
+	ctp_pins_spi_mode: spimode_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO28__FUNC_SPI2_MI>,
+				<PINMUX_GPIO26__FUNC_SPI2_MO>,
+				<PINMUX_GPIO27__FUNC_SPI2_CLK>,
+				<PINMUX_GPIO25__FUNC_SPI2_CSB>;
+			drive-strength = <2>;
+		};
+	};
+
+};
+*/
+

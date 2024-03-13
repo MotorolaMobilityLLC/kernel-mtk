@@ -1065,7 +1065,8 @@ static int alspshub_probe(struct platform_device *pdev)
 		pr_err("scp_sensorHub_data_registration failed\n");
 		goto exit_kfree;
 	}
-	err = alsps_factory_device_register(&alspshub_factory_device);
+	//err = alsps_factory_device_register(&alspshub_factory_device);
+	alspshub_factory_device.gain = 0;
 	if (err) {
 		pr_err("alsps_factory_device_register register failed\n");
 		goto exit_kfree;
@@ -1162,7 +1163,7 @@ static int alspshub_remove(struct platform_device *pdev)
 	err = alspshub_delete_attr(&paddr->driver);
 	if (err)
 		pr_err("alspshub_delete_attr fail: %d\n", err);
-	alsps_factory_device_deregister(&alspshub_factory_device);
+	//alsps_factory_device_deregister(&alspshub_factory_device);
 	kfree(platform_get_drvdata(pdev));
 	return 0;
 

@@ -349,12 +349,14 @@ static ssize_t tcpc_store_property(struct device *dev,
 		case 9:
 			tcpm_dpm_vdm_discover_cable(tcpc, NULL);
 			break;
+#if CONFIG_WATER_DETECTION
 		case 10:
 			tcpci_set_water_protection(tcpc, true);
 			break;
 		case 11:
 			tcpci_set_water_protection(tcpc, false);
 			break;
+#endif
 		default:
 			break;
 		}

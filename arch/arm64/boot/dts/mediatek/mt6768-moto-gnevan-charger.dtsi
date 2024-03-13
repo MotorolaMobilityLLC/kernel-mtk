@@ -1,0 +1,211 @@
+/*
+ * Copyright (c) 2019 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&i2c7 {
+        bq25890@6A {
+                status = "okay";
+                compatible = "ti,bq2589x-1";
+                reg = <0x6A>;
+                charger_name = "primary_chg";
+
+                bq2589x_irq = <&pio 7 0x0>;
+		pinctrl-names = "bq25890_int_n_name";
+		pinctrl-0 = <&bq25890_int_n>;
+
+		ti,bq2589x,enable-auto-dpdm;
+		ti,bq2589x,enable-termination;
+		//ti,bq2589x,enable-ico;
+		ti,bq2589x,use-absolute-vindpm;
+ 		ti,bq2589x,vbus-volt-high-level = <8700>;/* tune adapter to output 9v */
+ 		ti,bq2589x,vbus-volt-low-level = <4400>;/* tune adapter to output 5v */
+ 		ti,bq2589x,vbat-min-volt-to-tuneup = <3000>;
+		ti,bq2589x,charge-voltage = <4400>;
+		ti,bq2589x,charge-current = <2000>;
+		ti,bq2589x,term-current = <128>;
+                ti,bq2589x,disable-ilim;
+		ti,bq2589x,stat-pin-ctrl = <1>;
+
+		/* enable dynamic adjust battery voltage */
+		ti,bq2589x,enable-dynamic-adjust-batvol;
+		ti,bq2589x,ffc-cv = <4510000>;
+        };
+
+	sgm41543@0B {
+		status = "okay";
+		compatible = "ti,sgm41543-2";
+		reg = <0x0B>;
+		charger_name = "primary_chg";
+
+		sgm41543,intr_gpio = <&pio 7 0x0>;
+		sgm41543,intr_gpio_num = <7>;
+		ti,sgm41543,usb-vlim = <4600>;
+		ti,sgm41543,usb-ilim = <2000>;
+		ti,sgm41543,usb-vreg = <4400>;
+		ti,sgm41543,usb-ichg = <2000>;
+		ti,sgm41543,precharge-current = <180>;
+		ti,sgm41543,termination-current = <180>;
+		ti,sgm41543,boost-voltage = <4998>;
+		ti,sgm41543,boost-current = <1200>;
+		ti,sgm41543,enable_term;
+		ti,sgm41543,stat-pin-ctrl = <3>;
+		ti,sgm41543,vac-ovp-threshold = <10500>;
+		ti,sgm41543,charge-voltage = <4400>;
+		ti,sgm41543,charge-current = <2000>;
+
+		/* enable dynamic adjust battery voltage */
+		ti,sgm41543,enable-dynamic-adjust-batvol;
+		ti,sgm41543,ffc-cv = <4510000>;
+	};
+};
+
+&pio {
+	bq25890_int_n: bq25890_int_n {
+		pins_cmd0_dat {
+			pinmux = <PINMUX_GPIO7__FUNC_GPIO7>;
+			//input-enable;
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+	};
+};
+
+&lk_charger {
+        temp_t4_threshold = <59>;
+};
+
+&charger {
+        /* common */
+        battery_cv = <4480000>;
+        max_charger_voltage = <15000000>;
+        min_charger_voltage = <4700000>;
+        max_dmivr_charger_current = <2000000>;
+
+        enable_pe_plus;
+        enable_sw_jeita;
+
+        /* charging current */
+        usb_charger_current_suspend = <0>;
+        usb_charger_current_unconfigured = <70000>;
+        usb_charger_current_configured = <500000>;
+        usb_charger_current = <500000>;
+        ac_charger_current = <2050000>;
+        ac_charger_input_current = <2000000>;
+        non_std_ac_charger_current = <1000000>;
+        charging_host_charger_current = <1500000>;
+        apple_1_0a_charger_current = <650000>;
+        apple_2_1a_charger_current = <800000>;
+        ta_ac_charger_current = <3600000>;
+        typec_limit_aicr = <3000000>;
+
+        /* PE */
+        ta_ac_9v_input_current = <2000000>;
+        ta_ac_7v_input_current = <2000000>;
+
+        //mmi config
+        mmi,iterm-ma = <243>;
+        mmi,mmi-temp-zones =
+                       <0 4200 1000  0>,
+                       <10 4250 3000 1000>,
+                       <15 0 3000 3000>,
+                       <25 0 3776 3776>,
+                       <35 0 3776 3776>,
+                       <45 0 3776 3776>,
+                       <60 4200 3776 0>;
+
+	mmi,mmi-ffc-zones =
+                        <4200 243>,
+                        <4480 243>,
+                        <4480 243>,
+                        <4510 518>,
+                        <4510 536>,
+                        <4510 548>,
+                        <4200 243>;
+
+        mmi,enable-charging-limit;
+        mmi,upper-limit-capacity = <65>;
+        mmi,lower-limit-capacity = <60>;
+        mmi,vfloat-comp-uv = <0>;
+};
+
+&mtk_gauge {
+        //io-channels = <&auxadc 5>;
+        //io-channel-names = "batteryID-channel";
+        EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
+        DIFFERENCE_FULLOCV_ITH = <(638)>;       /*Charging termination current.*/
+        /* Tune value for current measurement */
+        CAR_TUNE_VALUE = <(101)>;
+	PSEUDO100_EN_DIS = <0>;
+	R_FG_VALUE = <(10)>;
+
+        /* battery prop */
+        g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
+        TEMPERATURE_T4 = <(-10)>;
+
+        g_FG_PSEUDO100 = <99 99 100 100
+                99 99 100 100
+                99 99 100 100
+                99 99 100 100
+                99 99 100 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100>;
+
+        df-serialnum = "SB18D67654";//SB18D67655
+	g_Q_MAX_row = <4>;
+	g_Q_MAX_col = <10>;
+	g_Q_MAX = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		5010 5010 5010 5010/*T0*/
+		5001 5001 5001 5001/*T1*/
+		5098 5098 5098 5098/*T2*/
+		5098 5098 5098 5098/*T3*/
+		4851 4851 4851 4851/*T4*/
+		3488 3488 3488 3488/*T5*/
+		3488 3488 3488 3488/*T6*/
+		3488 3488 3488 3488/*T7*/
+		3488 3488 3488 3488/*T8*/
+		3488 3488 3488 3488/*T9*/
+	>;
+	g_Q_MAX_H_CURRENT_row = <4>;
+	g_Q_MAX_H_CURRENT_col = <10>;
+	g_Q_MAX_H_CURRENT = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		5010 5010 5010 5010/*T0*/
+		5001 5001 5001 5001/*T1*/
+		5098 5098 5098 5098/*T2*/
+		5098 5098 5098 5098/*T3*/
+		4851 4851 4851 4851/*T4*/
+		3488 3488 3488 3488/*T5*/
+		3488 3488 3488 3488/*T6*/
+		3488 3488 3488 3488/*T7*/
+		3488 3488 3488 3488/*T8*/
+		3488 3488 3488 3488/*T9*/
+	>;
+	g_QMAX_SYS_VOL = <
+		/*bat1  bat2  bat3   bat4*/
+		33500 33000 33500 33500/*T0*/
+		33500 33000 33500 33500/*T1*/
+		33500 33000 33500 33500/*T2*/
+		32900 32900 32900 32900/*T3*/
+		32800 32800 32800 32800/*T4*/
+		33500 33500 33500 33500/*T5*/
+		33500 33500 33500 33500/*T6*/
+		33500 33500 33500 33500/*T7*/
+		33500 33500 33500 33500/*T8*/
+		33500 33500 33500 33500/*T9*/
+	>;
+        #include "bat_setting/mt6768_battery_table_PG50_ATL_5000mah_ext.dtsi"
+	#include "bat_setting/mt6768_battery_table_PG50_SCUD_5000mah_ext.dtsi"
+};

@@ -1,0 +1,124 @@
+/* Copyright (c) 2020, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+&sound {
+    compatible = "mediatek,mt6768-mt6358-sound";
+    mediatek,audio-codec = <&mt6358_snd>;
+    mediatek,platform = <&afe>;
+    mtk_spk_i2s_out = <3>;
+    mtk_spk_i2s_in = <0>;
+    /* mtk_spk_i2s_mck = <3>; */
+    mediatek,speaker-codec {
+        sound-dai = <&aw883xx_smartpa_0 &aw883xx_smartpa_1>;
+    };
+};
+
+&i2c7 {
+    #clock-frequency = <400000>;
+    speaker_amp: speaker_amp@34{
+        compatible = "mediatek,speaker_amp";
+        #sound-dai-cells = <0>;
+        reg = <0x34>;
+        status = "disable";
+    };
+
+    aw883xx_smartpa_0: aw883xx@34 {
+        compatible = "awinic,aw883xx_smartpa";
+        #sound-dai-cells = <0>;
+        reg = <0x34>;
+        reset-gpio = <&pio 169 0>;
+        irq-gpio = <&pio 39 0>;
+        sound-channel = <1>;
+        re-min = <1000>;
+        re-max = <40000>;
+        rename-flag=<1>;
+        fade-enable = <1>;
+        status = "okay";
+    };
+
+    aw883xx_smartpa_1: aw883xx@36 {
+        compatible = "awinic,aw883xx_smartpa";
+        #sound-dai-cells = <0>;
+        reg = <0x36>;
+        reset-gpio = <&pio 107 0>;
+        irq-gpio = <&pio 3 0>;
+        sound-channel = <0>;
+        re-min = <1000>;
+        re-max = <40000>;
+        rename-flag=<1>;
+        fade-enable = <1>;
+        status = "okay";
+    };
+};
+
+&pio {
+	aud_pins_hacamp_high: aud_pins_hacamp_high  {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO91__FUNC_GPIO91>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	aud_pins_hacamp_low: aud_pins_hacamp_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO91__FUNC_GPIO91>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+&afe {
+		pinctrl-names = "aud_clk_mosi_off",
+				"aud_clk_mosi_on",
+				"aud_clk_miso_off",
+				"aud_clk_miso_on",
+				"aud_dat_mosi_off",
+				"aud_dat_mosi_on",
+				"aud_dat_miso_off",
+				"aud_dat_miso_on",
+				"aud_gpio_i2s0_off",
+				"aud_gpio_i2s0_on",
+				"aud_gpio_i2s1_off",
+				"aud_gpio_i2s1_on",
+				"aud_gpio_i2s2_off",
+				"aud_gpio_i2s2_on",
+				"aud_gpio_i2s3_off",
+				"aud_gpio_i2s3_on",
+				"vow_dat_miso_off",
+				"vow_dat_miso_on",
+				"vow_clk_miso_off",
+				"vow_clk_miso_on",
+				"hacamp_pullhigh",
+				"hacamp_pulllow";
+			pinctrl-0 = <&aud_clk_mosi_off>;
+			pinctrl-1 = <&aud_clk_mosi_on>;
+			pinctrl-2 = <&aud_clk_miso_off>;
+			pinctrl-3 = <&aud_clk_miso_on>;
+			pinctrl-4 = <&aud_dat_mosi_off>;
+			pinctrl-5 = <&aud_dat_mosi_on>;
+			pinctrl-6 = <&aud_dat_miso_off>;
+			pinctrl-7 = <&aud_dat_miso_on>;
+			pinctrl-8 = <&aud_gpio_i2s0_off>;
+			pinctrl-9 = <&aud_gpio_i2s0_on>;
+			pinctrl-10 = <&aud_gpio_i2s1_off>;
+			pinctrl-11 = <&aud_gpio_i2s1_on>;
+			pinctrl-12 = <&aud_gpio_i2s2_off>;
+			pinctrl-13 = <&aud_gpio_i2s2_on>;
+			pinctrl-14 = <&aud_gpio_i2s3_off>;
+			pinctrl-15 = <&aud_gpio_i2s3_on>;
+			pinctrl-16 = <&vow_dat_miso_off>;
+			pinctrl-17 = <&vow_dat_miso_on>;
+			pinctrl-18 = <&vow_clk_miso_off>;
+			pinctrl-19 = <&vow_clk_miso_on>;
+			pinctrl-20 = <&aud_pins_hacamp_high>;
+			pinctrl-21 = <&aud_pins_hacamp_low>;
+};

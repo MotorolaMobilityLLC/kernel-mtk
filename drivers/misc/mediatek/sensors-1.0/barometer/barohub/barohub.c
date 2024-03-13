@@ -201,7 +201,7 @@ static int baro_recv_data(struct data_unit_t *event, void *reserved)
 		err = baro_data_report(event->pressure_t.pressure, 2,
 			(int64_t)event->time_stamp);
 	else if (event->flush_action == CALI_ACTION) {
-		err = baro_cali_report(event->data);
+		//err = baro_cali_report(event->data);
 		obj->static_cali[0] = event->data[0];
 		obj->static_cali[1] = event->data[1];
 		obj->config_flush_action = CALI_ACTION;
