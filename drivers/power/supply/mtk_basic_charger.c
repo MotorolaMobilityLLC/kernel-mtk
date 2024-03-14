@@ -286,6 +286,12 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 
 	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
 
+	if ((info->mmi.force_pmic_icl_ma > 0)
+		&& (pdata->input_current_limit > info->mmi.force_pmic_icl_ma * 1000)) {
+		pdata->input_current_limit = info->mmi.force_pmic_icl_ma * 1000;
+		chr_err("user space force pmic icl %d\n", pdata->input_current_limit);
+	}
+
 	info->mmi.target_usb = pdata->input_current_limit;
 
 	sc_select_charging_current(info, pdata);
