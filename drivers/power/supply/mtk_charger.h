@@ -353,6 +353,7 @@ struct mmi_params {
 	int			vfloat_comp_mv;
 	int			batt_health;
 	int			max_chrg_temp;
+	int			force_pmic_icl_ma;
 
 	/*target parameter*/
 	int			target_fv;
