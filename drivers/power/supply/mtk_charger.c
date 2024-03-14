@@ -5268,6 +5268,53 @@ static DEVICE_ATTR(force_max_chrg_temp, 0644,
 		force_max_chrg_temp_store);
 
 static void mmi_notify_power_event_work(struct work_struct *work);
+
+static ssize_t force_pmic_icl_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	unsigned long r;
+	unsigned long mode;
+
+	r = kstrtoul(buf, 0, &mode);
+	if (r) {
+		pr_err("[%s]Invalid force pmic icl value = %lu\n", __func__, mode);
+		return -EINVAL;
+	}
+
+	if (!mmi_info) {
+		pr_err("[%s]mmi_info not valid\n", __func__);
+		return -ENODEV;
+	}
+
+	if ((mode >= 0) && (mode <= 3000)) {
+		mmi_info->mmi.force_pmic_icl_ma = mode;
+		_wake_up_charger(mmi_info);
+	}
+
+	return r ? r : count;
+}
+
+static ssize_t force_pmic_icl_show(struct device *dev,
+				    struct device_attribute *attr,
+				    char *buf)
+{
+	int state;
+
+	if (!mmi_info) {
+		pr_err("[%s]mmi_info not valid\n", __func__);
+		return -ENODEV;
+	}
+
+	state = mmi_info->mmi.force_pmic_icl_ma;
+
+	return scnprintf(buf, CHG_SHOW_MAX_SIZE, "%d\n", state);
+}
+
+static DEVICE_ATTR(force_pmic_icl, 0644,
+		force_pmic_icl_show,
+		force_pmic_icl_store);
+
 void mmi_init(struct mtk_charger *info)
 {
 	int rc;
@@ -5323,6 +5370,12 @@ void mmi_init(struct mtk_charger *info)
 				&dev_attr_force_max_chrg_temp);
 	if (rc) {
 		pr_err("[%s]couldn't create force_max_chrg_temp\n", __func__);
+	}
+
+	rc = device_create_file(&info->pdev->dev,
+				&dev_attr_force_pmic_icl);
+	if (rc) {
+		pr_err("[%s]couldn't create force_pmic_icl\n", __func__);
 	}
 
 	rc = device_create_file(&info->pdev->dev,
