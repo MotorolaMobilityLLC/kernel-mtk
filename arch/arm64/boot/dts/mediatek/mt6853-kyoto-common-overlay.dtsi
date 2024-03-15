@@ -18,6 +18,7 @@
 #include "mediatek/mt6853-kyoto-audio-overlay.dtsi"
 #include "mediatek/mt6853-moto-kyoto-fps.dtsi"
 #include "dt-bindings/mmc/mt6853-msdc.h"
+#include "dt-bindings/gpio/gpio.h"
 
 &reserved_memory {
 };
@@ -512,6 +513,7 @@
 
 &mmc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+        cd-gpios = <&pio 4 GPIO_ACTIVE_HIGH>;
 };
 
 
