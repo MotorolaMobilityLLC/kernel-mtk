@@ -261,6 +261,9 @@ obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
 obj-$(CONFIG_THERMAL) += mtk_ts_charger_v1.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_charger2.o
 
+obj-$(CONFIG_THERMAL) += mtk_ts_wtcharger_v2.o #therm5
+obj-$(CONFIG_THERMAL) += mtk_ts_bqtherm_v1.o   #therm4
+obj-$(CONFIG_THERMAL) += mtk_ts_btstypc_v1.o   #therm7
 
 ifneq ($(CONFIG_MTK_COMBO_WIFI),)
     obj-$(CONFIG_THERMAL) += mtk_ts_wmt.o
