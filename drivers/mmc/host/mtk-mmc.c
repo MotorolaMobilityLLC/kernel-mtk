@@ -968,8 +968,15 @@ static void msdc_request_done(struct msdc_host *host, struct mmc_request *mrq)
 	spin_unlock_irqrestore(&host->lock, flags);
 
 	msdc_track_cmd_data(host, mrq->cmd, mrq->data);
-	if (mrq->data)
-		msdc_unprepare_data(host, mrq);
+#if IS_ENABLED(CONFIG_MMC_MTK_SW_CQHCI)
+	if (!(mrq->cmd) || (mrq->cmd->opcode != MMC_EXECUTE_READ_TASK &&
+		mrq->cmd->opcode != MMC_EXECUTE_WRITE_TASK)) {
+#endif
+			if (mrq->data)
+				msdc_unprepare_data(host, mrq);
+#if IS_ENABLED(CONFIG_MMC_MTK_SW_CQHCI)
+		}
+#endif
 	if (host->error)
 		msdc_reset_hw(host);
 #if IS_ENABLED(CONFIG_MTK_BLOCK_IO_TRACER)
