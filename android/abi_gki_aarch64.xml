@@ -7011,9 +7011,11 @@
       <elf-symbol name='vring_transport_features' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x67d53f42'/>
       <elf-symbol name='vscnprintf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xaa0c318b'/>
       <elf-symbol name='vsnprintf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x148653'/>
+      <elf-symbol name='vsock_addr_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3d4b0fca'/>
       <elf-symbol name='vsock_core_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3416ce16'/>
       <elf-symbol name='vsock_core_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xce82db2c'/>
       <elf-symbol name='vsock_for_each_connected_socket' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc46fb4f3'/>
+      <elf-symbol name='vsock_remove_bound' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x521b8411'/>
       <elf-symbol name='vsprintf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x78b887ed'/>
       <elf-symbol name='vsscanf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x50d035c2'/>
       <elf-symbol name='vunmap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x94961283'/>
@@ -165966,6 +165968,12 @@
         <parameter type-id='2aee9912'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='vsock_addr_init' mangled-name='vsock_addr_init' filepath='net/vmw_vsock/vsock_addr.c' line='14' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='vsock_addr_init'>
+        <parameter type-id='b6a6ca60' name='addr' filepath='net/vmw_vsock/vsock_addr.c' line='14' column='1'/>
+        <parameter type-id='19c2251e' name='cid' filepath='net/vmw_vsock/vsock_addr.c' line='14' column='1'/>
+        <parameter type-id='19c2251e' name='port' filepath='net/vmw_vsock/vsock_addr.c' line='14' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='vsock_core_register' mangled-name='vsock_core_register' filepath='net/vmw_vsock/af_vsock.c' line='2343' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='vsock_core_register'>
         <parameter type-id='c6c5bd96' name='t' filepath='net/vmw_vsock/af_vsock.c' line='2343' column='1'/>
         <parameter type-id='95e97e5e' name='features' filepath='net/vmw_vsock/af_vsock.c' line='2343' column='1'/>
@@ -165977,6 +165985,10 @@
       </function-decl>
       <function-decl name='vsock_for_each_connected_socket' mangled-name='vsock_for_each_connected_socket' filepath='net/vmw_vsock/af_vsock.c' line='336' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='vsock_for_each_connected_socket'>
         <parameter type-id='841969d0' name='fn' filepath='net/vmw_vsock/af_vsock.c' line='336' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='vsock_remove_bound' mangled-name='vsock_remove_bound' filepath='net/vmw_vsock/af_vsock.c' line='280' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='vsock_remove_bound'>
+        <parameter type-id='ecb0ce18' name='vsk' filepath='net/vmw_vsock/af_vsock.c' line='280' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='vsprintf' mangled-name='vsprintf' filepath='lib/vsprintf.c' line='2984' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='vsprintf'>
@@ -166444,10 +166456,10 @@
         <parameter type-id='8efea9e5' name='family' filepath='net/xfrm/xfrm_state.c' line='248' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='xhci_add_endpoint' mangled-name='xhci_add_endpoint' filepath='drivers/usb/host/xhci.c' line='2008' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_add_endpoint'>
-        <parameter type-id='fc4f83c1' name='hcd' filepath='drivers/usb/host/xhci.c' line='2008' column='1'/>
-        <parameter type-id='25e60cb2' name='udev' filepath='drivers/usb/host/xhci.c' line='2008' column='1'/>
-        <parameter type-id='15adb516' name='ep' filepath='drivers/usb/host/xhci.c' line='2009' column='1'/>
+      <function-decl name='xhci_add_endpoint' mangled-name='xhci_add_endpoint' filepath='drivers/usb/host/xhci.c' line='2009' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_add_endpoint'>
+        <parameter type-id='fc4f83c1' name='hcd' filepath='drivers/usb/host/xhci.c' line='2009' column='1'/>
+        <parameter type-id='25e60cb2' name='udev' filepath='drivers/usb/host/xhci.c' line='2009' column='1'/>
+        <parameter type-id='15adb516' name='ep' filepath='drivers/usb/host/xhci.c' line='2010' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='xhci_alloc_command' mangled-name='xhci_alloc_command' filepath='drivers/usb/host/xhci-mem.c' line='1744' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_alloc_command'>
@@ -166463,15 +166475,15 @@
         <parameter type-id='3eb7c31c' name='flags' filepath='drivers/usb/host/xhci-mem.c' line='1808' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='xhci_check_bandwidth' mangled-name='xhci_check_bandwidth' filepath='drivers/usb/host/xhci.c' line='3044' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_check_bandwidth'>
-        <parameter type-id='fc4f83c1' name='hcd' filepath='drivers/usb/host/xhci.c' line='3044' column='1'/>
-        <parameter type-id='25e60cb2' name='udev' filepath='drivers/usb/host/xhci.c' line='3044' column='1'/>
+      <function-decl name='xhci_check_bandwidth' mangled-name='xhci_check_bandwidth' filepath='drivers/usb/host/xhci.c' line='3045' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_check_bandwidth'>
+        <parameter type-id='fc4f83c1' name='hcd' filepath='drivers/usb/host/xhci.c' line='3045' column='1'/>
+        <parameter type-id='25e60cb2' name='udev' filepath='drivers/usb/host/xhci.c' line='3045' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='xhci_drop_endpoint' mangled-name='xhci_drop_endpoint' filepath='drivers/usb/host/xhci.c' line='1925' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_drop_endpoint'>
-        <parameter type-id='fc4f83c1' name='hcd' filepath='drivers/usb/host/xhci.c' line='1925' column='1'/>
-        <parameter type-id='25e60cb2' name='udev' filepath='drivers/usb/host/xhci.c' line='1925' column='1'/>
-        <parameter type-id='15adb516' name='ep' filepath='drivers/usb/host/xhci.c' line='1926' column='1'/>
+      <function-decl name='xhci_drop_endpoint' mangled-name='xhci_drop_endpoint' filepath='drivers/usb/host/xhci.c' line='1926' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_drop_endpoint'>
+        <parameter type-id='fc4f83c1' name='hcd' filepath='drivers/usb/host/xhci.c' line='1926' column='1'/>
+        <parameter type-id='25e60cb2' name='udev' filepath='drivers/usb/host/xhci.c' line='1926' column='1'/>
+        <parameter type-id='15adb516' name='ep' filepath='drivers/usb/host/xhci.c' line='1927' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='xhci_free_command' mangled-name='xhci_free_command' filepath='drivers/usb/host/xhci-mem.c' line='1795' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_free_command'>
@@ -166484,13 +166496,13 @@
         <parameter type-id='d7409d08' name='erst' filepath='drivers/usb/host/xhci-mem.c' line='1836' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='xhci_gen_setup' mangled-name='xhci_gen_setup' filepath='drivers/usb/host/xhci.c' line='5255' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_gen_setup'>
-        <parameter type-id='fc4f83c1' name='hcd' filepath='drivers/usb/host/xhci.c' line='5255' column='1'/>
-        <parameter type-id='67f831c0' name='get_quirks' filepath='drivers/usb/host/xhci.c' line='5255' column='1'/>
+      <function-decl name='xhci_gen_setup' mangled-name='xhci_gen_setup' filepath='drivers/usb/host/xhci.c' line='5256' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_gen_setup'>
+        <parameter type-id='fc4f83c1' name='hcd' filepath='drivers/usb/host/xhci.c' line='5256' column='1'/>
+        <parameter type-id='67f831c0' name='get_quirks' filepath='drivers/usb/host/xhci.c' line='5256' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='xhci_get_endpoint_index' mangled-name='xhci_get_endpoint_index' filepath='drivers/usb/host/xhci.c' line='1479' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_get_endpoint_index'>
-        <parameter type-id='a07d0491' name='desc' filepath='drivers/usb/host/xhci.c' line='1479' column='1'/>
+      <function-decl name='xhci_get_endpoint_index' mangled-name='xhci_get_endpoint_index' filepath='drivers/usb/host/xhci.c' line='1480' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_get_endpoint_index'>
+        <parameter type-id='a07d0491' name='desc' filepath='drivers/usb/host/xhci.c' line='1480' column='1'/>
         <return type-id='f0981eeb'/>
       </function-decl>
       <function-decl name='xhci_get_ep_ctx' mangled-name='xhci_get_ep_ctx' filepath='drivers/usb/host/xhci-mem.c' line='525' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_get_ep_ctx'>
@@ -166499,9 +166511,9 @@
         <parameter type-id='f0981eeb' name='ep_index' filepath='drivers/usb/host/xhci-mem.c' line='527' column='1'/>
         <return type-id='216753a5'/>
       </function-decl>
-      <function-decl name='xhci_init_driver' mangled-name='xhci_init_driver' filepath='drivers/usb/host/xhci.c' line='5502' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_init_driver'>
-        <parameter type-id='c07d5ba3' name='drv' filepath='drivers/usb/host/xhci.c' line='5502' column='1'/>
-        <parameter type-id='9a55ba3d' name='over' filepath='drivers/usb/host/xhci.c' line='5503' column='1'/>
+      <function-decl name='xhci_init_driver' mangled-name='xhci_init_driver' filepath='drivers/usb/host/xhci.c' line='5503' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_init_driver'>
+        <parameter type-id='c07d5ba3' name='drv' filepath='drivers/usb/host/xhci.c' line='5503' column='1'/>
+        <parameter type-id='9a55ba3d' name='over' filepath='drivers/usb/host/xhci.c' line='5504' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='xhci_queue_stop_endpoint' mangled-name='xhci_queue_stop_endpoint' filepath='drivers/usb/host/xhci-ring.c' line='4422' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_queue_stop_endpoint'>
@@ -166512,9 +166524,9 @@
         <parameter type-id='95e97e5e' name='suspend' filepath='drivers/usb/host/xhci-ring.c' line='4423' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='xhci_reset_bandwidth' mangled-name='xhci_reset_bandwidth' filepath='drivers/usb/host/xhci.c' line='3143' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_reset_bandwidth'>
-        <parameter type-id='fc4f83c1' name='hcd' filepath='drivers/usb/host/xhci.c' line='3143' column='1'/>
-        <parameter type-id='25e60cb2' name='udev' filepath='drivers/usb/host/xhci.c' line='3143' column='1'/>
+      <function-decl name='xhci_reset_bandwidth' mangled-name='xhci_reset_bandwidth' filepath='drivers/usb/host/xhci.c' line='3144' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_reset_bandwidth'>
+        <parameter type-id='fc4f83c1' name='hcd' filepath='drivers/usb/host/xhci.c' line='3144' column='1'/>
+        <parameter type-id='25e60cb2' name='udev' filepath='drivers/usb/host/xhci.c' line='3144' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='xhci_resume' mangled-name='xhci_resume' filepath='drivers/usb/host/xhci.c' line='1119' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xhci_resume'>
