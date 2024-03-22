@@ -3599,10 +3599,7 @@ transparent_hugepage=never";
 		pinctrl-19 = <&vow_clk_miso_on>;
 	};
 
-	mt6358_snd: mt6358_snd {
-		compatible = "mediatek,mt6358-sound";
-		mediatek,pwrap-regmap = <&pwrap>;
-	};
+
 
 	sound: sound {
 		compatible = "mediatek,mt6768-mt6358-sound";

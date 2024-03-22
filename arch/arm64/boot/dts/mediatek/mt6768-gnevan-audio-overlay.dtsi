@@ -11,7 +11,6 @@
  */
 &sound {
     compatible = "mediatek,mt6768-mt6358-sound";
-    mediatek,audio-codec = <&mt6358_snd>;
     mediatek,platform = <&afe>;
     mtk_spk_i2s_out = <3>;
     mtk_spk_i2s_in = <0>;
