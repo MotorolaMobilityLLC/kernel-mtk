@@ -1511,13 +1511,11 @@ static const struct mtk_addon_scenario_data mt6835_addon_main[ADDON_SCN_NR] = {
 				.module_data = mt6835_addon_rsz_data,
 				.hrt_type = HRT_TB_TYPE_GENERAL1,
 		},
-#ifdef IF_ZERO
 		[WDMA_WRITE_BACK] = {
 				.module_num = ARRAY_SIZE(mt6835_addon_wdma0_data),
 				.module_data = mt6835_addon_wdma0_data,
 				.hrt_type = HRT_TB_TYPE_GENERAL1,
 		},
-#endif
 };
 
 static const struct mtk_addon_scenario_data mt6835_addon_ext[ADDON_SCN_NR] = {
