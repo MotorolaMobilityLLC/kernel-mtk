@@ -571,9 +571,6 @@ static const struct v4l2_file_operations mtk_cam_v4l2_fops = {
 	.release = vb2_fop_release,
 	.poll = vb2_fop_poll,
 	.mmap = vb2_fop_mmap,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl32 = v4l2_compat_ioctl32,
-#endif
 };
 
 /* ref. v4l2_fill_pixfmt_mp */
