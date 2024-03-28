@@ -55,6 +55,11 @@ thermal_monitor-y += common/thermal_zones/mtk_ts_battery.o
 ifneq ($(CONFIG_POWER_EXT),y)
 thermal_monitor-y += common/thermal_zones/mtk_ts_bts.o
 thermal_monitor-y += common/thermal_zones/mtk_ts_btsmdpa.o
+#+EKGNEVANU-9,mashaokang@wingtech.com,add,20240322,add the thermal ntc
+thermal_monitor-y += common/thermal_zones/wt_mtk_ts_charger.o
+thermal_monitor-y += common/thermal_zones/wt_mtk_ts_flash.o
+thermal_monitor-y += common/thermal_zones/wt_mtk_ts_receiver.o
+#-EKGNEVANU-9,mashaokang@wingtech.com,add,20240322,add the thermal ntc
 endif
 
 thermal_monitor-y += common/thermal_zones/mtk_ts_pa.o
