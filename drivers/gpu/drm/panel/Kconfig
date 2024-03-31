@@ -1247,7 +1247,32 @@ config DRM_MEDIATEK_PANEL
 	  support CMD and VDO mode, support high frame rate.
 	  and uses 24-bits RGB per pixel. It provides a MIPI DSI interface
 	  to host.
+config DRM_PANEL_NT36672N_HDPLUS1600_DSI_VDO_COST
+	tristate "CSOT HDPLUS1600 90hz nt36672N panel"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  Say Y here if you want to enable support for TIANMA nt36672c
+	  panel.
 
+config DRM_PANEL_NT36672_HDPLUS1600_DSI_VDO_COST
+        tristate "CSOT HDPLUS1600 90hz nt36672C panel"
+        depends on OF
+        depends on DRM_MIPI_DSI
+        depends on BACKLIGHT_CLASS_DEVICE
+        help
+          Say Y here if you want to enable support for TXD ft8726
+          panel.
+
+config DRM_PANEL_ILI7807S_HDPLUS1600_DSI_VDO_TIANMA
+        tristate "TIANMA HDPLUS1600 90HZ ILI7807S panel"
+        depends on OF
+        depends on DRM_MIPI_DSI
+        depends on BACKLIGHT_CLASS_DEVICE
+        help
+          Say Y here if you want to enable support for TXD ILI7807S
+          panel.
 config GATEIC_OCP2138
 	tristate "GATEIC OCP2138"
 	default n
