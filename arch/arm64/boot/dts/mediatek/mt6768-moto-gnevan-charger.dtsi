@@ -40,14 +40,16 @@
 		ti,bq2589x,ffc-cv = <4510000>;
         };
 
-	sgm41543@0B {
+	sgm4154x_charger: sgm41543d@0B {
 		status = "okay";
-		compatible = "ti,sgm41543-2";
+		compatible = "sgm,sgm41543D";
 		reg = <0x0B>;
 		charger_name = "primary_chg";
+		input-voltage-limit-microvolt = <4700000>;
+		input-current-limit-microamp = <500000>;
+		typec-support;
 
-		sgm41543,intr_gpio = <&pio 7 0x0>;
-		sgm41543,intr_gpio_num = <7>;
+		sgm,irq-gpio = <&pio 7 0x0>;
 		ti,sgm41543,usb-vlim = <4600>;
 		ti,sgm41543,usb-ilim = <2000>;
 		ti,sgm41543,usb-vreg = <4400>;
