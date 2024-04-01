@@ -12,6 +12,79 @@
  */
 
 /* DISPSYS GPIO standardization */
+&i2c0 {
+	id = <0x0>;
+
+	i2c_lcd_bias@3e {
+		compatible = "sm,bias_sm5109";
+		reg = <0x3e>;
+		sm,lcd-bias-enn-gpio = <&pio 151 0>;
+		sm,lcd-bias-enp-gpio = <&pio 20 0>;
+		status = "okay";
+	};
+};
+&mtk_leds {
+	compatible = "mediatek,disp-leds";
+	backlight {
+		label = "lcd-backlight";
+		led_mode = <4>;
+		max-brightness = <255>;
+		max-hw-brightness = <255>;
+		led-bits = <8>;
+		default-state = "on";
+	};
+};
+&dsi0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	panel1@0 {
+		compatible = "tianma,ili7807s,incell,90hz,hdplus1600";
+		reg = <0>;
+		reset-gpios = <&pio 45 0>;
+		bias_n-gpios = <&pio 151 0>;
+		bias_p-gpios = <&pio 20 0>;
+		pinctrl-names = "default";
+		port {
+			panel_in1: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+	 panel2@0 {
+		compatible = "csot,nt36672,incell,90hz,hdplus1600";
+		reg = <1>;
+		reset-gpios = <&pio 45 0>;
+		bias_n-gpios = <&pio 151 0>;
+		bias_p-gpios = <&pio 20 0>;
+		pinctrl-names = "default";
+		port {
+				panel_in2: endpoint {
+						remote-endpoint = <&dsi_out>;
+				};
+		};
+    };
+	 panel3@0 {
+		compatible = "csot,nt36672n,incell,90hz,hdplus1600";
+		reg = <2>;
+		reset-gpios = <&pio 45 0>;
+		bias_n-gpios = <&pio 151 0>;
+		bias_p-gpios = <&pio 20 0>;
+		pinctrl-names = "default";
+		port {
+				panel_in3: endpoint {
+						remote-endpoint = <&dsi_out>;
+				};
+		};
+    };
+	ports {
+		port {
+			dsi_out: endpoint {
+				remote-endpoint = <&panel_in1>;
+			};
+		};
+	};
+};
 &pio {
 	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
 		pins_cmd_dat {
