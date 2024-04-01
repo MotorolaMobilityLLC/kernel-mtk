@@ -473,6 +473,11 @@ config MTK_SCP_AUDIO
 	  Select Y if you have such device.
 	  If unsure select "N".
 
+config SND_SMARTPA_AW883XX
+        bool "Define for Awinic smartpa"
+        help
+          Say Y here for Awinic smartpa
+
 config SND_SMARTPA_AW883XX_I2S3
 	tristate "awinic aw883xx series on i2s3"
 	depends on I2C

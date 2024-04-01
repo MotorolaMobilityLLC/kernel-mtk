@@ -21,7 +21,7 @@
 };
 
 &i2c7 {
-    medaitek,clk_div_ctrl;
+    mediatek,clk_div_ctrl;
     #clock-frequency = <400000>;
     speaker_amp: speaker_amp@34{
         compatible = "mediatek,speaker_amp";
