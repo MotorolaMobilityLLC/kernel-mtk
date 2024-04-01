@@ -1905,7 +1905,7 @@ static char *sgm4154x_charger_supplied_to[] = {
 };
 
 static struct power_supply_desc sgm4154x_power_supply_desc = {
-	.name = "sgm4154x-charger",
+	.name = "primary_chg",
 	.type = POWER_SUPPLY_TYPE_USB,
 	.usb_types = sgm4154x_usb_type,
 	.num_usb_types = ARRAY_SIZE(sgm4154x_usb_type),
@@ -2026,9 +2026,7 @@ err_out:
 static int sgm4154x_parse_dt(struct sgm4154x_device *sgm)
 {
 	int ret;	
-	int irq_gpio = 0, irqn = 0;	
-	int chg_en_gpio = 0;	
-	
+
 	ret = device_property_read_u32(sgm->dev,
 				       "input-voltage-limit-microvolt",
 				       &sgm->init_data.vlim);
@@ -2052,37 +2050,6 @@ static int sgm4154x_parse_dt(struct sgm4154x_device *sgm)
 	    sgm->init_data.ilim < SGM4154x_IINDPM_I_MIN_uA)
 		return -EINVAL;
 
-	irq_gpio = of_get_named_gpio(sgm->dev->of_node, "sgm,irq-gpio", 0);
-	if (!gpio_is_valid(irq_gpio))
-	{
-		dev_err(sgm->dev, "%s: %d gpio get failed\n", __func__, irq_gpio);
-		return -EINVAL;
-	}
-	ret = gpio_request(irq_gpio, "sgm4154x irq pin");
-	if (ret) {
-		dev_err(sgm->dev, "%s: %d gpio request failed\n", __func__, irq_gpio);
-		return ret;
-	}
-	gpio_direction_input(irq_gpio);
-	irqn = gpio_to_irq(irq_gpio);
-	if (irqn < 0) {
-		dev_err(sgm->dev, "%s:%d gpio_to_irq failed\n", __func__, irqn);
-		return irqn;
-	}
-	sgm->client->irq = irqn;
-	
-	chg_en_gpio = of_get_named_gpio(sgm->dev->of_node, "sgm,chg-en-gpio", 0);
-	if (!gpio_is_valid(chg_en_gpio))
-	{
-		dev_err(sgm->dev, "%s: %d gpio get failed\n", __func__, chg_en_gpio);
-		return -EINVAL;
-	}
-	ret = gpio_request(chg_en_gpio, "sgm chg en pin");
-	if (ret) {
-		dev_err(sgm->dev, "%s: %d gpio request failed\n", __func__, chg_en_gpio);
-		return ret;
-	}
-	gpio_direction_output(chg_en_gpio,0);//default enable charge
 	return 0;
 }
 
@@ -2499,6 +2466,7 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
 {
 	int ret = 0;
+	int irq_gpio = 0, irqn = 0;
 	struct device *dev = &client->dev;
 	struct sgm4154x_device *sgm;
         char *name = NULL;
@@ -2572,6 +2540,25 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 		dev_err(dev, "Cannot initialize the chip.\n");
 		return ret;
 	}
+
+	irq_gpio = of_get_named_gpio(sgm->dev->of_node, "sgm,irq-gpio", 0);
+	if (!gpio_is_valid(irq_gpio))
+	{
+		dev_err(sgm->dev, "%s: %d gpio get failed\n", __func__, irq_gpio);
+		return -EINVAL;
+	}
+	ret = gpio_request(irq_gpio, "sgm4154x irq pin");
+	if (ret) {
+		dev_err(sgm->dev, "%s: %d gpio request failed\n", __func__, irq_gpio);
+		return ret;
+	}
+	gpio_direction_input(irq_gpio);
+	irqn = gpio_to_irq(irq_gpio);
+	if (irqn < 0) {
+		dev_err(sgm->dev, "%s:%d gpio_to_irq failed\n", __func__, irqn);
+		return irqn;
+	}
+	sgm->client->irq = irqn;
 
 	INIT_DELAYED_WORK(&sgm->charge_detect_delayed_work, charger_detect_work_func);
 	INIT_DELAYED_WORK(&sgm->charge_monitor_work, charger_monitor_work_func);
