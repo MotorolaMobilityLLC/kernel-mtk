@@ -196,7 +196,9 @@ static int mtk_usb_extcon_psy_init(struct mtk_extcon_info *extcon)
 {
 	int ret = 0;
 	struct device *dev = extcon->dev;
-	#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	#if defined(CONFIG_CHARGER_BQ2589X)|| defined(CONFIG_CHARGER_SGM415XX)
+	extcon->usb_psy = power_supply_get_by_name("primary_chg");
+	#elif defined(CONFIG_MOTO_CHARGER_SGM415XX)
 	extcon->usb_psy = power_supply_get_by_name("sgm4154x-charger");
 	#elif defined(CONFIG_MTK_BQ2560x_SUPPORT)
 	extcon->usb_psy = power_supply_get_by_name("bq2560x-charger");

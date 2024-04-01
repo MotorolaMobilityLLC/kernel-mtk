@@ -5113,8 +5113,10 @@ transparent_hugepage=never";
 
 	extcon_usb: extcon_usb {
 		compatible = "mediatek,extcon-usb";
+#if 0
 		charger = <&mt6370_chg>;
 		vbus-supply = <&otg_vbus>;
+#endif
 		vbus-voltage = <5000000>;
 		vbus-current = <1800000>;
 		tcpc = "type_c_port0";
