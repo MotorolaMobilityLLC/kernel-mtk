@@ -23,6 +23,17 @@
 		status = "okay";
 	};
 };
+&mtk_leds {
+	compatible = "mediatek,disp-leds";
+	backlight {
+		label = "lcd-backlight";
+		led_mode = <4>;
+		max-brightness = <255>;
+		max-hw-brightness = <255>;
+		led-bits = <8>;
+		default-state = "on";
+	};
+};
 &dsi0 {
 	status = "okay";
 	#address-cells = <1>;
