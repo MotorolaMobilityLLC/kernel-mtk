@@ -11,6 +11,7 @@
 #include <SCP_sensorHub.h>
 #include "SCP_power_monitor.h"
 #endif
+#include "SCP_nanoHub.h"
 
 static struct situation_context *situation_context_obj;
 
@@ -548,7 +549,7 @@ static ssize_t situparams_store(struct device *dev, struct device_attribute *att
 		pr_err("sensor_cfg_to_hub OFFBODY fail\n");
 #endif
 #ifdef CONFIG_MOTO_ALSPS
-	pr_err("[WiSL] sensor_cfg_to_hub PROX cfgtype = %d\n", (int)&cxt->motparams.alsps_params.cfg_type);
+	//pr_err("[WiSL] sensor_cfg_to_hub PROX cfgtype = %d\n", (int)&cxt->motparams.alsps_params.cfg_type);
 	err = sensor_cfg_to_hub(ID_PROXIMITY, (uint8_t *)&cxt->motparams.alsps_params, sizeof(struct MotAlspsCfgData));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub PROXIMITY fail\n");
@@ -566,7 +567,7 @@ static ssize_t situproxcal_store(struct device *dev, struct device_attribute *at
 	int err = 0;
 	uint8_t type = (uint8_t)buf[0];
 	pr_err("sensor_cfg_to_hub proxcal type = %d\n",type);
-//	err = sensor_cfg_to_hub(ID_PROXCAL, (uint8_t *)&type, sizeof(uint8_t));
+	err = sensor_cfg_to_hub(ID_PROXCAL, (uint8_t *)&type, sizeof(uint8_t));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub proxcal fail\n");
 
