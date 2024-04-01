@@ -648,12 +648,10 @@ int bq2589x_rerun_bc12(struct charger_device *chg_dev)
 	return ret;
 }
 
-#if 0
-int bq2589x_enable_dpdm(struct charger_device *chg_dev, bool en)
+int bq2589x_enable_dpdm(struct bq2589x *bq, bool en)
 {
 	int ret;
 	u8 val;
-	struct bq2589x *bq = dev_get_drvdata(&chg_dev->dev);
 	if (en)
 		val = BQ2589X_AUTO_DPDM_ENABLE << BQ2589X_AUTO_DPDM_EN_SHIFT;
 	else
@@ -668,7 +666,6 @@ int bq2589x_enable_dpdm(struct charger_device *chg_dev, bool en)
 	return ret;
 
 }
-#endif
 
 int bq2589x_reset_chip(struct bq2589x *bq)
 {
@@ -949,10 +946,10 @@ static struct bq2589x_platform_data *bq2589x_parse_dt(struct device_node *np,
 		pr_info("Failed to read node of ti,bq2589x,precharge-current\n");
 	}
 
-	ret = of_property_read_u32(np, "ti,bq2589x,termination-current",
+	ret = of_property_read_u32(np, "ti,bq2589x,term-current",
 				   &pdata->iterm);
 	if (ret) {
-		pdata->iterm = 270;
+		pdata->iterm = 200;
 		pr_info
 			("Failed to read node of ti,bq2589x,termination-current\n");
 	}
@@ -972,45 +969,6 @@ static struct bq2589x_platform_data *bq2589x_parse_dt(struct device_node *np,
 		pdata->boosti = 750;
 		pr_info("Failed to read node of ti,bq2589x,boost-current\n");
 	}
-	bq->otg_enable_pin = of_get_named_gpio(np, "ti,otg-en-gpio", 0);
-	if (bq->otg_enable_pin < 0)
-		pr_info("of get ti,otg-en-gpio failed, ti,otg-en-gpio:%d\n", bq->otg_enable_pin);
-
-	if (gpio_request(bq->otg_enable_pin, "otg_enable_pin")) {
-		pr_info("reset otg_enable_pin failed\n");
-	}
-	if (gpio_direction_output(bq->otg_enable_pin, 0))
-		pr_info("otg_enable_pin gpio_direction_output reset_pin failed\n");
-
-	bq->otg_en2_pin = of_get_named_gpio(np, "ti,otg-en2-gpio", 0);
-	if (bq->otg_en2_pin < 0)
-		pr_info("of get otg_en2_pin failed, otg_en2_pin:%d\n", bq->otg_en2_pin);
-
-	if (gpio_request(bq->otg_en2_pin, "otg_en2_pin")) {
-		pr_info("reset otg_enable_pin failed\n");
-	}
-	if (gpio_direction_output(bq->otg_en2_pin, 0))
-		pr_info("otg_en2_pin gpio_direction_output reset_pin failed\n");
-
-	bq->otg_sgm6111_pin = of_get_named_gpio(np, "ti,otg-sgm6111-gpio", 0);
-	if (bq->otg_sgm6111_pin < 0)
-		pr_info("of get otg_en2_pin failed, otg_sgm6111_pin:%d\n", bq->otg_sgm6111_pin);
-
-	if (gpio_request(bq->otg_sgm6111_pin, "otg_sgm6111_pin")) {
-		pr_info("reset otg_enable_pin failed\n");
-	}
-	if (gpio_direction_output(bq->otg_sgm6111_pin, 0))
-		pr_info("otg_sgm6111_pin gpio_direction_output reset_pin failed\n");
-
-	bq->otg_ocflag_pin = of_get_named_gpio(np, "ti,otg-ocflag-gpio", 0);
-	if (bq->otg_ocflag_pin < 0)
-		pr_info("of get otg_ocflag_pin failed, otg_ocflag_pin:%d\n", bq->otg_ocflag_pin);
-
-	if (gpio_request(bq->otg_ocflag_pin, "otg_ocflag_pin")) {
-		pr_info("reset otg_ocflag_pin failed\n");
-	}
-	if (gpio_direction_output(bq->otg_ocflag_pin, 0))
-		pr_info("otg_ocflag_pin gpio_direction_output reset_pin failed\n");
 
 	return pdata;
 }
@@ -1286,6 +1244,8 @@ static int bq2589x_init_device(struct bq2589x *bq)
 	pd_type = false;
 
 	bq2589x_disable_watchdog_timer(bq);
+	bq2589x_enable_dpdm(bq,true);
+	bq2589x_enable_term(bq,true);
 
 	if (bq->part_no == pn_data[PN_SC89890H]) {
 		bq2589x_update_bits(bq, BQ2589X_REG_00, BQ2589X_ENILIM_MASK,
@@ -1317,10 +1277,10 @@ static int bq2589x_init_device(struct bq2589x *bq)
 	ret = bq2589x_set_boost_current(bq, bq->platform_data->boosti);
 	if (ret)
 		pr_info("Failed to set boost current, ret = %d\n", ret);
-	ret = bq2589x_set_chargecurrent(bq, 300);
+	ret = bq2589x_set_chargecurrent(bq, 2000);
 	if (ret)
 		pr_info("Failed to bq2589x_set_chargecurrent, ret = %d\n", ret);
-	ret = bq2589x_set_input_current_limit(bq, 300);
+	ret = bq2589x_set_input_current_limit(bq, 1500);
 	if (ret)
 		pr_info("Failed to bq2589x_set_chargecurrent, ret = %d\n", ret);
 	ret = bq2589x_set_input_icoen(bq);
@@ -1330,6 +1290,7 @@ static int bq2589x_init_device(struct bq2589x *bq)
 	if (ret)
 		pr_info("Failed to bq2589x_set_safety time timeout, ret = %d\n", ret);
 
+	bq2589x_set_chargevolt(bq,4400);
 	bq2589x_dump_regs(bq);
 	return 0;
 }
@@ -2175,7 +2136,7 @@ static int bq2589x_chg_init_psy(struct bq2589x *bq)
 	pr_info("bq2589x_chg_init_psy!\n");
 	//pr_info(bq->dev, "%s\n", __func__);
 	memcpy(&bq->psy_desc, &bq2589x_psy_desc, sizeof(bq->psy_desc));
-	bq->psy_desc.name = "charger";
+	bq->psy_desc.name = "primary_chg";
 	bq->psy = devm_power_supply_register(bq->dev, &bq->psy_desc, &cfg);
 
 	return IS_ERR(bq->psy) ? PTR_ERR(bq->psy) : 0;
@@ -2259,31 +2220,12 @@ static struct charger_ops bq2589x_chg_ops = {
 };
 
 static struct of_device_id bq2589x_charger_match_table[] = {
-	{
-	 .compatible = "ti,bq25890",
-	 .data = &pn_data[PN_BQ25890],
-	 },
-	{
-	 .compatible = "ti,bq25892",
-	 .data = &pn_data[PN_BQ25892],
-	 },
-	{
-	 .compatible = "ti,bq25895",
-	 .data = &pn_data[PN_BQ25895],
-	 },
-	 {
-	 .compatible = "syv,syv6970QCC",
-	 .data = &pn_data[PN_SYV6970QCC],
-	 },
-	 {
-	 .compatible = "sc,sc89890h",
-	 .data = &pn_data[PN_SC89890H],
-	 },
+	{.compatible = "ti,bq2589x-1",},
 	{},
 };
 MODULE_DEVICE_TABLE(of, bq2589x_charger_match_table);
 
-
+int bq2589x_irq;
 static int bq2589x_charger_probe(struct i2c_client *client,
 				 const struct i2c_device_id *id)
 {
@@ -2292,6 +2234,7 @@ static int bq2589x_charger_probe(struct i2c_client *client,
 	struct device_node *node = client->dev.of_node;
 	struct regulator_config config = { };
 	int ret = 0;
+	int irqn;
 
 	bq = devm_kzalloc(&client->dev, sizeof(struct bq2589x), GFP_KERNEL);
 	if (!bq)
@@ -2306,34 +2249,58 @@ static int bq2589x_charger_probe(struct i2c_client *client,
 
 	ret = bq2589x_detect_device(bq);
 	if (ret) {
-		pr_info("No bq2589x device found!\n");
+		pr_err("No bq2589x device found!\n");
 		return -ENODEV;
 	}
 
+	pr_err("bq2589x probe,guhan Part Num,Part Num:%d\n!",
+		bq->part_no);
+	if(bq->part_no != 3) {
+		pr_err("bq2589x probe fail,Part Num not match,Part Num:%d, Revision:%d\n!",
+			bq->part_no, bq->revision);
+		return -ENODEV;
+	}
 	match = of_match_node(bq2589x_charger_match_table, node);
 	if (match == NULL) {
-		pr_info("device tree match not found\n");
+		pr_err("bq2589x device tree match not found\n");
 		return -EINVAL;
 	}
 
 	bq->platform_data = bq2589x_parse_dt(node, bq);
 
 	if (!bq->platform_data) {
-		pr_info("No platform data provided.\n");
+		pr_err("bq2589x No platform data provided.\n");
 		return -EINVAL;
 	}
 
 		ret = bq2589x_chg_init_psy(bq);
 	if (ret < 0) {
-		pr_info("failed to init power supply\n");
+		pr_info("bq2589x failed to init power supply\n");
 		return -EINVAL;
 	}
 
 	ret = bq2589x_init_device(bq);
 	if (ret) {
-		pr_info("Failed to init device\n");
+		pr_info("bq2589x Failed to init device\n");
 		return ret;
 	}
+
+	bq2589x_irq = of_get_named_gpio(client->dev.of_node, "bq2589x_irq", 0);
+	if (bq2589x_irq < 0)
+		dev_info(bq->dev, "%s: %d get gpio failed\n", __func__, bq2589x_irq);
+
+	ret = gpio_request(bq2589x_irq, "bq2589x irq pin");
+	if (ret) {
+		dev_info(bq->dev, "%s: %d gpio request failed\n", __func__, bq2589x_irq);
+	}
+	gpio_direction_input(bq2589x_irq);
+
+	irqn = gpio_to_irq(bq2589x_irq);
+	if (irqn < 0) {
+		dev_info(bq->dev, "%s:%d gpio_to_irq failed\n", __func__, irqn);
+		ret = irqn;
+	}
+	bq->client->irq = irqn;
 
 	bq2589x_register_interrupt(bq);
 
@@ -2371,7 +2338,7 @@ static int bq2589x_charger_probe(struct i2c_client *client,
 #endif
 	bq_ex = bq;
 	INIT_DELAYED_WORK(&plug_work, charge_plug_work);
-	pr_info("bq2589x probe successfully, Part Num:%d, Revision:%d\n!",
+	pr_err("bq2589x probe successfully, Part Num:%d, Revision:%d\n!",
 		   bq->part_no, bq->revision);
 	return 0;
 }
