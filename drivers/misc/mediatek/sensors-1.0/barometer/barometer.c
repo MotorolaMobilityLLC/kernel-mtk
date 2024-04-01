@@ -664,6 +664,7 @@ int baro_cali_report(int *value)
 	printk("baro_cali_report event.word[0]:%d,event.word[1]:%d\n", event.word[0], event.word[1]);
 	return err;
 }
+EXPORT_SYMBOL_GPL(baro_cali_report);
 
 int baro_probe(void)
 {

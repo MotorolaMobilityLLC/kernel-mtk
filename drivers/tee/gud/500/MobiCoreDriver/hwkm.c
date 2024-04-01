@@ -229,6 +229,7 @@ exit:
 	}
 	return res;
 }
+EXPORT_SYMBOL(hwkm_program_key);
 
 int hwkm_derive_raw_secret(const u8 *wrapped_key, u32 wrapped_key_size,
                            u8 *raw_secret, u32 raw_secret_size)
@@ -337,6 +338,7 @@ exit:
 	}
 	return res;
 }
+EXPORT_SYMBOL(hwkm_derive_raw_secret);
 
 static uint32_t g_slot_mask = 0;
 

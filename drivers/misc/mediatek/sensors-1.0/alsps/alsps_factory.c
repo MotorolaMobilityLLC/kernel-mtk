@@ -460,6 +460,7 @@ int alsps_factory_device_register(struct alsps_factory_public *dev)
 	}
 	return err;
 }
+EXPORT_SYMBOL_GPL(alsps_factory_device_register);
 
 int alsps_factory_device_deregister(struct alsps_factory_public *dev)
 {
@@ -467,3 +468,4 @@ int alsps_factory_device_deregister(struct alsps_factory_public *dev)
 	misc_deregister(&alsps_factory_device);
 	return 0;
 }
+EXPORT_SYMBOL_GPL(alsps_factory_device_deregister);
