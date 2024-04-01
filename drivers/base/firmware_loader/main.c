@@ -467,6 +467,9 @@ static int fw_decompress_xz(struct device *dev, struct fw_priv *fw_priv,
 static char fw_path_para[256];
 static const char * const fw_path[] = {
 	fw_path_para,
+#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
+	"/vendor/firmware",
+#endif
 #ifdef CONFIG_MMC_FFU
 	"/vendor/etc/motorola/firmware",
 #endif

@@ -44,6 +44,21 @@ static const struct soc_enum mt6768_spk_type_enum[] = {
 			    mt6768_spk_i2s_type_str),
 };
 
+#ifdef CONFIG_SND_SMARTPA_AW883XX
+struct snd_soc_dai_link_component awinic_codecs[] = {
+	{
+		.of_node = NULL,
+		.dai_name = "aw883xx-aif-7-34",
+                .name = "aw883xx_smartpa.7-0034",
+        },
+	{
+		.of_node = NULL,
+                .dai_name = "aw883xx-aif-7-36",
+                .name = "aw883xx_smartpa.7-0036",
+        },
+};
+#endif
+
 static int mt6768_spk_type_get(struct snd_kcontrol *kcontrol,
 			       struct snd_ctl_elem_value *ucontrol)
 {
@@ -713,6 +728,10 @@ static struct snd_soc_dai_link mt6768_mt6358_dai_links[] = {
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS
 			| SND_SOC_DAIFMT_GATED,
 		.ops = &mt6768_mt6358_i2s_ops,
+#ifdef CONFIG_SND_SMARTPA_AW883XX
+		.num_codecs = ARRAY_SIZE(awinic_codecs),
+                .codecs = awinic_codecs,
+#endif
 		.no_pcm = 1,
 		.dpcm_playback = 1,
 		.ignore_suspend = 1,
@@ -725,6 +744,10 @@ static struct snd_soc_dai_link mt6768_mt6358_dai_links[] = {
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS
 			| SND_SOC_DAIFMT_GATED,
 		.ops = &mt6768_mt6358_i2s_ops,
+#ifdef CONFIG_SND_SMARTPA_AW883XX
+		.num_codecs = ARRAY_SIZE(awinic_codecs),
+                .codecs = awinic_codecs,
+#endif
 		.no_pcm = 1,
 		.dpcm_capture = 1,
 		.ignore_suspend = 1,
