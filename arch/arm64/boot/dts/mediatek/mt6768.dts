@@ -5699,4 +5699,4 @@ transparent_hugepage=never";
 };
 
 /* Motorola base dts override */
-//#include "mediatek/mt6768-moto-base.dtsi"
+#include "mediatek/mt6768-moto-base.dtsi"
