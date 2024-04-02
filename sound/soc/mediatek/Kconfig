@@ -474,7 +474,7 @@ config MTK_SCP_AUDIO
 	  If unsure select "N".
 
 config SND_SMARTPA_AW883XX
-        bool "Define for Awinic smartpa"
+        tristate "Define for Awinic smartpa"
         help
           Say Y here for Awinic smartpa
 
