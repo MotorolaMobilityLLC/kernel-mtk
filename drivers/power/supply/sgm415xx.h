@@ -63,6 +63,19 @@
 #define SGM41543D_PN_ID      (BIT(6)| BIT(3))
 #endif
 
+#define SGM4154x_IINDPM_INT		BIT(0)
+#define SGM4154x_VINDPM_INT		BIT(1)
+
+
+enum attach_type {
+	ATTACH_TYPE_NONE,
+	ATTACH_TYPE_PWR_RDY,
+	ATTACH_TYPE_TYPEC,
+	ATTACH_TYPE_PD,
+	ATTACH_TYPE_PD_SDP,
+	ATTACH_TYPE_PD_DCP,
+	ATTACH_TYPE_PD_NONSTD,
+};
 /*define register*/
 #define SGM4154x_CHRG_CTRL_0	0x00
 #define SGM4154x_CHRG_CTRL_1	0x01
@@ -332,7 +345,8 @@ struct sgm4154x_device {
 	enum sgm415xx_dev_id dev_id;
 	struct mutex lock;
 	struct mutex i2c_rw_lock;
-
+	struct mutex attach_lock;
+	atomic_t            attach;
 	struct usb_phy *usb2_phy;
 	struct usb_phy *usb3_phy;
 	struct notifier_block usb_nb;
