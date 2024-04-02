@@ -1040,7 +1040,11 @@ int bq2589x_get_usb_type(struct bq2589x *bq, int *type)
 
 	switch (vbus_stat) {
 	case BQ2589X_VBUS_TYPE_NONE:
+#if IS_ENABLED(CONFIG_CHARGER_BQ2589X)
+		bq->psy_desc.type = POWER_SUPPLY_TYPE_USB;
+#else
 		bq->psy_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
+#endif
 		usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
 		pr_info("BQ2589X charger type: UNKNOW\n");
 		break;
@@ -1260,7 +1264,11 @@ static int bq2589x_init_device(struct bq2589x *bq)
 	} else {
 		ret = bq2589x_disable_hvdcp(bq);
 	}
+#if IS_ENABLED(CONFIG_CHARGER_BQ2589X)
+	bq2589x_adc_start(bq,false);
+#else
 	bq2589x_adc_stop(bq);
+#endif
 	bq2589x_dump_regs(bq);
 	ret = bq2589x_set_prechg_current(bq, bq->platform_data->iprechg);
 	if (ret)

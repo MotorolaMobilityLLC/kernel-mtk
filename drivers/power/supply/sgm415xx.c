@@ -38,6 +38,7 @@
 
 extern void Charger_Detect_Init(void);
 extern void Charger_Detect_Release(void);
+static bool sgm4154x_dpdm_detect_is_done(struct sgm4154x_device * sgm);
 #define SGM4154x_REG_NUM    (0xF)
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 extern int wt6670f_set_voltage(u16 voltage);
@@ -953,6 +954,22 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
         }
 }
 #endif
+
+static int sgm41543_get_vbus_type(struct sgm4154x_device *sgm)
+{
+	u8 chrg_stat;
+	int ret;
+
+	ret = sgm4154x_read_reg(sgm, SGM4154x_CHRG_STAT, &chrg_stat);
+	if (ret){
+		pr_err("%s ret=%d,read SGM4154x_CHRG_STAT fail\n",__func__, ret);
+		return ret;
+	}
+	sgm->state.chrg_type = chrg_stat & SGM4154x_VBUS_STAT_MASK;
+
+	return ret;
+}
+
 static int sgm4154x_get_state(struct sgm4154x_device *sgm,
 			     struct sgm4154x_state *state)
 {
@@ -1189,6 +1206,20 @@ static int sgm4154x_set_wdt_rst(struct sgm4154x_device *sgm, bool is_rst)
 				  SGM4154x_WDT_RST_MASK, val);	
 }
 
+static int sgm4154x_set_vindpm_iindpm_int_enable(struct sgm4154x_device *sgm, bool enable)
+{
+	int ret;
+	u8 val;
+
+	dev_err(sgm->dev, "sgm4154x_set_vindpm_iindpm_int_enable enable:%d\n", enable);
+	val = enable << (SGM4154x_IINDPM_INT - 1);
+	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_a, SGM4154x_IINDPM_INT,
+                    val);
+	val = enable << (SGM4154x_VINDPM_INT - 1);
+	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_a, SGM4154x_VINDPM_INT,
+                    val);
+	return ret;
+}
 /**********************************************************
  *
  *   [Internal Function]
@@ -1340,6 +1371,97 @@ static int sgm4154x_en_pe_current_partern(struct charger_device
 	return ret;
 }
 
+static int sgm4151_force_dpdm(struct sgm4154x_device *sgm)
+{
+	int ret, timeout = 50;
+	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_7,
+				SGM4154x_DPDM_ONGOING, 1);
+
+	while (timeout >= 0) {
+		if (sgm4154x_dpdm_detect_is_done(sgm))
+			break;
+
+		msleep(20);
+		dev_err(sgm->dev, "sgm4151_force_dpdm done timeout:%d\n", timeout);
+		timeout--;
+	}
+
+	return 0;
+}
+
+static DEFINE_MUTEX(sgm41543_type_det_lock);
+static void sgm4151_update_chg_type(struct sgm4154x_device *sgm, int attach)
+{
+	int ret;
+	int wait_plugin_cnt = 5;
+	dev_err(sgm->dev, "sgm4151_update_chg_type enter attach=%d\n",attach);
+	mutex_lock(&sgm->attach_lock);
+	atomic_set(&sgm->attach, attach);
+	mutex_unlock(&sgm->attach_lock);
+
+	mutex_lock(&sgm41543_type_det_lock);
+
+	if (attach == ATTACH_TYPE_NONE) {
+		sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB;
+		sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+		goto err;
+	} else {
+		Charger_Detect_Init();
+		dev_err(sgm->dev, "BC1.2 Charger_Detect_Init\n");
+		while (wait_plugin_cnt >= 0) {
+			if (sgm->state.vbus_gd)
+				break;
+			msleep(100);
+			wait_plugin_cnt--;
+		}
+	}
+
+	sgm4151_force_dpdm(sgm);
+	dev_err(sgm->dev, "force done\n");
+
+ret = sgm41543_get_vbus_type(sgm);
+	if (ret) {
+		dev_err(sgm->dev, "[%s]: sgm41543_get_vbus_type failed, ret = %d\n", __func__, ret);
+		mutex_unlock(&sgm41543_type_det_lock);
+		goto err;
+	}
+	switch(sgm->state.chrg_type) {
+		case SGM4154x_USB_SDP:
+			sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB;
+			sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_SDP;
+			dev_err(sgm->dev, "SGM4154x charger type: SDP\n");
+			break;
+		case SGM4154x_USB_CDP:
+			sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB_CDP;
+			dev_err(sgm->dev, "SGM4154x charger type: CDP\n");
+			sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_CDP;
+			break;
+		case SGM4154x_USB_DCP:
+		case SGM4154x_NON_STANDARD:
+			sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
+			sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_DCP;
+			dev_err(sgm->dev, "SGM4154x charger type: DCP\n");
+			break;
+		case SGM4154x_UNKNOWN:
+			sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
+			sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+			dev_err(sgm->dev, "SGM4154x charger type: UNKNOWN\n");
+			break;
+		default:
+			sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
+			sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+			dev_err(sgm->dev, "SGM4154x charger type: default\n");
+			break;
+	}
+		if (sgm->psy_usb_type != POWER_SUPPLY_USB_TYPE_DCP)
+			Charger_Detect_Release();
+err:
+	if (sgm->charger)
+		power_supply_changed(sgm->charger);
+	mutex_unlock(&sgm41543_type_det_lock);
+	return;
+}
+
 static u8 sgm4154x_get_charging_status(struct sgm4154x_device *sgm)
 {
 	int ret = 0;
@@ -1391,7 +1513,9 @@ static int sgm4154x_charger_set_property(struct power_supply *psy,
 		enum power_supply_property prop,
 		const union power_supply_propval *val)
 {
-	//struct sgm4154x_device *sgm = power_supply_get_drvdata(psy);
+#if IS_ENABLED(CONFIG_CHARGER_SGM415XX)
+	struct sgm4154x_device *sgm = power_supply_get_drvdata(psy);
+#endif
 	int ret = -EINVAL;
 
 	switch (prop) {
@@ -1401,6 +1525,11 @@ static int sgm4154x_charger_set_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		ret = sgm4154x_set_ichrg_curr(s_chg_dev_otg, val->intval);
 		break;
+#if IS_ENABLED(CONFIG_CHARGER_SGM415XX)
+	case POWER_SUPPLY_PROP_ONLINE:
+		sgm4151_update_chg_type(sgm,val->intval);
+		break;
+#endif
 /*	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 		sgm4154x_charging_switch(s_chg_dev_otg,val->intval);		
 		break;
@@ -1578,6 +1707,16 @@ static bool sgm4154x_state_changed(struct sgm4154x_device *sgm,
 		);
 }
 #endif
+static bool sgm4154x_dpdm_detect_is_done(struct sgm4154x_device * sgm)
+{
+	u8 chrg_stat;
+	int ret;
+	ret = sgm4154x_read_reg(sgm, SGM4154x_INPUT_DET, &chrg_stat);
+	if(ret) {
+		dev_err(sgm->dev, "Check DPDM detecte error\n");
+	}
+	return (chrg_stat&SGM4154x_DPDM_ONGOING)?true:false;
+}
 
 static void sgm4154x_rerun_apsd_work_func(struct work_struct *work)
 {
@@ -1997,7 +2136,11 @@ static int sgm4154x_hw_init(struct sgm4154x_device *sgm)
 	ret = sgm4154x_set_recharge_volt(sgm, 200);//100~200mv
 	if (ret)
 		goto err_out;
-	
+#if IS_ENABLED(CONFIG_CHARGER_SGM415XX)
+	ret = sgm4154x_set_vindpm_iindpm_int_enable(sgm,false);
+	if (ret)
+		goto err_out;
+#endif
 	dev_notice(sgm->dev, "ichrg_curr:%d prechrg_curr:%d chrg_vol:%d"
 		" term_curr:%d input_curr_lim:%d",
 		bat_info.constant_charge_current_max_ua,
