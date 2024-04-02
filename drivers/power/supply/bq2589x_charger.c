@@ -86,10 +86,60 @@ static int pn_data[] = {
 	[PN_SC89890H] = 0x04,
 };
 
+struct bq2589x {
+	struct device *dev;
+	struct i2c_client *client;
+	struct power_supply_desc psy_desc;
+
+	int part_no;
+	int revision;
+//	enum power_supply_usb_type psy_usb_type;
+	const char *chg_dev_name;
+	const char *eint_name;
+
+	bool chg_det_enable;
+	int switch_sel_en_gpio;
+
+	//enum charger_type chg_type;
+	//int chg_type;
+	int psy_usb_type;
+
+	int status;
+	int irq;
+	int otg_enable_pin;
+	int otg_en2_pin;
+	int otg_sgm6111_pin;
+	int otg_ocflag_pin;
+	struct mutex i2c_rw_lock;
+
+	bool charge_enabled;	/* Register bit status */
+	bool power_good;
+	bool sc_power_good;
+	bool slj_power_good;
+	bool float_type_flag;
+
+	struct bq2589x_platform_data *platform_data;
+	struct charger_device *chg_dev;
+	struct delayed_work read_byte_work;
+
+	struct power_supply *psy;
+	struct power_supply *bat_psy;
+	struct power_supply *mtk_chg_psy;
+
+	bool is_input_suspend;
+	struct regulator_dev *otg_rdev;
+};
+
 static const struct charger_properties bq2589x_chg_props = {
 	.alias_name = "bq2589x",
 };
 
+extern int bq2589x_get_usb_type(struct bq2589x *bq, int *type);
+extern int bq2589x_enable_hz(struct charger_device *chgdev, bool en);
+extern int bq2589x_set_enable_otg(bool en);
+extern int bq2589x_is_enable_hiz(struct charger_device *chg_dev, bool *en);
+extern bool bq2589x_is_usb_type(void);
+extern int thub_plug_flag;
 EXPORT_SYMBOL(thub_plug_flag);
 extern void Charger_Detect_Init(void);
 extern void Charger_Detect_Release(void);
@@ -384,6 +434,33 @@ int bq2589x_adc_read_charge_current(struct bq2589x *bq, u32 *cur)
 
 	return ret;
 }
+
+static int bq2589x_set_stat_ctrl(int ctrl)
+{
+	struct charger_device *chg_dev;
+	struct bq2589x *bq;
+	u8 val;
+	val = ctrl;
+
+	chg_dev = get_charger_by_name("primary_chg");
+	if (!chg_dev) {
+		pr_notice("[%s]: get primary charger device failed\n", __func__);
+		return -EINVAL;
+	}
+	bq = charger_get_data(chg_dev);
+	return bq2589x_update_bits(bq, BQ2589X_REG_07, BQ2589X_STAT_CTRL_MASK,
+				   val << BQ2589X_STAT_CTRL_SHIFT);
+}
+
+void bq2589x_enable_statpin(bool en)
+{
+
+	if(en)
+		bq2589x_set_stat_ctrl(BQ2589X_STAT_CTRL_ENABLE);
+	else
+		bq2589x_set_stat_ctrl(BQ2589X_STAT_CTRL_DISABLE);
+}
+EXPORT_SYMBOL_GPL(bq2589x_enable_statpin);
 
 int bq2589x_set_chargecurrent(struct bq2589x *bq, int curr)
 {

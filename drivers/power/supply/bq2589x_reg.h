@@ -433,54 +433,11 @@
 #define BQ2589X_VBUS_UVLO (3600 * 1000)
 #define BQ2589X_VBUS_VALID (4200 * 1000)
 
-struct bq2589x {
-	struct device *dev;
-	struct i2c_client *client;
-	struct power_supply_desc psy_desc;
+// LED
+#define BQ2589X_STAT_CTRL_MASK		0x40
+#define BQ2589X_STAT_CTRL_SHIFT		6
+#define BQ2589X_STAT_CTRL_ENABLE	0
+#define BQ2589X_STAT_CTRL_DISABLE	1
 
-	int part_no;
-	int revision;
-//	enum power_supply_usb_type psy_usb_type;
-	const char *chg_dev_name;
-	const char *eint_name;
-
-	bool chg_det_enable;
-	int switch_sel_en_gpio;
-
-	//enum charger_type chg_type;
-	//int chg_type;
-	int psy_usb_type;
-
-	int status;
-	int irq;
-	int otg_enable_pin;
-	int otg_en2_pin;
-	int otg_sgm6111_pin;
-	int otg_ocflag_pin;
-	struct mutex i2c_rw_lock;
-
-	bool charge_enabled;	/* Register bit status */
-	bool power_good;
-	bool sc_power_good;
-	bool slj_power_good;
-	bool float_type_flag;
-
-	struct bq2589x_platform_data *platform_data;
-	struct charger_device *chg_dev;
-	struct delayed_work read_byte_work;
-
-	struct power_supply *psy;
-	struct power_supply *bat_psy;
-	struct power_supply *mtk_chg_psy;
-
-	bool is_input_suspend;
-	struct regulator_dev *otg_rdev;
-};
-
-extern int bq2589x_get_usb_type(struct bq2589x *bq, int *type);
-extern int bq2589x_enable_hz(struct charger_device *chgdev, bool en);
-extern int bq2589x_set_enable_otg(bool en);
-extern int bq2589x_is_enable_hiz(struct charger_device *chg_dev, bool *en);
-extern bool bq2589x_is_usb_type(void);
-extern int thub_plug_flag;
+void bq2589x_enable_statpin(bool en);
 #endif

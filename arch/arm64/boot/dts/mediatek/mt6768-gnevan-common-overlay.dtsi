@@ -35,6 +35,13 @@
 	prot-region-based-size = <0 0>;
 };
 
+/* LED */
+&charge_leds {
+	compatible = "pmic-leds";
+	label = "charging";
+	default-state = "off";
+};
+
 /* chosen */
 &chosen {
 
