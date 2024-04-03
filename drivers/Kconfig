@@ -8,6 +8,13 @@ config MOTO_MAUI_PROJECT_SWTP_SETING_APART
           Say Y here for distinguish different projects
 # -EKMAUI-7, zhouxin2.wt, RF Bring up swtp cfg, 20220402
 
+# +EKGENEVA-19, longyili.wt, RF Bring up swtp cfg, 20221019
+config MOTO_GENEVA_PROJECT_SWTP_SETING_APART
+        bool "Define for Geneva SWTP seting apart"
+        help
+          Say Y here for distinguish different projects
+# -EKGENEVA-19, longyili.wt, RF Bring up swtp cfg, 20221019
+
 # Keep I/O buses first
 
 source "drivers/amba/Kconfig"
