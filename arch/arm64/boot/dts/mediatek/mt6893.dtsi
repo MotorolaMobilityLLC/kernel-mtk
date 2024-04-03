@@ -2614,7 +2614,7 @@
 
 		disp_pwm: pwm@1100e000 {
 			compatible = "mediatek,disp_pwm0",
-					"mediatek,mt6873-disp-pwm";
+					"mediatek,mt6885-disp-pwm";
 			reg = <0 0x1100e000 0 0x1000>;
 			interrupts = <GIC_SPI 151 IRQ_TYPE_LEVEL_HIGH 0>;
 			#pwm-cells = <2>;
