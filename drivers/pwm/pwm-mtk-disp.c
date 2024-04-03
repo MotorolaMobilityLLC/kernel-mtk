@@ -433,6 +433,17 @@ static const struct mtk_pwm_data mt6799_pwm_data = {
 	.commit_mask = 0x1,
 };
 
+static const struct mtk_pwm_data mt6885_pwm_data = {
+	.enable_mask = BIT(0),
+	.con0 = 0x18,
+	.con0_sel = 0x0,
+	.con1 = 0x1C,
+	.has_commit = true,
+	.commit = 0xC,
+	.commit_mask = 0x1,
+	.need_power_on = true,
+};
+
 static const struct mtk_pwm_data mt8173_pwm_data = {
 	.enable_mask = BIT(0),
 	.con0 = 0x10,
@@ -481,6 +492,7 @@ static const struct of_device_id mtk_disp_pwm_of_match[] = {
 	{ .compatible = "mediatek,mt6765-disp-pwm", .data = &mt6768_pwm_data},
 	{ .compatible = "mediatek,mt6761-disp-pwm", .data = &mt6768_pwm_data},
 	{ .compatible = "mediatek,mt6739-disp-pwm", .data = &mt6799_pwm_data},
+	{ .compatible = "mediatek,mt6885-disp-pwm", .data = &mt6885_pwm_data},
 	{ }
 };
 MODULE_DEVICE_TABLE(of, mtk_disp_pwm_of_match);
