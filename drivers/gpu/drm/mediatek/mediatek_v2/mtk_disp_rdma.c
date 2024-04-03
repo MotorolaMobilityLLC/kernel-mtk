@@ -2029,6 +2029,7 @@ static const struct mtk_disp_rdma_data mt6885_rdma_driver_data = {
 	.has_greq_urg_num = true,
 	.is_support_34bits = false,
 	.dsi_buffer = false,
+	.disable_underflow = true,
 };
 
 static const struct mtk_disp_rdma_data mt6983_rdma_driver_data = {
