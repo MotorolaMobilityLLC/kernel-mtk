@@ -51,6 +51,49 @@ static int __init situation_hub_init(void)
 	sarhub_init();
 #endif
 
+// moto add
+#ifdef CONFIG_MOTO_HUB
+#if IS_ENABLED(CONFIG_MOTO_CHOPCHOP)
+	moto_chopchop_init();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_CAMGEST)
+	moto_camgest_init();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_FLATDOWN)
+	moto_flatdown_init();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_FLATUP)
+	moto_flatup_init();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_FTM)
+	moto_ftm_init();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_GLANCE)
+	moto_glance_init();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_LTS)
+	moto_lts_init();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_LTV)
+	moto_ltv_init();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_OFFBODY)
+	moto_offbody_init();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_STOWED)
+	moto_stowed_init();
+#endif
+#endif
+
 	return 0;
 }
 
@@ -98,6 +141,49 @@ static void __exit situation_hub_exit(void)
 
 #if IS_ENABLED(CONFIG_MTK_SAR_HUB)
 	sarhub_exit();
+#endif
+
+// moto add
+#ifdef CONFIG_MOTO_HUB
+#if IS_ENABLED(CONFIG_MOTO_CHOPCHOP)
+	moto_chopchop_exit();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_CAMGEST)
+	moto_camgest_exit();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_FLATDOWN)
+	moto_flatdown_exit();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_FLATUP)
+	moto_flatup_exit();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_FTM)
+	moto_ftm_exit();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_GLANCE)
+	moto_glance_exit();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_LTS)
+	moto_lts_exit();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_LTV)
+	moto_ltv_exit();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_OFFBODY)
+	moto_offbody_exit();
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_STOWED)
+	moto_stowed_exit();
+#endif
 #endif
 }
 

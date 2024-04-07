@@ -176,6 +176,7 @@ int sar_data_report_t(int32_t value[3], int64_t time_stamp)
 		__pm_wakeup_event(cxt->ws[index], 250);
 	return err;
 }
+EXPORT_SYMBOL_GPL(situation_data_report);
 int sar_data_report(int32_t value[3])
 {
 	return sar_data_report_t(value, 0);
@@ -206,6 +207,7 @@ int mot_camgest_data_report(int32_t value[3])
 
 	return err;
 }
+EXPORT_SYMBOL_GPL(mot_camgest_data_report);
 
 int mot_ltv_data_report(int32_t value[3])
 {
@@ -232,7 +234,7 @@ int mot_ltv_data_report(int32_t value[3])
 
 	return err;
 }
-
+EXPORT_SYMBOL_GPL(mot_ltv_data_report);
 int situation_notify_t(int handle, int64_t time_stamp)
 {
 	return situation_data_report_t(handle, 1, time_stamp);
@@ -549,7 +551,7 @@ static ssize_t situparams_store(struct device *dev, struct device_attribute *att
 		pr_err("sensor_cfg_to_hub OFFBODY fail\n");
 #endif
 #ifdef CONFIG_MOTO_ALSPS
-	//pr_err("[WiSL] sensor_cfg_to_hub PROX cfgtype = %d\n", (int)&cxt->motparams.alsps_params.cfg_type);
+	pr_err("[WiSL] sensor_cfg_to_hub PROX cfgtype = %d\n", cxt->motparams.alsps_params.cfg_type);
 	err = sensor_cfg_to_hub(ID_PROXIMITY, (uint8_t *)&cxt->motparams.alsps_params, sizeof(struct MotAlspsCfgData));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub PROXIMITY fail\n");

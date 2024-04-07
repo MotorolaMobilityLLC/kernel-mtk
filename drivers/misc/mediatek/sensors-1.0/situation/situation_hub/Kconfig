@@ -9,3 +9,15 @@ source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/motion_detect/
 source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/tilt_detector/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/flat/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/sar/Kconfig"
+
+# moto add
+source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/mot_hub/moto_chopchop/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/mot_hub/moto_camgest/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/mot_hub/moto_flatdown/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/mot_hub/moto_flatup/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/mot_hub/moto_ftm/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/mot_hub/moto_glance/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/mot_hub/moto_lts/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/mot_hub/moto_ltv/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/mot_hub/moto_offbody/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/mot_hub/moto_stowed/Kconfig"

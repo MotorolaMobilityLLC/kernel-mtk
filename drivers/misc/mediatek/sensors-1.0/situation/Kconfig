@@ -17,5 +17,11 @@ config MOTO_ALSPS
         help
           Put the device lie on the table.
 
+config MOTO_HUB
+	bool "moto hub for moto gesture"
+	default n
+	help
+	This config is only for kernel-5.10 + sensorhub-1.0 + GKI-1.0
+
 source "drivers/misc/mediatek/sensors-1.0/situation/situation_hub/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/situation/mot/Kconfig"

@@ -52,4 +52,51 @@
 #include "sar/sarhub.h"
 #endif
 
+// moto add
+#ifdef CONFIG_MOTO_HUB
+#if IS_ENABLED(CONFIG_MOTO_CHOPCHOP)
+#include "mot_hub/moto_chopchop/moto_chopchop.h"
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_CAMGEST)
+#include "mot_hub/moto_camgest/moto_camgest.h"
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_FLATDOWN)
+#include "mot_hub/moto_flatdown/moto_flatdown.h"
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_FLATUP)
+#include "mot_hub/moto_flatup/moto_flatup.h"
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_FLATUP)
+#include "mot_hub/moto_flatup/moto_flatup.h"
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_FTM)
+#include "mot_hub/moto_ftm/moto_ftm.h"
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_GLANCE)
+#include "mot_hub/moto_glance/moto_glance.h"
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_LTS)
+#include "mot_hub/moto_lts/moto_lts.h"
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_LTV)
+#include "mot_hub/moto_ltv/moto_ltv.h"
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_OFFBODY)
+#include "mot_hub/moto_offbody/moto_offbody.h"
+#endif
+
+#if IS_ENABLED(CONFIG_MOTO_STOWED)
+#include "mot_hub/moto_stowed/moto_stowed.h"
+#endif
+#endif
+
 #endif
