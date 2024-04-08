@@ -163,6 +163,7 @@
       <elf-symbol name='__fscrypt_prepare_readdir' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x49a6876'/>
       <elf-symbol name='__fscrypt_prepare_rename' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5773bcea'/>
       <elf-symbol name='__fscrypt_prepare_setattr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe747d917'/>
+      <elf-symbol name='__fsnotify_parent' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7179562e'/>
       <elf-symbol name='__generic_file_fsync' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xac3328ab'/>
       <elf-symbol name='__generic_file_write_iter' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x847e9150'/>
       <elf-symbol name='__genphy_config_aneg' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9e61b316'/>
@@ -2955,6 +2956,7 @@
       <elf-symbol name='fsg_common_set_inquiry_string' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6acb4179'/>
       <elf-symbol name='fsg_common_set_sysfs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7e26d4a5'/>
       <elf-symbol name='fsg_config_from_params' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xab6c68ac'/>
+      <elf-symbol name='fsnotify' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x279b411e'/>
       <elf-symbol name='fsstack_copy_inode_size' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xaee85d5c'/>
       <elf-symbol name='fsverity_cleanup_inode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6c85b2c9'/>
       <elf-symbol name='fsverity_enqueue_verify_work' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x57244555'/>
@@ -100579,7 +100581,20 @@
       </function-type>
       <pointer-type-def type-id='72028e1c' size-in-bits='64' id='cc8d835a'/>
       <pointer-type-def type-id='8eb07132' size-in-bits='64' id='cc8decc0'/>
-      <class-decl name='kernfs_open_node' is-struct='yes' visibility='default' is-declaration-only='yes' id='cc9b8e48'/>
+      <class-decl name='kernfs_open_node' size-in-bits='384' is-struct='yes' visibility='default' filepath='fs/kernfs/file.c' line='35' column='1' id='cc9b8e48'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='refcnt' type-id='49178f86' visibility='default' filepath='fs/kernfs/file.c' line='36' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='32'>
+          <var-decl name='event' type-id='49178f86' visibility='default' filepath='fs/kernfs/file.c' line='37' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='poll' type-id='b5ab048f' visibility='default' filepath='fs/kernfs/file.c' line='38' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='256'>
+          <var-decl name='files' type-id='72f469ec' visibility='default' filepath='fs/kernfs/file.c' line='39' column='1'/>
+        </data-member>
+      </class-decl>
       <pointer-type-def type-id='db281924' size-in-bits='64' id='cc9f99b2'/>
       <function-type size-in-bits='64' id='cca56d7c'>
         <parameter type-id='32efad44'/>
@@ -108565,7 +108580,14 @@
         <parameter type-id='95e97e5e'/>
         <return type-id='95e97e5e'/>
       </function-type>
-      <class-decl name='fscrypt_keyring' is-struct='yes' visibility='default' is-declaration-only='yes' id='dd510bd0'/>
+      <class-decl name='fscrypt_keyring' size-in-bits='8256' is-struct='yes' visibility='default' filepath='fs/crypto/keyring.c' line='30' column='1' id='dd510bd0'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='fs/crypto/keyring.c' line='35' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='key_hashtable' type-id='64f4baeb' visibility='default' filepath='fs/crypto/keyring.c' line='38' column='1'/>
+        </data-member>
+      </class-decl>
       <pointer-type-def type-id='a7d74313' size-in-bits='64' id='dd575c43'/>
       <class-decl name='cstate' size-in-bits='1536' is-struct='yes' visibility='default' filepath='include/net/slhc_vj.h' line='128' column='1' id='dd60e4df'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -128985,6 +129007,13 @@
         <parameter type-id='ab7bbd67' name='attr' filepath='fs/crypto/hooks.c' line='120' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__fsnotify_parent' mangled-name='__fsnotify_parent' filepath='fs/notify/fsnotify.c' line='180' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__fsnotify_parent'>
+        <parameter type-id='27675065' name='dentry' filepath='fs/notify/fsnotify.c' line='180' column='1'/>
+        <parameter type-id='3f1a6b60' name='mask' filepath='fs/notify/fsnotify.c' line='180' column='1'/>
+        <parameter type-id='eaa32e2f' name='data' filepath='fs/notify/fsnotify.c' line='180' column='1'/>
+        <parameter type-id='95e97e5e' name='data_type' filepath='fs/notify/fsnotify.c' line='181' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__generic_file_fsync' mangled-name='__generic_file_fsync' filepath='fs/libfs.c' line='1097' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__generic_file_fsync'>
         <parameter type-id='77e79a4b' name='file' filepath='fs/libfs.c' line='1097' column='1'/>
         <parameter type-id='69bf7bee' name='start' filepath='fs/libfs.c' line='1097' column='1'/>
@@ -145001,6 +145030,16 @@
         <parameter type-id='dbce2b7c' name='params' filepath='drivers/usb/gadget/function/f_mass_storage.c' line='3471' column='1'/>
         <parameter type-id='f0981eeb' name='fsg_num_buffers' filepath='drivers/usb/gadget/function/f_mass_storage.c' line='3472' column='1'/>
         <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='fsnotify' mangled-name='fsnotify' filepath='fs/notify/fsnotify.c' line='462' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='fsnotify'>
+        <parameter type-id='3f1a6b60' name='mask' filepath='fs/notify/fsnotify.c' line='462' column='1'/>
+        <parameter type-id='eaa32e2f' name='data' filepath='fs/notify/fsnotify.c' line='462' column='1'/>
+        <parameter type-id='95e97e5e' name='data_type' filepath='fs/notify/fsnotify.c' line='462' column='1'/>
+        <parameter type-id='7e666abe' name='dir' filepath='fs/notify/fsnotify.c' line='462' column='1'/>
+        <parameter type-id='43a0eb6c' name='file_name' filepath='fs/notify/fsnotify.c' line='463' column='1'/>
+        <parameter type-id='7e666abe' name='inode' filepath='fs/notify/fsnotify.c' line='463' column='1'/>
+        <parameter type-id='19c2251e' name='cookie' filepath='fs/notify/fsnotify.c' line='463' column='1'/>
+        <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='fsstack_copy_inode_size' mangled-name='fsstack_copy_inode_size' filepath='fs/stack.c' line='11' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='fsstack_copy_inode_size'>
         <parameter type-id='7e666abe' name='dst' filepath='fs/stack.c' line='11' column='1'/>
@@ -166899,7 +166938,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
