@@ -1282,9 +1282,12 @@ ufs_mtk_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 	int length = 0;
 	void *data_ptr;
 	bool flag;
-	u32 att;
+	u32 att = 0;
 	u8 index = 0;
 	u8 *desc = NULL;
+#if defined(CONFIG_UFSFEATURE)
+	struct ufsf_feature *ufsf;
+#endif
 
 	ioctl_data = kzalloc(sizeof(*ioctl_data), GFP_KERNEL);
 	if (!ioctl_data) {
@@ -1305,8 +1308,12 @@ ufs_mtk_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 
 #if defined(CONFIG_UFSFEATURE)
 	if (ufsf_check_query(ioctl_data->opcode)) {
-		err = ufsf_query_ioctl(ufs_mtk_get_ufsf(hba), lun, buffer,
-				       ioctl_data, UFSFEATURE_SELECTOR);
+		ufsf = ufs_mtk_get_ufsf(hba);
+		if (!ufsf->check_init)
+			err = -ENODEV; /* ufsf is not supported in this device */
+		else
+			err = ufsf_query_ioctl(ufsf, lun, buffer,
+				ioctl_data, UFSFEATURE_SELECTOR);
 		goto out_release_mem;
 	}
 #endif
@@ -1349,6 +1356,12 @@ ufs_mtk_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 						    desc, &length);
 		break;
 	case UPIU_QUERY_OPCODE_READ_ATTR:
+		if (ioctl_data->buf_size != sizeof(u32)) {
+			dev_err(hba->dev, "buffer size must be %d for read attribute\n",
+					sizeof(u32));
+			err = -EINVAL;
+			goto out_release_mem;
+		}
 		switch (ioctl_data->idn) {
 		case QUERY_ATTR_IDN_BOOT_LU_EN:
 		case QUERY_ATTR_IDN_POWER_MODE:
@@ -1378,10 +1391,13 @@ ufs_mtk_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 		break;
 
 	case UPIU_QUERY_OPCODE_WRITE_ATTR:
-		err = copy_from_user(&att,
-				     buffer +
-				     sizeof(struct ufs_ioctl_query_data),
-				     sizeof(u32));
+		if (ioctl_data->buf_size != sizeof(u32)) {
+			dev_err(hba->dev, "buffer size must be %d for write attribute\n",
+					sizeof(u32));
+			err = -EINVAL;
+			goto out_release_mem;
+		}
+		err = copy_from_user(&att, ioctl_data->buffer, sizeof(u32));
 		if (err) {
 			dev_err(hba->dev,
 				"%s: Failed copying buffer from user, err %d\n",
@@ -1409,6 +1425,12 @@ ufs_mtk_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 		break;
 
 	case UPIU_QUERY_OPCODE_READ_FLAG:
+		if (ioctl_data->buf_size != sizeof(bool)) {
+			dev_err(hba->dev, "buffer size must be %d for read flag\n",
+					sizeof(bool));
+			err = -EINVAL;
+			goto out_release_mem;
+		}
 		switch (ioctl_data->idn) {
 		case QUERY_FLAG_IDN_FDEVICEINIT:
 		case QUERY_FLAG_IDN_PERMANENT_WPE:
@@ -1465,7 +1487,7 @@ ufs_mtk_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 	if (err)
 		dev_err(hba->dev, "%s: Failed copying back to user.\n",
 			__func__);
-	err = copy_to_user(buffer + sizeof(struct ufs_ioctl_query_data),
+	err = copy_to_user(ioctl_data->buffer,
 			   data_ptr, ioctl_data->buf_size);
 	if (err)
 		dev_err(hba->dev, "%s: err %d copying back to user.\n",

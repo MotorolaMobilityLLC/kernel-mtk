@@ -297,8 +297,7 @@ int ufsf_query_ioctl(struct ufsf_feature *ufsf, int lun, void __user *buffer,
 
 	switch (opcode) {
 	case UPIU_QUERY_OPCODE_WRITE_DESC:
-		err = copy_from_user(kernel_buf, buffer +
-				     sizeof(struct ufs_ioctl_query_data),
+		err = copy_from_user(kernel_buf, ioctl_data->buffer,
 				     ioctl_data->buf_size);
 		INFO_MSG("buf size %d", ioctl_data->buf_size);
 		ufsf_print_query_buf(kernel_buf, ioctl_data->buf_size);
@@ -362,7 +361,7 @@ copy_buffer:
 		if (err)
 			ERR_MSG("Failed copying back to user.");
 
-		err = copy_to_user(buffer + sizeof(struct ufs_ioctl_query_data),
+		err = copy_to_user(ioctl_data->buffer,
 				   kernel_buf, ioctl_data->buf_size);
 		if (err)
 			ERR_MSG("Fail: copy rsp_buffer to user space.");
