@@ -1160,6 +1160,12 @@ config MTK_BQ25890_LED_SUPPORT
 	help
 	  BQ 25890.
 
+config MTK_SGM41543D_LED_SUPPORT
+	bool "Charger Driver for SGM41543D Charger IC"
+        default n
+	help
+	  SGM41543D.
+
 config MTK_MULTI_BQ_SGM_LED_SUPPORT
 	bool "Charger Driver for bq25890 and sgm41543d control LED"
         default n

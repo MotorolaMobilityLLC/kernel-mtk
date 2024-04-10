@@ -38,7 +38,7 @@
 
 extern void Charger_Detect_Init(void);
 extern void Charger_Detect_Release(void);
-static bool sgm4154x_dpdm_detect_is_done(struct sgm4154x_device * sgm);
+extern int sgm_config_qc_charger(struct charger_device *chg_dev);
 #define SGM4154x_REG_NUM    (0xF)
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 extern int wt6670f_set_voltage(u16 voltage);
@@ -101,6 +101,85 @@ struct charger_properties sgm4154x_chg_props = {
 	.alias_name = SGM41542_NAME,
 };
 
+enum stat_ctrl {
+	STAT_CTRL_STAT,
+	STAT_CTRL_ICHG,
+	STAT_CTRL_INDPM,
+	STAT_CTRL_DISABLE,
+};
+
+struct sgm4154x_device {
+	struct i2c_client *client;
+	struct device *dev;
+	struct power_supply *charger;
+	struct power_supply *usb;
+	struct power_supply *ac;
+	enum power_supply_usb_type psy_usb_type;
+	enum sgm415xx_dev_id dev_id;
+	struct mutex lock;
+	struct mutex i2c_rw_lock;
+	struct mutex attach_lock;
+	atomic_t            attach;
+	struct usb_phy *usb2_phy;
+	struct usb_phy *usb3_phy;
+	struct notifier_block usb_nb;
+	struct work_struct usb_work;
+	unsigned long usb_event;
+	struct regmap *regmap;
+
+	char model_name[I2C_NAME_SIZE];
+	int device_id;
+
+	struct sgm4154x_init_data init_data;
+	struct sgm4154x_state state;
+	u32 watchdog_timer;
+	#if 1//defined(CONFIG_MTK_GAUGE_VERSION) && (CONFIG_MTK_GAUGE_VERSION == 30)
+	struct charger_device *chg_dev;
+	#endif
+	struct regulator_dev *otg_rdev;
+
+	struct delayed_work charge_detect_delayed_work;
+	struct delayed_work charge_monitor_work;
+	struct work_struct rerun_apsd_work;
+	struct delayed_work typec_in_work;
+	struct delayed_work typec_out_work;
+	struct notifier_block pd_nb;
+	bool typec_support;
+	struct tcpc_device *tcpc_dev;
+
+	int typec_apsd_rerun_done;
+	bool mmi_qc3p_rerun_done;
+
+	struct notifier_block pm_nb;
+	bool sgm4154x_suspend_flag;
+        bool mmi_charging_full;
+        bool charge_enabled;
+	u32 usb_voltage;
+	int pulse_cnt;
+
+	struct wakeup_source *charger_wakelock;
+	bool enable_sw_jeita;
+	struct sgm4154x_jeita data;
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+    struct mutex    chgdet_lock;
+        bool            attach;
+	bool            charging_enabled;
+        /*psy*/
+        struct power_supply *psy;
+        struct delayed_work psy_dwork;
+#endif
+};
+
+struct sgm_sysfs_field_info {
+	struct device_attribute attr;
+	enum sgm_property prop;
+	int (*set)(struct sgm4154x_device *sgm,
+		struct sgm_sysfs_field_info *attr, int val);
+	int (*get)(struct sgm4154x_device *sgm,
+		struct sgm_sysfs_field_info *attr, int *val);
+};
+
+static bool sgm4154x_dpdm_detect_is_done(struct sgm4154x_device * sgm);
 /**********************************************************
  *
  *   [Global Variable]
@@ -1370,6 +1449,39 @@ static int sgm4154x_en_pe_current_partern(struct charger_device
 	}
 	return ret;
 }
+
+static int sgm41543_set_stat_ctrl(struct sgm4154x_device *bq, int ctrl)
+{
+	u8 val;
+	int ret = 0;
+	struct charger_device *chg_dev;
+	val = ctrl;
+	chg_dev = get_charger_by_name("primary_chg");
+
+	bq = charger_get_data(chg_dev);
+	if(STAT_CTRL_STAT == val) // ctrl:0 1 3
+		ret = sgm4154x_update_bits(bq, SGM4154x_CHRG_CTRL_0, REG00_STAT_CTRL_MASK, 0);
+	else if(STAT_CTRL_ICHG == val) // STAT_SET[1:0]
+		ret = sgm4154x_update_bits(bq, SGM4154x_CHRG_CTRL_0, REG00_STAT_CTRL_MASK, (REG00_STAT_CTRL_ICHG << REG00_STAT_CTRL_SHIFT));
+	else if(STAT_CTRL_DISABLE == val)//Disable(float pin)
+		ret = sgm4154x_update_bits(bq, SGM4154x_CHRG_CTRL_0, REG00_STAT_CTRL_MASK, (REG00_STAT_CTRL_DISABLE << REG00_STAT_CTRL_SHIFT));
+	else {
+		ret = -1;
+		dev_err(bq->dev, "%s: ctrl:%d ret:%d\n", __func__, val,ret);
+	}
+	dev_err(bq->dev, "%s: ctrl:%d ret:%d\n", __func__, val,ret);
+	return ret;
+}
+
+static struct sgm4154x_device *g_sgm41543;
+void sgm41543_enable_statpin(bool en)
+{
+	if(en)
+		sgm41543_set_stat_ctrl(g_sgm41543, 0);
+	else
+		sgm41543_set_stat_ctrl(g_sgm41543, 3);
+}
+EXPORT_SYMBOL_GPL(sgm41543_enable_statpin);
 
 static int sgm4151_force_dpdm(struct sgm4154x_device *sgm)
 {
