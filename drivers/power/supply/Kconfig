@@ -1153,11 +1153,18 @@ config MTK_BQ2560x_SUPPORT
         default n
 	help
 	  BQ 2560x.
+
 config MTK_BQ25890_LED_SUPPORT
 	bool "Charger Driver for BQ 25890 Charger IC"
         default n
 	help
 	  BQ 25890.
+
+config MTK_MULTI_BQ_SGM_LED_SUPPORT
+	bool "Charger Driver for bq25890 and sgm41543d control LED"
+        default n
+	help
+	  bq25890 sgm41543d
 
 config OPT_FACTORY_IBUS_LIMIT
 	bool "This is config cancunn factorymode set icl support"
