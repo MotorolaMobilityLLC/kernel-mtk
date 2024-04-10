@@ -1121,6 +1121,7 @@ static int sgm4154x_set_hiz_en(struct charger_device *chg_dev, bool hiz_en)
 				  SGM4154x_HIZ_EN, reg_val);
 }
 
+#if !IS_ENABLED(CONFIG_DISABLED_HIZ_MODE)
 static int sgm4154x_enable_power_path(struct charger_device *chg_dev, bool enable)
 {
 	int ret = 0;
@@ -1132,6 +1133,7 @@ static int sgm4154x_enable_power_path(struct charger_device *chg_dev, bool enabl
 
 	return ret;
 }
+#endif
 #if 0
 static int sgm4154x_get_vbus(struct charger_device *chg_dev, u32 *vbus)
 {
@@ -2673,7 +2675,9 @@ static struct charger_ops sgm4154x_chg_ops = {
 	/* Get vbus voltage*/
 	/*.get_vbus_adc = sgm4154x_get_vbus,*/
 	/* Power path */
+#if !IS_ENABLED(CONFIG_DISABLED_HIZ_MODE)
 	.enable_powerpath = sgm4154x_enable_power_path,
+#endif
 	/*.is_powerpath_enabled = sgm4154x_get_is_power_path_enable, */
 
 	/* Hz mode */
