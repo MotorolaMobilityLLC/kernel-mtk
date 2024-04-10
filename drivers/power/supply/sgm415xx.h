@@ -102,6 +102,13 @@ enum attach_type {
 #define SGM4154x_DPDM_ONGOING   BIT(7)
 #define SGM4154x_VBUS_GOOD      BIT(7)
 
+/* control led */
+#define	REG00_STAT_CTRL_MASK		0x60
+#define REG00_STAT_CTRL_SHIFT		5
+#define	REG00_STAT_CTRL_ICHG		1
+#define	REG00_STAT_CTRL_IINDPM		2
+#define	REG00_STAT_CTRL_DISABLE		3
+
 /*sysmin*/
 #define SGM4154x_SYS_MIN_MASK      GENMASK(3, 1)
 #define SGM4154x_SYS_MIN_3200MV    (BIT(1)| BIT(2))
@@ -335,68 +342,6 @@ struct sgm4154x_jeita {
 	int temp_neg_10_thres;
 };
 
-struct sgm4154x_device {
-	struct i2c_client *client;
-	struct device *dev;
-	struct power_supply *charger;	
-	struct power_supply *usb;
-	struct power_supply *ac;
-	enum power_supply_usb_type psy_usb_type;
-	enum sgm415xx_dev_id dev_id;
-	struct mutex lock;
-	struct mutex i2c_rw_lock;
-	struct mutex attach_lock;
-	atomic_t            attach;
-	struct usb_phy *usb2_phy;
-	struct usb_phy *usb3_phy;
-	struct notifier_block usb_nb;
-	struct work_struct usb_work;
-	unsigned long usb_event;
-	struct regmap *regmap;
-
-	char model_name[I2C_NAME_SIZE];
-	int device_id;
-
-	struct sgm4154x_init_data init_data;
-	struct sgm4154x_state state;
-	u32 watchdog_timer;
-	#if 1//defined(CONFIG_MTK_GAUGE_VERSION) && (CONFIG_MTK_GAUGE_VERSION == 30)
-	struct charger_device *chg_dev;
-	#endif
-	struct regulator_dev *otg_rdev;
-
-	struct delayed_work charge_detect_delayed_work;
-	struct delayed_work charge_monitor_work;
-	struct work_struct rerun_apsd_work;
-	struct delayed_work typec_in_work;
-	struct delayed_work typec_out_work;
-	struct notifier_block pd_nb;
-	bool typec_support;
-	struct tcpc_device *tcpc_dev;
-
-	int typec_apsd_rerun_done;
-	bool mmi_qc3p_rerun_done;
-
-	struct notifier_block pm_nb;
-	bool sgm4154x_suspend_flag;
-        bool mmi_charging_full;
-        bool charge_enabled;
-	u32 usb_voltage;
-	int pulse_cnt;
-
-	struct wakeup_source *charger_wakelock;
-	bool enable_sw_jeita;
-	struct sgm4154x_jeita data;
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
-    struct mutex    chgdet_lock;
-        bool            attach;
-	bool            charging_enabled;
-        /*psy*/
-        struct power_supply *psy;
-        struct delayed_work psy_dwork;
-#endif
-};
-
 enum {
 	SGM_POWER_SUPPLY_DP_DM_UNKNOWN = 0,
 	SGM_POWER_SUPPLY_DP_DM_DP_PULSE = 1,
@@ -429,16 +374,7 @@ enum sgm_property {
 	SGM_PROP_CHARGING_ENABLED,
 };
 
-struct sgm_sysfs_field_info {
-	struct device_attribute attr;
-	enum sgm_property prop;
-	int (*set)(struct sgm4154x_device *sgm,
-		struct sgm_sysfs_field_info *attr, int val);
-	int (*get)(struct sgm4154x_device *sgm,
-		struct sgm_sysfs_field_info *attr, int *val);
-};
-
 extern bool wt6670f_is_detect;
-extern int sgm_config_qc_charger(struct charger_device *chg_dev);
+void sgm41543_enable_statpin(bool en);
 
 #endif /* _SGM4154x_CHARGER_H */
