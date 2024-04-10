@@ -1172,6 +1172,12 @@ config MTK_MULTI_BQ_SGM_LED_SUPPORT
 	help
 	  bq25890 sgm41543d
 
+config DISABLED_HIZ_MODE
+	bool "This is config disabled sgm41543d hiz mode"
+        default n
+	help
+	  This is config disabled sgm41543d hiz mode
+
 config OPT_FACTORY_IBUS_LIMIT
 	bool "This is config cancunn factorymode set icl support"
 	default n
