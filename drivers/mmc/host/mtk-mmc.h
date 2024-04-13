@@ -524,11 +524,13 @@ struct msdc_host {
 	bool vqmmc_enabled;
 	u32 latch_ck;
 	u32 hs400_ds_delay;
+	u32 hs400_ds_dly3;
 	u32 hs200_cmd_int_delay; /* cmd internal delay for HS200/SDR104 */
 	u32 hs400_cmd_int_delay; /* cmd internal delay for HS400 */
 	bool hs400_cmd_resp_sel_rising;
 				 /* cmd response sample selection for HS400 */
 	bool hs400_mode;	/* current eMMC will run at hs400 mode */
+	bool hs400_tuning;	/* hs400 mode online tuning */
 	bool internal_cd;	/* Use internal card-detect logic */
 	bool cqhci;		/* support eMMC HW CMDQ */
 	struct msdc_save_para save_para; /* used when gate HCLK */
@@ -537,6 +539,7 @@ struct msdc_host {
 	struct cqhci_host *cq_host;
 	struct reg_oc_msdc sd_oc;
 	int	id;		/* host id */
+	int autok_vcore; /* vcore value when executing autok */
 	u8 card_inserted;  /* the status of card inserted */
 	bool block_bad_card;
 	bool need_tune;
