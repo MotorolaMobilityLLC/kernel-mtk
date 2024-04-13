@@ -2507,6 +2507,8 @@ static void msdc_cqe_disable(struct mmc_host *mmc, bool recovery)
 	struct msdc_host *host = mmc_priv(mmc);
 	unsigned int val = 0;
 
+	val = readl(host->base + MSDC_INT);
+	writel(val, host->base + MSDC_INT);
 	/* disable cmdq irq */
 	sdr_clr_bits(host->base + MSDC_INTEN, MSDC_INT_CMDQ);
 	/* disable busy check */
@@ -3195,10 +3197,15 @@ static int __maybe_unused msdc_runtime_resume(struct device *dev)
 static int __maybe_unused msdc_suspend(struct device *dev)
 {
 	struct mmc_host *mmc = dev_get_drvdata(dev);
+	struct msdc_host *host = mmc_priv(mmc);
+	u32 val;
 	int ret;
 
 	if (mmc->caps2 & MMC_CAP2_CQE) {
 		ret = cqhci_suspend(mmc);
+
+		val = readl(host->base + MSDC_INT);
+		writel(val, host->base + MSDC_INT);
 		if (ret)
 			return ret;
 	}
