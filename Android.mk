@@ -6,6 +6,7 @@ LOCAL_PATH := $(call my-dir)
 ifeq ($(notdir $(LOCAL_PATH)),$(strip $(LINUX_KERNEL_VERSION)))
 
 include $(LOCAL_PATH)/kenv.mk
+include $(LOCAL_PATH)/defconfig.mk
 
 ifeq ($(wildcard $(TARGET_PREBUILT_KERNEL)),)
 KERNEL_MAKE_DEPENDENCIES := $(shell find $(KERNEL_DIR) -name .git -prune -o -type f | sort)
@@ -38,6 +39,7 @@ $(TARGET_KERNEL_CONFIG): $(wildcard kernel/build/*.sh) $(GEN_KERNEL_BUILD_CONFIG
 	if ! cmp -s $@.timestamp $@; then rm -f $@.timestamp; else mv -f $@.timestamp $@; fi
 
 ifeq (yes,$(strip $(BUILD_KERNEL)))
+KERNEL_MAKE_DEPENDENCIES += $(TARGET_DEFCONFIG)
 $(KERNEL_ZIMAGE_OUT): PRIVATE_DIR := $(KERNEL_DIR)
 $(KERNEL_ZIMAGE_OUT): PRIVATE_KERNEL_OUT := $(REL_KERNEL_OUT)
 $(KERNEL_ZIMAGE_OUT): PRIVATE_DIST_DIR := $(REL_KERNEL_OUT)
