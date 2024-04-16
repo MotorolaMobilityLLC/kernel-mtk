@@ -1,0 +1,41 @@
+/* Copyright (c) 2023, Motorola Mobility Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&mtk_leds {
+	/delete-property/ compatible;
+	/delete-property/ led_mode;
+	/delete-property/ gate_enable;
+	/delete-property/ pwm_config;
+
+	compatible = "mediatek,disp-leds";
+	backlight {
+		label = "lcd-backlight";
+		led_mode = <4>;
+		max-brightness = <16380>;
+		max-hw-brightness = <16380>;
+	};
+};
+
+&dsi0 {
+	status = "okay";
+
+	panel1@0 {
+		/delete-property/ compatible;
+		/delete-property/ pm-enable-gpios;
+		/delete-property/ reset-gpios;
+		/delete-property/gate-ic;
+
+		compatible = "mot,dummy,vdo,60hz";
+		reg = <0>;
+		pinctrl-names = "default";
+	};
+};
