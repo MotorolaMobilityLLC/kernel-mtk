@@ -162,3 +162,12 @@ x509.genkey
 
 # Documentation toolchain
 sphinx_*/
+
+# moto generated configs
+/kernel/configs/moto_extra.config
+/kernel/configs/debug-mgk_64_k515-kansas.config
+/kernel/configs/debug-mgk_64_k515.config
+/kernel/configs/moto-mgk_64_k515-df.config
+/kernel/configs/moto-mgk_64_k515-kansas.config
+/kernel/configs/moto-mgk_64_k515.config
+/kernel/configs/factory-mgk_64_k515.config
