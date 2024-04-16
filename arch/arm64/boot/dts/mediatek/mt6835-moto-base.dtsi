@@ -1,0 +1,12 @@
+/*
+ * Things can done here:
+ * 	Add nodes or properties to root node
+ * 	Delete nodes or properties
+*/
+
+/ {
+	utags: utags { };
+	hw: hw { };
+	moto_chg_tcmd: moto_chg_tcmd { };
+};
+

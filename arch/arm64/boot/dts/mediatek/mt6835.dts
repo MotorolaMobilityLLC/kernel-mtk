@@ -8411,3 +8411,6 @@
 	};
 };
 /* AUDIO GPIO standardization end */
+
+/* Motorola base dts override */
+#include "mediatek/mt6835-moto-base.dtsi"
