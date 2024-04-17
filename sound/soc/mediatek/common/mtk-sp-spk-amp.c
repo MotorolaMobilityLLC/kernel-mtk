@@ -42,7 +42,11 @@
 #define MTK_SPK_NAME "Speaker Codec"
 #define MTK_SPK_REF_NAME "Speaker Codec Ref"
 
+#ifdef CONFIG_MTK_GENEVA4G_AUDIO
+static unsigned int mtk_spk_type = 1;
+#else
 static unsigned int mtk_spk_type;
+#endif
 #ifdef CONFIG_SND_I2S1
 static int mtk_spk_i2s_out = MTK_SPK_I2S_1, mtk_spk_i2s_in = MTK_SPK_TINYCONN_I2S_2;
 #else

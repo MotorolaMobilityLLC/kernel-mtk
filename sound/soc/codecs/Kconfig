@@ -1810,12 +1810,6 @@ config SND_SOC_ZX_AUD96P22
 	select REGMAP_I2C
 
 # Amp
-# dengxiaoliang.wt,20220605,bringup SmartPA
-config SND_SMARTPA_AW883XX
-        tristate "Soc Audio for awinic aw883xx series"
-        depends on I2C
-        help
-            This option enables support for aw883xx series Smart PA.
 config SND_SOC_LM4857
 	tristate
 	depends on I2C

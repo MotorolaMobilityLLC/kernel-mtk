@@ -28,11 +28,6 @@
 #define MAX_DEBUG_WRITE_INPUT 256
 #define CODEC_SYS_DEBUG_SIZE (1024 * 32)
 
-#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
-static const char *const hac_function[] = { "Off", "On" };
-extern int HAC_Amp_Change(int bEnable);
-#endif
-
 static ssize_t mt6358_codec_sysfs_read(struct file *filep, struct kobject *kobj,
 				       struct bin_attribute *attr,
 				       char *buf, loff_t offset, size_t size);
@@ -725,49 +720,6 @@ static int mt6358_put_vow(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-#define MT_SOC_ENUM_EXT_ID(xname, xenum, xhandler_get, xhandler_put, id) \
-{       .iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, .device = id,\
-        .info = snd_soc_info_enum_double, \
-        .get = xhandler_get, .put = xhandler_put, \
-        .private_value = (unsigned long)&xenum }
-
-#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
-static int HAC_Amp_Get(struct snd_kcontrol *kcontrol,
-                struct snd_ctl_elem_value *ucontrol)
-{
-        struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
-        struct mt6358_priv *priv = snd_soc_component_get_drvdata(cmpnt);
-        ucontrol->value.integer.value[0] = priv->ana_gain[AUDIO_ANALOG_VOLUME_HAC];
-
-        dev_info(priv->dev, "%s(), get gpio_hac_status %d\n", __func__, ucontrol->value.integer.value[0]);
-        return 0;
-}
-
-static int HAC_Amp_Set(struct snd_kcontrol *kcontrol,
-                struct snd_ctl_elem_value *ucontrol)
-{
-        struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
-        struct mt6358_priv *priv = snd_soc_component_get_drvdata(cmpnt);
-        priv->ana_gain[AUDIO_ANALOG_VOLUME_HAC] = ucontrol->value.integer.value[0];
-
-        if (ucontrol->value.integer.value[0] == 1) {
-                HAC_Amp_Change(1);
-                dev_info(priv->dev, "%s(), set gpio_aud_hac_high\n", __func__);
-        } else {
-                HAC_Amp_Change(0);
-                dev_info(priv->dev, "%s(), set gpio_aud_hac_low\n", __func__);
-        }
-
-        return 0;
-}
-#endif
-
-#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
-static const struct soc_enum dl_pga_enum[] = {
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(hac_function), hac_function),
-};
-#endif
-
 static const DECLARE_TLV_DB_SCALE(playback_tlv, -1000, 100, 0);
 static const DECLARE_TLV_DB_SCALE(capture_tlv, 0, 600, 0);
 
@@ -794,12 +746,6 @@ static const struct snd_kcontrol_new mt6358_snd_controls[] = {
 	/* VOW force phase2 for debug */
 	SOC_SINGLE_BOOL_EXT("VOW Phase2 Switch", 0,
 			    mt6358_get_vow, mt6358_put_vow),
-
-#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
-	MT_SOC_ENUM_EXT_ID("HAC_Amp_Switch", dl_pga_enum[0],
-                           HAC_Amp_Get, HAC_Amp_Set,
-                           AUDIO_ANALOG_VOLUME_HAC),
-#endif
 };
 
 /* MUX */
