@@ -338,7 +338,8 @@ static int mtk_vcodec_enc_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-
+	for (i = 0; i < NUM_MAX_VENC_REG_BASE; i++)
+		dev->enc_reg_base[i] = NULL;
 	while (!of_property_read_string_index(pdev->dev.of_node, "reg-names", i, &name)) {
 		if (!strcmp(MTK_VDEC_REG_NAME_VENC_SYS, name)) {
 			reg_index = VENC_SYS;
