@@ -192,4 +192,6 @@ int mt6768_set_rch_dc_compensation(int value);
 int mt6768_adda_dl_gain_control(bool mute);
 
 int mt6768_print_register(struct mtk_base_afe *afe);
+
+bool mtk_audio_condition_enter_suspend(void);
 #endif

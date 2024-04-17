@@ -11,6 +11,7 @@
 
 #include "mt6768-afe-common.h"
 #include "mt6768-afe-clk.h"
+#include "mtk_spm_sleep.h"
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <mtk_idle.h>
@@ -744,6 +745,8 @@ int mt6768_init_clock(struct mtk_base_afe *afe)
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	mtk_idle_notifier_register(&mt6768_afe_idle_nfb);
+        /* callback for spm fm is playing */
+        RegisterConditionEnterSuspend(mtk_audio_condition_enter_suspend);
 #endif
 
 	return 0;
