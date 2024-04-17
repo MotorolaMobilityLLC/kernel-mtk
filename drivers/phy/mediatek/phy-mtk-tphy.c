@@ -2367,11 +2367,15 @@ static int mtk_phy_power_on(struct phy *phy)
 {
 	struct mtk_phy_instance *instance = phy_get_drvdata(phy);
 	struct mtk_tphy *tphy = dev_get_drvdata(phy->dev.parent);
+	enum phy_mode mode = instance->phy->attrs.mode;
 
 	if (instance->type == PHY_TYPE_USB2) {
 		u2_phy_instance_power_on(tphy, instance);
 		hs_slew_rate_calibrate(tphy, instance);
-		u2_phy_props_set(tphy, instance);
+		if (mode == PHY_MODE_USB_HOST)
+			u2_phy_host_props_set(tphy, instance);
+		else
+			u2_phy_props_set(tphy, instance);
 	} else if (instance->type == PHY_TYPE_USB3) {
 		u3_phy_instance_power_on(tphy, instance);
 	} else if (instance->type == PHY_TYPE_PCIE) {
