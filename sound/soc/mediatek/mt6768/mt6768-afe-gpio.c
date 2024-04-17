@@ -30,10 +30,6 @@ enum mt6768_afe_gpio {
 	MT6768_AFE_GPIO_VOW_DAT_ON,
 	MT6768_AFE_GPIO_VOW_CLK_OFF,
 	MT6768_AFE_GPIO_VOW_CLK_ON,
-#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
-	GPIO_AUD_HAC_HIGH,
-	GPIO_AUD_HAC_LOW,
-#endif
 	MT6768_AFE_GPIO_GPIO_NUM
 };
 
@@ -60,10 +56,6 @@ static struct audio_gpio_attr aud_gpios[MT6768_AFE_GPIO_GPIO_NUM] = {
 	[MT6768_AFE_GPIO_VOW_DAT_ON] = {"vow_dat_miso_on", false, NULL},
 	[MT6768_AFE_GPIO_VOW_CLK_OFF] = {"vow_clk_miso_off", false, NULL},
 	[MT6768_AFE_GPIO_VOW_CLK_ON] = {"vow_clk_miso_on", false, NULL},
-#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
-	[GPIO_AUD_HAC_HIGH] = {"hacamp_pullhigh", false, NULL},
-	[GPIO_AUD_HAC_LOW] = {"hacamp_pulllow", false, NULL},
-#endif
 };
 
 static DEFINE_MUTEX(gpio_request_mutex);
@@ -99,31 +91,6 @@ int mt6768_afe_gpio_init(struct mtk_base_afe *afe)
 
 	return 0;
 }
-
-#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
-int HAC_Amp_Change(int bEnable)
-{
-	int retval = 0;
-	mutex_lock(&gpio_request_mutex);
-	if (bEnable == 1) {
-		if (aud_gpios[GPIO_AUD_HAC_HIGH].gpio_prepare) {
-			retval = pinctrl_select_state(aud_pinctrl,aud_gpios[GPIO_AUD_HAC_HIGH].gpioctrl);
-			if (retval)
-				pr_info("could not set aud_gpios[GPIO_HACAMP_HIGH] pins\n");
-		}
-	} else {
-		if (aud_gpios[GPIO_AUD_HAC_LOW].gpio_prepare) {
-			retval = pinctrl_select_state(aud_pinctrl,aud_gpios[GPIO_AUD_HAC_LOW].gpioctrl);
-			if (retval)
-				pr_info("could not set aud_gpios[GPIO_HACAMP_LOW] pins\n");
-		}
-	}
-	mutex_unlock(&gpio_request_mutex);
-
-	return retval;
-}
-EXPORT_SYMBOL(HAC_Amp_Change);
-#endif
 
 static int mt6768_afe_gpio_select(struct mtk_base_afe *afe,
 				  enum mt6768_afe_gpio type)

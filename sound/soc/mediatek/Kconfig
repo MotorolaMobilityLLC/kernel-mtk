@@ -473,11 +473,6 @@ config MTK_SCP_AUDIO
 	  Select Y if you have such device.
 	  If unsure select "N".
 
-config SND_SMARTPA_AW883XX
-        tristate "Define for Awinic smartpa"
-        help
-          Say Y here for Awinic smartpa
-
 config SND_SMARTPA_AW883XX_I2S3
 	tristate "awinic aw883xx series on i2s3"
 	depends on I2C
@@ -500,6 +495,12 @@ config MTK_HAC_SGM3715_SUPPORT
 	bool "Support for HAC function"
 	help
 	 Select Y if you have such device.
+	 If unsure select "N".
+
+config MTK_GENEVA4G_AUDIO
+	bool "Define for Geneva4G audio"
+	help
+	 Select Y if you have such define.
 	 If unsure select "N".
 
 config SND_SOC_FS16XX
