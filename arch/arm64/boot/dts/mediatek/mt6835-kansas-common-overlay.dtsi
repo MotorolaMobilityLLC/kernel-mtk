@@ -12,3 +12,4 @@
 
 #include "mediatek/mt6835-moto-common-overlay.dtsi"
 #include "mediatek/kansas-display.dtsi"
+#include "mediatek/mt6835-moto-memory.dtsi"
