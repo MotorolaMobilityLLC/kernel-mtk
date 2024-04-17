@@ -18,15 +18,6 @@
 #include <mtk_power_gs_api.h>
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
-#if IS_ENABLED(CONFIG_MTK_SND_SOC_NEW_ARCH)
-#include <mtk-soc-afe-control.h>
-#endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
-
-#if IS_ENABLED(CONFIG_SND_SOC_MTK_SMART_PHONE)
-//#include <mtk-sp-afe-external.h>
-#define ConditionEnterSuspend mtk_audio_condition_enter_suspend
-#endif /* CONFIG_SND_SOC_MTK_SMART_PHONE */
-
 #include <mtk_mcdi_api.h>
 
 #include <mtk_lp_dts.h>
@@ -69,16 +60,6 @@ static int slp_suspend_ops_prepare(void)
 	//printk_deferred("[name:spm&][SLP] @@@@@@@@@@@@@@\tChip_pm_prepare\t@@@@@@@@@@@@@@\n");
 	return 0;
 }
-
-#if IS_ENABLED(CONFIG_MTK_SND_SOC_NEW_ARCH) \
-|| IS_ENABLED(CONFIG_SND_SOC_MTK_SMART_PHONE)
-bool __attribute__ ((weak)) ConditionEnterSuspend(void)
-{
-	printk_deferred("[name:spm&]NO %s !!!\n", __func__);
-	return true;
-}
-#endif /* MTK_SUSPEND_AUDIO_SUPPORT */
-
 #if IS_ENABLED(CONFIG_MTK_SYSTRACKER)
 void __attribute__ ((weak)) systracker_enable(void)
 {
@@ -148,6 +129,43 @@ spm_get_is_infra_pdn(void)
 	printk_deferred("[name:spm&]NO %s !!!\n", __func__);
 	return false;
 }
+
+
+static DEFINE_MUTEX(FM_callback_mutex);
+static bool (*ConditionEnterSuspendCallBack)(void) = NULL;
+int RegisterConditionEnterSuspend(bool (*cb)(void))
+{
+	if (!cb)
+		return -1;
+	mutex_lock(&FM_callback_mutex);
+	if (ConditionEnterSuspendCallBack) {
+		mutex_unlock(&FM_callback_mutex);
+		return -1;
+	}
+	ConditionEnterSuspendCallBack = cb;
+	mutex_unlock(&FM_callback_mutex);
+	return 0;
+}
+EXPORT_SYMBOL(RegisterConditionEnterSuspend);
+
+int UnregisterConditionEnterSuspend(bool (*cb)(void))
+{
+	mutex_lock(&FM_callback_mutex);
+	ConditionEnterSuspendCallBack = NULL;
+	mutex_unlock(&FM_callback_mutex);
+	return 0;
+}
+EXPORT_SYMBOL(UnregisterConditionEnterSuspend);
+
+static bool ConditionEnterSuspend(void)
+{
+	if (!ConditionEnterSuspendCallBack) {
+		pr_info("name:spm&]NO %s !!!\n", __func__);
+		return true;
+	}
+	return ConditionEnterSuspendCallBack();
+}
+
 
 static int slp_suspend_ops_enter(suspend_state_t state)
 {
