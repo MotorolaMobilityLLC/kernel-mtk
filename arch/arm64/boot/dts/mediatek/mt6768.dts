@@ -4297,7 +4297,7 @@ transparent_hugepage=never";
 		compatible = "mediatek,mt6768-vcodec-enc";
 		mediatek,platform = "platform:mt6768";
 		mediatek,ipm = <1>;
-		reg = <0 0x17020000 0 0x1000>;
+		reg = <0 0x17020000 0 0x2000>;
 		reg-names = "VENC_SYS";
 		iommus = <&iommu M4U_PORT_VENC_RCPU>,
 				<&iommu M4U_PORT_VENC_REC>,
