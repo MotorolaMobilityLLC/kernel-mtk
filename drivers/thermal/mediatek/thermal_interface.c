@@ -47,6 +47,10 @@ struct therm_intf_info {
 };
 
 static struct therm_intf_info tm_data;
+
+#define USER_VSENSOR_NUM 6
+static struct user_vsensor_info u_vsensor[USER_VSENSOR_NUM];
+
 void __iomem *thermal_csram_base;
 EXPORT_SYMBOL(thermal_csram_base);
 void __iomem *thermal_apu_mbox_base;
@@ -1117,6 +1121,52 @@ static ssize_t dram_data_rate_show(struct kobject *kobj,
 	return len;
 }
 
+static ssize_t user_vsensor_show(struct kobject *kobj,
+	struct kobj_attribute *attr, char *buf)
+{
+	int i, len = 0;
+
+	for (i = 0; i < USER_VSENSOR_NUM; i++) {
+		if (i == USER_VSENSOR_NUM - 1) {
+			len += snprintf(buf + len, PAGE_SIZE - len, "%d, %s",
+				u_vsensor[i].temp,
+				u_vsensor[i].user_vsensor_name);
+		} else {
+			len += snprintf(buf + len, PAGE_SIZE - len, "%d, %s, ",
+				u_vsensor[i].temp,
+				u_vsensor[i].user_vsensor_name);
+		}
+	}
+
+	return len;
+}
+
+static ssize_t user_vsensor_store(struct kobject *kobj,
+	struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	char cmd[10];
+	int temp = THERMAL_TEMP_INVALID;
+	char name[32];
+	int id, len;
+
+	if (sscanf(buf, "%9s %d %d %s", cmd, &id, &temp, name)
+		== 4) {
+		if (strncmp(cmd, "U_VSENSOR", 9) == 0) {
+			if (id >= 0 && id < USER_VSENSOR_NUM) {
+				u_vsensor[id].temp = temp;
+				len = snprintf(u_vsensor[id].user_vsensor_name, USER_VSENSOR_NAME, "%s", name);
+				if (len < 0 || len >= USER_VSENSOR_NAME)
+					pr_info("user_vsensor_name write fail, %d\n", len);
+				return count;
+			}
+		}
+	}
+
+	pr_info("%s: invalid input\n", __func__);
+
+	return -EINVAL;
+}
+
 static struct kobj_attribute ttj_attr = __ATTR_RW(ttj);
 static struct kobj_attribute power_budget_attr = __ATTR_RW(power_budget);
 static struct kobj_attribute cpu_info_attr = __ATTR_RO(cpu_info);
@@ -1146,6 +1196,7 @@ static struct kobj_attribute vtskin_info_attr = __ATTR_RW(vtskin_info);
 static struct kobj_attribute vtskin_temp_attr = __ATTR_RW(vtskin_temp);
 static struct kobj_attribute catm_p_attr = __ATTR_RW(catm_p);
 static struct kobj_attribute dram_data_rate_attr = __ATTR_RO(dram_data_rate);
+static struct kobj_attribute user_vsensor_attr = __ATTR_RW(user_vsensor);
 
 static struct attribute *thermal_attrs[] = {
 	&ttj_attr.attr,
@@ -1176,6 +1227,7 @@ static struct attribute *thermal_attrs[] = {
 	&vtskin_temp_attr.attr,
 	&catm_p_attr.attr,
 	&dram_data_rate_attr.attr,
+	&user_vsensor_attr.attr,
 	NULL
 };
 static struct attribute_group thermal_attr_group = {

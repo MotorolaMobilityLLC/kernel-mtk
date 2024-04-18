@@ -131,6 +131,13 @@ struct md_info {
 	struct md_thermal_actuator_t *actuator_info;
 };
 
+#define USER_VSENSOR_NAME 32
+
+struct user_vsensor_info {
+	int temp;
+	char user_vsensor_name[USER_VSENSOR_NAME];
+};
+
 extern void update_ap_ntc_headroom(int temp, int polling_interval);
 extern int get_thermal_headroom(enum headroom_id id);
 extern int set_cpu_min_opp(int gear, int opp);
