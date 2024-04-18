@@ -1373,6 +1373,7 @@
 	/* Trustonic Mobicore SW IRQ number 576 = 32 + 544 */
 	mobicore: mobicore {
 		compatible = "trustonic,mobicore";
+		trustonic,real-drv = <1>;
 		interrupts = <GIC_SPI 544 IRQ_TYPE_EDGE_RISING 0>;
 	};
 
