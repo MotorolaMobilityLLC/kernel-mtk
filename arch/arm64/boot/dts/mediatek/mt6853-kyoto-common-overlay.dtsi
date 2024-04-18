@@ -516,6 +516,17 @@
         cd-gpios = <&pio 4 GPIO_ACTIVE_HIGH>;
 };
 
+&u2port0{
+        mediatek,eye-vrt = <7>; /* 0~7 */
+        mediatek,eye-term = <7>; /* 0~7 */
+        mediatek,eye-rev6 = <3>; /* 0~3 */
+        mediatek,eye-disc = <7>; /* 0~8 */
+        mediatek,host-eye-vrt = <6>; /* 0~7 */
+        mediatek,host-eye-term = <4>; /* 0~7 */
+        mediatek,host-eye-rev6 = <3>; /* 0~3 */
+        mediatek,host-eye-disc = <7>; /* 0~8 */
+        status = "okay";
+};
 
 /* disable manual mrdump start */
 &mrdump_ext_rst {
