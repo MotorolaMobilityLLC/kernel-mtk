@@ -231,9 +231,13 @@ bool mddp_f_dev_add_wan_dev(char *dev_name)
 void mddp_f_dev_del_lan_dev(char *dev_name)
 {
 	int i;
-	int active_dev_cnt = mddp_f_lan_dev_cnt_g;
 
-	for (i = 0; (i < MDDP_MAX_LAN_DEV_NUM) && (active_dev_cnt > 0); i++) {
+	if (!mddp_f_lan_dev_cnt_g) {
+		MDDP_F_LOG(MDDP_LL_NOTICE, "%s: lan dev cnt = 0\n", __func__);
+		return;
+	}
+
+	for (i = 0; i < MDDP_MAX_LAN_DEV_NUM; i++) {
 		if (strcmp(mddp_f_lan_dev[i].dev_name, dev_name) == 0)
 			break;
 	}
@@ -261,9 +265,13 @@ void mddp_f_dev_del_lan_dev(char *dev_name)
 void mddp_f_dev_del_wan_dev(char *dev_name)
 {
 	int i;
-	int active_dev_cnt = mddp_f_wan_dev_cnt_g;
 
-	for (i = 0; (i < MDDP_MAX_WAN_DEV_NUM) && (active_dev_cnt > 0); i++) {
+	if (!mddp_f_wan_dev_cnt_g) {
+		MDDP_F_LOG(MDDP_LL_NOTICE, "%s: wan dev cnt = 0\n", __func__);
+		return;
+	}
+
+	for (i = 0; i < MDDP_MAX_WAN_DEV_NUM; i++) {
 		if (strcmp(mddp_f_wan_dev[i].dev_name, dev_name) == 0)
 			break;
 	}
