@@ -66,6 +66,62 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	},
 #endif
 
+#if defined(MOT_TAIPEI_S5KJNS_MIPI_RAW)
+        {
+                SENSOR_DRVNAME_MOT_TAIPEI_S5KJNS_MIPI_RAW,
+                {
+                        {RST, Vol_Low, 1},
+                        {SensorMCLK, Vol_High, 1},
+                        {DOVDD, Vol_High, 0},
+                        {DVDD, Vol_High, 1},
+                        {AVDD, Vol_High, 1},
+                        {DVDD1, Vol_High, 1},
+                        {AFVDD, Vol_High, 1},
+                        {RST, Vol_High, 14},
+                },
+        },
+#endif
+#if defined(MOT_TAIPEI_HI1634Q_MIPI_RAW)
+        {
+                SENSOR_DRVNAME_MOT_TAIPEI_HI1634Q_MIPI_RAW,
+                {
+                        {RST, Vol_Low, 1},
+                        {DOVDD, Vol_High, 0},
+                        {AVDD, Vol_High, 0},
+                        {DVDD, Vol_High, 1},//1.1v
+                        {SensorMCLK, Vol_High, 1},
+                        {RST, Vol_High, 5},
+                },
+        },
+#endif
+#if defined(MOT_TAIPEI_S5K3P9SP04_MIPI_RAW)
+        {
+                SENSOR_DRVNAME_MOT_TAIPEI_S5K3P9SP04_MIPI_RAW,
+                {
+                        {RST, Vol_Low, 1},
+                        {DOVDD, Vol_High, 0},
+                        {AVDD, Vol_High, 0},
+                        {DVDD, Vol_High, 1},//1.05v
+                        {RST, Vol_High, 5},
+                        {SensorMCLK, Vol_High, 2},
+                },
+        },
+#endif
+#if defined(MOT_TAIPEI_S5K4H7_MIPI_RAW)
+        {
+                SENSOR_DRVNAME_MOT_TAIPEI_S5K4H7_MIPI_RAW,
+                {
+                        {RST, Vol_Low, 1},
+                        {SensorMCLK, Vol_High, 1},
+                        {DVDD, Vol_High, 1},
+                        {AVDD, Vol_2800, 1},
+                        {DOVDD, Vol_1800, 1},
+                        {AFVDD, Vol_2800, 1},
+                        {RST, Vol_High, 4},
+                },
+        },
+#endif
+
 #if defined(MOT_CANCUNN_OV50D_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_MOT_CANCUNN_OV50D_MIPI_RAW,

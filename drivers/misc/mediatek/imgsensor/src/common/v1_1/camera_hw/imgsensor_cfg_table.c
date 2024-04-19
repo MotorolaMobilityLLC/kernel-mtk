@@ -65,7 +65,7 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 	},
 	{IMGSENSOR_SENSOR_IDX_NONE}
 };
-#elif  defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT)
+#elif  defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT) || defined(CONFIG_MOT_TAIPEI_CAMERA_PROJECT)
 struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 	{
 		IMGSENSOR_SENSOR_IDX_MAIN,
