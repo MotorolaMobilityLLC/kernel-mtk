@@ -65,6 +65,145 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 	},
 	{IMGSENSOR_SENSOR_IDX_NONE}
 };
+#elif defined(CONFIG_MOT_TAIPEI_CAMERA_PROJECT)
+struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
+        {
+                IMGSENSOR_SENSOR_IDX_MAIN,
+                IMGSENSOR_I2C_DEV_0,
+                {
+                        {IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+                        {IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_GPIO},
+                        //{IMGSENSOR_HW_PIN_AVDD1, IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DVDD1, IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_PDN,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_RST,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_AFVDD, IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_NONE,  IMGSENSOR_HW_ID_NONE},
+                },
+        },
+        {
+                IMGSENSOR_SENSOR_IDX_SUB,
+                IMGSENSOR_I2C_DEV_1,
+                {
+                        {IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+                        {IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_PDN,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_RST,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_NONE, IMGSENSOR_HW_ID_NONE},
+                },
+        },
+        {
+                IMGSENSOR_SENSOR_IDX_MAIN2,
+                IMGSENSOR_I2C_DEV_2,
+                {
+                        {IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+                        {IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_PDN,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_RST,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_AFVDD, IMGSENSOR_HW_ID_REGULATOR},
+                        {IMGSENSOR_HW_PIN_NONE,  IMGSENSOR_HW_ID_NONE},
+                },
+        },
+        {
+                IMGSENSOR_SENSOR_IDX_SUB2,
+                IMGSENSOR_I2C_DEV_3,
+                {
+                        {IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+                        {IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_PDN,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_RST,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_NONE,  IMGSENSOR_HW_ID_NONE},
+                },
+        },
+        {
+                IMGSENSOR_SENSOR_IDX_MAIN3,
+                IMGSENSOR_I2C_DEV_4,
+                {
+                        {IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+                        {IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_REGULATOR},
+                        {IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_REGULATOR},
+                        {IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_PDN,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_RST,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_NONE,  IMGSENSOR_HW_ID_NONE},
+                },
+        },
+        {
+                IMGSENSOR_SENSOR_IDX_SUB3,
+                IMGSENSOR_I2C_DEV_5,
+                {
+                        {IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+                        {IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_REGULATOR},
+                        {IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_PDN,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_RST,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_NONE,  IMGSENSOR_HW_ID_NONE},
+                },
+        },
+        {
+                IMGSENSOR_SENSOR_IDX_MAIN4,
+                IMGSENSOR_I2C_DEV_6,
+                {
+                        {IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+                        {IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_WL2868},
+                        {IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_WL2868},
+                        {IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_PDN,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_RST,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_NONE,  IMGSENSOR_HW_ID_NONE},
+                },
+        },
+        {
+                IMGSENSOR_SENSOR_IDX_SUB4,
+                IMGSENSOR_I2C_DEV_7,
+                {
+                        {IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+                        {IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_REGULATOR},
+                        {IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_PDN,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_RST,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_NONE,  IMGSENSOR_HW_ID_NONE},
+                },
+        },
+        {
+                IMGSENSOR_SENSOR_IDX_MAIN5,
+                IMGSENSOR_I2C_DEV_7,
+                {
+                        {IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+                        {IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_REGULATOR},
+                        {IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_PDN,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_RST,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_NONE,  IMGSENSOR_HW_ID_NONE},
+                },
+        },
+        {
+                IMGSENSOR_SENSOR_IDX_SUB6,
+                IMGSENSOR_I2C_DEV_7,
+                {
+                        {IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+                        {IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_REGULATOR},
+                        {IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_PDN,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_RST,   IMGSENSOR_HW_ID_GPIO},
+                        {IMGSENSOR_HW_PIN_NONE,  IMGSENSOR_HW_ID_NONE},
+                },
+        },
+
+        {IMGSENSOR_SENSOR_IDX_NONE}
+};
 #elif  defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT)
 struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 	{

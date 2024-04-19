@@ -13,7 +13,7 @@
 #include "mediatek/mt6855-moto-common-overlay.dtsi"
 #include <dt-bindings/gpio/gpio.h>
 #include "mediatek/taipei-display.dtsi"
-#include "mediatek/mt6855_cancunf_camera_overlay.dtsi"
+#include "mediatek/mt6855_taipei_camera_overlay.dtsi"
 #include "mediatek/cancunf-sar.dtsi"
 #include "mediatek/cancunf-audio.dtsi"
 #include "mediatek/mt6855-moto-cancunf-fps.dtsi"
