@@ -22,7 +22,7 @@ char * const imgsensor_hw_pin_names[] = {
 	"vcamafvdd",
 	"vcamaf",
 	"vcamd",
-#if defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT) || defined(CONFIG_MOT_CANCUNN_CAMERA_PROJECT)
+#if defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT) || defined(CONFIG_MOT_CANCUNN_CAMERA_PROJECT) || defined(CONFIG_MOT_TAIPEI_CAMERA_PROJECT)
 	"vcamd1",
 #endif
 	"vcamio",
