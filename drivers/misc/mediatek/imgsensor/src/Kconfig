@@ -73,6 +73,11 @@ config  MOT_CANCUNF_CAMERA_PROJECT
         help
           Used to distinguish project-driver code from other projects.
 
+config  MOT_TAIPEI_CAMERA_PROJECT
+        tristate "set taipei camera driver"
+        help
+          Used to distinguish project-driver code from other projects.
+
 config  MOT_CANCUNN_CAMERA_PROJECT
         tristate "set cancunn camera driver"
         help
