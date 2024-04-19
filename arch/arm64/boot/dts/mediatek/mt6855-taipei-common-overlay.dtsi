@@ -12,7 +12,7 @@
 
 #include "mediatek/mt6855-moto-common-overlay.dtsi"
 #include <dt-bindings/gpio/gpio.h>
-#include "mediatek/cancunf-display.dtsi"
+#include "mediatek/taipei-display.dtsi"
 #include "mediatek/mt6855_cancunf_camera_overlay.dtsi"
 #include "mediatek/cancunf-sar.dtsi"
 #include "mediatek/cancunf-audio.dtsi"
@@ -36,12 +36,12 @@
      sec-nfc@27 {
 		compatible = "sec-nfc";
 		reg = <0x27>;
-		
+
 		sec-nfc,ven-gpio = <&pio 161 0>;
 		sec-nfc,firm-gpio = <&pio 1 0>;
 		sec-nfc,irq-gpio = <&pio 2 0>;
 		sec-nfc,clk_req-gpio = <&pio 160 0>;
-		
+
 		status = "okay";
 	};
 
