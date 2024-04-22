@@ -68,7 +68,7 @@ struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 static const char rf_name[] = "RF_cable";
 #define MAX_RETRY_CNT 30
 
-#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST)|| defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
+#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST)|| defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_TAIPEI_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
 static int swtp_tx_power_mode = SWTP_DO_TX_POWER;
 static ssize_t swtp_gpio_state_show(struct class *class,
 		struct class_attribute *attr,
@@ -255,7 +255,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 		swtp->tx_power_mode = SWTP_NO_TX_POWER;
 	}
 	CCCI_LEGACY_ERR_LOG(-1, SYS, "%s tx_power_mode:%d,gpio_state:%d %d %d\n", __func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2]);
-#elif defined(CONFIG_MOTO_CANCUNF_SWTP_CUST)
+#elif defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_TAIPEI_SWTP_CUST)
 	// modify by wt.liangnengjie for swtp start
 	if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[3] == SWTP_EINT_PIN_PLUG_OUT)) {
 		swtp->tx_power_mode = SWTP_DO_TX_POWER;
@@ -342,7 +342,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 	CCCI_LEGACY_ERR_LOG(-1, SYS,
 		"%s:the end swtp status is %d\n", __func__ , swtp->tx_power_mode);
 #endif
-#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
+#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_TAIPEI_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
 
 
 #ifdef CONFIG_MOTO_BYPSS_RF_CABLE_DETECT_SUPPORT
@@ -355,7 +355,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 	inject_pin_status_event(swtp->curr_mode, rf_name);
 #endif
 
-	#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
+	#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_TAIPEI_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
 	swtp_tx_power_mode = swtp->tx_power_mode;
 	#endif
 
@@ -462,7 +462,7 @@ static void swtp_init_delayed_work(struct work_struct *work)
 		goto SWTP_INIT_END;
 	}
 
-#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
+#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_TAIPEI_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
 	ret = class_register(&swtp_class);
 
 	ret = class_create_file(&swtp_class, &class_attr_swtp_gpio_state);
@@ -563,7 +563,7 @@ int swtp_init(int md_id)
 	INIT_DELAYED_WORK(&swtp_data[md_id].delayed_work,
 		swtp_tx_delayed_work);
 //+EKMAUI-7, zhouxin2.wt, RF Bring up swtp cfg, 20220402
-#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
+#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_TAIPEI_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
 #ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
 #else
@@ -574,7 +574,7 @@ int swtp_init(int md_id)
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
 #endif
 
-	#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
+	#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNF_SWTP_CUST) || defined(CONFIG_MOTO_TAIPEI_SWTP_CUST) || defined(CONFIG_MOTO_MANAUS_SWTP_CUST) || defined(CONFIG_MOTO_CANCUNN_SWTP_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
 	swtp_tx_power_mode = swtp_data[md_id].tx_power_mode;
 	#endif
 
