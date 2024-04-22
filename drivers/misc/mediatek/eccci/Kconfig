@@ -116,6 +116,15 @@ config MOTO_CANCUNF_SWTP_CUST
 	  it is disabled.
 	  The option default disabled.
 
+config MOTO_TAIPEI_SWTP_CUST
+	bool "ECCCI taipei swtp customization"
+	depends on MTK_ECCCI_DRIVER
+	help
+	  This option enables taipei swtp customization, if yes,
+	  then it is supported, if no,
+	  it is disabled.
+	  The option default disabled.
+
 config MOTO_CANCUNN_SWTP_CUST
 	bool "ECCCI cancunn swtp customization"
 	depends on MTK_ECCCI_DRIVER
