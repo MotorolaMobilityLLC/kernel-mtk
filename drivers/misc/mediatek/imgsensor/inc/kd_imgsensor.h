@@ -410,17 +410,6 @@
 #define SENSOR_DRVNAME_MOT_DEVONF_S5K4H7_MIPI_RAW          "mot_devonf_s5k4h7_mipi_raw"
 //end
 
-//Begin: Add sensor id for TAIPEI
-#define MOT_TAIPEI_S5KJNS_SENSOR_ID             0x38ee
-#define SENSOR_DRVNAME_MOT_TAIPEI_S5KJNS_MIPI_RAW          "mot_taipei_s5kjns_mipi_raw"
-#define MOT_TAIPEI_HI1634Q_SENSOR_ID            0x1634
-#define SENSOR_DRVNAME_MOT_TAIPEI_HI1634Q_MIPI_RAW         "mot_taipei_hi1634q_mipi_raw"
-#define MOT_TAIPEI_S5K3P9SP04_SENSOR_ID         0x3109
-#define SENSOR_DRVNAME_MOT_TAIPEI_S5K3P9SP04_MIPI_RAW      "mot_taipei_s5k3p9sp04_mipi_raw"
-#define MOT_TAIPEI_S5K4H7_SENSOR_ID             0x487b
-#define SENSOR_DRVNAME_MOT_TAIPEI_S5K4H7_MIPI_RAW          "mot_taipei_s5k4h7_mipi_raw"
-//end
-
 //Begin: Add sensor id for CANCUNN
 #define MOT_CANCUNN_OV50D_SENSOR_ID              0x565044
 #define SENSOR_DRVNAME_MOT_CANCUNN_OV50D_MIPI_RAW           "mot_cancunn_ov50d_mipi_raw"
