@@ -2261,6 +2261,7 @@ retry:
 			mtk_irq_log_store(__func__, __LINE__);
 #endif
 		if (push_task) {
+			preempt_disable();
 			raw_spin_rq_unlock(rq);
 			stop_one_cpu_nowait(rq->cpu, push_cpu_stop,
 					    push_task, &rq->push_work);
@@ -2268,6 +2269,7 @@ retry:
 			if (mtk_irq_log_store)
 				mtk_irq_log_store(__func__, __LINE__);
 #endif
+			preempt_enable();
 			raw_spin_rq_lock(rq);
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 			if (mtk_irq_log_store)
@@ -2674,9 +2676,11 @@ skip:
 		double_unlock_balance(this_rq, src_rq);
 
 		if (push_task) {
+			preempt_disable();
 			raw_spin_rq_unlock(this_rq);
 			stop_one_cpu_nowait(src_rq->cpu, push_cpu_stop,
 					    push_task, &src_rq->push_work);
+			preempt_enable();
 			raw_spin_rq_lock(this_rq);
 		}
 	}
