@@ -608,6 +608,10 @@ struct mtk_charger {
 	int typec_otp_max_state;
 	int typec_otp_cur_state;
 
+	/*Battery info*/
+	unsigned long		manufacturing_date;
+	unsigned long		first_usage_date;
+
 };
 
 static inline int mtk_chg_alg_notify_call(struct mtk_charger *info,

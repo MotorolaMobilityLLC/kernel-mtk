@@ -3508,9 +3508,94 @@ static ssize_t age_show(struct device *dev,
 }
 static DEVICE_ATTR(age, S_IRUGO, age_show, NULL);
 
+static ssize_t state_of_health_show(struct device *dev,
+			struct device_attribute *attr,
+			char *buf)
+{
+	return scnprintf(buf, CHG_SHOW_MAX_SIZE, "%d\n", mmi_get_battery_age());
+}
+
+static DEVICE_ATTR(state_of_health, S_IRUGO, state_of_health_show, NULL);
+
+static ssize_t first_usage_date_show(struct device *dev,
+			struct device_attribute *attr,
+			char *buf)
+{
+	if (!mmi_info) {
+		pr_err("mmi_info is not initialized\n");
+		return 0;
+	}
+
+	return scnprintf(buf, CHG_SHOW_MAX_SIZE, "%lu\n", mmi_info->first_usage_date);
+}
+
+static ssize_t first_usage_date_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	unsigned long r;
+	unsigned long first_usage_date;
+
+	if (!mmi_info) {
+		pr_err("mmi_info is not initialized\n");
+		return 0;
+	}
+
+	r = kstrtoul(buf, 0, &first_usage_date);
+	if (r) {
+		pr_err("Invalid first_usage_date value = %lu\n", first_usage_date);
+		return 0;
+	}
+
+	mmi_info->first_usage_date = first_usage_date;
+
+	return r ? r : count;
+}
+
+static DEVICE_ATTR(first_usage_date, 0644, first_usage_date_show, first_usage_date_store);
+
+static ssize_t manufacturing_date_show(struct device *dev,
+			struct device_attribute *attr,
+			char *buf)
+{
+	if (!mmi_info) {
+		pr_err("mmi_info is not initialized\n");
+		return 0;
+	}
+
+	return scnprintf(buf, CHG_SHOW_MAX_SIZE, "%lu\n", mmi_info->manufacturing_date);
+}
+
+static ssize_t manufacturing_date_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	unsigned long r;
+	unsigned long manufacturing_date;
+
+	if (!mmi_info) {
+		pr_err("mmi_info is not initialized\n");
+		return 0;
+	}
+
+	r = kstrtoul(buf, 0, &manufacturing_date);
+	if (r) {
+		pr_err("Invalid manufacturing_date value = %lu\n", manufacturing_date);
+		return 0;
+	}
+
+	mmi_info->manufacturing_date = manufacturing_date;
+
+	return r ? r : count;
+}
+static DEVICE_ATTR(manufacturing_date, 0644, manufacturing_date_show, manufacturing_date_store);
+
 static struct attribute * mmi_g[] = {
 	&dev_attr_charge_rate.attr,
 	&dev_attr_age.attr,
+	&dev_attr_state_of_health.attr,
+	&dev_attr_manufacturing_date.attr,
+	&dev_attr_first_usage_date.attr,
 	NULL,
 };
 
