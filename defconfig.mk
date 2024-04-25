@@ -45,7 +45,7 @@ endif
 DEFCONFIG_OVERLAYS = $(wildcard $(PRODUCT_SPECIFIC_DEFCONFIGS))
 $(foreach config, $(DEFCONFIG_OVERLAYS), $(shell ln -sf $(abspath $(config)) $(KERNEL_DIR)/kernel/configs/))
 
-KERNEL_DEFCONFIG_OVERLAYS := $(notdir $(DEFCONFIG_OVERLAYS))
+KERNEL_DEFCONFIG_OVERLAYS += $(notdir $(DEFCONFIG_OVERLAYS))
 
 define do-make-defconfig
 	$(hide) mkdir -p $(dir $(1))
