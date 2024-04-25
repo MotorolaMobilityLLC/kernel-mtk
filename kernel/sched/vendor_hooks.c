@@ -128,3 +128,4 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_sched_setaffinity_early);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_rvh_update_rt_rq_load_avg);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_rvh_set_task_comm);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_mmput);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_reweight_entity);
