@@ -92,3 +92,8 @@ config  MOT_VICKY_CAMERA_PROJECT
         tristate "set vicky camera driver"
         help
           Used to distinguish project-driver code from other projects.
+
+config  CONFIG_MOTO_GNEVAN_PROJECT_CAMERA
+        tristate "set gnevan camera driver"
+        help
+          Used to distinguish project-driver code from other projects.
