@@ -113,6 +113,13 @@
 /************************************************************************
  *
  ************************************************************************/
+/* Gnevan */
+#define MOT_GNEVAN_S5K4H7_SENSOR_ID                       0x487B
+#define MOT_GNEVAN_SC202CS_SENSOR_ID                       0xeb52
+#define MOT_GNEVAN_S5KJN1_SENSOR_ID                       0x38e1
+#define SENSOR_DRVNAME_MOT_GNEVAN_S5KJN1_MIPI_RAW        "mot_gnevan_s5kjn1_mipi_raw"
+#define SENSOR_DRVNAME_MOT_GNEVAN_SC202CS_MIPI_RAW        "mot_gnevan_sc202cs_mipi_raw"
+#define SENSOR_DRVNAME_MOT_GNEVAN_S5K4H7_MIPI_RAW        "mot_gnevan_s5k4h7_mipi_raw"
 /* SENSOR CHIP VERSION */
 /*IMX*/
 #define IMX499_SENSOR_ID                        0x0499
