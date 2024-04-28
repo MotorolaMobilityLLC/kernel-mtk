@@ -107,6 +107,31 @@ int wlc_hal_init_hardware(struct chg_alg_device *alg)
 	return 0;
 }
 
+int wlc_hal_get_boot_mode(struct chg_alg_device *alg)
+{
+	struct mtk_charger *info = NULL;
+	struct power_supply *chg_psy = NULL;
+	int ret = 0;
+
+	if (alg == NULL)
+		return -EINVAL;
+
+	chg_psy = power_supply_get_by_name("mtk-master-charger");
+	if (chg_psy == NULL || IS_ERR(chg_psy)) {
+		wlc_err("%s Couldn't get chg_psy\n", __func__);
+		ret = -EINVAL;
+	} else {
+		info = (struct mtk_charger *)power_supply_get_drvdata(chg_psy);
+		if (info == NULL)
+			ret = -EINVAL;
+		else
+			ret = info->bootmode;
+	}
+
+	wlc_dbg("%s boot mode:%d\n", __func__, ret);
+	return ret;
+}
+
 int wlc_hal_get_uisoc(struct chg_alg_device *alg)
 {
 	union power_supply_propval prop;

@@ -279,6 +279,11 @@ struct mmi_ffc_zone  {
 	int		ffc_chg_iterm;
 };
 
+struct mmi_thermal_config {
+	int		temp_c;
+	int		level;
+};
+
 struct mmi_temp_zone {
 	int		temp_c;
 	int		norm_mv;
