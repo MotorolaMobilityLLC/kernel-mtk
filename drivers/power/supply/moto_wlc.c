@@ -436,6 +436,42 @@ static int wlc_sc_set_charger(struct chg_alg_device *alg)
 	return 0;
 }
 
+static int wlc_tcd_set_cur_state(struct thermal_cooling_device *tcd,
+	unsigned long state);
+
+static void mmi_thermal_check_status(struct chg_alg_device *alg)
+{
+	struct mtk_wlc *wlc = dev_get_drvdata(&alg->dev);
+	int boot_mode = wlc_hal_get_boot_mode(alg);
+	int batt_temp = 0;
+	int i = 0;
+	int thermal_level = 0;
+
+	/* 8 = KERNEL_POWER_OFF_CHARGING_BOOT */
+	/* 9 = LOW_POWER_OFF_CHARGING_BOOT */
+	if ((boot_mode != 8 && boot_mode != 9)
+		|| IS_ERR_OR_NULL(wlc->wlc_thermal_com))
+		return;
+
+	batt_temp = wlc_hal_get_batt_temp(alg);
+	if (batt_temp == -EINVAL) {
+		wlc_err("[%s] get batt temp error\n",__func__);
+		return;
+	}
+
+	batt_temp = batt_temp * 10;
+	for (i = 0; i < wlc->num_wlc_thermal_com; i++) {
+		if (batt_temp >= wlc->wlc_thermal_com[i].temp_c)
+			thermal_level = wlc->wlc_thermal_com[i].level;
+		else
+			break;
+	}
+
+	wlc_tcd_set_cur_state(wlc->tcd, thermal_level);
+
+	pr_info("[%s]batt temp %d, level %d\n", __func__, batt_temp, thermal_level);
+}
+
 static int __wlc_run(struct chg_alg_device *alg)
 {
 	struct mtk_wlc *wlc;
@@ -447,6 +483,8 @@ static int __wlc_run(struct chg_alg_device *alg)
 		ret_value = ALG_TA_NOT_SUPPORT;
 		goto out;
 	}
+
+	mmi_thermal_check_status(alg);
 
 	uisoc = wlc_hal_get_uisoc(alg);
 	if((NULL != wls_chg_ops) && true == wlc->cable_ready && uisoc == 100)
@@ -624,6 +662,8 @@ static void mtk_wlc_parse_dt(struct mtk_wlc *wlc, struct device *dev)
 	struct device_node *np = dev->of_node;
 	u32 val;
 	int i;
+	int byte_len;
+	int rc;
 	wlc_dbg("%s \n", __func__);
 	wlc->wls_control_en = of_get_named_gpio(np, "mmi,wls_control_en", 0);
 	if (!gpio_is_valid(wlc->wls_control_en))
@@ -660,6 +700,41 @@ static void mtk_wlc_parse_dt(struct mtk_wlc *wlc, struct device *dev)
 		pr_info("mmi wlc rx table: table %d, current %d mA\n",
 			i, wlc_state_to_current_limit[i]);
 	}
+
+	if (of_find_property(np, "mmi,wlc-thermal-config-com", &byte_len)) {
+		if ((byte_len / sizeof(u32)) % 2) {
+			pr_err("DT error wrong mmi wlc thermal config com\n");
+			wlc->wlc_thermal_com = NULL;
+			return;
+		}
+
+		wlc->wlc_thermal_com = (struct mmi_thermal_config *)
+			devm_kzalloc(dev, byte_len, GFP_KERNEL);
+
+		wlc->num_wlc_thermal_com =
+			byte_len / sizeof(struct mmi_thermal_config);
+
+		if (wlc->wlc_thermal_com == NULL)
+			return;
+
+		rc = of_property_read_u32_array(np,
+				"mmi,wlc-thermal-config-com",
+				(u32 *)wlc->wlc_thermal_com,
+				byte_len / sizeof(u32));
+		if (rc < 0) {
+			pr_err("Couldn't read mmi wlc thermal config com rc = %d\n", rc);
+			wlc->wlc_thermal_com = NULL;
+			return;
+		}
+
+		for (i = 0; i < wlc->num_wlc_thermal_com; i++) {
+			pr_err("wlc thermal config com:Step %d,Temp %d,level %d\n", i,
+				 wlc->wlc_thermal_com[i].temp_c,
+				 wlc->wlc_thermal_com[i].level);
+		}
+	} else
+		wlc->wlc_thermal_com = NULL;
+
 }
 
 int _wlc_get_prop(struct chg_alg_device *alg,
@@ -798,6 +873,9 @@ static int wlc_tcd_set_cur_state(struct thermal_cooling_device *tcd,
 
 	if (state > wlc->max_state)
 		return -EINVAL;
+
+	if (wlc->cur_state == state)
+		return 0;
 
 	wlc->charging_current_limit1 = wlc_state_to_current_limit[state];
 	wlc->cur_state = state;
