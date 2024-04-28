@@ -105,6 +105,9 @@ struct mtk_wlc {
 	struct thermal_cooling_device *tcd;
 	int max_state;
 	int cur_state;
+
+	struct mmi_thermal_config *wlc_thermal_com;
+	int num_wlc_thermal_com;
 };
 struct moto_wls_chg_ops {
 	void *data;
@@ -116,6 +119,7 @@ struct moto_wls_chg_ops {
 };
 
 extern int wlc_hal_init_hardware(struct chg_alg_device *alg);
+extern int wlc_hal_get_boot_mode(struct chg_alg_device *alg);
 extern int wlc_hal_get_uisoc(struct chg_alg_device *alg);
 extern int wlc_hal_get_charger_type(struct chg_alg_device *alg);
 extern int wlc_hal_set_mivr(struct chg_alg_device *alg,
