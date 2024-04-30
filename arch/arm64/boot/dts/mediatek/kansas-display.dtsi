@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Motorola Mobility Inc. All rights reserved.
+/* Copyright (c) 2024, Motorola Mobility Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -10,24 +10,180 @@
  * GNU General Public License for more details.
  */
 
+&dispsys_config {
+	force_dyn_mipi_change;
+};
+
+&i2c6 {
+	id = <6>;
+
+	i2c_lcd_bias_mtk:i2c_lcd_bias@3e {
+		compatible = "ocp,bias_ocp2138";
+		reg = <0x3e>;
+		ocp,lcd-bias-enn-gpio = <&pio 150 0>;
+		ocp,lcd-bias-enp-gpio = <&pio 150 0>;
+		biasp_en_pin = <150>;
+		biasn_en_pin = <150>;
+		status = "okay";
+	};
+
+	aw99703_backlight: sprd_backlight@36{
+		compatible = "awinic,aw99703-bl","ktd,ktd3136";
+		reg = <0x36>;
+		id = <6>;
+		lk_hwen-gpio = <151>;
+		status = "okay";
+
+		aw99703,hwen-gpio = <&pio 151 1>;
+		aw99703,bl-map = <3>; /* brightness map level 1:256,2:1024,3:2048 */
+		aw99703,using-lsb;
+		aw99703,ovp-level = <3>; /* 0:17.5V, 1:24V, 2:31V, 3:38V, 4:41.5V */
+		aw99703,ocp-level = <2>; /* 0:0.9A, 1:1.8A, 2:2.7A, 3:3.4A */
+		aw99703,switch-freq = <1>; /* 1000kHz(default) */
+		aw99703,auto-freq-high = <0x10>;
+		aw99703,auto-freq-low = <0x05>;
+		aw99703,bl-fscal-led = <0x19>; /* 24.8mA */
+		aw99703,bl-channel = <3>;
+		aw99703,turn-on-ramp = <0x00>; /* 512us */
+		aw99703,turn-off-ramp = <0x04>; /* 8ms */
+		aw99703,pwm-trans-dim = <0>; /* 2ms */
+		aw99703,i2c-trans-dim = <1>; /* 128ms */
+		aw99703,skip-first-trans;
+		aw99703,reset-trans-delay;
+		aw99703,pwm-mode = <1>; /* 1 pwm enable,0 PWM disable */
+		aw99703,map-type = <0>; /* 0 exponential, 4 linear */
+		aw99703,current-align-type = <0x01>;
+		aw99703,work-mode = <1>; /* backlight */
+		aw99703,default-brightness = <1023>;
+		aw99703,init-seq-enable = <1>;
+		aw99703,init-seq = <0x02 0x00>,
+				<0x03 0xCF>,
+				<0x04 0x2E>,
+				<0x09 0x00>,
+				<0x05 0x50>,
+				<0x06 0x02>,
+				<0x07 0xE2>,
+				<0x67 0x1C>,
+				<0x25 0x61>,
+				<0x24 0x4C>,
+				<0x23 0x61>,
+				<0x02 0x01>;
+
+                ktd,hwen-gpio = <&pio 151 1>;
+                ktd,using-lsb;
+                ktd,pwm-frequency = <1>; /* 1MHZ */
+                ktd,bl-fscal-led = <0xC9>; /* 25mA */
+                ktd,turn-on-ramp = <0x00>;
+                ktd,turn-off-ramp = <0x04>;
+                ktd,pwm-trans-dim = <0>;
+                ktd,i2c-trans-dim = <128>;
+                ktd,skip-first-trans;
+                ktd,reset-trans-delay;
+                ktd,bl-channel = <3>;
+                ktd,ovp-level = <32>;  /*25.9v or 32v */
+                ktd,ocp-level = <2600>;
+                ktd,switching-frequency = <1>;
+                ktd,inductor-current = <1>;
+                ktd,default-brightness = <1023>;
+                ktd,map-type = <0>; /* 0 exponential, 1 linear */
+                ktd,current-align-type = <0x01>;
+                ktd3136,init-seq-enable = <1>;
+                ktd3136,init-seq = <0x02 0xC9>,
+				<0x03 0x28>,
+				<0x06 0x0F>,
+				<0x04 0x02>,
+				<0x05 0xE2>,
+				<0x07 0x03>,
+				<0x08 0x01>;
+
+	};
+};
+
 &mtk_leds {
 	/delete-property/ compatible;
 	/delete-property/ led_mode;
 	/delete-property/ gate_enable;
 	/delete-property/ pwm_config;
 
-	compatible = "mediatek,disp-leds";
+	compatible = "mediatek,i2c-leds";
+
 	backlight {
 		label = "lcd-backlight";
-		led_mode = <4>;
-		max-brightness = <16380>;
-		max-hw-brightness = <16380>;
+		led_mode = <6>;
+		max-brightness = <2047>;
+		max-hw-brightness = <2047>;
+		default-brightness = <1810>;
 	};
+};
+
+&pio {
+	mtkfb_pins_lcm_bl_en: lcm_bl_en_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_bias_en: lcm_bias_en_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO150__FUNC_GPIO150>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO86__FUNC_GPIO86>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_rst_out0_gpio: lcm_rst_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO86__FUNC_GPIO86>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO85__FUNC_DSI_TE>;
+		};
+	};
+};
+
+&mtkfb {
+	pinctrl-names = "lcm_bl_en_gpio", "lcm_bias_en_gpio",
+		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
+		"mode_te_te";
+	pinctrl-0 = <&mtkfb_pins_lcm_bl_en>;
+	pinctrl-1 = <&mtkfb_pins_lcm_bias_en>;
+	pinctrl-2 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-3 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-4 = <&mtkfb_pins_lcm_dsi_te>;
+	status = "okay";
+};
+
+&dispsys_config {
+	pinctrl-names = "lcm_bl_en_gpio", "lcm_bias_en_gpio",
+		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
+		"mode_te_te";
+	pinctrl-0 = <&mtkfb_pins_lcm_bl_en>;
+	pinctrl-1 = <&mtkfb_pins_lcm_bias_en>;
+	pinctrl-2 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-3 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-4 = <&mtkfb_pins_lcm_dsi_te>;
+	status = "okay";
 };
 
 &dsi0 {
 	status = "okay";
-
+	#address-cells = <1>;
+	#size-cells = <0>;
 	panel1@0 {
 		/delete-property/ compatible;
 		/delete-property/ pm-enable-gpios;
@@ -37,5 +193,19 @@
 		compatible = "mot,dummy,vdo,60hz";
 		reg = <0>;
 		pinctrl-names = "default";
+		port {
+			panel_in1: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+
+	};
+
+	ports {
+		port {
+			dsi_out: endpoint {
+				remote-endpoint = <&panel_in1>;
+			};
+		};
 	};
 };
