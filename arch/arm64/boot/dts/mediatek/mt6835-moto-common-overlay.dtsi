@@ -59,28 +59,6 @@
 		};
 	};
 
-	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO86__FUNC_GPIO86>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	mtkfb_pins_lcm_rst_out0_gpio: lcm_rst_out0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO86__FUNC_GPIO86>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO85__FUNC_DSI_TE>;
-		};
-	};
-
 	mtkfb_pins_lcm_cphy_out_gpio: lcm_cphy_out_gpio {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO133__FUNC_GPIO133>;
@@ -91,89 +69,17 @@
 };
 
 &mtkfb {
-	pinctrl-names = "lcm_led_en1_gpio", "lcm_led_en0_gpio",
-		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"mode_te_te", "lcm_cphy_out_gpio";
+	pinctrl-names = "lcm_led_en1_gpio", "lcm_led_en0_gpio";
 	pinctrl-0 = <&mtkfb_pins_lcm_led_en1>;
 	pinctrl-1 = <&mtkfb_pins_lcm_led_en0>;
-	pinctrl-2 = <&mtkfb_pins_lcm_rst_out1_gpio>;
-	pinctrl-3 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-4 = <&mtkfb_pins_lcm_dsi_te>;
-	pinctrl-5 = <&mtkfb_pins_lcm_cphy_out_gpio>;
 	status = "okay";
 };
 
 &dispsys_config {
 	pinctrl-names =
-		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"mode_te_te", "lcm_cphy_out_gpio";
-	pinctrl-0 = <&mtkfb_pins_lcm_rst_out1_gpio>;
-	pinctrl-1 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-2 = <&mtkfb_pins_lcm_dsi_te>;
-	pinctrl-3 = <&mtkfb_pins_lcm_cphy_out_gpio>;
+		"lcm_cphy_out_gpio";
+	pinctrl-0 = <&mtkfb_pins_lcm_cphy_out_gpio>;
 	status = "okay";
-};
-&dsi0 {
-	status = "okay";
-	#address-cells = <1>;
-	#size-cells = <0>;
-	switch-fps = <0>;
-	switch-mode = "vfp";
-	panel1@0 {
-		compatible = "jdi,nt36672e,vdo,120hz,hfp";
-		reg = <0>;
-		pm-enable-gpios = <&pio 150 0>;
-		reset-gpios = <&pio 86 0>;
-		cphy-sel-gpios = <&pio 133 0>;
-		gate-ic = <4831>;
-		pinctrl-names = "default";
-		port {
-			panel_in1: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-	};
-	panel2@1 {
-		compatible = "jdi,nt36672e,vdo,60hz";
-		reg = <1>;
-		pm-enable-gpios = <&pio 150 0>;
-		reset-gpios = <&pio 86 0>;
-		cphy-sel-gpios = <&pio 133 0>;
-		gate-ic = <4831>;
-		pinctrl-names = "default";
-		port {
-			panel_in2: endpoint {
-				remote-endpoint = <&dsi_out2>;
-			};
-		};
-	};
-	panel3@2 {
-		compatible = "jdi,nt36672e,cphy,vdo,no,dsc";
-		reg = <2>;
-		pm-enable-gpios = <&pio 150 0>;
-		reset-gpios = <&pio 86 0>;
-		cphy-sel-gpios = <&pio 133 0>;
-		gate-ic = <4831>;
-		pinctrl-names = "default";
-		port {
-			panel_in3: endpoint {
-				remote-endpoint = <&dsi_out3>;
-			};
-		};
-	};
-	ports {
-		port {
-			dsi_out: endpoint {
-				remote-endpoint = <&panel_in1>;
-			};
-			dsi_out2: endpoint2 {
-				remote-endpoint = <&panel_in2>;
-			};
-			dsi_out3: endpoint3 {
-				remote-endpoint = <&panel_in3>;
-			};
-		};
-	};
 };
 
 /* usb typec mux start */
