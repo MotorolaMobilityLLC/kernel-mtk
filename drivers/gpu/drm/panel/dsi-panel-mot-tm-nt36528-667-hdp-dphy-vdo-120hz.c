@@ -374,12 +374,12 @@ static struct mtk_panel_params ext_params_60hz = {
 		.para_list[0] = 0x9C,
 	},
 
-/*
 	.panel_ver = 1,
-	.panel_id = 0x01012891,
+	//.panel_id = 0x01012891,
 	.panel_name = "tm_nt36528_vid_667_720",
 	.panel_supplier = "tm",
 	.lcm_index = 0,
+/*
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
 
@@ -532,12 +532,12 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 	return 0;
 }
 
-#if 0
 static enum mtk_lcm_version nt36528_get_lcm_version(void)
 {
 	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
 }
 
+#if 0
 static int panel_cabc_set_cmdq(struct tm_nt36528 *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
 {
 	unsigned int para_count = 0;
@@ -659,7 +659,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.set_backlight_cmdq = tm_nt36528_setbacklight_cmdq,
 	.ext_param_set = mtk_panel_ext_param_set,
-//	.get_lcm_version = nt36528_get_lcm_version,
+	.get_lcm_version = nt36528_get_lcm_version,
 //	.ata_check = panel_ata_check,
 //	.set_gesture_flag = tm_nt36528_set_gesture_flag,
 //	.panel_feature_set = panel_feature_set,
