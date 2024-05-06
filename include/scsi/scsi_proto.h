@@ -169,8 +169,10 @@
 
 /* Vendor specific CDBs start here */
 #define VENDOR_SPECIFIC_CDB 0xc0
+#if IS_ENABLED(CONFIG_MTK_BQ2560x_SUPPORT)
 #define SC_REBOOT	    0xd7
 #define SC_REBOOT_2	    0xd8
+#endif
 
 /*
  *	SCSI command lengths
