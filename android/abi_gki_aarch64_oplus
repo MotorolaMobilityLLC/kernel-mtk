@@ -113,6 +113,8 @@
   free_pages
   free_percpu
   fs_bio_set
+  fsnotify
+  __fsnotify_parent
   fsstack_copy_inode_size
   fsync_bdev
   generic_delete_inode
@@ -232,6 +234,8 @@
   mutex_lock
   mutex_trylock
   mutex_unlock
+  neigh_xmit
+  netif_receive_skb_core
   nf_ct_attach
   nf_ct_delete
   nf_register_net_hook
@@ -311,6 +315,7 @@
   revert_creds
   root_mem_cgroup
   rtc_read_alarm
+  __rtnl_link_register
   __rtnl_link_unregister
   sched_clock
   sched_setscheduler_nocheck
