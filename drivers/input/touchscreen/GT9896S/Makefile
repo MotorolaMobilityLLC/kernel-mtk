@@ -6,7 +6,7 @@
 
 ccflags-$(CONFIG_DRM_MEDIATEK_V2) += -I$(srctree)/drivers/gpu/drm/mediatek/mediatek_v2/
 
-obj-$(CONFIG_TOUCHSCREEN_GOODIX_TS_9896S) += gt9896s.o
+obj-m += gt9896s.o
 gt9896s-y += goodix_ts_spi.o
 gt9896s-y += goodix_ts_core.o
 gt9896s-y += goodix_cfg_bin.o
