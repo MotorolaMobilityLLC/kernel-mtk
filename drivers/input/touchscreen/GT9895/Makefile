@@ -1,6 +1,6 @@
 ccflags-$(CONFIG_DRM_MEDIATEK_V2) += -I$(srctree)/drivers/gpu/drm/mediatek/mediatek_v2/
 
-obj-$(CONFIG_TOUCHSCREEN_GOODIX_TS_9895) += gt9895.o
+obj-m += gt9895.o
 gt9895-y := \
 				goodix_brl_spi.o \
 				goodix_ts_core.o \
