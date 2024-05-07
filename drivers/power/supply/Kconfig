@@ -686,6 +686,24 @@ config CHARGER_BQ25980
 	  Say Y to enable support for the TI BQ25980, BQ25975 and BQ25960
 	  series of fast battery chargers.
 
+config CHARGER_SC89890H
+	tristate "SC89890H battery charger driver"
+	depends on I2C
+	depends on GPIOLIB || COMPILE_TEST
+	select REGMAP_I2C
+	default m
+	help
+	  Say Y to enable support for the SC89890H fast battery chargers.
+
+config CHARGER_SGM41542
+	tristate "SGM41542 battery charger driver"
+	depends on I2C
+	depends on GPIOLIB || COMPILE_TEST
+	select REGMAP_I2C
+	default m
+	help
+	  support SGM41542
+
 config CHARGER_BQ256XX
 	tristate "TI BQ256XX battery charger driver"
 	depends on I2C
