@@ -110,6 +110,9 @@ unsigned int m_new_pq_persist_property[32];
 
 unsigned int g_mml_mode;
 
+unsigned int mipi_drive_volt = 0x08;
+EXPORT_SYMBOL(mipi_drive_volt);
+
 int gCaptureOVLEn;
 int gCaptureWDMAEn;
 int gCapturePriLayerDownX = 20;

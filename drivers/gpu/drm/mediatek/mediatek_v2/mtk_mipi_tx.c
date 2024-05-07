@@ -2775,6 +2775,9 @@ static int mtk_mipi_tx_pll_prepare_mt6879(struct clk_hw *hw)
 	usleep_range(500, 600);
 	writel(0x3FFF0080, mipi_tx->regs + MIPITX_LANE_CON);
 
+	mtk_mipi_tx_update_bits(mipi_tx, MIPITX_VOLTAGE_SEL,
+				FLD_RG_DSI_HSTX_LDO_REF_SEL, mipi_drive_volt << 6);
+
 #ifdef IF_ONE
 	/* Switch OFF each Lane */
 	mtk_mipi_tx_update_bits(mipi_tx, mipi_tx->driver_data->d0_sw_ctl_en, FLD_DSI_SW_CTL_EN,

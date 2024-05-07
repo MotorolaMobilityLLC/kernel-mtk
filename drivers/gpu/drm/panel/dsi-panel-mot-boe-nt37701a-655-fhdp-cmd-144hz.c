@@ -44,6 +44,8 @@
 #define DSC_CFG		34
 #endif
 
+extern unsigned int mipi_drive_volt;
+
 enum panel_version{
 	PANEL_V1 = 1,
 	PANEL_V2,
@@ -1688,6 +1690,8 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 			 | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET
 			 | MIPI_DSI_CLOCK_NON_CONTINUOUS;
 #endif
+
+	mipi_drive_volt = 0x6;
 
 	backlight = of_parse_phandle(dev->of_node, "backlight", 0);
 	if (backlight) {
