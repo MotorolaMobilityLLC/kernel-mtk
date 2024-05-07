@@ -13,3 +13,10 @@
 #include "mediatek/mt6835-moto-common-overlay.dtsi"
 #include "mediatek/kansas-display.dtsi"
 #include "mediatek/mt6835-moto-memory.dtsi"
+#include "mediatek/kansas-charger.dtsi"
+/ {
+switch_chg_eint: switch_chg_eint {
+	};
+tcpc_pd: tcpc_pd {
+	};
+};

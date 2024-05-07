@@ -183,7 +183,11 @@ static int get_pmic_vbus(struct mtk_charger *info, int *vchr)
 	int ret;
 
 	if (chg_psy == NULL)
+#if IS_ENABLED(CONFIG_CHARGER_SC89890H) || IS_ENABLED(CONFIG_CHARGER_SGM41542)
+		chg_psy = power_supply_get_by_name("primary_chg");
+#else
 		chg_psy = power_supply_get_by_name("mtk_charger_type");
+#endif
 	if (chg_psy == NULL || IS_ERR(chg_psy)) {
 		chr_err("%s Couldn't get chg_psy\n", __func__);
 		ret = -1;
