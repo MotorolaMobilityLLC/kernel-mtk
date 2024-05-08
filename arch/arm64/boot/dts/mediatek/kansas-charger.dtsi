@@ -16,8 +16,8 @@
 		status = "okay";
 		compatible = "sgm,sgm41542";
 		reg = <0x3B>;
-		//io-channels = <&pmic_auxadc AUXADC_VCDT>;
-		//io-channel-names = "pmic_vbus";
+                io-channels = <&pmic_adc AUXADC_VCDT>;
+		io-channel-names = "pmic_vbus";
 		sgm,irq-gpio = <&pio 3 IRQ_TYPE_EDGE_FALLING>;     //irq num base on hardware design
 		sgm,chg-en-gpio = <&pio 148 0>;   //gpio num base on hardware design  1.MTK parent node name is pio  2.QUALCOMM parent node name is tlmm or other
 	};
@@ -28,8 +28,10 @@
 		eint_name = "chr_stat";
 		sc,intr-gpio = <&pio 3 IRQ_TYPE_EDGE_FALLING>;
 		charger_name = "primary_chg";
-		//io-channels = <&pmic_auxadc AUXADC_VCDT>;
-		//io-channel-names = "pmic_vbus";
+		io-channels = <&pmic_adc AUXADC_VCDT>;
+		io-channel-names = "pmic_vbus";
+		phys = <&u2port0 PHY_TYPE_USB2>;
+		phy-names = "usb2-phy";
 		sc,sc8989x,ico-en = <0>;
 		sc,sc8989x,hvdcp-en = <0>;
 		sc,sc8989x,auto-dpdm-en = <0>;
