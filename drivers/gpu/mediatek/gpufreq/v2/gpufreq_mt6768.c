@@ -1706,6 +1706,15 @@ static enum gpufreq_posdiv __gpufreq_get_real_posdiv_gpu(void)
 	return posdiv;
 }
 
+/*
+ * Get post divider value
+ * - VCO needs proper post divider value to get corresponding dds value to adjust PLL value.
+ * - e.g: VCO range is 2.0GHz - 4.0GHz, required frequency is 900MHz, so post
+ * divider could be 2(X), 4(3600/4), 8(X), 16(X).
+ * - Special requiremt by DE in different efuse value
+ * - MT6768 efuse value 3'b001:required frequency range is 187.5MHz - 450MHz for post divider 8
+ * - required frequency range is 375MHz - 900MHz for post divider 4
+ */
 static enum gpufreq_posdiv __gpufreq_get_posdiv_by_fgpu(unsigned int freq)
 {
 	/* [MT6768]
@@ -1718,28 +1727,15 @@ static enum gpufreq_posdiv __gpufreq_get_posdiv_by_fgpu(unsigned int freq)
 	 *    |  3800   |  1500   |    8    |   475MHz    |   187.5MHz  | (O)
 	 *    |  3800   |  2000   |   16    |   237.5MHz  |   125MHz    | (X)
 	 */
-	// TOD:GKI
-#if 0
-	struct gpufreq_opp_info *signed_table = g_gpu.signed_table;
-	int i = 0;
+	enum gpufreq_posdiv post_divider_power = POSDIV_POWER_4;
 
-	for (i = 0; i < g_gpu.signed_opp_num; i++) {
-		if (signed_table[i].freq <= freq)
-			return signed_table[i].posdiv;
-	}
-	GPUFREQ_LOGE("fail to find post-divider of Freq: %d", freq);
-#endif
+	if (freq > POSDIV_4_MAX_FREQ)
+		post_divider_power = POSDIV_POWER_2;
+	else if (freq < POSDIV_4_MIN_FREQ)
+		post_divider_power = POSDIV_POWER_8;
 
-	if (freq > POSDIV_2_MAX_FREQ)
-		return POSDIV_POWER_1;
-	else if (freq > POSDIV_4_MAX_FREQ)
-		return POSDIV_POWER_2;
-	else if (freq > POSDIV_8_MAX_FREQ)
-		return POSDIV_POWER_4;
-	else if (freq > POSDIV_16_MAX_FREQ)
-		return POSDIV_POWER_8;
-	else
-		return POSDIV_POWER_16;
+	GPUFREQ_LOGD("@%s: freq = %d, post_divider_power = %d", __func__, freq, post_divider_power);
+	return post_divider_power;
 }
 
 /* API: scale Freq of GPU via CON1 Reg or FHCTL */
