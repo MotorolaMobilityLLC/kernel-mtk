@@ -224,7 +224,6 @@
 /* GPS GPIO standardization end */
 
 #include "mediatek/cust_mt6835_camera_6377_v4l2.dtsi"
-#include "mediatek/cust_mt6835_touch_6377_1080x2400.dtsi"
 
 &pdc {
 	pd_vbus_upper_bound = <12000000>;
