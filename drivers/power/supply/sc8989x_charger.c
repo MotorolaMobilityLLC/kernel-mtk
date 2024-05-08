@@ -28,11 +28,16 @@
 #include <linux/version.h>
 #include <linux/seq_file.h>
 #include <linux/proc_fs.h>
+#include <linux/iio/consumer.h>
+#include <linux/phy/phy.h>
 #if IS_ENABLED(CONFIG_OEM_DEVINFO)
 #include <dev_info.h>
 #endif
 
 #define CONFIG_MTK_CLASS
+
+#define PHY_MODE_BC11_SET 1
+#define PHY_MODE_BC11_CLR 2
 
 #ifdef CONFIG_MTK_CLASS
 #include "../../drivers/power/supply/charger_class.h"
@@ -451,6 +456,45 @@ static int sc8989x_field_write(struct sc8989x_chip *sc,
 }
 
 /*********************CHIP API*********************/
+int Charger_Detect_Init(struct sc8989x_chip *sc)
+{
+	struct phy *phy;
+	int ret;
+	phy = phy_get(sc->dev, "usb2-phy");
+	if (IS_ERR_OR_NULL(phy)) {
+		dev_err(sc->dev, "failed to get usb2-phy\n");
+		return -ENODEV;
+	}
+
+	ret = phy_set_mode_ext(phy, PHY_MODE_USB_DEVICE, PHY_MODE_BC11_SET);
+
+	dev_err(sc->dev, "%s\n", __func__);
+	if (ret)
+		dev_err(sc->dev, "failed to set phy ext mode\n");
+	phy_put(sc->dev, phy);
+	return ret;
+}
+
+int Charger_Detect_Release(struct sc8989x_chip *sc)
+{
+	struct phy *phy;
+	int ret;
+	phy = phy_get(sc->dev, "usb2-phy");
+	if (IS_ERR_OR_NULL(phy)) {
+		dev_err(sc->dev, "failed to get usb2-phy\n");
+		return -ENODEV;
+	}
+
+	ret = phy_set_mode_ext(phy, PHY_MODE_USB_DEVICE, PHY_MODE_BC11_CLR);
+
+	dev_err(sc->dev, "%s\n", __func__);
+	if (ret)
+		dev_err(sc->dev, "failed to set phy ext mode\n");
+	phy_put(sc->dev, phy);
+	return ret;
+
+}
+
 static int sc8989x_set_key(struct sc8989x_chip *sc)
 {
 	regmap_write(sc->regmap, SC8989X_REG7D, SC8989X_KEY1);
@@ -1319,6 +1363,22 @@ static int sc8989x_enable_terminate(struct charger_device *chg_dev, bool en)
 	return ret;
 }
 
+static int sc8989x_get_vbus(struct charger_device *chgdev, u32 *vbus)
+{
+        int ret, value;
+        struct sc8989x_chip *sc = dev_get_drvdata(&chgdev->dev);
+
+        ret = iio_read_channel_processed(sc->vbus, &value);
+        if (ret < 0) {
+                dev_err(sc->dev, "get vbus voltage failed");
+                return -EINVAL;
+        }
+        *vbus = value + R_VBUS_CHARGER_1 * value / R_VBUS_CHARGER_2;
+        *vbus = *vbus * 1000;
+        dev_info(sc->dev, "vbus voltage: %d", *vbus);
+        return ret;
+}
+
 static struct charger_ops sc8989x_chg_ops = {
 	/* Normal charging */
 	.plug_in = sc8989x_plug_in,
@@ -1358,6 +1418,7 @@ static struct charger_ops sc8989x_chg_ops = {
 	.enable_cable_drop_comp = NULL,
 
 	/* ADC */
+	.get_vbus_adc = sc8989x_get_vbus,
 	.get_adc = sc8989x_get_adc,
 	.set_eoc_current = sc8989x_set_eoc_curr,
 	.event = sc8989x_do_event,
@@ -1448,7 +1509,7 @@ static void sc8989x_force_detection_dwork_handler(struct work_struct *work)
 	struct sc8989x_chip *sc = container_of(work,
 				struct sc8989x_chip, force_detect_dwork.work);
 
-	//Charger_Detect_Init();
+	Charger_Detect_Init(sc);
 	ret = sc8989x_force_dpdm(sc);
 	if (ret) {
 		dev_err(sc->dev, "%s: force dpdm failed(%d)\n", __func__, ret);
@@ -1535,7 +1596,7 @@ static int sc8989x_get_charger_type(struct sc8989x_chip *sc)
 #endif /*CONFIG_MTK_CLASS */
 
 	if (reg_val == VBUS_STAT_SDP || reg_val == VBUS_STAT_CDP) {
-		//Charger_Detect_Release();
+		Charger_Detect_Release(sc);
 	}
 
 	dev_info(sc->dev, "%s vbus stat: 0x%02x\n", __func__, reg_val);
@@ -1563,7 +1624,7 @@ static irqreturn_t sc8989x_irq_handler(int irq, void *data)
 
 	if (!prev_vbus_gd && sc->vbus_good) {
 		sc->force_detect_count = 0;
-		//Charger_Detect_Init();
+		Charger_Detect_Init(sc);
 		dev_info(sc->dev, "%s: adapter/usb inserted\n", __func__);
 		sc8989x_set_vindpm_track(sc, SC8989X_TRACK_300);
 		sc8989x_set_charging_current(sc->chg_dev,500000);
@@ -1891,7 +1952,6 @@ static int sc8989x_chg_get_property(struct power_supply *psy,
 	struct sc8989x_chip *sc = power_supply_get_drvdata(psy);
 	int ret = 0;
 	int data = 0;
-	//int value = 0;
 
 	if (!sc) {
 		dev_err(sc->dev, "%s:line%d: NULL pointer!!!\n", __func__, __LINE__);
@@ -1936,15 +1996,8 @@ static int sc8989x_chg_get_property(struct power_supply *psy,
 		val->intval = data * 1000;
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-#if 0
-		ret = iio_read_channel_processed(sc->vbus, &value);
-		if (ret < 0) {
-			dev_err(sc->dev, "get vbus voltage failed");
-			return -EINVAL;
-		}
-		val->intval = value + R_VBUS_CHARGER_1 * value / R_VBUS_CHARGER_2;
-		dev_info(sc->dev, "vbus voltage: %d", val->intval);
-#endif
+		sc8989x_get_vbus(sc->chg_dev, &(val->intval));
+		val->intval /= 1000;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT:
 		ret = sc8989x_get_term_curr(sc, &data);
@@ -2082,13 +2135,11 @@ static int sc8989x_charger_probe(struct i2c_client *client,
 		dev_err(sc->dev, "Failed to initialize regmap\n");
 		return -EINVAL;
 	}
-#if 0
 	sc->vbus = devm_iio_channel_get(sc->dev, "pmic_vbus");
 	if (IS_ERR_OR_NULL(sc->vbus)) {
 		dev_err(sc->dev, "sc89890h get vbus failed\n");
 		return -EPROBE_DEFER;
 	}
-#endif
 
 	for (i = 0; i < ARRAY_SIZE(sc8989x_reg_fields); i++) {
 		const struct reg_field *reg_fields = sc8989x_reg_fields;

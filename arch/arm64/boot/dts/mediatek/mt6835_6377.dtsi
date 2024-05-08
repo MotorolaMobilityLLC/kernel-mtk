@@ -31,10 +31,12 @@
 			uvlo-level = <2600>;
 			io-channels = <&pmic_adc AUXADC_IMP>,
 				      <&pmic_adc AUXADC_IMIX_R>,
-				      <&pmic_adc AUXADC_BATADC>;
+				      <&pmic_adc AUXADC_BATADC>,
+				      <&pmic_adc AUXADC_VCDT>;
 			io-channel-names = "pmic_ptim",
 					   "pmic_imix_r",
-					   "pmic_batadc";
+					   "pmic_batadc",
+					   "pmic_vbus";
 			bootmode = <&chosen>;
 		};
 
