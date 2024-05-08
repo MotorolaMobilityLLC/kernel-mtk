@@ -15,6 +15,7 @@
 #include <linux/power_supply.h>
 #include <mtk_musb.h>
 #include <linux/reboot.h>
+#include <linux/slab.h>
 
 #if IS_ENABLED(CONFIG_MTK_BQ2560x_SUPPORT)
 #include "charger_class.h"
@@ -69,6 +70,14 @@
 #define R_CHARGER_1	330
 #define R_CHARGER_2	39
 
+#define MUTEX_ATTACH_LOCK \
+	if (!info->atm_enabled) \
+		mutex_lock(&info->attach_lock);
+
+#define MUTEX_ATTACH_UNLOCK \
+	if (!info->atm_enabled) \
+		mutex_unlock(&info->attach_lock);
+
 struct mtk_charger_type {
 	struct mt6397_chip *chip;
 	struct regmap *regmap;
@@ -94,6 +103,7 @@ struct mtk_charger_type {
 	int bc12_active;
 	u32 bootmode;
 	u32 boottype;
+	bool atm_enabled;
 	struct mutex attach_lock;
 };
 
@@ -676,12 +686,12 @@ static int psy_chr_type_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-		mutex_lock(&info->attach_lock);
+		MUTEX_ATTACH_LOCK;
 		if (info->type == POWER_SUPPLY_USB_TYPE_UNKNOWN)
 			val->intval = 0;
 		else
 			val->intval = 1;
-		mutex_unlock(&info->attach_lock);
+		MUTEX_ATTACH_UNLOCK;
 		break;
 	case POWER_SUPPLY_PROP_TYPE:
 		 val->intval = info->psy_desc.type;
@@ -770,7 +780,7 @@ static int mt_ac_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-		mutex_lock(&info->attach_lock);
+		MUTEX_ATTACH_LOCK;
 		val->intval = 0;
 		/* Force to 1 in all charger type */
 		if (info->type != POWER_SUPPLY_USB_TYPE_UNKNOWN)
@@ -779,7 +789,7 @@ static int mt_ac_get_property(struct power_supply *psy,
 		if ((info->type == POWER_SUPPLY_USB_TYPE_SDP) ||
 			(info->type == POWER_SUPPLY_USB_TYPE_CDP))
 			val->intval = 0;
-		mutex_unlock(&info->attach_lock);
+		MUTEX_ATTACH_UNLOCK;
 		break;
 	default:
 		return -EINVAL;
@@ -801,13 +811,13 @@ static int mt_usb_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-		mutex_lock(&info->attach_lock);
+		MUTEX_ATTACH_LOCK;
 		if ((info->type == POWER_SUPPLY_USB_TYPE_SDP) ||
 			(info->type == POWER_SUPPLY_USB_TYPE_CDP))
 			val->intval = 1;
 		else
 			val->intval = 0;
-		mutex_unlock(&info->attach_lock);
+		MUTEX_ATTACH_UNLOCK;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		val->intval = 500000;
@@ -867,6 +877,54 @@ static int check_boot_mode(struct mtk_charger_type *info, struct device *dev)
 		}
 	}
 	return 0;
+}
+
+static void mt6357_chg_get_atm_mode(struct mtk_charger_type *info)
+{
+	const char *bootargs_ptr = NULL;
+	char *bootargs_str = NULL;
+	char *idx = NULL;
+	char *kvpair = NULL;
+	struct device_node *n = of_find_node_by_path("/chosen");
+	size_t bootargs_ptr_len = 0;
+	char *value = NULL;
+
+	if (n == NULL)
+		return;
+
+	bootargs_ptr = (char *)of_get_property(n, "mmi,bootconfig", NULL);
+
+	if (!bootargs_ptr) {
+		pr_err("%s: failed to get mmi,bootconfig\n", __func__);
+		goto err_putnode;
+	}
+
+	bootargs_ptr_len = strlen(bootargs_ptr);
+	/* Following operations need a non-const version of bootargs */
+	bootargs_str = kzalloc(bootargs_ptr_len + 1, GFP_KERNEL);
+	if (!bootargs_str)
+		goto err_putnode;
+
+	strlcpy(bootargs_str, bootargs_ptr, bootargs_ptr_len + 1);
+
+	idx = strnstr(bootargs_str, "androidboot.atm=", strlen(bootargs_str));
+	if (idx) {
+		kvpair = strsep(&idx, " ");
+		if (kvpair)
+			if (strsep(&kvpair, "=")) {
+				value = strsep(&kvpair, "\n");
+			}
+	}
+	if (value) {
+		if (!strncmp(value, "enable", strlen("enable"))) {
+			info->atm_enabled = true;
+		}
+		pr_err("%s: value = %s  enable %d\n", __func__, value,info->atm_enabled);
+	}
+	kfree(bootargs_str);
+
+err_putnode:
+	of_node_put(n);
 }
 
 static int mt6357_charger_type_probe(struct platform_device *pdev)
@@ -933,6 +991,9 @@ static int mt6357_charger_type_probe(struct platform_device *pdev)
 	info->usb_cfg.drv_data = info;
 
 	mutex_init(&info->attach_lock);
+
+	mt6357_chg_get_atm_mode(info);
+
 	info->psy = power_supply_register(&pdev->dev, &info->psy_desc,
 			&info->psy_cfg);
 
