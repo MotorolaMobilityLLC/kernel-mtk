@@ -206,12 +206,6 @@
 	vib-supply = <&mt6377_vibr>;
 };
 
-&spi3 {
-	goodix@0 {
-		vtouch-supply = <&mt6377_vtp>;
-	};
-};
-
 &ssusb {
 	vusb33-supply = <&mt6377_vusb>;
 };
