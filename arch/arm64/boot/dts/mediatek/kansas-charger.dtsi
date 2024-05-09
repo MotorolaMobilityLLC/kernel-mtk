@@ -54,6 +54,20 @@
 		sc,sc8989x,force_vindpm = <0>;
 		sc,sc8989x,vindpm = <18>; /*2600 + val * 100*/
 	};
+        aw35615@22 {
+                compatible = "awinic,aw35615";
+                reg = <0x22>;
+                status = "okay";
+                awinic,int_n = <&pio 8 1>;
+                aw35615,snk_pdo_size = <1>; /* set sink pdo num*/
+                aw35615,snk_pdo_vol = <5000>; /* set sink pdo voltage mV*/
+                aw35615,snk_pdo_cur = <2000>; /* set sink pdo current mA*/
+                aw35615,src_pdo_size = <1>; /* set source pdo num*/
+                aw35615,src_pdo_vol = <5000>; /* set source pdo voltage mV*/
+                aw35615,src_pdo_cur = <1000>; /* set source pdo current mA*/
+                aw35615,snk_tog_time = <0x38>; /* set toggle sink time */
+                aw35615,src_tog_time = <0x24>; /* set toggle source time */
+        };
 };
 
 

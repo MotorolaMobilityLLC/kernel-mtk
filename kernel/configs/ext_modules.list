@@ -3,3 +3,4 @@
 ../motorola/kernel/modules/drivers/backlight/aw99703
 ../motorola/kernel/modules/drivers/backlight/ktd3136
 ../motorola/kernel/modules/drivers/regulator/ocp2138
+../motorola/kernel/modules/drivers/usb/typec/aw35615
