@@ -32,8 +32,9 @@ char *gimgsensor_mclk_name[IMGSENSOR_CCF_MAX_NUM] = {
 	"CLK_MIPI_ANA_2B_CG",
 	"CLK_TOP_CAMTM_SEL_CG",
 	"CLK_TOP_CAMTM_208_CG",
+#ifndef SENINF_USE_RPM
 	"CLK_SCP_SYS_CAM",
-
+#endif
 };
 
 
