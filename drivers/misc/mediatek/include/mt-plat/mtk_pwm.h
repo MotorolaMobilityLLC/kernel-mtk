@@ -7,7 +7,7 @@
 #define __MT_PWM_H__
 
 #include <linux/types.h>
-#if defined(CONFIG_MOT_DEVONF_CAMERA_PROJECT) || defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT) || defined(CONFIG_MOT_TAIPEI_CAMERA_PROJECT)
+#if defined(CONFIG_MOT_DEVONF_CAMERA_PROJECT) || defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT) || defined(CONFIG_MOT_TAIPEI_CAMERA_PROJECT) || defined(CONFIG_MOTO_GNEVAN_PROJECT_CAMERA)
 #include "mtk_pwm_hal.h"
 #else
 #include <mt-plat/mtk_pwm_hal.h>

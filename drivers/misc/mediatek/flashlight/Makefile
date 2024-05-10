@@ -24,6 +24,7 @@ obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY_GPIO)  += flashlights-dummy-gpio.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DEVONF)     += flashlights-devonf-pwm.o
 obj-$(CONFIG_MTK_FLASHLIGHT_CANCUNF)     += flashlights-cancunf-pwm.o
 obj-$(CONFIG_MTK_FLASHLIGHT_OCP8132)      += flashlights-ocp8132.o
+obj-$(CONFIG_MTK_FLASHLIGHT_OCP8135)      += flashlights-ocp8135.o
 
 ccflags-$(CONFIG_MTK_FLASHLIGHT_DEBUG)     := -DDEBUG
 ccflags-$(CONFIG_MTK_FLASHLIGHT_PT)        += -DCONFIG_MTK_FLASHLIGHT_PT
