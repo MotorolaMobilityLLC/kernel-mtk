@@ -21,3 +21,9 @@ switch_chg_eint: switch_chg_eint {
 tcpc_pd: tcpc_pd {
 	};
 };
+
+&mt6377keys {
+	home {
+		linux,keycodes = <114>;
+	};
+};
