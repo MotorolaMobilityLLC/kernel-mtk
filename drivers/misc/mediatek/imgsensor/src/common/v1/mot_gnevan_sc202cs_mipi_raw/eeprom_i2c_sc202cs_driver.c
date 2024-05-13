@@ -217,7 +217,7 @@ unsigned int sc202_read_region(struct i2c_client *client, unsigned int addr,
 	memcpy((void*)data,(void*)g_otpMemoryData,size);
 	return size;
 }
-
+EXPORT_SYMBOL(sc202_read_region);
 void sc202_read_otp_data(mot_calibration_info_t * pOtpCalInfo)
 {
 	u8 awbGroupFlag = 0;
