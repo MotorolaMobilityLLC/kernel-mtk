@@ -27,6 +27,7 @@
 		spi-max-frequency = <9600000>;	//4800000,9600000,15000000,19200000
 		novatek,reset-gpio = <&pio 147 0x0>;
 		novatek,irq-gpio = <&pio 4 0x1>;
+		novatek,def-max-resolution = <720 1600>;
 		//novatek,usb_charger;
 		//novatek,psy-name = "battery";
 		//novatek,report_gesture_key;
