@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-
+#include <dt-bindings/iio/mt635x-auxadc.h>
 &i2c5 {
 	sgm4154x_chg: sgm41542@3B {
 		status = "okay";
@@ -102,6 +102,57 @@
 };
 &charger {
 	charger = <&sc8989x_chg>;
+         /* common */
+         battery_cv = <4480000>;
+         max_charger_voltage = <15000000>;
+         min_charger_voltage = <4700000>;
+         max_dmivr_charger_current = <2000000>;
+
+         //enable_pe_plus;
+         //enable_sw_jeita;
+
+         /* charging current */
+         usb_charger_current_suspend = <0>;
+         usb_charger_current_unconfigured = <70000>;
+         usb_charger_current_configured = <500000>;
+         usb_charger_current = <500000>;
+         ac_charger_current = <2050000>;
+         ac_charger_input_current = <2000000>;
+         non_std_ac_charger_current = <1000000>;
+         charging_host_charger_current = <1500000>;
+         apple_1_0a_charger_current = <650000>;
+         apple_2_1a_charger_current = <800000>;
+         ta_ac_charger_current = <3600000>;
+         typec_limit_aicr = <3000000>;
+
+         /* PE */
+         ta_ac_9v_input_current = <2000000>;
+         ta_ac_7v_input_current = <2000000>;
+
+         //mmi config
+         mmi,iterm-ma = <243>;
+         mmi,mmi-temp-zones =
+                        <0 4200 1000  0>,
+                        <10 4250 3000 1000>,
+                        <15 0 3000 3000>,
+                        <25 0 3776 3776>,
+                        <35 0 3776 3776>,
+                        <45 0 3776 3776>,
+                        <60 4200 3776 0>;
+
+	mmi,mmi-ffc-zones =
+                         <4200 243>,
+                         <4480 243>,
+                         <4480 243>,
+                         <4510 518>,
+                         <4510 536>,
+                         <4510 548>,
+                         <4200 243>;
+
+         mmi,enable-charging-limit;
+         mmi,upper-limit-capacity = <65>;
+         mmi,lower-limit-capacity = <60>;
+         mmi,vfloat-comp-uv = <0>;
 };
 
 &mtk_gauge {
