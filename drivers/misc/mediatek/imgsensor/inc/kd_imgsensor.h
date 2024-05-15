@@ -383,6 +383,9 @@
 #define OV16A10_SENSOR_ID                       0x561641
 #define GC02M1B_SENSOR_ID                       0x02e0
 
+#define MOT_KANSAS_S5KJNS_SENSOR_ID                      0x38EE
+#define SENSOR_DRVNAME_MOT_KANSAS_S5KJNS_MIPI_RAW        "mot_kansas_s5kjns_mipi_raw"
+
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
