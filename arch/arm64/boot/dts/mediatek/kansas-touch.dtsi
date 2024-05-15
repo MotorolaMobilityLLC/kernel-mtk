@@ -7,7 +7,7 @@
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
-	//mediatek,pad-select = <0>, <1>, <2>;
+	mediatek,pad-select = <0>, <1>;
 	pinctrl-names = "default", "nt36528_int_active",
 	"nt36528_reset_active", "nt36528_int_suspend",
 	"nt36528_reset_suspend", "nt36528_spi_mode";
@@ -42,6 +42,21 @@
 
 	};
 
+	focaltech@1 {
+		compatible = "focaltech,fts";
+                reg = <1>; //Same as CS ID
+                status = "ok";
+                spi-max-frequency = <9600000>;
+                focaltech,reset-gpio = <&pio 147 0x0>;
+                focaltech,irq-gpio = <&pio 4 0x0>;
+                focaltech,max-touch-number = <10>;
+                focaltech,display-coords = <0 0 720 1604>;
+                //focaltech,report_gesture_key = <59>;
+                //focaltech,supported_gesture_type = <0x06>;
+                focaltech,panel-supplier = "boe_ft8057s";
+                //focaltech,touch-charger-detect-psy-name = "battery";
+                //focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
+	};
 };
 
 &pio {
