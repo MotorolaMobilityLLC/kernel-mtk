@@ -268,7 +268,9 @@ static inline void sgm7220_poll_ctrl(struct sgm7220_chip *chip)
 
 	if (atomic_read(&chip->poll_count) == 0) {
 		atomic_inc(&chip->poll_count);
+#ifndef CONFIG_MTK_ENABLE_GKI_SUPPORT
 		cpu_idle_poll_ctrl(true);
+#endif
 	}
 
 	schedule_delayed_work(
@@ -486,8 +488,11 @@ static void sgm7220_poll_work(struct work_struct *work)
 	struct sgm7220_chip *chip = container_of(
 		work, struct sgm7220_chip, poll_work.work);
 
-	if (atomic_dec_and_test(&chip->poll_count))
+	if (atomic_dec_and_test(&chip->poll_count)){
+#ifndef CONFIG_MTK_ENABLE_GKI_SUPPORT
 		cpu_idle_poll_ctrl(false);
+#endif
+	}
 }
 
 static irqreturn_t sgm7220_intr_handler(int irq, void *data)
