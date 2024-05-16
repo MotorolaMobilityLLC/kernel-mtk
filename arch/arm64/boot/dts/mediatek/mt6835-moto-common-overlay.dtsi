@@ -131,7 +131,7 @@
 	pinctrl-names = "enable", "disable";
 	pinctrl-0 = <&ps_enable>;
 	pinctrl-1 = <&ps_disable>;
-	status = "okay";
+	status = "disabled";
 };
 
 &fusb304 {
