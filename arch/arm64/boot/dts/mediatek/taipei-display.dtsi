@@ -39,17 +39,17 @@
 		hwen-gpio = <&pio 8 1>;
 		boost-ctl = <0x02>;
 		ctl-bank-en = <0x02>;
-		full-scale-current = <0x19>; //25 mA
+		full-scale-current = <0x1C>; //27.4 mA
 		map-mode = <0>; //0x16 : 0 exponential, 1 linear
 		current-align-type = <0x01>;
-		sm5350,default-brightness = <1023>;
+		sm5350,default-brightness = <743>;
 		sm5350,init-seq-enable = <1>;
 		sm5350,init-seq = <0x1A 0x02>,
 				<0x1C 0x0F>,
 				<0x10 0x07>,
 				<0x16 0x00>,
-				<0x18 0x19>,
-				<0x23 0xFF>,
+				<0x18 0x1C>,
+				<0x23 0xd4>,
 				<0x24 0x02>;
 
 		aw99703,hwen-gpio = <&pio 8 1>;
@@ -60,7 +60,7 @@
 		aw99703,switch-freq = <1>; /* 1000kHz(default) */
 		aw99703,auto-freq-high = <0x10>;
 		aw99703,auto-freq-low = <0x05>;
-		aw99703,bl-fscal-led = <0x19>; /* 24.8mA */
+		aw99703,bl-fscal-led = <0x1C>; /* 27.2mA */
 		aw99703,bl-channel = <3>;
 		aw99703,turn-on-ramp = <0x00>; /* 512us */
 		aw99703,turn-off-ramp = <0x04>; /* 8ms */
@@ -72,15 +72,15 @@
 		aw99703,map-type = <0>; /* 0 exponential, 4 linear */
 		aw99703,current-align-type = <0x01>;
 		aw99703,work-mode = <1>; /* backlight */
-		aw99703,default-brightness = <1023>;
+		aw99703,default-brightness = <743>;
 		aw99703,init-seq-enable = <1>;
 		aw99703,init-seq = <0x02 0x00>,
-				<0x03 0xCF>,
+				<0x03 0xE7>,
 				<0x04 0x2E>,
 				<0x09 0x00>,
 				<0x05 0x50>,
-				<0x06 0x02>,
-				<0x07 0xE2>,
+				<0x06 0x04>,
+				<0x07 0xd4>,
 				<0x67 0x1C>,
 				<0x25 0x61>,
 				<0x24 0x4C>,
@@ -90,7 +90,7 @@
                 ktd,hwen-gpio = <&pio 8 1>;
                 ktd,using-lsb;
                 ktd,pwm-frequency = <1>; /* 1MHZ */
-                ktd,bl-fscal-led = <0xC9>; /* 25mA */
+                ktd,bl-fscal-led = <0xE1>; /* 27.4mA */
                 ktd,turn-on-ramp = <0x00>;
                 ktd,turn-off-ramp = <0x04>;
                 ktd,pwm-trans-dim = <0>;
@@ -102,14 +102,14 @@
                 ktd,ocp-level = <2600>;
                 ktd,switching-frequency = <1>;
                 ktd,inductor-current = <1>;
-                ktd,default-brightness = <1023>;
+                ktd,default-brightness = <743>;
                 ktd,map-type = <0>; /* 0 exponential, 1 linear */
                 ktd,current-align-type = <0x01>;
                 ktd3136,init-seq-enable = <1>;
-                ktd3136,init-seq = <0x02 0xC9>,
+                ktd3136,init-seq = <0x02 0xE1>,
 				<0x03 0x28>,
-				<0x06 0x0F>,
-				<0x04 0x02>,
+				<0x06 0x04>,
+				<0x04 0xd4>,
 				<0x05 0xE2>,
 				<0x07 0x03>,
 				<0x08 0x01>;
