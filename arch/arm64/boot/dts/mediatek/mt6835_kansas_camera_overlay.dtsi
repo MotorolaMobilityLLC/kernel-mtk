@@ -72,6 +72,20 @@
 			output-high;
 		};
 	};
+	camera_pins_cam2_avdd_gpio_0: cam2@10 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam2_avdd_gpio_1: cam2@11 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 	camera_pins_cam0_mclk_off: camera_pins_cam0_mclk_off {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO91__FUNC_GPIO91>;
@@ -180,7 +194,8 @@
 			"cam2_mclk_2mA", "cam2_mclk_4mA",
 			"cam2_mclk_6mA", "cam2_mclk_8mA",
 			"cam0_ldo_vcama_0",  "cam0_ldo_vcama_1",
-			"cam0_ldo_vcamd_0",  "cam0_ldo_vcamd_1";
+			"cam0_ldo_vcamd_0",  "cam0_ldo_vcamd_1",
+			"cam2_ldo_vcama_0",  "cam2_ldo_vcama_1";
 
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst_0>;
@@ -208,10 +223,12 @@
 	pinctrl-23 = <&camera_pins_cam0_avdd_gpio_1>;
 	pinctrl-24 = <&camera_pins_cam0_dvdd_gpio_0>;
 	pinctrl-25 = <&camera_pins_cam0_dvdd_gpio_1>;
-
+	pinctrl-26 = <&camera_pins_cam2_avdd_gpio_0>;
+	pinctrl-27 = <&camera_pins_cam2_avdd_gpio_1>;
 	/* main (wide)*/
 	// cam0_vcama-supply = <&rt5133_ldo4>;
 	cam0_vcamio-supply = <&mt6377_vaud18>;
+	cam2_vcamio-supply = <&mt6377_vaud18>;
 	// cam0_vcamd-supply = <&rt5133_ldo8>;
 	// cam0_vcama1-supply = <&rt5133_ldo5>;
 	// cam0_vcamaf-supply = <&rt5133_ldo3>;
@@ -246,14 +263,14 @@
 	cam1_pin_vcama1 = "regulator";
 	cam2_pin_mclk = "mclk";
 	cam2_pin_rst = "gpio";
-	cam2_pin_vcama = "regulator";
+	cam2_pin_vcama = "gpio";
 	cam2_pin_vcamio = "regulator";
-	cam2_pin_vcamd = "regulator";
-	cam2_pin_vcama1 = "regulator";
-	cam2_pin_vcamaf = "regulator";
+	//cam2_pin_vcamd = "regulator";
+	//cam2_pin_vcama1 = "regulator";
+	//cam2_pin_vcamaf = "regulator";
 
 	cam0_enable_sensor = "mot_kansas_s5kjns_mipi_raw";
-
+	cam2_enable_sensor = "mot_kansas_sc202acs_mipi_raw";
 	status = "okay";
 };
 /* CAMERA GPIO end */
@@ -366,5 +383,5 @@
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-	cust-sensor = "mot_kansas_s5kjns_mipi_raw";
+       cust-sensor = "mot_kansas_s5kjns_mipi_raw mot_kansas_sc202acs_mipi_raw";
 };
