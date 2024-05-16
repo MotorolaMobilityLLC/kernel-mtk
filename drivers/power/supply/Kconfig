@@ -691,7 +691,6 @@ config CHARGER_SC89890H
 	depends on I2C
 	depends on GPIOLIB || COMPILE_TEST
 	select REGMAP_I2C
-	default m
 	help
 	  Say Y to enable support for the SC89890H fast battery chargers.
 
@@ -700,7 +699,6 @@ config CHARGER_SGM41542
 	depends on I2C
 	depends on GPIOLIB || COMPILE_TEST
 	select REGMAP_I2C
-	default m
 	help
 	  support SGM41542
 
