@@ -850,8 +850,12 @@ static int battery_psy_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
 		bs_data = &gm->bs_data;
 		if (IS_ERR_OR_NULL(bs_data->chg_psy)) {
+#if IS_ENABLED(CONFIG_CHARGER_SC89890H) || IS_ENABLED(CONFIG_CHARGER_SGM41542)
+			bs_data->chg_psy = power_supply_get_by_name("primary_chg");
+#else
 			bs_data->chg_psy = devm_power_supply_get_by_phandle(
 				&gm->gauge->pdev->dev, "charger");
+#endif
 			bm_err("%s retry to get chg_psy\n", __func__);
 		}
 		if (IS_ERR_OR_NULL(bs_data->chg_psy)) {
@@ -938,8 +942,12 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 			POWER_SUPPLY_PROP_ONLINE, &wls_online);
 	}
 	if (IS_ERR_OR_NULL(chg_psy)) {
+#if IS_ENABLED(CONFIG_CHARGER_SC89890H) || IS_ENABLED(CONFIG_CHARGER_SGM41542)
+		chg_psy = power_supply_get_by_name("primary_chg");
+#else
 		chg_psy = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,
 						       "charger");
+#endif
 		bm_err("%s retry to get chg_psy\n", __func__);
 		bs_data->chg_psy = chg_psy;
 	} else {
@@ -4075,9 +4083,12 @@ int battery_psy_init(struct platform_device *pdev)
 	gauge->gm = gm;
 	gm->gauge = gauge;
 	mutex_init(&gm->ops_lock);
-
+#if IS_ENABLED(CONFIG_CHARGER_SC89890H) || IS_ENABLED(CONFIG_CHARGER_SGM41542)
+	gm->bs_data.chg_psy  = power_supply_get_by_name("primary_chg");
+#else
 	gm->bs_data.chg_psy = devm_power_supply_get_by_phandle(&pdev->dev,
 							 "charger");
+#endif
 	if (IS_ERR_OR_NULL(gm->bs_data.chg_psy))
 		bm_err("[BAT_probe] %s: fail to get chg_psy !!\n", __func__);
 
