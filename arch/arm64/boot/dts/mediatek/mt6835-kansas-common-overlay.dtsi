@@ -27,3 +27,15 @@ tcpc_pd: tcpc_pd {
 		linux,keycodes = <114>;
 	};
 };
+
+&i2c3 {
+        clock-frequency = <400000>;
+
+        sn220e: sn220e@28 {
+                compatible = "qcom,sn-nci";
+                reg = <0x28>;
+                qcom,sn-irq = <&pio 41 0>;
+                qcom,sn-ven = <&pio 42  0>;
+                status = "okay";
+        };
+};
