@@ -1448,6 +1448,29 @@ config SND_SOC_TDA7419
 	depends on I2C
 	select REGMAP_I2C
 
+# kansas audio bring up begin
+config SND_SOC_TFA9894
+	tristate "Support Goodix smartpa driver"
+	depends on I2C
+	default n
+	help
+	  Support Goodix smartpa driver
+
+config SND_SOC_AW883XX
+	tristate "Support Awinic smartpa driver"
+	depends on I2C
+	default n
+	help
+	  Support Awinic smartpa driver
+
+config SND_SOC_KANSAS_AUDIO
+	tristate "Support kansas audio"
+	depends on I2C
+	default n
+	help
+	  Support kansas audio
+# kansas audio bring up end
+
 config SND_SOC_TFA9874
 	tristate "NXP TFA9874 speaker amplifier"
 	depends on I2C
