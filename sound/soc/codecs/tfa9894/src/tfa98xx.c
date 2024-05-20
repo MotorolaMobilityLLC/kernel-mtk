@@ -2816,8 +2816,10 @@ static void tfa98xx_interrupt(struct work_struct *work)
 		tfa_lp_mode_interrupt(tfa98xx->tfa);
 	} /* TFA98XX_FLAG_LP_MODES */
 
-	if ((tfa98xx->rev & 0xff) == 0x74 ||
-	    (tfa98xx->rev & 0xff) == 0x73 ||
+	if ((tfa98xx->rev & 0xff) == 0x74 ||
+
+	    (tfa98xx->rev & 0xff) == 0x73 ||
+
 	    (tfa98xx->rev & 0xff) == 0x75 ) {
 		unsigned int regval = 0;
 
@@ -4783,7 +4785,6 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 	tfa98xx->tfa->cachep = tfa98xx_cache;
 
 #ifndef DISABLE_TFA98XX_ALSA_SUPPORT
-	pr_info("zhangchao test 00\n");
 
 	/* Modify the stream names, by appending the i2c device address.
 	 * This is used with multicodec, in order to discriminate the devices.
@@ -4803,23 +4804,18 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 		dai,
 		ARRAY_SIZE(tfa98xx_dai));
 
-	pr_info("zhangchao test 01\n");
-	pr_info("zhangchao test dai.name = %s, dai.playback.stream_name = %s, dai.capture.stream_name = %s\n",dai->name,dai->playback.stream_name,dai->capture.stream_name);
+	pr_info("dai.name = %s, dai.playback.stream_name = %s, dai.capture.stream_name = %s\n",dai->name,dai->playback.stream_name,dai->capture.stream_name);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,18,0)
 	ret = devm_snd_soc_register_component(&i2c->dev,
 				&soc_codec_dev_tfa98xx, dai,
 				ARRAY_SIZE(tfa98xx_dai));
-	pr_info("zhangchao test 02\n");
 #else
 	ret = snd_soc_register_codec(&i2c->dev,
 				&soc_codec_dev_tfa98xx, dai,
 				ARRAY_SIZE(tfa98xx_dai));
-	pr_info("zhangchao test 03\n");
 #endif
-	pr_info("zhangchao test 04 ret = %d\n",ret);
 	if (ret < 0) {
 		dev_err(&i2c->dev, "Failed to register TFA98xx: %d\n", ret);
-		pr_info("zhangchao test 05\n");
 		return ret;
 	}
 
