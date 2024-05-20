@@ -1308,7 +1308,27 @@ int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level,
 	bool is_frame_mode;
 	int index = drm_crtc_index(crtc);
 	int ret = 0;
+#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+	enum mtk_lcm_version lcm_version = mtk_drm_get_lcm_version();
+#endif
 	struct mtk_drm_private *priv = crtc->dev->dev_private;
+
+#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+	if (lcm_version == MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS) {
+		static struct backlight_device *bd = NULL;
+		if (!bd) {
+			pr_info("%s backlight control get i2c_bd\n", __func__);
+			bd = backlight_device_get_by_type(BACKLIGHT_PLATFORM);
+		}
+
+		if(bd) {
+			return backlight_device_set_brightness(bd, level);
+		} else {
+			pr_err("%s backlight control by I2C bl: no i2c_bd\n", __func__);
+			return -EINVAL;
+		}
+	}
+#endif
 
 	CRTC_MMP_EVENT_START(index, backlight, (unsigned long)crtc,
 			level);
