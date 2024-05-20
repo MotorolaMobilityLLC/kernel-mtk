@@ -6,3 +6,4 @@
 ../motorola/kernel/modules/drivers/usb/typec/aw35615
 ../motorola/kernel/modules/drivers/power/sc8989x_charger
 ../motorola/kernel/modules/drivers/power/sgm415xx_mmi
+../motorola/kernel/modules/drivers/power/nu2115a_mmi
