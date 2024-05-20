@@ -23,6 +23,8 @@ switch_chg_eint: switch_chg_eint {
 	};
 tcpc_pd: tcpc_pd {
 	};
+eint_cp: eint_cp {
+	};
 };
 
 &mt6377keys {
