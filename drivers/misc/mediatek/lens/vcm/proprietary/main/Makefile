@@ -64,6 +64,7 @@ mainaf-y  += common/ak7371af/AK7371AF.o
 mainaf-y  += common/bu63169af/BU63169AF.o
 mainaf-y  += common/bu63169af/OIS_func.o
 mainaf-y  += common/bu63169af/OIS_main.o
+mainaf-y  += common/mot_kansas_gt9764af/MOT_KANSAS_GT9764AF.o
 mainaf-y  += common/bu63169af/OIS_user.o
 mainaf-y  += common/bu64253gwzaf/BU64253GWZAF.o
 
