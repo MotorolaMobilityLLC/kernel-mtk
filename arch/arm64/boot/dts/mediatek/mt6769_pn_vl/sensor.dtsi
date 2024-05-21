@@ -1,0 +1,9 @@
+#include "mediatek/sensor/sensor.dtsi"
+
+&i2c5 {
+        clock-frequency = <400000>;
+        status = "okay";
+        aw9610x_sar@12 {
+                ca-num = < 1 >;
+        };
+};

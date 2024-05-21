@@ -1,0 +1,5 @@
+config CONFIG_FPC1020_SUPPORT
+    tristate "FPC Fingerprint"
+    default y
+    help
+      Support FPC capacitive fingerprint sensor device.

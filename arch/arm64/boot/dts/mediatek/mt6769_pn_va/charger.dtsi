@@ -1,0 +1,174 @@
+/*
+ * Contain all of the charger, qc3+, cc logic, charger pump dts configuration
+ *
+ * I2C Slave Address of SGM41541/SGM41542 is: 0x3B
+ * I2C Slave Address of SGM41516/SGM41516D is: 0x6B
+ */
+
+/ {
+    chg_pmup_eint:chg_pmup_eint{
+    };
+
+    main_chg_pmu_eint:main_chg_pmu_eint{
+    };
+
+    cc_cntl_eint:cc_cntl_eint{
+    };
+
+    iddig_otg:iddig_otg{
+    };
+};
+
+&charger {
+        ac_charger_current = <2050000>;
+        min_charger_voltage = <4600000>;
+};
+
+&i2c7 {
+    sgm4154x_charger: sgm4154x@0B {
+        status = "okay";
+        compatible = "sgm,sgm41543D";
+        reg = <0x0B>;
+        interrupt-parent = <&pio>;
+        interrupts = <20 0>;            //irq num base on hardware design
+        sgm,irq-gpio = <&pio 20 0>;     //irq num base on hardware design
+        sgm,chg-en-gpio = <&pio 166 0>;   //gpio num base on hardware design  1.MTK parent node name is pio  2.QUALCOMM parent node name is tlmm or other
+        sgm,is-advanced = <18>;   //High and Low Configuration
+        input-voltage-limit-microvolt = <4600000>;
+        /* sw jeita  parameter customer defined*/
+        //enable_sw_jeita;
+        jeita_temp_above_t4_cv = <0>;
+        jeita_temp_t3_to_t4_cv = <4100000>;
+        jeita_temp_t2_to_t3_cv = <4350000>;
+        jeita_temp_t1_to_t2_cv = <4350000>;
+        jeita_temp_t0_to_t1_cv = <0>;
+        jeita_temp_below_t0_cv = <0>;
+
+        jeita_temp_above_t4_cc_current = <0>;
+        jeita_temp_t3_to_t4_cc_current = <1000000>;
+        jeita_temp_t2_to_t3_cc_current = <1250000>;
+        jeita_temp_t1_to_t2_cc_current = <1000000>;
+        jeita_temp_below_t0_cc_current = <0>;
+
+        temp_t4_thres = <50>;
+        temp_t4_thres_minus_x_degree = <48>;
+        temp_t3_thres = <45>;
+        temp_t3_thres_minus_x_degree = <45>;
+        temp_t2_thres = <20>;
+        temp_t2_thres_plus_x_degree = <15>;
+        temp_t1_thres = <0>;
+        temp_t1_thres_plus_x_degree = <0>;
+        temp_t0_thres = <0>;
+        temp_t0_thres_plus_x_degree = <2>;
+        temp_neg_10_thres = <0>;
+        sgm4154x_otg_vbus: usb-otg-vbus {
+            regulator-compatible = "usb-otg-vbus";
+            regulator-name = "usb-otg-vbus";
+            regulator-min-microvolt = <4350000>;
+            regulator-max-microvolt = <5800000>;
+            regulator-min-microamp = <500000>;
+            regulator-max-microamp = <3000000>;
+        };
+    };
+
+    sc8989x_charger:sc89890h@6A{
+        compatible = "sc,sc89890h";
+        reg = <0x6A>;
+        interrupt-parent = <&pio>;
+        interrupts = <20 0>;            //irq num base on hardware design
+        sc,irq-gpio = <&pio 20 0>;     //irq num base on hardware design
+        sc,chg-en-gpio = <&pio 166 0>;   //gpio num base on hardware design
+
+        charger_name = "primary_chg";
+        eint_name = "chr_stat";
+        alias_name = "sc8989x";
+
+        input-voltage-limit-microvolt = <4600000>;
+        sc,sc8989x,usb-vlim = <4600>;
+        sc,sc8989x,usb-ilim = <2000>;
+        sc,sc8989x,term-current = <243>;
+        sc,sc8989x,usb-ichg = <500>;
+        sc,sc8989x,precharge-current = <120>;
+        sc,sc8989x,boost-voltage = <5000>;
+        sc,sc8989x,boost-current = <1200>;
+        sc,sc8989x,usb-vreg = <4450>;
+
+        sc8989x_otg_vbus: usb-otg-vbus {
+                regulator-compatible = "sc8989x,otg-vbus";
+                regulator-name = "usb-otg-vbus";
+                regulator-min-microvolt = <4350000>;
+                regulator-max-microvolt = <5800000>;
+                regulator-min-microamp = <500000>;
+                regulator-max-microamp = <3000000>;
+        };
+    };
+
+    wusb3801@60 {
+        status = "okay";
+        compatible = "mediatek,usb_type_c";
+        reg = <0x60>;
+        interrupt-parent = <&pio>;
+        interrupts = <36 0>;
+        wusb3801,irq-gpio = <&pio 36 0x0>;
+        };
+};
+
+&bat_gm30 {
+    #include "mediatek/bat_setting/mt6769_battery_table_ext_NH50_SUNWOD.dtsi"
+    #include "mediatek/bat_setting/mt6769_battery_table_ext_NH50_ATL.dtsi"
+    #include "mediatek/bat_setting/mt6769_battery_table_ext_PH50_SUNWOD.dtsi"
+    #include "mediatek/bat_setting/mt6769_battery_table_ext_PH50_ATL.dtsi"
+};
+
+&bat_gm30 {
+    DIFFERENCE_FULLOCV_ITH = <(350)>;//
+    R_FG_VALUE = <(5)>;
+    CURR_MEASURE_20A = <(0)>;
+    UNIT_MULTIPLE = <(1)>;
+    EMBEDDED_SEL = <(1)>;   /* embedded battery*/
+    COM_FG_METER_RESISTANCE = <(60)>;
+    CAR_TUNE_VALUE = <(99)>;
+    FG_METER_RESISTANCE = <(60)>; /*  The resistance of PCB*/
+
+    g_Q_MAX = <
+        /*bat1,   bat2,   bat3,    bat4*/
+        4868 4923 4765 4895/*T0*/
+        4914 4897 4847 4990/*T1*/
+        4906 5009 4859 4962/*T2*/
+        4935 5027 4842 4964/*T3*/
+        4803 4934 4646 4945/*T4*/
+        3488 3488 3488 3488/*T5*/
+        3488 3488 3488 3488/*T6*/
+        3488 3488 3488 3488/*T7*/
+        3488 3488 3488 3488/*T8*/
+        3488 3488 3488 3488/*T9*/
+    >;
+
+    g_Q_MAX_H_CURRENT = <
+        /*bat1,   bat2,   bat3,    bat4*/
+        4849 4891 4749 4866/*T0*/
+        4892 4810 4824 4957/*T1*/
+        4867 4851 4816 4852/*T2*/
+        4786 4374 4672 4350/*T3*/
+        4552 3202 4325 3172/*T4*/
+        3488 3488 3488 3488/*T5*/
+        3488 3488 3488 3488/*T6*/
+        3488 3488 3488 3488/*T7*/
+        3488 3488 3488 3488/*T8*/
+        3488 3488 3488 3488/*T9*/
+    >;
+
+    g_FG_PSEUDO100 = <
+        /*bat1,   bat2,   bat3,    bat4*/
+        98 98 93 97/*T0*/
+        98 98 93 97/*T1*/
+        98 98 93 97/*T2*/
+        98 98 93 97/*T3*/
+        98 98 93 97/*T4*/
+        100 100 100 100/*T5*/
+        100 100 100 100/*T6*/
+        100 100 100 100/*T7*/
+        100 100 100 100/*T8*/
+        100 100 100 100/*T9*/
+    >;
+};

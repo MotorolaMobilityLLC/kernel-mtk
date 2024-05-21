@@ -1,0 +1,33 @@
+/*Audio PA start*/
+/*AW Class-K PA*/
+&i2c3 {
+        aw87xxx_pa@58 {
+                compatible = "awinic,aw87xxx_pa";
+                reg = <0x58>;
+                //reset-gpio = <&pio 107 0>;
+		esd-enable = "true";
+                dev_index = < 0 >;
+                status = "okay";
+        };
+        aw87xxx_pa@59 {
+                compatible = "awinic,aw87xxx_pa";
+                reg = <0x59>;
+                //reset-gpio = <&pio 107 0>;
+		esd-enable = "true";
+                dev_index = < 1 >;
+                status = "okay";
+        };
+/*FSM Class-K PA*/
+        fs15xx@34 {
+                compatible = "foursemi,fs15xx";
+                reg = <0x34>;
+                status = "okay";
+        };
+        fs15xx@35 {
+                compatible = "foursemi,fs15xx";
+                reg = <0x35>;
+                status = "okay";
+        };
+};
+/*Audio PA end*/
+

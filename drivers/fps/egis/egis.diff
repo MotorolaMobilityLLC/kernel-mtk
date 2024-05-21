@@ -1,0 +1,37 @@
+diff --git a/drivers/fps/egis/etxxx_fp.c b/drivers/fps/egis/etxxx_fp.c
+index dc781c8..bfb2367 100644
+--- a/drivers/fps/egis/etxxx_fp.c
++++ b/drivers/fps/egis/etxxx_fp.c
+@@ -1168,6 +1168,7 @@ int egisfp_check_ioctl_permission(struct egisfp_dev_t *egis_dev, unsigned int cm
+ 		return -EACCES;
+ 	}
+ }
++#if 0
+ // Register FB notifier +++
+ static int egisfp_fb_callback(struct notifier_block *nb, unsigned long val, void *data)
+ {
+@@ -1214,6 +1215,7 @@ static int egisfp_fb_callback(struct notifier_block *nb, unsigned long val, void
+ static struct notifier_block egisfp_noti_block = {
+ 	.notifier_call = egisfp_fb_callback,
+ };
++#endif
+ int egisfp_parse_dt(struct egisfp_dev_t *egis_dev)
+ {
+ 	int ret;
+@@ -1443,6 +1445,7 @@ int egisfp_probe(struct platform_device *pdev)
+ 	setup_timer(&egis_dev->fps_ints.timer, egisfp_interrupt_timer_call, (unsigned long)&egis_dev->fps_ints);
+ #endif
+ 
++#if 0
+ // Register FB notifier +++
+ 	egis_dev->notifier = egisfp_noti_block;
+ 	DEBUG_PRINT(" %s : register fb_register_client \n", __func__);
+@@ -1452,7 +1455,7 @@ int egisfp_probe(struct platform_device *pdev)
+ 	else
+ 		egis_dev->call_back_registered = 1;
+ // Register FB notifier ---
+-
++#endif
+ 	g_data = egis_dev;
+ 
+ 	DEBUG_PRINT(" %s : initialize success %d\n", __func__, status);

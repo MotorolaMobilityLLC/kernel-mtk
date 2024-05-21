@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (c) 2020 MediaTek Inc.
+ */
+/* Connsys FEM Start */
+&connfem {
+	/* PINCTRL States*/
+	pinctrl-names = "wlan7204h_wlan7102c";		/* pinctrl-0 */
+
+	pinctrl-0 = <&wlan7204h_wf0>, <&wlan7204h_wf1>,
+		<&wlan7102c_wf0>, <&wlan7102c_wf1>;
+
+	/* FEM ID */
+	nofem: nofem {
+		vid = <0>;
+		pid = <0>;
+	};
+	wlan7204h: wlan7204h {
+		vid = <2>;
+		pid = <3>;
+	};
+	wlan7102c: wlan7102c {
+		vid = <2>;
+		pid = <1>;
+	};
+};
+
+/* ANTSEL PINMUX and FEM Func Mapping */
+&pio {
+	wlan7204h_wf0: wlan7204h_wf0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO188__FUNC_ANT_SEL0>,
+				<PINMUX_GPIO189__FUNC_ANT_SEL1>,
+				<PINMUX_GPIO190__FUNC_ANT_SEL2>,
+				<PINMUX_GPIO32__FUNC_ANT_SEL12>;
+			mapping = <0 18 0>,	/* ANTSEL 0 <-> PIN #18: C0 */
+				<1 17 0>,	/* ANTSEL 1 <-> PIN #17: C1 */
+				<2 16 0>,	/* ANTSEL 2 <-> PIN #16: C2 */
+				<12 15 0>;	/* ANTSEL 12 <-> VCTRL */
+		};
+	};
+
+	wlan7204h_wf1: wlan7204h_wf1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO194__FUNC_ANT_SEL6>,
+				<PINMUX_GPIO195__FUNC_ANT_SEL7>,
+				<PINMUX_GPIO28__FUNC_ANT_SEL8>;
+			mapping = <6 0x92 0>,	/* ANTSEL  6 <-> PIN #18: C0 */
+				<7 0x91 0>,	/* ANTSEL  7 <-> PIN #17: C1 */
+				<8 0x90 0>;	/* ANTSEL 8 <-> PIN #16: C2 */
+		};
+	};
+
+	wlan7102c_wf0: wlan7102c_wf0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO191__FUNC_ANT_SEL3>,
+				<PINMUX_GPIO192__FUNC_ANT_SEL4>,
+				<PINMUX_GPIO193__FUNC_ANT_SEL5>;
+			mapping = <3 0x4c 0>,	/* ANTSEL 3 <-> PIN #12: C0 */
+				<4 0x4d 0>,	/* ANTSEL 4 <-> PIN #13: C1 */
+				<5 0x4e 0>;	/* ANTSEL 5 <-> PIN #14: C2 */
+		};
+	};
+
+	wlan7102c_wf1: wlan7102c_wf1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO29__FUNC_ANT_SEL9>,
+				<PINMUX_GPIO30__FUNC_ANT_SEL10>,
+				<PINMUX_GPIO31__FUNC_ANT_SEL11>;
+			mapping = <9 0xcc 0>,	/* ANTSEL 9 <-> PIN #12: C0 */
+				<10 0xcd 0>,	/* ANTSEL 10 <-> PIN #13: C1 */
+				<11 0xcb 0>;	/* ANTSEL 11 <-> PIN #14: C2 */
+		};
+	};
+};
+/* Connsys FEM End */

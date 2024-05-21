@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0
+menu "Fps Drivers"
+
+source "drivers/fps/fpc/Kconfig"
+source "drivers/fps/egis/Kconfig"
+source "drivers/fps/goodix/Kconfig"
+endmenu

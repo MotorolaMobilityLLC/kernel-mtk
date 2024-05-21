@@ -1,0 +1,373 @@
+/*
+ * Contain all of the charger, qc3+, cc logic, charger pump dts configuration
+ *
+ * I2C Slave Address of SGM41541/SGM41542 is: 0x3B
+ * I2C Slave Address of SGM41516/SGM41516D is: 0x6B
+ */
+
+/ {
+    chg_pmup_eint:chg_pmup_eint{
+    };
+
+    main_chg_pmu_eint:main_chg_pmu_eint{
+    };
+
+    cc_cntl_eint:cc_cntl_eint{
+    };
+
+    iddig_otg:iddig_otg{
+    };
+};
+
+&charger {
+        max_charger_voltage = <14000000>;
+        battery_cv = <4450000>;
+        min_charger_voltage = <4600000>;
+};
+
+&odm {
+    qc_chrg_manager: qc_chrg_manager {
+        compatible = "qc,chrg-manager";
+        qc,pps-volt-steps = <20000>;
+        qc,pps-curr-steps = <40000>;
+        qc,qc-volt-max = <12000000>;
+        qc,qc-curr-max = <3000000>;
+        qc,batt-curr-boost = <300000>;
+        qc.batt-ovp-limit= <4550000>;
+        qc,pps-volt-comp = <500000>;
+
+        qc,pl-chrg-vbatt-min= <3600000>;
+        qc,typec-middle-current= <800000>;
+        qc,step-first-current-comp = <0>;
+        qc,dont-rerun-aicl;
+
+        qc,qc-temp-zones-num = <5>;
+        qc,qc-chrg-temp-zones =
+        <0  4200 1000 0    0>,
+        <10 4250 2500 4450 1000>,
+        <15 4450 2500 0    0>,
+        <45 4300 5800 4480 4000>,
+        <60 4200 4000 0    0>;
+
+        qc,mmi-ffc-zones =
+        <4200 243>,
+        <4250 243>,
+        <4450 243>,
+        <4480 575>,
+        <4480 635>,
+        <4480 661>,
+        <4200 243>;
+
+        qc,thermal-min-level = <1200000>;
+        qc,sw-charging-curr-limited = <500000>;
+        qc,qc-charging-curr-min = <1200000>;
+    };
+};
+
+&i2c7 {
+    sgm4154x_charger: sgm4154x@0B {
+        status = "okay";
+        compatible = "sgm,sgm41543D";
+        reg = <0x0B>;
+        interrupt-parent = <&pio>;
+        interrupts = <20 0>;
+        sgm,irq-gpio = <&pio 20 0>;
+        sgm,chg-en-gpio = <&pio 166 0>;
+        sgm,is-advanced = <33>;
+        /* sw jeita  parameter customer defined*/
+        //enable_sw_jeita;
+        jeita_temp_above_t4_cv = <0>;
+        jeita_temp_t3_to_t4_cv = <4100000>;
+        jeita_temp_t2_to_t3_cv = <4350000>;
+        jeita_temp_t1_to_t2_cv = <4350000>;
+        jeita_temp_t0_to_t1_cv = <0>;
+        jeita_temp_below_t0_cv = <0>;
+
+        jeita_temp_above_t4_cc_current = <0>;
+        jeita_temp_t3_to_t4_cc_current = <1000000>;
+        jeita_temp_t2_to_t3_cc_current = <1250000>;
+        jeita_temp_t1_to_t2_cc_current = <1000000>;
+        jeita_temp_below_t0_cc_current = <0>;
+
+        temp_t4_thres = <50>;
+        temp_t4_thres_minus_x_degree = <48>;
+        temp_t3_thres = <45>;
+        temp_t3_thres_minus_x_degree = <45>;
+        temp_t2_thres = <20>;
+        temp_t2_thres_plus_x_degree = <15>;
+        temp_t1_thres = <0>;
+        temp_t1_thres_plus_x_degree = <0>;
+        temp_t0_thres = <0>;
+        temp_t0_thres_plus_x_degree = <2>;
+        temp_neg_10_thres = <0>;
+        sgm4154x_otg_vbus: usb-otg-vbus {
+            regulator-compatible = "usb-otg-vbus";
+            regulator-name = "usb-otg-vbus";
+            regulator-min-microvolt = <4350000>;
+            regulator-max-microvolt = <5800000>;
+            regulator-min-microamp = <500000>;
+            regulator-max-microamp = <3000000>;
+        };
+    };
+
+    sy697x_charger: sy697x@6A {
+        status = "okay";
+        compatible = "sy,sy697x";
+        reg = <0x6A>;
+        interrupt-parent = <&pio>;
+        interrupts = <20 0>;
+        sy,irq-gpio = <&pio 20 0>;
+        sy,chg-en-gpio = <&pio 166 0>;   //gpio num base on hardware design
+
+        chg_name = "primary_chg";
+        alias_name = "sy6970";
+        input-voltage-limit-microvolt = <4600000>;
+        sy,is-advanced = <33>;
+
+        /* sw jeita  parameter customer defined*/
+        /* enable_sw_jeita; */
+        jeita_temp_above_t4_cv = <0>;
+        jeita_temp_t3_to_t4_cv = <4100000>;
+        jeita_temp_t2_to_t3_cv = <4350000>;
+        jeita_temp_t1_to_t2_cv = <4350000>;
+        jeita_temp_t0_to_t1_cv = <0>;
+        jeita_temp_below_t0_cv = <0>;
+
+        jeita_temp_above_t4_cc_current = <0>;
+        jeita_temp_t3_to_t4_cc_current = <1000000>;
+        jeita_temp_t2_to_t3_cc_current = <1250000>;
+        jeita_temp_t1_to_t2_cc_current = <1000000>;
+        jeita_temp_below_t0_cc_current = <0>;
+
+        temp_t4_thres = <50>;
+        temp_t4_thres_minus_x_degree = <48>;
+        temp_t3_thres = <45>;
+        temp_t3_thres_minus_x_degree = <45>;
+        temp_t2_thres = <20>;
+        temp_t2_thres_plus_x_degree = <15>;
+        temp_t1_thres = <0>;
+        temp_t1_thres_plus_x_degree = <0>;
+        temp_t0_thres = <0>;
+        temp_t0_thres_plus_x_degree = <2>;
+        temp_neg_10_thres = <0>;
+        sy697x_otg_vbus: usb-otg-vbus {
+            regulator-compatible = "sy697x,otg-vbus";
+            regulator-name = "usb-otg-vbus";
+            regulator-min-microvolt = <4850000>;
+            regulator-max-microvolt = <5300000>;
+            regulator-min-microamp = <1000000>;
+            regulator-max-microamp = <2200000>;
+        };
+    };
+
+     sgm7220@47{
+        status = "okay";
+        compatible = "sgm,usb_type_c";
+        reg = <0x47>;
+        interrupt-parent = <&pio>;
+        interrupts = <36 0>;
+        sgm7220,irq-gpio = <&pio 36 0>;
+    };
+};
+
+&i2c7 {
+    sc854x_charger: sc8549@6F{
+        status = "okay";
+        compatible = "sc,sc8549-standalone";
+        reg = <0x6F>;
+        interrupt-parent = <&pio>;
+        interrupts = <19 0>;
+        sc,sc854x,irq-gpio = <&pio 19 0x00>;
+        /*sc,sc854x,bat-ovp-disable;*/
+        sc,sc854x,bat-ocp-disable;
+        /*sc,sc854x,vdrop-ovp-disable;*/
+        /*sc,sc854x,bus-ovp-disable;*/
+        /*sc,sc854x,bus-ucp-disable;*/
+        /*sc,sc854x,bus-ocp-disable;*/
+
+        sc,sc854x,bat-ovp-threshold = <4525>;/*mv*/
+        sc,sc854x,bat-ocp-threshold = <7000>;/*mA*/
+        sc,sc854x,ac-ovp-threshold = <13000>;/*mv*/
+        sc,sc854x,bus-ovp-threshold = <11000>;/*mv*/
+        sc,sc854x,bus-ocp-threshold = <3500>;/*ma*/
+        sc,sc854x,sense-resistor-mohm = <5>;/*mΩ*/
+    };
+
+    hl7139-charger@5F {
+        compatible = "halo,hl7139-standalone";
+        reg = <0x5F>;
+        interrupt-parent = <&pio>;
+        intterrupts = <19 0>;
+        hl7139,irq-gpio = <&pio 19 0x00>;
+        /* hl,hl7139,bat-ovp-disable = <1>; */
+        hl,hl7139,bat-ocp-disable = <1>;
+        /* hl,hl7139,vin-ovp-disable = <1>; */
+        /* hl,hl7139,iin-ocp-disable = <1>; */
+        /* hl,hl7139,vout-ovp-disable = <1>; */
+
+        hl,hl7139,bat-ovp-threshold = <4525>;/*mv*/
+        hl,hl7139,bat-ocp-threshold = <7000>;/*ma*/
+        hl,hl7139,vin-ovp-threshold = <11000>;/*mv*/
+        hl,hl7139,bus-ovp-threshold = <13000>;/*mv*/
+    };
+};
+
+&pio {
+    /* wt6670f */
+    wt6670f_int_normal: wt6670f_int_normal {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO39__FUNC_GPIO39>;
+            slew-rate = <0>;
+            bias-pull-up = <1>;
+            input-enable;
+        };
+    };
+
+    wt6670f_int_isp: wt6670f_int_isp {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO39__FUNC_GPIO39>;
+            slew-rate = <0>;
+            bias-pull-up = <1>;
+            input-enable;
+        };
+    };
+
+    wt6670f_default: wt6670f_default {
+    };
+
+    wt6670f_rst_normal: wt6670f_rst_normal {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO38__FUNC_GPIO38>;
+            slew-rate = <1>;
+            bias-disable;
+            output-high;
+        };
+    };
+
+    wt6670f_rst_isp: wt6670f_rst_isp {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO38__FUNC_GPIO38>;
+            slew-rate = <1>;
+            bias-disable;
+            output-low;
+        };
+    };
+
+
+    wt6670f_sda_normal: wt6670f_sda_normal {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO90__FUNC_SDA6>;
+            slew-rate = <0>;
+            bias-pull-up = <1>;
+        };
+    };
+
+    wt6670f_sda_isp: wt6670f_sda_isp {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+
+    wt6670f_scl_normal: wt6670f_scl_normal {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO89__FUNC_SCL6>;
+            slew-rate = <0>;
+            bias-pull-up = <1>;
+        };
+    };
+
+    wt6670f_scl_isp: wt6670f_scl_isp {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO89__FUNC_GPIO89>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+};
+
+&i2c6 {
+    clock-frequency = <100000>;
+
+    wt6670f_charger: wt6670f_charger@35{
+        status = "okay";
+        compatible = "wt,wt6670f_charger";
+        reg = <0x35>;
+        interrupt-parent = <&pio>;
+        interrupts = <39 0>;
+        pinctrl-names ="default", "rst_normal", "rst_isp", "scl_normal", "scl_isp", "sda_normal", "sda_isp";
+        pinctrl-0 = <&wt6670f_default>;
+        pinctrl-1 = <&wt6670f_rst_normal>;
+        pinctrl-2 = <&wt6670f_rst_isp>;
+        pinctrl-3 = <&wt6670f_scl_normal>;
+        pinctrl-4 = <&wt6670f_scl_isp>;
+        pinctrl-5 = <&wt6670f_sda_normal>;
+        pinctrl-6 = <&wt6670f_sda_isp>;
+        /*wt,penang_unsupport;*/
+        wt,wt6670f_rst_gpio = <&pio 38 0x00>;
+        wt,wt6670f_int_gpio = <&pio 39 0x00>;
+        wt,wt6670f_sda_gpio = <&pio 90 0x00>;
+        wt,wt6670f_scl_gpio = <&pio 89 0x00>;
+    };
+};
+
+&bat_gm30 {
+    #include "mediatek/bat_setting/mt6769_battery_table_ext_NH50_SUNWOD.dtsi"
+    #include "mediatek/bat_setting/mt6769_battery_table_ext_NH50_ATL.dtsi"
+    #include "mediatek/bat_setting/mt6769_battery_table_ext_PH50_SUNWOD.dtsi"
+    #include "mediatek/bat_setting/mt6769_battery_table_ext_PH50_ATL.dtsi"
+};
+
+&bat_gm30 {
+    DIFFERENCE_FULLOCV_ITH = <(650)>;//
+    R_FG_VALUE = <(5)>;
+    CURR_MEASURE_20A = <(0)>;
+    UNIT_MULTIPLE = <(1)>;
+    EMBEDDED_SEL = <(1)>;   /* embedded battery*/
+    COM_FG_METER_RESISTANCE = <(100)>;
+    CAR_TUNE_VALUE = <(101)>;
+    FG_METER_RESISTANCE = <(100)>; /*  The resistance of PCB*/
+
+    g_Q_MAX = <
+        /*bat1,   bat2,   bat3,    bat4*/
+        4868 4923 4765 4895/*T0*/
+        4914 4897 4847 4990/*T1*/
+        4906 5009 4859 4962/*T2*/
+        4935 5027 4842 4964/*T3*/
+        4803 4934 4646 4945/*T4*/
+        3488 3488 3488 3488/*T5*/
+        3488 3488 3488 3488/*T6*/
+        3488 3488 3488 3488/*T7*/
+        3488 3488 3488 3488/*T8*/
+        3488 3488 3488 3488/*T9*/
+    >;
+
+    g_Q_MAX_H_CURRENT = <
+        /*bat1,   bat2,   bat3,    bat4*/
+        4849 4891 4749 4866/*T0*/
+        4892 4810 4824 4957/*T1*/
+        4867 4851 4816 4852/*T2*/
+        4786 4374 4672 4350/*T3*/
+        4552 3202 4325 3172/*T4*/
+        3488 3488 3488 3488/*T5*/
+        3488 3488 3488 3488/*T6*/
+        3488 3488 3488 3488/*T7*/
+        3488 3488 3488 3488/*T8*/
+        3488 3488 3488 3488/*T9*/
+    >;
+
+    g_FG_PSEUDO100 = <
+        /*bat1,   bat2,   bat3,    bat4*/
+        98 98 93 97/*T0*/
+        98 98 93 97/*T1*/
+        98 98 93 97/*T2*/
+        98 98 93 97/*T3*/
+        98 98 93 97/*T4*/
+        100 100 100 100/*T5*/
+        100 100 100 100/*T6*/
+        100 100 100 100/*T7*/
+        100 100 100 100/*T8*/
+        100 100 100 100/*T9*/
+    >;
+};

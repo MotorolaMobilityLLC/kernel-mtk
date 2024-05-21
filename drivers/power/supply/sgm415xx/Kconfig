@@ -1,0 +1,8 @@
+config CHARGER_SGM415XX
+	bool "Switch charger SGM415XX driver"
+	depends on CHARGER_DEVICE_SGM
+	default n
+	help
+	  This config is for switch charger sgm415xx
+	  Say Y to enable switch charger sgm4154x
+	  Say N to disable

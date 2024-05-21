@@ -1,0 +1,8 @@
+/*
+ * Contain all of the charger, qc3+, cc logic, charger pump dts configuration
+ *
+ * I2C Slave Address of SGM41541/SGM41542 is: 0x3B
+ * I2C Slave Address of SGM41516/SGM41516D is: 0x6B
+ */
+
+#include "../mt6769_pn_vg/charger.dtsi"

@@ -1,0 +1,17 @@
+&i2c5 {
+        clock-frequency = <400000>;
+        status = "okay";
+        aw9610x_sar@12 {
+                compatible = "awinic,aw9610x_sar";
+                reg = <0x12>;
+                //reset-gpio = <&pio 63 0>;
+                irq-gpio = <&pio 3 0>;
+                aw9610x,using-firmware;
+                vcc0-supply = <&mt_pmic_vio28_ldo_reg>;
+                channel_use_flag = <0x1f>;
+                sar-num = < 0 >;
+                ca-num = < 0 >;
+                status = "okay";
+        };
+};
+

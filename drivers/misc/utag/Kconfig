@@ -1,0 +1,7 @@
+config UTAG
+	tristate "Utag Configuration read/write support"
+	default n
+	help
+	  With this option you get read/write access to utag partition via procfs.
+          Content of the entire partition can be checked, separate utags accessed
+	  and modified.

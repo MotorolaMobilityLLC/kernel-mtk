@@ -1,0 +1,114 @@
+#
+# Omnivision TCM touchscreen driver configuration
+#
+menuconfig TOUCHSCREEN_OMNIVISION_TCM
+	bool "Omnivision TCM touchscreen"
+	default y
+	help
+	  Say Y here if you have a Omnivision TCM touchscreen connected
+	  to your system.
+
+	  If unsure, say N.
+
+if TOUCHSCREEN_OMNIVISION_TCM
+
+choice
+	default TOUCHSCREEN_OMNIVISION_TCM_I2C
+	prompt "Omnivision TCM bus module"
+config TOUCHSCREEN_OMNIVISION_TCM_I2C
+	bool "I2C"
+	depends on I2C
+config TOUCHSCREEN_OMNIVISION_TCM_SPI
+	bool "SPI"
+	depends on SPI_MASTER
+endchoice
+
+config TOUCHSCREEN_OMNIVISION_TCM_CORE
+	tristate "Omnivision TCM core module"
+	depends on I2C || SPI_MASTER
+	help
+	  Say Y here to enable core functionality.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called omnivision_tcm_core.
+
+config TOUCHSCREEN_OMNIVISION_TCM_TOUCH
+	tristate "Omnivision TCM touch module"
+	depends on TOUCHSCREEN_OMNIVISION_TCM_CORE
+	help
+	  Say Y here to enable support for touch reporting.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called omnivision_tcm_touch.
+
+config TOUCHSCREEN_OMNIVISION_TCM_DEVICE
+	tristate "Omnivision TCM device module"
+	depends on TOUCHSCREEN_OMNIVISION_TCM_CORE
+	help
+	  Say Y here to enable support for TCM device functionality.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called omnivision_tcm_device.
+
+config TOUCHSCREEN_OMNIVISION_TCM_TESTING
+	tristate "Omnivision TCM testing module"
+	depends on TOUCHSCREEN_OMNIVISION_TCM_CORE
+	help
+	  Say Y here to enable support for testing functionality.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called omnivision_tcm_testing.
+
+config TOUCHSCREEN_OMNIVISION_TCM_REFLASH
+	tristate "Omnivision TCM reflash module"
+	depends on TOUCHSCREEN_OMNIVISION_TCM_CORE
+	help
+	  Say Y here to enable support for reflash functionality.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called omnivision_tcm_reflash.
+
+config TOUCHSCREEN_OMNIVISION_TCM_RECOVERY
+	tristate "Omnivision TCM recovery module"
+	depends on TOUCHSCREEN_OMNIVISION_TCM_CORE
+	help
+	  Say Y here to enable support for recovery functionality.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called omnivision_tcm_recovery.
+
+config TOUCHSCREEN_OMNIVISION_TCM_ZEROFLASH
+	tristate "Omnivision TCM zeroflash module"
+	depends on TOUCHSCREEN_OMNIVISION_TCM_CORE
+	help
+	  Say Y here to enable support for ZeroFlash functionality.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called omnivision_tcm_zeroflash.
+
+config TOUCHSCREEN_OMNIVISION_TCM_DIAGNOSTICS
+	tristate "Omnivision TCM diagnostics module"
+	depends on TOUCHSCREEN_OMNIVISION_TCM_CORE
+	help
+	  Say Y here to enable support for diagnostics functionality.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called omnivision_tcm_diagnostics.
+endif
+

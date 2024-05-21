@@ -1,0 +1,62 @@
+&i2c3 {
+	pn557@28 {
+		compatible = "mediatek,nfc";
+		reg = <0x28>;
+		status = "okay";
+		interrupt-parent = <&pio>;
+		interrupts = <9 IRQ_TYPE_LEVEL_HIGH 1 0>;
+		pn557,irq-gpio = <&pio 9 0x0>;
+	};
+};
+
+/* NFC start */
+/* NFC GPIO standardization */
+
+&pio {
+	nfc_ven_high: nfc_ven_high {
+		pins_cmd_dat {
+			drive-strength = <MTK_DRIVE_2mA>;
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	nfc_ven_low: nfc_ven_low {
+		pins_cmd_dat {
+			drive-strength = <MTK_DRIVE_2mA>;
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	nfc_dwn_high: nfc_dwn_high {
+		pins_cmd_dat {
+			drive-strength = <MTK_DRIVE_2mA>;
+			pinmux = <PINMUX_GPIO17__FUNC_GPIO17>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	nfc_dwn_low: nfc_dwn_low {
+		pins_cmd_dat {
+			drive-strength = <MTK_DRIVE_2mA>;
+			pinmux = <PINMUX_GPIO17__FUNC_GPIO17>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+};
+&nfc557{
+	pinctrl-names = "ven_high",
+			"ven_low",
+			"dwn_high",
+			"dwn_low";
+	pinctrl-0 = <&nfc_ven_high>;
+	pinctrl-1 = <&nfc_ven_low>;
+	pinctrl-2 = <&nfc_dwn_high>;
+	pinctrl-3 = <&nfc_dwn_low>;
+	status = "okay";
+};
+
+/* NFC end */

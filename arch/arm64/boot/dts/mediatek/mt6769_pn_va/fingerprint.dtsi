@@ -1,0 +1,38 @@
+&fpc1020_fp {
+        fpc_rst = <&pio 31 0x0>;
+        fpc_irq = <&pio 8 0x0>;
+        fpc_vdd = <&pio 66 0x0>;
+        /* vfp-supply = <&LPOs8>; */ // use regulator power
+        interrupt-parent = <&pio>;
+        interrupts = <8 IRQ_TYPE_EDGE_RISING 8 0>;
+        status = "okay";
+};
+&fp_egistec{
+        interrupt-parent = <&pio>;
+        interrupts = <8 IRQ_TYPE_EDGE_RISING 8 0>;
+
+        fp-ctrl-power;
+        fp-gpio-vcc-enable;
+
+        egistec,gpio_vcc_en = <&pio 66 0x0>;
+        egistec,gpio_reset = <&pio 31 0x0>;
+        egistec,gpio_irq = <&pio 8 0x0>;
+
+        pinctrl-names = "egis_rst_high", "egis_rst_low", "egis_irq_active", "egis_vcc_high", "egis_vcc_low", "egis_spi_active", "egis_spi_default";
+        pinctrl-0 = <&fingerfp_rst_high>;
+        pinctrl-1 = <&fingerfp_rst_low>;
+        pinctrl-2 = <&fingerfp_irq_active>;
+        pinctrl-3 = <&fingerfp_vcc_high>;
+        pinctrl-4 = <&fingerfp_vcc_low>;
+        pinctrl-5 = <&fingerfp_spi_active>;
+        pinctrl-6 = <&fingerfp_spi_default>;
+        status="okay";
+};
+&goodix_fp {
+        goodix_rst = <&pio 31 0x00>;
+        gf,gpio_irq = <&pio 8 0x00>;
+        goodix_vdd = <&pio 66 0x0>;
+        interrupt-parent = <&pio>;
+        interrupts = <8 IRQ_TYPE_EDGE_RISING 8 0>;
+        status = "okay";
+};

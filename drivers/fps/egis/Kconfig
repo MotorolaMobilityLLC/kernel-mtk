@@ -1,0 +1,9 @@
+#
+# fp_sensor driver configuration
+#
+config EGIS_FINGERPRINT
+	tristate "egis fingerPrint sensor"
+	default y
+#	depends on SPI_MASTER
+	help
+		add for support egis FP Sensor.

@@ -1,0 +1,8 @@
+
+config MTK_CAMERAGESTUREHUB
+	bool "camera gesture hub for MediaTek package"
+	help
+	  A tilt detect is a device,
+	  usually portable and electronic
+	  or electromechanical,
+	  that detect device is picked up with 35 degree.

@@ -1,0 +1,20 @@
+This is a introduction for flashlight chip aw36518
+
+[Scope]
+- One channel for one LED
+
+[Hardware Interface]
+- I2C
+	* For general control
+	* Slave address 0x63
+
+[Limit]
+- Torch Mode
+	* Step current: 1.51 mA
+	* Min currnet: 0.75 mA
+	* Max current: 386 mA
+
+- Strobe Mode
+	* Step current: 5.88 mA
+	* Min currnet: 2.94 mA
+	* Max current: 1500 mA

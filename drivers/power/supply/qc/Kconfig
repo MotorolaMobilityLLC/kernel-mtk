@@ -1,0 +1,17 @@
+config CHARGER_SC854X
+    bool "charger pump SC854X device driver"
+    depends on CHARGER_DEVICE_QC
+    default n
+    help
+      This config is for charger pump sc854x device driver
+      Say Y to enable charger pump sc854x
+      Say N to disable
+
+config CHARGER_WT6670F
+    bool "qc3+ wt6670f or z350 device driver"
+    depends on CHARGER_DEVICE_QC
+    default n
+    help
+      This config is for qc3+ wt6670f or z350 device driver
+      Say Y to enable wt6670f or z350
+      Say N to disable

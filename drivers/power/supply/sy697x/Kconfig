@@ -1,0 +1,8 @@
+config CHARGER_SY697X
+	bool "Switch charger sy697x device driver"
+	depends on CHARGER_DEVICE_SY
+	default n
+	help
+	  This config is for switch charger sy697X
+	  Say Y to enable switch charger sy697x
+	  Say N to disable

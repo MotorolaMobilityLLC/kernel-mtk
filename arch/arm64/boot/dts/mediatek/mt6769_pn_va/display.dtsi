@@ -1,0 +1,85 @@
+&i2c0 {
+	status = "okay";
+	lcd_bias_i2c@3e {
+		compatible = "mtk,i2c_lcd_bias";
+		reg = <0x3e>;
+		mtk,enp = <&pio 169 0>;
+		mtk,enn = <&pio 165 0>;
+		mtk,tp_reset = <&pio 92 0>;
+		pinctrl-names = "lcd_enn_default", "lcd_enn_output_high",
+				"lcd_enn_output_low", "lcd_enp_default",
+				"lcd_enp_output_high", "lcd_enp_output_low",
+				"tp_reset_default", "tp_reset_output_high",
+				"tp_reset_output_low";
+		pinctrl-0 = <&bias_enn_default>;
+		pinctrl-1 = <&bias_enn_output_high>;
+		pinctrl-2 = <&bias_enn_output_low>;
+		pinctrl-3 = <&bias_enp_default>;
+		pinctrl-4 = <&bias_enp_output_high>;
+		pinctrl-5 = <&bias_enp_output_low>;
+		pinctrl-6 = <&tp_pins_reset_default>;
+		pinctrl-7 = <&tp_pins_reset_output_high>;
+		pinctrl-8 = <&tp_pins_reset_output_low>;
+	};
+};
+
+&pio {
+	bias_enn_default: enn_default {
+	};
+
+	bias_enn_output_high: enn_output_high {
+	pins_cmd_dat {
+		pinmux = <PINMUX_GPIO165__FUNC_GPIO165>;
+			slew-rate = <1>;
+			output-high;
+		 };
+	 };
+
+	bias_enn_output_low: enn_output_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO165__FUNC_GPIO165>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	bias_enp_default: enp_default {
+	};
+
+	bias_enp_output_high: enp_output_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO169__FUNC_GPIO169>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	bias_enp_output_low: bias_enp_output_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO169__FUNC_GPIO169>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	tp_pins_reset_default: reset_default {
+	};
+
+	tp_pins_reset_output_high: reset_output_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO92__FUNC_GPIO92>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	tp_pins_reset_output_low: reset_output_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO92__FUNC_GPIO92>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+

@@ -1,0 +1,8 @@
+config CHARGER_PUMP_HL7139
+	bool "charger pump hl7139 device driver"
+	depends on CHARGER_DEVICE_HL
+	default n
+	help
+	  This config is for charger pump hl7139
+	  Say Y to enable charger pump hl7139
+	  Say N to disable

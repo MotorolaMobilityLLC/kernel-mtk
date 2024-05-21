@@ -1,0 +1,15 @@
+config CHARGER_QC_POLICY
+    bool "QC3+ Charger Policy"
+    help
+      Say yes here to enable qc3+ charger policy.
+      This driver contains charging control flow and
+      maintains charging status.
+      Say no if not using Qc3+ charger policy manager
+
+config CHARGER_TURBO_QC3P
+    bool "Turbo QC3+ Charger Policy"
+    help
+      Say yes here to enable Turbo qc3+ charger policy.
+      This driver contains charging control flow and
+      maintains charging status.
+      Say no if not using Turbo Qc3+ charger policy manager
