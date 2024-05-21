@@ -10,3 +10,6 @@
 	moto_chg_tcmd: moto_chg_tcmd { };
 };
 
+&extcon_usb {
+	/delete-property/ vbus-supply;
+};
