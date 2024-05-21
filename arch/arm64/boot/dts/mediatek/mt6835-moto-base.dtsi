@@ -8,6 +8,15 @@
 	utags: utags { };
 	hw: hw { };
 	moto_chg_tcmd: moto_chg_tcmd { };
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+	swtp_1: swtp_1 {
+		compatible = "mediatek, swtp1-eint";
+	};
+	swtp_2: swtp_2 {
+		compatible = "mediatek, swtp2-eint";
+	};
 };
 
 &extcon_usb {

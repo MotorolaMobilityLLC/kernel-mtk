@@ -43,11 +43,35 @@ struct swtp_t swtp_data;
 static const char rf_name[] = "RF_cable";
 #define MAX_RETRY_CNT 30
 
+#if defined(CONFIG_MOTO_SWTP_CUST)
+static int swtp_tx_power_mode = SWTP_DO_TX_POWER;
+static ssize_t swtp_gpio_state_show(struct class *class,
+		struct class_attribute *attr,
+		char *buf)
+{
+	int ret = 0;
+
+	if (swtp_tx_power_mode == SWTP_NO_TX_POWER) {
+		ret = 1;
+	}
+
+	return sprintf(buf, "%d\n", ret);
+}
+
+static CLASS_ATTR_RO(swtp_gpio_state);
+
+static struct class swtp_class = {
+	.name			= "swtp",
+	.owner			= THIS_MODULE,
+};
+#endif
 static int swtp_send_tx_power(struct swtp_t *swtp)
 {
 	unsigned long flags;
 	int power_mode, ret = 0;
-
+#ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
+	int factory_tx_power_mode = SWTP_NO_TX_POWER;
+#endif
 	if (swtp == NULL) {
 		CCCI_LEGACY_ERR_LOG(-1, SYS, "%s:swtp is null\n", __func__);
 		return -1;
@@ -55,9 +79,16 @@ static int swtp_send_tx_power(struct swtp_t *swtp)
 
 	spin_lock_irqsave(&swtp->spinlock, flags);
 
+#ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
+// FACTORY SW: SET NO_TX directly
+	ret = exec_ccci_kern_func(ID_UPDATE_TX_POWER,
+		(char *)&factory_tx_power_mode, sizeof(factory_tx_power_mode));
+	power_mode = factory_tx_power_mode;
+#else
 	ret = exec_ccci_kern_func(ID_UPDATE_TX_POWER,
 		(char *)&swtp->tx_power_mode, sizeof(swtp->tx_power_mode));
 	power_mode = swtp->tx_power_mode;
+#endif
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
 	if (ret != 0)
@@ -103,15 +134,41 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 	else
 		swtp->gpio_state[i] = SWTP_EINT_PIN_PLUG_IN;
 
+#if defined(CONFIG_MOTO_SWTP_CUST)
+	swtp->tx_power_mode = SWTP_DO_TX_POWER; // default as radiate mode, DO power
+#else
 	swtp->tx_power_mode = SWTP_NO_TX_POWER;
+#endif
+
+#if defined(CONFIG_MOTO_SWTP_CUST)
+	for (i = 0; i < MAX_PIN_NUM; i++) {
+            CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: swtp->gpio_state[%d] is %d\n", __func__ , i, swtp->gpio_state[i]);
+        }
+#endif
+
 	for (i = 0; i < MAX_PIN_NUM; i++) {
 		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
+#if defined(CONFIG_MOTO_SWTP_CUST)
+			swtp->tx_power_mode = SWTP_NO_TX_POWER;
+#else
 			swtp->tx_power_mode = SWTP_DO_TX_POWER;
+#endif
 			break;
 		}
 	}
 
+#if defined(CONFIG_MOTO_SWTP_CUST)
+    inject_pin_status_event(swtp->tx_power_mode, rf_name);
+    CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: notify swtp tx power mode:%d (0 -- do swtp tx; 1 -- no swtp tx)\n", __func__ ,swtp->tx_power_mode);
+#else
 	inject_pin_status_event(swtp->curr_mode, rf_name);
+#endif
+#if defined(CONFIG_MOTO_SWTP_CUST)
+    swtp_tx_power_mode = swtp->tx_power_mode;
+#endif
+
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
 	return swtp->tx_power_mode;
@@ -191,6 +248,11 @@ static void swtp_init_delayed_work(struct work_struct *work)
 
 	CCCI_NORMAL_LOG(-1, SYS, "%s at the begin...\n", __func__);
 	CCCI_BOOTUP_LOG(-1, SYS, "%s at the begin...\n", __func__);
+#if defined(CONFIG_MOTO_SWTP_CUST)
+	ret = class_register(&swtp_class);
+
+	ret = class_create_file(&swtp_class, &class_attr_swtp_gpio_state);
+#endif
 
 	if (ARRAY_SIZE(swtp_of_match) != ARRAY_SIZE(irq_name) ||
 		ARRAY_SIZE(swtp_of_match) > MAX_PIN_NUM + 1 ||
@@ -272,7 +334,15 @@ int swtp_init(void)
 	/* tx work setting */
 	INIT_DELAYED_WORK(&swtp_data.delayed_work,
 		swtp_tx_delayed_work);
+#ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
 	swtp_data.tx_power_mode = SWTP_NO_TX_POWER;
+#else
+	swtp_data.tx_power_mode = SWTP_DO_TX_POWER;
+#endif
+
+	#if defined(CONFIG_MOTO_SWTP_CUST)
+	swtp_tx_power_mode = swtp_data.tx_power_mode;
+	#endif
 
 	spin_lock_init(&swtp_data.spinlock);
 
