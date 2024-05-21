@@ -28,6 +28,7 @@
 		novatek,reset-gpio = <&pio 147 0x0>;
 		novatek,irq-gpio = <&pio 4 0x1>;
 		novatek,def-max-resolution = <720 1600>;
+		novatek,panel-supplier = "nt36528a", "nt36528";
 		//novatek,usb_charger;
 		//novatek,psy-name = "battery";
 		//novatek,report_gesture_key;
