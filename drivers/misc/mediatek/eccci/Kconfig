@@ -60,3 +60,13 @@ config MTK_ECCCI_DEBUG_LOG
 	  Say Y here if you need dump ECID info,
 	  only be opened on userdebug load, if unsure, say N.
 	  The option default disabled.
+
+config MOTO_SWTP_CUST
+	bool "ECCCI swtp customization"
+	depends on MTK_ECCCI_DRIVER
+	help
+	  This option enables moto swtp customization, if yes,
+	  then it is supported, if no,
+	  it is disabled.
+	  The option default disabled.
+
