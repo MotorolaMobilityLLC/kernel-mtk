@@ -97,7 +97,11 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 
 static enum mtk_lcm_version mtk_panel_get_lcm_version(void)
 {
+#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
+#else
 	return MTK_LEGACY_LCM_DRV;
+#endif
 }
 
 static struct mtk_panel_funcs ext_funcs = {
