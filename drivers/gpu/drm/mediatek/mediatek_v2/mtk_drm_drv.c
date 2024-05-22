@@ -5416,7 +5416,11 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 			} else {
 				bl_level = (param_info->value) ? BRIGHTNESS_HBM_ON : BRIGHTNESS_HBM_OFF;
 			}
-			ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
+			if (HBM_MODE_RAMPING == panel_ext->hbm_type)
+				DDPINFO("%s: HBM ramping, skip panel feature set\n", __func__);
+			else
+				ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
+
 			if (!ret) mtk_drm_setbacklight(crtc, bl_level);
 			break;
 		default:
