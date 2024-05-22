@@ -19,7 +19,7 @@
 #include <linux/usb/role.h>
 #include <linux/workqueue.h>
 #include <linux/proc_fs.h>
-
+#include "charger_class.h"
 #include "extcon-mtk-usb.h"
 
 #if IS_ENABLED(CONFIG_TCPC_CLASS)
@@ -223,6 +223,18 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 	struct regulator *vbus = extcon->vbus;
 	struct device *dev = extcon->dev;
 	int ret;
+	struct charger_device *primary_charger = get_charger_by_name("primary_chg");;
+
+        if (!primary_charger) {
+		dev_info(dev, "%s : get primary charger device failed\n", __func__);
+	} else {
+		dev_info(dev, "primary_charger, vbus turn %s\n", is_on ? "on" : "off");
+		if (is_on) {
+			charger_dev_enable_otg(primary_charger, true);
+		} else {
+			charger_dev_enable_otg(primary_charger, false);
+		}
+	}
 
 	/* vbus is optional */
 	if (!vbus || extcon->vbus_on == is_on)
