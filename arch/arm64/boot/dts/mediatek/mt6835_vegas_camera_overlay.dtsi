@@ -72,6 +72,20 @@
 			output-high;
 		};
 	};
+	camera_pins_cam0_vcamois_0: cam0@vcam4 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO56__FUNC_GPIO56>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam0_vcamois_1: cam0@vcam5 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO56__FUNC_GPIO56>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 	camera_pins_cam1_vcama_0: cam1@vcam0 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
@@ -293,7 +307,8 @@
 			"cam1_mclk_6mA", "cam1_mclk_8mA",
 			"cam2_mclk_off",
 			"cam2_mclk_2mA", "cam2_mclk_4mA",
-			"cam2_mclk_6mA", "cam2_mclk_8mA";
+			"cam2_mclk_6mA", "cam2_mclk_8mA",
+			"cam0_ldo_vcamois_0", "cam0_ldo_vcamois_1";
 
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst_0>;
@@ -331,8 +346,11 @@
 	pinctrl-33 = <&camera_pins_cam2_mclk_4ma>;
 	pinctrl-34 = <&camera_pins_cam2_mclk_6ma>;
 	pinctrl-35 = <&camera_pins_cam2_mclk_8ma>;
+	pinctrl-36 = <&camera_pins_cam0_vcamois_0>;
+	pinctrl-37 = <&camera_pins_cam0_vcamois_1>;
 
 	cam0_vcamd-supply = <&cam_dvdd_rear_main>;
+	cam0_vcamaf-supply = <&cam_afvdd_rear_main>;
 	cam1_vcamd-supply = <&cam_dvdd_front>;
 
 	cam0_pin_mclk = "mclk";
@@ -340,6 +358,8 @@
 	cam0_pin_vcama = "gpio";
 	cam0_pin_vcamio = "gpio";
 	cam0_pin_vcamd = "regulator";
+	cam0_pin_vcamois = "gpio";
+	cam0_pin_vcamaf = "regulator";
 	cam1_pin_mclk = "mclk";
 	cam1_pin_rst = "gpio";
 	cam1_pin_vcama = "gpio";
@@ -365,10 +385,10 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 
-	camera_main_two_mtk:camera_main_two@20 {
+	camera_main_two_mtk:camera_main_two@10 {
 		compatible = "mediatek,camera_main_two";
 		#thermal-sensor-cells = <0>;
-		reg = <0x20>;
+		reg = <0x10>;
 		status = "okay";
 	};
 };
@@ -378,10 +398,10 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 
-	camera_sub_mtk:camera_sub@1a {
+	camera_sub_mtk:camera_sub@0d {
 		compatible = "mediatek,camera_sub";
 		#thermal-sensor-cells = <0>;
-		reg = <0x1a>;
+		reg = <0x0d>;
 		status = "okay";
 	};
 };
@@ -391,15 +411,15 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 
-	mtk_camera_eeprom0:camera_eeprom0@a0 {
+	mtk_camera_eeprom0:camera_eeprom0@50 {
 		compatible = "mediatek,camera_eeprom";
-		reg = <0xa0>;
+		reg = <0x50>;
 		status = "okay";
 	};
-	camera_main_mtk:camera_main@20 {
+	camera_main_mtk:camera_main@10 {
 		compatible = "mediatek,camera_main";
 		#thermal-sensor-cells = <0>;
-		reg = <0x20>;
+		reg = <0x10>;
 		status = "okay";
 	};
 };
@@ -407,9 +427,9 @@
 
 /* CAMERA AF */
 &i2c8 {
-	camera_main_af_mtk:camera_main_af@d2 {
+	camera_main_af_mtk:camera_main_af@69 {
 		compatible = "mediatek,camera_main_af";
-		reg = <0xd2>;
+		reg = <0x69>;
 		status = "okay";
 	};
 };
@@ -418,9 +438,6 @@
 
 };
 &camera_af_hw_node {
-	camaf_m1_pmic-supply = <&rt5133_ldo3>;
-	camaf_m2_pmic-supply = <&rt5133_gpio1>;
-	camaf_m3_pmic-supply = <&rt5133_gpio1>;
 	status = "okay";
 };
 /* CAMERA AF end */
