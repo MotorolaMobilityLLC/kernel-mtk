@@ -84,6 +84,9 @@ static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, MOT_KANSAS_AFDRV_GT9764, MOT_KANSAS_GT9764_SetI2CClient, MOT_KANSAS_GT9764_Ioctl,
 	MOT_KANSAS_GT9764_Release, MOT_KANSAS_GT9764_GetFileName, NULL},
 //End
+#elif defined(CONFIG_MOT_VEGAS_CAMERA_PROJECT)
+	{1, MOT_VEGAS_AFDRV_AW86006, MOT_VEGAS_AW86006_SetI2Cclient, MOT_VEGAS_AW86006_Ioctl,
+	MOT_VEGAS_AW86006_Release, MOT_VEGAS_AW86006_GetFileName, NULL},
 #endif
 	{1, AFDRV_DW9718TAF, DW9718TAF_SetI2Cclient, DW9718TAF_Ioctl,
 	 DW9718TAF_Release, DW9718TAF_GetFileName, NULL},
@@ -681,6 +684,9 @@ static int AF_i2c_probe(struct i2c_client *client,
 
 		return i4RetValue;
 	}
+#if defined(CONFIG_MOT_VEGAS_CAMERA_PROJECT)
+	aw86006_ois_init(g_pstAF_I2Cclient);
+#endif
 
 	spin_lock_init(&g_AF_SpinLock);
 

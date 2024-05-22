@@ -68,6 +68,9 @@
 //Begin: Add lens driver name for Kansas
 #define MOT_KANSAS_AFDRV_GT9764 "MOT_KANSAS_GT9764AF"
 //End
+//Begin: Add lens driver name for VEGAS
+#define MOT_VEGAS_AFDRV_AW86006 "MOT_VEGAS_AW86006AF"
+//End
 
 #define CONVERT_CCU_TIMESTAMP 0x1000
 

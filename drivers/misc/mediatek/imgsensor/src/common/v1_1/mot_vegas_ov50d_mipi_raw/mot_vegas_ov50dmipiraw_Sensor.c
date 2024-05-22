@@ -53,6 +53,8 @@
 #include "mot_vegas_ov50d_Sensor_setting.h"
 #include "mot_vegas_ov50d_ana_gain_table.h"
 
+extern int aw86006_update_fw_sync(void);
+
 /*
 extern mot_calibration_status_t *VEGAS_OV50D_eeprom_get_calibration_status(void);
 extern mot_calibration_mnf_t *VEGAS_OV50D_eeprom_get_mnf_info(void);
@@ -720,6 +722,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				//VEGAS_OV50D_eeprom_format_calibration_data(&imgsensor);
+				aw86006_update_fw_sync();
 				return ERROR_NONE;
 			}
 
