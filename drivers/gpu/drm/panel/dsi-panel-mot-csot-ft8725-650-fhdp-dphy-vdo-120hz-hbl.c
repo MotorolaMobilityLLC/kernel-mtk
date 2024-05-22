@@ -50,6 +50,8 @@ enum panel_version {
 };
 #endif
 
+#define HBM_RAMPING		1
+
 static int tp_gesture_flag = 0;
 
 struct csot {
@@ -221,7 +223,11 @@ static void csot_panel_init(struct csot *ctx)
 	csot_dcs_write_seq_static(ctx,0x35,0x00);
 	csot_dcs_write_seq_static(ctx,0xA0,0x04);
 
+#if HBM_RAMPING
+	csot_dcs_write_seq_static(ctx, 0x51,0xFF,0x01);
+#else
 	csot_dcs_write_seq_static(ctx, 0x51,0x7F,0x0F);
+#endif
 	csot_dcs_write_seq_static(ctx, 0x53,0x2C);
 	csot_dcs_write_seq_static(ctx, 0x55,0x01);
 
@@ -470,7 +476,7 @@ static struct mtk_panel_params ext_params = {
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = 60,
 	.max_bl_level = 2047,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.panel_ver = 1,
 	.panel_id = 0x08022554,
 	.panel_name = "csot_ft8725_vid_649_1080_120hz",
@@ -531,7 +537,7 @@ static struct mtk_panel_params ext_params_mode_30 = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 	.max_bl_level = 2047,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.panel_ver = 1,
 	.panel_id = 0x08022554,
 	.panel_name = "csot_ft8725_vid_649_1080_120hz",
@@ -592,7 +598,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = 60,
 	.max_bl_level = 2047,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.panel_ver = 1,
 	.panel_id = 0x08022554,
 	.panel_name = "csot_ft8725_vid_649_1080_120hz",
@@ -655,7 +661,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = 60,
 	.max_bl_level = 2047,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.panel_ver = 1,
 	.panel_id = 0x08022554,
 	.panel_name = "csot_ft8725_vid_649_1080_120hz",
@@ -764,6 +770,7 @@ static int panel_cabc_set_cmdq(struct csot *ctx, void *dsi, dcs_grp_write_gce cb
 	return 0;
 }
 
+#if !HBM_RAMPING
 static int panel_hbm_set_cmdq(struct csot *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
 	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0xFF, 0x01}};
@@ -789,6 +796,8 @@ static int panel_hbm_set_cmdq(struct csot *ctx, void *dsi, dcs_grp_write_gce cb,
 
 	return 0;
 }
+#endif
+
 static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
 {
@@ -819,6 +828,9 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
 			break;
 		case PARAM_HBM:
+#if HBM_RAMPING
+			pr_info("%s: HBM ramping enabled, skip mode:%d\n", __func__, param_info.value);
+#else
 			if (ctx->hbm_mode != param_info.value) {
 				ctx->hbm_mode = param_info.value;
 				panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
@@ -827,6 +839,7 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			}
 			else
 				pr_info("%s: skip same HBM mode:%d\n", __func__, ctx->hbm_mode);
+#endif
 			break;
 		default:
 			pr_info("%s: skip unsupport feature %d to %d\n", __func__, param_info.param_idx, param_info.value);

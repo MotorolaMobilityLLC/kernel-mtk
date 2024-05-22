@@ -35,6 +35,8 @@
 extern int __attribute__ ((weak)) sm5109_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) sm5109_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
 
+#define HBM_RAMPING		1
+
 static int tp_gesture_flag = 0;
 
 struct tongxingda {
@@ -68,6 +70,7 @@ static struct mtk_panel_para_table panel_cabc_disable[] = {
 	{2, {0x55, 0x00}},
 };
 
+#if !HBM_RAMPING
 static struct mtk_panel_para_table panel_hbm_on[] = {
 	{4, {0xFF, 0x78, 0x07, 0x00}},
 	{3, {0x51, 0x07, 0xF7}},
@@ -77,6 +80,7 @@ static struct mtk_panel_para_table panel_hbm_off[] = {
 	{4, {0xFF, 0x78, 0x07, 0x00}},
 	{3, {0x51, 0x03, 0xFF}},
 };
+#endif
 
 #define tongxingda_dcs_write_seq(ctx, seq...)                                     \
 	({                                                                     \
@@ -200,7 +204,11 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 	tongxingda_dcs_write_seq_static(ctx, 0xFF,0x78,0x07,0x00);
 	tongxingda_dcs_write_seq_static(ctx, 0x68, 0x06);
+#if HBM_RAMPING
+	tongxingda_dcs_write_seq_static(ctx, 0x51, 0x07,0xFF);//max:0x07 0xFF
+#else
 	tongxingda_dcs_write_seq_static(ctx, 0x51, 0x03,0xFF);//max:0x07 0xFF
+#endif
 	tongxingda_dcs_write_seq_static(ctx, 0x53, 0x2c);
 	tongxingda_dcs_write_seq_static(ctx, 0x55, 0x01);
 	tongxingda_dcs_write_seq_static(ctx, 0x35, 0x00);
@@ -418,7 +426,7 @@ static struct mtk_panel_params ext_params = {
 	.panel_name = "txd_ili7807s_vid_649_1080",
 	.panel_supplier = "txd",
 	.lcm_index = 1,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
 	.lane_swap_en = 0,
@@ -481,7 +489,7 @@ static struct mtk_panel_params ext_params_mode_30 = {
 	.panel_name = "txd_ili7807s_vid_649_1080",
 	.panel_supplier = "txd",
 	.lcm_index = 1,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
 	.lane_swap_en = 0,
@@ -541,7 +549,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	.panel_name = "txd_ili7807s_vid_649_1080",
 	.panel_supplier = "txd",
 	.lcm_index = 1,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
 	.lane_swap_en = 0,
@@ -603,7 +611,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	.panel_name = "txd_ili7807s_vid_649_1080",
 	.panel_supplier = "txd",
 	.lcm_index = 1,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
 	.lane_swap_en = 0,
@@ -765,6 +773,7 @@ static int panel_cabc_set_cmdq(struct tongxingda *ctx, void *dsi, dcs_grp_write_
 	return 0;
 }
 
+#if !HBM_RAMPING
 static int panel_hbm_set_cmdq(struct tongxingda *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
 	unsigned int para_count = 0;
@@ -798,6 +807,7 @@ static int panel_hbm_set_cmdq(struct tongxingda *ctx, void *dsi, dcs_grp_write_g
 
 	return 0;
 }
+#endif
 
 static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
@@ -827,6 +837,9 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
 			break;
 		case PARAM_HBM:
+#if HBM_RAMPING
+			pr_info("%s: HBM ramping enabled, skip mode:%d\n", __func__, param_info.value);
+#else
 			if (ctx->hbm_mode != param_info.value) {
 				ctx->hbm_mode = param_info.value;
 				panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
@@ -835,6 +848,7 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			}
 			else
 				pr_info("%s: skip same HBM mode:%d\n", __func__, ctx->hbm_mode);
+#endif
 			break;
 		default:
 			pr_info("%s: skip unsupport feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
