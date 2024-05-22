@@ -21,6 +21,10 @@ struct GPIO_PINCTRL gpio_pinctrl_list_cam[
 	{"ldo_vcamafvdd_0"},
 	{"ldo_vcamd_1"},
 	{"ldo_vcamd_0"},
+#if defined(CONFIG_MOT_VEGAS_CAMERA_PROJECT)
+	{"ldo_vcamois_1"},
+	{"ldo_vcamois_0"},
+#endif
 	{"ldo_vcamio_1"},
 	{"ldo_vcamio_0"},
 	{"avdd1_gpio_1"},
