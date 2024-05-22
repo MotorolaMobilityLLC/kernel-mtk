@@ -47,10 +47,6 @@ struct csot {
 	int error;
 };
 
-#if defined(CONFIG_MTK_PANEL_EXT)
-static char bl_tb0[] = {0x51, 0x7, 0xff};
-#endif
-
 #define csot_dcs_write_seq(ctx, seq...)                                     \
 	({                                                                     \
 		const u8 d[] = {seq};                                          \
@@ -359,22 +355,20 @@ static struct mtk_panel_params ext_params_mode_1 = {
 static int csot_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
+	char bl_tb0[] = {0x51, 0x7, 0xff};
 	//pr_info("%s: skip for using bl ic, level=%d\n", __func__, level);
-
-#if 1
 
 	if (!cb) {
 		pr_info("%s cb NULL!\n", __func__);
 		return -1;
 	}
-
-	level = (2047 * level)/255;
+	//for 11bit
+	//level = (2047 * level)/255;
 	bl_tb0[1] = ((level & 0x700) >> 8);
 	bl_tb0[2]  = (level & 0xFF);
 
 	pr_info("%s set level:%d, bl_tb:0x%02x%02x\n", __func__, level, bl_tb0[1], bl_tb0[2]);
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
-#endif
 
 	return 0;
 }
