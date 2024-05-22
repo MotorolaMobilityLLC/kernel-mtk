@@ -21,6 +21,9 @@ char * const imgsensor_hw_pin_names[] = {
 	"vcama1",
 	"vcamaf",
 	"vcamd",
+#if defined(CONFIG_MOT_VEGAS_CAMERA_PROJECT)
+	"vcamois",
+#endif
 	"vcamio",
 	"vcama1_gpio",
 	"mipi_switch_en",
