@@ -543,6 +543,7 @@ struct mtk_charger {
 	bool enable_pp[CHG2_SETTING + 1];
 	struct mutex pp_lock[CHG2_SETTING + 1];
 
+	struct delayed_work pd_adapter_check_work;
 	struct moto_chg_tcmd_client chg_tcmd_client;
 	struct mmi_params	mmi;
 	struct mutex mmi_mux_lock;
