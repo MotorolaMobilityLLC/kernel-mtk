@@ -362,6 +362,15 @@
 		status = "okay";
 	};
 };
+&i2c6 {
+        status = "okay";
+        clock-frequency = <400000>;
+        flash_aw36515:aw36515@63 {
+        compatible = "mediatek,flashlights_aw36515_i2c";
+        reg = <0x63>;
+        status = "okay";
+        };
+};
 &i2c8 {
 	status = "okay";
 	clock-frequency = <400000>;
