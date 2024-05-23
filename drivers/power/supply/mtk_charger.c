@@ -5063,6 +5063,25 @@ static char *mtk_charger_supplied_to[] = {
 	"battery"
 };
 
+static void pd_adapter_check_work_handler(struct work_struct *work)
+{
+	static int retry_count = 10;
+	struct mtk_charger *info = container_of(work, struct mtk_charger, pd_adapter_check_work.work);
+
+	chr_err("%s: retry = %d\n", __func__, 11 - retry_count);
+	info->pd_adapter = get_adapter_by_name("pd_adapter");
+	if (info->pd_adapter) {
+		info->pd_nb.notifier_call = notify_adapter_event;
+		register_adapter_device_notifier(info->pd_adapter, &info->pd_nb);
+		chr_err("%s: pd adapter found\n", __func__);
+	}
+	else {
+		if (retry_count > 0)
+			schedule_delayed_work(&info->pd_adapter_check_work, msecs_to_jiffies(200));
+	}
+	--retry_count;
+}
+
 /*==================moto chg tcmd interface======================*/
 static int  mtk_charger_tcmd_set_chg_enable(void *input, int  val)
 {
@@ -5357,6 +5376,8 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	info->log_level = CHRLOG_ERROR_LEVEL;
 
+	INIT_DELAYED_WORK(&info->pd_adapter_check_work, pd_adapter_check_work_handler);
+
 	info->pd_adapter = get_adapter_by_name("pd_adapter");
 	if (!info->pd_adapter)
 		chr_err("%s: No pd adapter found\n", __func__);
@@ -5366,9 +5387,11 @@ static int mtk_charger_probe(struct platform_device *pdev)
 						 &info->pd_nb);
 	}
 
+	if (!info->pd_adapter)
+			schedule_delayed_work(&info->pd_adapter_check_work, msecs_to_jiffies(200));
 	sc_init(&info->sc);
 	info->chg_alg_nb.notifier_call = chg_alg_event;
-
+	info->fast_charging_indicator = PE5_ID;
 	info->enable_meta_current_limit = 1;
 	info->is_charging = false;
 	info->safety_timer_cmd = -1;
