@@ -634,6 +634,8 @@ enum mtk_ddp_io_cmd {
 	/*AOD-SCP cmd start*/
 	DSI_AOD_SCP_GET_DSI_PARAM,
 	/*AOD-SCP cmd end*/
+	DSI_PANEL_FEATURE_SET,
+	DSI_PANEL_FEATURE_GET,
 };
 
 enum mtk_ddp_comp_apsrc_crtc_id {
