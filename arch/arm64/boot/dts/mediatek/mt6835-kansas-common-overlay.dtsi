@@ -48,23 +48,23 @@ eint_cp: eint_cp {
 
 &swtp {
 	interrupt-parent = <&pio>;
-	interrupts = <2 IRQ_TYPE_LEVEL_HIGH 2 0>;
-	deb-gpios = <&pio 2 0>;
+	interrupts = <6 IRQ_TYPE_LEVEL_HIGH 6 0>;
+	deb-gpios = <&pio 6 0>;
 	debounce = <512>;
 	status = "okay";
 };
 
 &swtp_1 {
 	interrupt-parent = <&pio>;
-	interrupts = <6 IRQ_TYPE_LEVEL_HIGH 6 0>;
-	deb-gpios = <&pio 6 0>;
+	interrupts = <11 IRQ_TYPE_LEVEL_HIGH 11 0>;
+	deb-gpios = <&pio 11 0>;
 	debounce = <512>;
 	status = "okay";
 };
 &swtp_2 {
 	interrupt-parent = <&pio>;
-	interrupts = <11 IRQ_TYPE_LEVEL_HIGH 11 0>;
-	deb-gpios = <&pio 11 0>;
+	interrupts = <19 IRQ_TYPE_LEVEL_HIGH 19 0>;
+	deb-gpios = <&pio 19 0>;
 	debounce = <512>;
 	status = "okay";
 };
