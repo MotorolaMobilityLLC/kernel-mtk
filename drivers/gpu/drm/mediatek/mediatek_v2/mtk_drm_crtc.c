@@ -1295,6 +1295,58 @@ static bool msync_is_on(struct mtk_drm_private *priv,
 	return false;
 }
 
+static bool panel_is_hbm_on(struct drm_crtc *crtc)
+{
+	int32_t hbm_mode = 0;
+
+	if (!mtk_drm_crtc_get_panel_feature(crtc, PARAM_HBM, &hbm_mode)) {
+		if (hbm_mode) return true;
+	}
+	return false;
+}
+
+static bool panel_set_hbm_backlight(struct drm_crtc *crtc, unsigned int *bl_lvl)
+{
+	unsigned int bl_level;
+	static unsigned int bl_lvl_during_hbm = 0;
+	static bool hbm_mode = false;
+	struct mtk_panel_params *panel_ext = mtk_drm_get_lcm_ext_params(crtc);
+	int max_bl_level = (panel_ext->max_bl_level) ? (panel_ext->max_bl_level) : 255;
+
+	bl_level = *bl_lvl;
+
+	if (bl_level == BRIGHTNESS_HBM_ON || bl_level == BRIGHTNESS_HBM_OFF) {
+		*bl_lvl = bl_level == BRIGHTNESS_HBM_ON ? max_bl_level : bl_lvl_during_hbm;
+		hbm_mode = bl_level == BRIGHTNESS_HBM_ON ? true : false;
+
+		pr_info("HBM set  bl_level=%d bl_max_level = %d bl_lvl_during_hbm = %d hbm_mode = %d\n",
+				bl_level, max_bl_level, bl_lvl_during_hbm, hbm_mode);
+	} else if (bl_level == BRIGHTNESS_HBM_ON_SKIP_BL) {
+		hbm_mode = true;
+		pr_info("enter HBM mode, will skip backlight setting.\n");
+		return true;
+	} else {
+		bl_lvl_during_hbm = bl_level;
+
+		if (panel_ext->check_panel_feature) {
+			if (panel_is_hbm_on(crtc) && bl_level) {
+				pr_info("HBM is on.. ignore setting backlight. bl_vl=%d\n", bl_lvl_during_hbm);
+				return true;
+			}
+		} else {
+			if (bl_level == 0) {
+				hbm_mode = false;
+				pr_info(" bl_vl=%d, set hbm_mode to false\n", bl_level);
+			}
+			else if (hbm_mode) {
+				pr_info("HBM is on.. ignore setting backlight. bl_vl=%d\n", bl_lvl_during_hbm);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level,
 	unsigned int panel_ext_param, unsigned int cfg_flag)
 {
@@ -1312,6 +1364,10 @@ int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level,
 	enum mtk_lcm_version lcm_version = mtk_drm_get_lcm_version();
 #endif
 	struct mtk_drm_private *priv = crtc->dev->dev_private;
+
+	if (panel_set_hbm_backlight(crtc, &level)) {
+		return 0;
+	}
 
 #ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
 	if (lcm_version == MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS) {
@@ -1732,6 +1788,84 @@ int mtk_drm_crtc_set_panel_hbm(struct drm_crtc *crtc, bool en)
 	cmdq_pkt_destroy(cmdq_handle);
 
 	return 0;
+}
+
+int mtk_drm_crtc_get_panel_feature(struct drm_crtc *crtc, paramId_t param_id, uint32_t *param_value)
+{
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	struct mtk_ddp_comp *comp = mtk_ddp_comp_request_output(mtk_crtc);
+	struct panel_param_info param_info;
+	int ret = 0;
+
+	param_info.param_idx = param_id;
+	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
+	ret = comp->funcs->io_cmd(comp, NULL, DSI_PANEL_FEATURE_GET, &param_info);
+	DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
+	*param_value = param_info.value;
+	return ret;
+}
+
+int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_info param_info)
+{
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	struct mtk_ddp_comp *comp = mtk_ddp_comp_request_output(mtk_crtc);
+	struct cmdq_pkt *cmdq_handle;
+	struct cmdq_client *client;
+	bool is_frame_mode;
+	int ret = 0;
+
+	if (!mtk_drm_lcm_is_connect(mtk_crtc)) {
+		DDPMSG("%s: lcm is not connected, skip\n", __func__);
+		return 0;
+	}
+
+	if (!(comp && comp->funcs && comp->funcs->io_cmd))
+		return -EINVAL;
+
+	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
+
+	if (!(mtk_crtc->enabled)) {
+		DDPMSG("%s: skip, slept\n", __func__);
+		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
+		return -EINVAL;
+	}
+
+	mtk_drm_idlemgr_kick(__func__, crtc, 0);
+
+	is_frame_mode = mtk_crtc_is_frame_trigger_mode(&mtk_crtc->base);
+
+	client = (is_frame_mode) ? mtk_crtc->gce_obj.client[CLIENT_CFG] :
+				mtk_crtc->gce_obj.client[CLIENT_DSI_CFG];
+	cmdq_handle =
+		cmdq_pkt_create(client);
+
+	mtk_crtc_wait_frame_done(mtk_crtc, cmdq_handle, DDP_FIRST_PATH, 0);
+
+	if (is_frame_mode) {
+		cmdq_pkt_clear_event(cmdq_handle,
+				mtk_crtc->gce_obj.event[EVENT_STREAM_BLOCK]);
+		cmdq_pkt_wfe(cmdq_handle,
+				mtk_crtc->gce_obj.event[EVENT_CABC_EOF]);
+	}
+
+	ret = comp->funcs->io_cmd(comp, cmdq_handle, DSI_PANEL_FEATURE_SET, &param_info);
+
+	if (is_frame_mode) {
+		cmdq_pkt_set_event(cmdq_handle,
+				mtk_crtc->gce_obj.event[EVENT_CABC_EOF]);
+		cmdq_pkt_set_event(cmdq_handle,
+				mtk_crtc->gce_obj.event[EVENT_STREAM_BLOCK]);
+	}
+
+	if (ret < 0) {
+		DDPMSG("%s set panel feature (%d) to %d, failed!\n", __func__, param_info.param_idx, param_info.value);
+	} else {
+		cmdq_pkt_flush(cmdq_handle);
+		DDPMSG("%s set panel feature (%d) to %d, success!\n", __func__, param_info.param_idx, param_info.value);
+	}
+	cmdq_pkt_destroy(cmdq_handle);
+	DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
+	return ret;
 }
 
 int mtk_drm_crtc_hbm_wait(struct drm_crtc *crtc, bool en)
