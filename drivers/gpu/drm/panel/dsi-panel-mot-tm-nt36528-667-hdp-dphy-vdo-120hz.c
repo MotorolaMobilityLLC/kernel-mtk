@@ -319,9 +319,8 @@ static const struct drm_display_mode performance_mode_60hz = {
 	.vtotal = FRAME_HEIGHT + MODE_60_VFP + VSA + VBP,
 };
 
-#if 0
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 365162,
+	.clock		= 190503,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -333,7 +332,7 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 static const struct drm_display_mode performance_mode_120hz = {
-	.clock		= 365162,
+	.clock		= 189475,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
@@ -343,7 +342,6 @@ static const struct drm_display_mode performance_mode_120hz = {
 	.vsync_end = FRAME_HEIGHT + MODE_120_VFP + VSA,
 	.vtotal = FRAME_HEIGHT + MODE_120_VFP + VSA + VBP,
 };
-#endif
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 static struct mtk_panel_params ext_params_60hz = {
@@ -379,7 +377,6 @@ static struct mtk_panel_params ext_params_60hz = {
 
 };
 
-#if 0
 static struct mtk_panel_params ext_params_90hz = {
 //	.vfp_low_power = 7476,//30hz
 	.data_rate = DATA_RATE,
@@ -391,10 +388,11 @@ static struct mtk_panel_params ext_params_90hz = {
 		.para_list[0] = 0x9c,
 	},
 	.panel_ver = 1,
-	.panel_id = 0x01012891,
+	//.panel_id = 0x01012891,
 	.panel_name = "tm_nt36528_vid_667_720",
 	.panel_supplier = "tm",
 	.lcm_index = 0,
+/*
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
 	.ssc_enable = 0,
@@ -405,6 +403,7 @@ static struct mtk_panel_params ext_params_90hz = {
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
+*/
 
 };
 
@@ -419,10 +418,11 @@ static struct mtk_panel_params ext_params_120hz = {
 		.para_list[0] = 0x9C,
 	},
 	.panel_ver = 1,
-	.panel_id = 0x01012891,
+	//.panel_id = 0x01012891,
 	.panel_name = "tm_nt36528_vid_667_720",
 	.panel_supplier = "tm",
 	.lcm_index = 0,
+/*
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
 	.ssc_enable = 0,
@@ -433,9 +433,9 @@ static struct mtk_panel_params ext_params_120hz = {
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
+*/
 
 };
-#endif
 
 static int tm_nt36528_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 				 unsigned int level)
@@ -486,16 +486,16 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 	}
 
 	pr_info("%s:disp: mode fps=%d", __func__, drm_mode_vrefresh(m));
-	if (drm_mode_vrefresh(m) == 60)
+/*	if (drm_mode_vrefresh(m) == 60)
 		ext->params = &ext_params_60hz;
-/*
+*/
+
 	if (drm_mode_vrefresh(m) == MODE_120_FPS)
 		ext->params = &ext_params_120hz;
 	else if (drm_mode_vrefresh(m) == MODE_60_FPS)
 		ext->params = &ext_params_60hz;
 	else if (drm_mode_vrefresh(m) == MODE_90_FPS)
 		ext->params = &ext_params_90hz;
-*/
 	else
 		ret = 1;
 
@@ -610,13 +610,12 @@ static struct mtk_panel_funcs ext_funcs = {
 static int tm_nt36528_get_modes(struct drm_panel *panel,
 					struct drm_connector *connector)
 {
-	struct drm_display_mode *mode;
-#if 0
+	//struct drm_display_mode *mode;
 	struct drm_display_mode *mode_1;
 	struct drm_display_mode *mode_2;
 	struct drm_display_mode *mode_3;
-#endif
 
+#if 0
 	mode = drm_mode_duplicate(connector->dev, &performance_mode_60hz);
 	printk("[%d  %s]disp: mode:\n",__LINE__, __FUNCTION__,mode);
 	if (!mode) {
@@ -629,9 +628,9 @@ static int tm_nt36528_get_modes(struct drm_panel *panel,
 	drm_mode_set_name(mode);
 	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
 	drm_mode_probed_add(connector, mode);
+#endif
 
 //TBD
-#if 0
 	mode_1 = drm_mode_duplicate(connector->dev, &performance_mode_60hz);
 	printk("[%d  %s]disp mode:%d\n",__LINE__, __FUNCTION__,mode_1);
 	if (!mode_1) {
@@ -656,7 +655,18 @@ static int tm_nt36528_get_modes(struct drm_panel *panel,
 	drm_mode_set_name(mode_2);
 	mode_2->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(connector, mode_2);
-#endif
+
+	mode_3 = drm_mode_duplicate(connector->dev, &performance_mode_120hz);
+	if (!mode_3) {
+		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			performance_mode_120hz.hdisplay,
+			performance_mode_120hz.vdisplay,
+			drm_mode_vrefresh(&performance_mode_120hz));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_3);
+	mode_3->type = DRM_MODE_TYPE_DRIVER;
+	drm_mode_probed_add(connector, mode_3);
 
 	connector->display_info.width_mm = 70;
 	connector->display_info.height_mm = 154;
