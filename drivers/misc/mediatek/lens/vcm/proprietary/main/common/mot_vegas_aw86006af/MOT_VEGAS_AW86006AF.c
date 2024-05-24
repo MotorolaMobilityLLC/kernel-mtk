@@ -24,6 +24,7 @@
 #include <linux/string.h>
 #include <uapi/asm-generic/errno-base.h>
 #include "lens_info.h"
+#include "aw86006_ois.h"
 //#include "AW86006AF.h"
 
 #define SOC_OIS_I2C_ADDR		0x69
@@ -32,20 +33,6 @@
 #define OIS_MAIN_H
 
 #define AF_DRVNAME		"AW86006AF_DRV"
-
-#define OIS_MAGIC 'O'
-#define OISIOC_T_OISMODE _IOW(OIS_MAGIC, 1, u32)
-
-/* Log Format */
-#define AW_LOGI(format, ...) \
-	pr_info("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, __func__, \
-								##__VA_ARGS__)
-#define AW_LOGD(format, ...) \
-	pr_debug("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, __func__, \
-								##__VA_ARGS__)
-#define AW_LOGE(format, ...) \
-	pr_err("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, __func__, \
-								##__VA_ARGS__)
 
 /* register address */
 #define REG_AF_CODE	(0x0009)
@@ -56,16 +43,39 @@
 
 #endif
 
+/* Log Format */
+#ifdef AW_LOGI
+#undef AW_LOGI
+#define AW_LOGI(format, ...) \
+	pr_info("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, __func__, \
+								##__VA_ARGS__)
+#endif
+#ifdef AW_LOGD
+#undef AW_LOGD
+#define AW_LOGD(format, ...) \
+	pr_debug("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, \
+							__func__, ##__VA_ARGS__)
+#endif
+#ifdef AW_LOGE
+#undef AW_LOGE
+#define AW_LOGE(format, ...) \
+	pr_err("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, __func__, \
+								##__VA_ARGS__)
+#endif
+
 struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
+static int hea_test_runing = 0;
 
 static unsigned long g_u4CurrPosition = 512;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4AF_INF;
 
+extern int gyro_offset_cali_run(struct motOISGOffsetResult *param);
+extern int gyro_offset_cali_set(struct motOISGOffsetResult *param);
 extern int aw86006_set_ois_mode(uint8_t flag);
-
+extern int run_aw86006ois_drawcircle(motOISHeaParam *param);
 /*******************************************************************************
  * I2c read/write
  ******************************************************************************/
@@ -122,7 +132,10 @@ static inline int SetPos(unsigned long a_u4Position)
 	uint8_t pos[2] = { 0 };
 
 	AW_LOGI("Start");
-
+	if(hea_test_runing) {
+		AW_LOGI("can not setPos when runing hea test");
+		return 0;
+	}
 	pos[0] = (uint8_t)(a_u4Position >> 8);
 	pos[1] = (uint8_t)(a_u4Position & 0xff);
 
@@ -264,6 +277,19 @@ long MOT_VEGAS_AW86006AF_Ioctl(struct file *a_pstFile, uint32_t a_u4Command,
 		break;
 	case AFIOC_T_SETINFPOS:
 		ret = AW86006AF_SetInf(a_u4Param);
+		break;
+	case OISIOC_G_GYRO_OFFSET_CALI:
+		ret = gyro_offset_cali_run((struct motOISGOffsetResult *) a_u4Param);
+		break;
+	case OISIOC_G_GYRO_OFFSET_SET:
+		ret = copy_from_user(pBuff, (void *)a_u4Param, _IOC_SIZE(a_u4Command));
+		ret = gyro_offset_cali_set((struct motOISGOffsetResult *) pBuff);
+		break;
+	case OISIOC_G_HEA:
+		ret = copy_from_user(pBuff, (void *)a_u4Param, _IOC_SIZE(a_u4Command));
+		hea_test_runing = 1;
+		ret = run_aw86006ois_drawcircle((motOISHeaParam *)pBuff);
+		hea_test_runing = 0;
 		break;
 	case OISIOC_T_OISMODE:
 		ret = copy_from_user(pBuff, (void *)a_u4Param, _IOC_SIZE(a_u4Command));
