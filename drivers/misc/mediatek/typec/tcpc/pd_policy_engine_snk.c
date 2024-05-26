@@ -138,6 +138,15 @@ void pe_snk_ready_entry(struct pd_port *pd_port)
 
 void pe_snk_hard_reset_entry(struct pd_port *pd_port)
 {
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	int rv = 0;
+	uint32_t chip_vid = 0;
+
+	rv = tcpci_get_chip_vid(pd_port->tcpc, &chip_vid);
+	if (!rv && SOUTHCHIP_PD_VID == chip_vid) {
+		pd_enable_timer(pd_port, PD_TIMER_HARD_RESET_COMPLETE);
+	}
+#endif /* CONFIG_TCPC_SC2150 */
 	pd_send_hard_reset(pd_port);
 }
 
@@ -178,6 +187,14 @@ void pe_snk_soft_reset_entry(struct pd_port *pd_port)
 /* ---- Policy Engine (PD30) ---- */
 
 #if CONFIG_USB_PD_REV30
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+void pe_snk_give_sink_cap_ext_entry(struct pd_port *pd_port)
+{
+	PE_STATE_WAIT_TX_SUCCESS(pd_port);
+
+	pd_dpm_send_sink_cap_ext(pd_port);
+}
+#endif /* CONFIG_TCPC_SC2150 */
 
 /*
  * [PD3.0] Figure 8-71 Sink Port Not Supported Message State Diagram
@@ -222,7 +239,12 @@ void pe_snk_source_alert_received_entry(struct pd_port *pd_port)
 #if CONFIG_USB_PD_REV30_ALERT_LOCAL
 void pe_snk_send_sink_alert_entry(struct pd_port *pd_port)
 {
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	// PE_STATE_WAIT_TX_SUCCESS(pd_port);
+	PE_STATE_WAIT_MSG(pd_port);
+#else
 	PE_STATE_WAIT_TX_SUCCESS(pd_port);
+#endif /* CONFIG_TCPC_SC2150 */
 	pd_dpm_send_alert(pd_port);
 }
 #endif	/* CONFIG_USB_PD_REV30_ALERT_REMOTE */

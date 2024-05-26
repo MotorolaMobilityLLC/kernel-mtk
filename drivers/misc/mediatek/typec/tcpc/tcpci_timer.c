@@ -12,7 +12,11 @@
 #define RT_MASK64(i)			(((uint64_t)1) << i)
 
 #define TIMEOUT_VAL(val)		(val * 1000)
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+#define TIMEOUT_RANGE(min, max)		((min * 2000 + max * 3000) / 5)
+#else
 #define TIMEOUT_RANGE(min, max)		((min * 4000 + max * 1000) / 5)
+#endif /* CONFIG_TCPC_SC2150 */
 
 static inline uint64_t tcpc_get_timer_tick(struct tcpc_device *tcpc)
 {
@@ -69,6 +73,9 @@ static const struct tcpc_timer_desc tcpc_timer_desc[PD_TIMER_NR] = {
 #if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_DISCOVER_ID, 40, 50),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_BIST_CONT_MODE, 30, 60),
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_HARD_RESET_COMPLETE, 4, 5),
+#endif /* CONFIG_TCPC_SC2150 */
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_NO_RESPONSE, 4500, 5500),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_PS_HARD_RESET, 25, 35),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_PS_SOURCE_OFF, 750, 920),
@@ -177,6 +184,10 @@ static inline void on_pe_timer_timeout(
 		struct tcpc_device *tcpc, uint32_t timer_id)
 {
 	struct pd_event pd_event = {0};
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	int rv = 0;
+	uint32_t chip_vid = 0;
+#endif /* CONFIG_TCPC_SC2150 */
 
 	pd_event.event_type = PD_EVT_TIMER_MSG;
 	pd_event.msg = timer_id;
@@ -233,7 +244,14 @@ static inline void on_pe_timer_timeout(
 		TCPC_INFO("pe_idle tout\n");
 		pd_put_pe_event(&tcpc->pd_port, PD_PE_IDLE);
 		break;
-
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	case PD_TIMER_HARD_RESET_COMPLETE:
+		rv = tcpci_get_chip_vid(tcpc, &chip_vid);
+		if (!rv &&	SOUTHCHIP_PD_VID == chip_vid) {
+			pd_put_sent_hard_reset_event(tcpc);
+		}
+		break;
+#endif /* CONFIG_TCPC_SC2150 */
 	default:
 		pd_put_event(tcpc, &pd_event, false);
 		break;

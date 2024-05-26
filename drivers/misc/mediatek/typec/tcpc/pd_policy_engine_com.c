@@ -350,6 +350,16 @@ void pe_give_country_codes_entry(struct pd_port *pd_port)
 	pd_dpm_send_country_codes(pd_port);
 }
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_CODE_LOCAL */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+void pe_give_revision_entry(struct pd_port *pd_port)
+{
+	uint32_t ver = (SOUTHCHIP_PD_VER << 16);
+	PE_STATE_WAIT_TX_SUCCESS_OR_FAILED(pd_port);
+
+	pd_send_sop_data_msg(pd_port,
+		PD_DATA_GET_REVISION, PD_VERDO_SIZE, &ver);
+}
+#endif /* CONFIG_TCPC_SC2150 */
 
 /*
  * [PD3.0] Figure 8-93 Get Country Information State Diagram
