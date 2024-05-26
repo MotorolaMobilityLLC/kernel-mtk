@@ -37,10 +37,12 @@ void pe_src_discovery_entry(struct pd_port *pd_port)
 
 	pd_enable_timer(pd_port, PD_TIMER_SOURCE_CAPABILITY);
 
+#if (!IS_ENABLED(CONFIG_TCPC_SC2150))
 #if CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID
 	if (pd_is_discover_cable(pd_port))
 		pd_enable_timer(pd_port, PD_TIMER_DISCOVER_ID);
 #endif
+#endif /* CONFIG_TCPC_SC2150 */
 }
 
 void pe_src_send_capabilities_entry(struct pd_port *pd_port)
@@ -254,6 +256,14 @@ void pe_src_give_source_cap_ext_entry(struct pd_port *pd_port)
 	pd_dpm_send_source_cap_ext(pd_port);
 }
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+void pe_src_give_sink_cap_ext_entry(struct pd_port *pd_port)
+{
+	PE_STATE_WAIT_TX_SUCCESS(pd_port);
+
+	pd_dpm_send_sink_cap_ext(pd_port);
+}
+#endif /* CONFIG_TCPC_SC2150 */
 
 /*
  * [PD3.0] Figure 8-80 Source Give Source Status State Diagram

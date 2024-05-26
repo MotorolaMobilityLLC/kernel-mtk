@@ -127,6 +127,32 @@ bool tcpci_check_vsafe0v(struct tcpc_device *tcpc)
 }
 EXPORT_SYMBOL(tcpci_check_vsafe0v);
 
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+int tcpci_get_chip_id(struct tcpc_device *tcpc,uint32_t *chip_id)
+{
+	if (tcpc->ops->get_chip_id == NULL) {
+		return -ENOTSUPP;
+	}
+	return tcpc->ops->get_chip_id(tcpc,chip_id);
+}
+
+int tcpci_get_chip_pid(struct tcpc_device *tcpc,uint32_t *chip_pid)
+{
+	if (tcpc->ops->get_chip_pid == NULL) {
+		return -ENOTSUPP;
+	}
+	return tcpc->ops->get_chip_pid(tcpc,chip_pid);
+}
+
+int tcpci_get_chip_vid(struct tcpc_device *tcpc,uint32_t *chip_vid)
+{
+	if (tcpc->ops->get_chip_vid == NULL) {
+		return -ENOTSUPP;
+	}
+	return tcpc->ops->get_chip_vid(tcpc,chip_vid);;
+}
+#endif /* CONFIG_TCPC_SC2150 */
+
 int tcpci_alert_status_clear(
 	struct tcpc_device *tcpc, uint32_t mask)
 {

@@ -187,6 +187,9 @@ enum pd_pe_state {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL
 	PE_SRC_GIVE_SOURCE_CAP_EXT,
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	PE_SRC_GIVE_SINK_CAP_EXT,
+#endif /* CONFIG_TCPC_SC2150 */
 #if CONFIG_USB_PD_REV30_STATUS_LOCAL
 	PE_SRC_GIVE_SOURCE_STATUS,
 #endif	/* CONFIG_USB_PD_REV30_STATUS_LOCAL */
@@ -240,6 +243,9 @@ enum pd_pe_state {
 #if CONFIG_USB_PD_REV30_PPS_SINK
 	PE_SNK_GET_PPS_STATUS,
 #endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	PE_SNK_GIVE_SINK_CAP_EXT,
+#endif /* CONFIG_TCPC_SC2150 */
 #endif	/* CONFIG_USB_PD_REV30 */
 #endif	/* CONFIG_USB_PD_PE_SINK */
 
@@ -401,6 +407,9 @@ enum pd_pe_state {
 	PE_GIVE_COUNTRY_INFO,
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
 	PE_VDM_NOT_SUPPORTED,
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	PE_GIVE_REVISION,
+#endif /* CONFIG_TCPC_SC2150 */
 #endif /* CONFIG_USB_PD_REV30 */
 
 /******************* Others *******************/
@@ -533,6 +542,10 @@ void pe_src_sink_alert_received_entry(
 void pe_src_give_source_cap_ext_entry(
 	struct pd_port *pd_port);
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+void pe_src_give_sink_cap_ext_entry(
+	struct pd_port *pd_port);
+#endif /* CONFIG_TCPC_SC2150 */
 #if CONFIG_USB_PD_REV30_STATUS_LOCAL
 void pe_src_give_source_status_entry(
 	struct pd_port *pd_port);
@@ -623,6 +636,9 @@ void pe_snk_get_pps_status_entry(
 void pe_snk_get_pps_status_exit(
 	struct pd_port *pd_port);
 #endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+void pe_snk_give_sink_cap_ext_entry(struct pd_port *pd_port);
+#endif /* CONFIG_TCPC_SC2150 */
 #endif	/* CONFIG_USB_PD_REV30 */
 #endif	/* CONFIG_USB_PD_PE_SINK */
 
@@ -918,6 +934,10 @@ void pe_vdm_not_supported_entry(
 void pe_dbg_ready_entry(
 	struct pd_port *pd_port);
 #endif/* CONFIG_USB_PD_CUSTOM_DBGACC */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+void pe_give_revision_entry(
+	struct pd_port *pd_port);
+#endif /* CONFIG_TCPC_SC2150 */
 
 #if CONFIG_USB_PD_RECV_HRESET_COUNTER
 void pe_over_recv_hreset_limit_entry(

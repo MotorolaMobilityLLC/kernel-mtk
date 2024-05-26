@@ -1752,6 +1752,13 @@ int pd_dpm_send_source_cap_ext(struct pd_port *pd_port)
 		PD_SCEDB_SIZE, &pd_port->src_cap_ext);
 }
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+int pd_dpm_send_sink_cap_ext(struct pd_port *pd_port)
+{
+	return pd_send_sop_ext_msg(pd_port, PD_EXT_SINK_CAP_EXT,
+		PD_SINK_CAP_EXT_DATA_BYTE, &pd_port->snk_cap_ext);
+}
+#endif /* CONFIG_TCPC_SC2150 */
 
 #if CONFIG_USB_PD_REV30_BAT_CAP_LOCAL
 static const struct pd_battery_capabilities c_invalid_bcdb = {
@@ -2173,8 +2180,10 @@ int pd_dpm_notify_pe_startup(struct pd_port *pd_port)
 		reactions |= DPM_REACTION_DISCOVER_CABLE_FLOW;
 
 #if CONFIG_USB_PD_ATTEMPT_ENTER_MODE
+#if (!IS_ENABLED(CONFIG_TCPC_SC2150))
 	reactions |= DPM_REACTION_DISCOVER_ID |
 		DPM_REACTION_DISCOVER_SVID;
+#endif /* CONFIG_TCPC_SC2150 */
 #else
 	if (pd_port->dpm_caps & DPM_CAP_ATTEMPT_DISCOVER_ID)
 		reactions |= DPM_REACTION_DISCOVER_ID;

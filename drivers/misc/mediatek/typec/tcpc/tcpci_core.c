@@ -429,13 +429,13 @@ struct tcpc_device *tcpc_device_register(struct device *parent,
 #endif	/* CONFIG_TCPC_VCONN_SUPPLY_MODE */
 
 	device_set_of_node_from_dev(&tcpc->dev, parent);
-
+#if (!IS_ENABLED(CONFIG_TCPC_SC2150))
 	ret = device_register(&tcpc->dev);
 	if (ret) {
 		kfree(tcpc);
 		return ERR_PTR(ret);
 	}
-
+#endif /* CONFIG_TCPC_SC2150 */
 	INIT_DELAYED_WORK(&tcpc->event_init_work, tcpc_event_init_work);
 
 	tcpc->attach_wake_lock =
@@ -444,6 +444,13 @@ struct tcpc_device *tcpc_device_register(struct device *parent,
 		wakeup_source_register(NULL, "tcpc_detach_wake_lock");
 
 	tcpci_timer_init(tcpc);
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	ret = device_register(&tcpc->dev);
+	if (ret) {
+		kfree(tcpc);
+		return ERR_PTR(ret);
+	}
+#endif /* CONFIG_TCPC_SC2150 */
 #if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
 	pd_core_init(tcpc);
 #endif /* CONFIG_USB_POWER_DELIVERY */
@@ -469,6 +476,14 @@ int tcpc_device_irq_enable(struct tcpc_device *tcpc)
 		pr_err("%s tcpc init fail\n", __func__);
 		return ret;
 	}
+
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+		tcpci_set_watchdog(tcpc, true);
+		tcpci_set_cc(tcpc, TYPEC_CC_OPEN);
+		mdelay(50);
+		tcpci_set_cc(tcpc, TYPEC_CC_RD);
+		tcpci_set_watchdog(tcpc, false);
+#endif /* CONFIG_TCPC_SC2150 */
 
 	ret = tcpc_typec_init(tcpc, tcpc->desc.role_def);
 	tcpci_unlock_typec(tcpc);

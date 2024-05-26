@@ -542,17 +542,44 @@ static void typec_unattached_power_entry(struct tcpc_device *tcpc)
 
 static inline void typec_unattached_src_and_drp_entry(struct tcpc_device *tcpc)
 {
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	uint32_t chip_vid;
+	int rv = 0;
+#endif /* CONFIG_TCPC_SC2150 */
+
 	TYPEC_NEW_STATE(typec_unattached_src);
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	rv = tcpci_get_chip_vid(tcpc,&chip_vid);
+	if (!rv && SOUTHCHIP_PD_VID == chip_vid) {
+		tcpci_set_cc(tcpc, TYPEC_CC_DRP);
+		typec_enable_low_power_mode(tcpc, TYPEC_CC_DRP);
+	}
+#else
 	tcpci_set_cc(tcpc, TYPEC_CC_RP);
 	tcpc_enable_timer(tcpc, TYPEC_TIMER_DRP_SRC_TOGGLE);
+#endif /* CONFIG_TCPC_SC2150 */
+
 }
 
 static inline void typec_unattached_snk_and_drp_entry(struct tcpc_device *tcpc)
 {
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	uint32_t chip_vid;
+	int rv = 0;
+#endif /* CONFIG_TCPC_SC2150 */
 	TYPEC_NEW_STATE(typec_unattached_snk);
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	rv = tcpci_get_chip_vid(tcpc,&chip_vid);
+	if (!rv && SOUTHCHIP_PD_VID == chip_vid) {
+		tcpci_set_cc(tcpc, TYPEC_CC_RD);
+		tcpc_enable_timer(tcpc, TYPEC_TIMER_DRP_SRC_TOGGLE);
+	}
+#else
 	tcpci_set_auto_dischg_discnt(tcpc, false);
 	tcpci_set_cc(tcpc, TYPEC_CC_DRP);
 	typec_enable_low_power_mode(tcpc, TYPEC_CC_DRP);
+#endif /* CONFIG_TCPC_SC2150 */
+
 }
 
 static inline void typec_unattached_cc_entry(struct tcpc_device *tcpc)
@@ -855,11 +882,22 @@ static inline bool typec_role_is_try_src(
 
 static inline void typec_try_src_entry(struct tcpc_device *tcpc)
 {
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	uint32_t vid;
+	int rv = 0;
+#endif /* CONFIG_TCPC_SC2150 */
 	TYPEC_NEW_STATE(typec_try_src);
 	tcpc->typec_drp_try_timeout = false;
 
 	tcpci_set_cc(tcpc, TYPEC_CC_RP);
 	tcpc_enable_timer(tcpc, TYPEC_TRY_TIMER_DRP_TRY);
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	/* add once cc_change */
+	rv = tcpci_get_chip_vid(tcpc, &vid);
+	if (!rv && SOUTHCHIP_PD_VID == vid) {
+		tcpc_typec_handle_cc_change(tcpc);
+	}
+#endif /* CONFIG_TCPC_SC2150 */
 }
 
 static inline void typec_trywait_snk_entry(struct tcpc_device *tcpc)
@@ -914,11 +952,22 @@ static inline bool typec_role_is_try_sink(
 
 static inline void typec_try_snk_entry(struct tcpc_device *tcpc)
 {
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	uint32_t vid;
+	int rv = 0;
+#endif /* CONFIG_TCPC_SC2150 */
 	TYPEC_NEW_STATE(typec_try_snk);
 	tcpc->typec_drp_try_timeout = false;
 
 	tcpci_set_cc(tcpc, TYPEC_CC_RD);
 	tcpc_enable_timer(tcpc, TYPEC_TRY_TIMER_DRP_TRY);
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	/* add once cc_change */
+	rv = tcpci_get_chip_vid(tcpc, &vid);
+	if (!rv && SOUTHCHIP_PD_VID == vid) {
+		tcpc_typec_handle_cc_change(tcpc);
+	}
+#endif /* CONFIG_TCPC_SC2150 */
 }
 
 static inline void typec_trywait_src_entry(struct tcpc_device *tcpc)
@@ -1642,9 +1691,12 @@ static inline void typec_attach_wait_entry(struct tcpc_device *tcpc)
 	tcpci_notify_attachwait_state(tcpc, as_sink);
 #endif	/* CONFIG_TYPEC_NOTIFY_ATTACHWAIT */
 
-	if (as_sink)
+	if (as_sink) {
 		TYPEC_NEW_STATE(typec_attachwait_snk);
-	else {
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+		tcpci_set_cc(tcpc,TYPEC_CC_RD);
+#endif /* CONFIG_TCPC_SC2150 */
+	} else {
 		/* Advertise Rp level before Attached.SRC Ellisys 3.1.6359 */
 		tcpci_set_cc(tcpc,
 			TYPEC_CC_PULL(tcpc->typec_local_rp_level, TYPEC_CC_RP));
@@ -2110,6 +2162,9 @@ int tcpc_typec_handle_cc_change(struct tcpc_device *tcpc)
 		if (tcpc->tcpc_flags & TCPC_FLAGS_TYPEC_OTP)
 			tcpci_set_otp_fwen(tcpc, false);
 		typec_detach_wait_entry(tcpc);
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+		tcpc->int_invaild_cnt = 0;
+#endif /* CONFIG_TCPC_SC2150 */
 	}
 
 	return 0;
@@ -2273,6 +2328,10 @@ static inline int typec_handle_src_reach_vsafe0v(struct tcpc_device *tcpc)
 
 static inline int typec_handle_src_toggle_timeout(struct tcpc_device *tcpc)
 {
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	uint32_t chip_vid;
+	int rv = 0;
+#endif /* CONFIG_TCPC_SC2150 */
 #if CONFIG_TYPEC_CAP_ROLE_SWAP
 	if (tcpc->typec_during_role_swap)
 		return 0;
@@ -2285,6 +2344,16 @@ static inline int typec_handle_src_toggle_timeout(struct tcpc_device *tcpc)
 		typec_try_enter_norp_src(tcpc);
 #endif	/* CONFIG_TYPEC_CAP_NORP_SRC */
 	}
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	rv = tcpci_get_chip_vid(tcpc,&chip_vid);
+	if (tcpc->typec_state == typec_unattached_snk && !rv && SOUTHCHIP_PD_VID == chip_vid) {
+		typec_unattached_src_and_drp_entry(tcpc);
+		typec_wait_ps_change(tcpc, TYPEC_WAIT_PS_DISABLE);
+#ifdef CONFIG_TYPEC_CAP_NORP_SRC
+		typec_try_enter_norp_src(tcpc);
+#endif /* CONFIG_TYPEC_CAP_NORP_SRC */
+	}
+#endif /* CONFIG_TCPC_SC2150 */
 
 	return 0;
 }
@@ -2322,6 +2391,12 @@ static inline int typec_handle_role_swap_stop(struct tcpc_device *tcpc)
 int tcpc_typec_handle_timeout(struct tcpc_device *tcpc, uint32_t timer_id)
 {
 	int ret = 0;
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	uint32_t chip_vid;
+	int rv = 0;
+	rv = tcpci_get_chip_vid(tcpc,&chip_vid);
+	TYPEC_INFO("%s %d\n", __func__, rv);
+#endif /* CONFIG_TCPC_SC2150 */
 
 #if CONFIG_TYPEC_CAP_TRY_STATE
 	if (timer_id == TYPEC_TRY_TIMER_DRP_TRY)
@@ -2330,6 +2405,9 @@ int tcpc_typec_handle_timeout(struct tcpc_device *tcpc, uint32_t timer_id)
 
 #if CONFIG_TYPEC_CHECK_LEGACY_CABLE
 	if (timer_id == TYPEC_TIMER_DRP_SRC_TOGGLE &&
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+		!(!rv && SOUTHCHIP_PD_VID == chip_vid) &&
+#endif /* CONFIG_TCPC_SC2150 */
 		(tcpc->typec_state != typec_unattached_src)) {
 		TCPC_DBG("Dummy SRC_TOGGLE\n");
 		return 0;
@@ -2525,6 +2603,9 @@ static inline int typec_attached_snk_vbus_absent(struct tcpc_device *tcpc)
 
 static inline int typec_handle_vbus_absent(struct tcpc_device *tcpc)
 {
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	int ret = 0;
+#endif /* CONFIG_TCPC_SC2150 */
 #if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
 	if (tcpc->pd_wait_pr_swap_complete) {
 		TYPEC_DBG("[PR.Swap] Ignore vbus_absent\n");
@@ -2542,6 +2623,15 @@ static inline int typec_handle_vbus_absent(struct tcpc_device *tcpc)
 	default:
 		break;
 	}
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	ret = tcpci_get_cc(tcpc);
+	if (ret < 0)
+		return ret;
+
+	if (!typec_is_cc_no_res()) {
+		tcpc_typec_handle_cc_change(tcpc);
+	}
+#endif /* CONFIG_TCPC_SC2150 */
 
 	return 0;
 }
@@ -2549,6 +2639,14 @@ static inline int typec_handle_vbus_absent(struct tcpc_device *tcpc)
 int tcpc_typec_handle_ps_change(struct tcpc_device *tcpc, int vbus_level)
 {
 	tcpc->typec_reach_vsafe0v = false;
+
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	if (vbus_level >= TCPC_VBUS_VALID)
+		typec_disable_low_power_mode(tcpc);
+	else
+		typec_enable_low_power_mode(tcpc, TYPEC_CC_DRP);
+
+#endif /* CONFIG_TCPC_SC2150 */
 
 #if CONFIG_TYPEC_CHECK_LEGACY_CABLE
 	if (tcpc->typec_legacy_cable) {
@@ -2579,8 +2677,11 @@ int tcpc_typec_handle_ps_change(struct tcpc_device *tcpc, int vbus_level)
 #endif	/* CONFIG_TYPEC_CAP_AUDIO_ACC_SINK_VBUS */
 
 	if (vbus_level >= TCPC_VBUS_VALID)
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+		return typec_handle_vbus_absent(tcpc);
+#else
 		return typec_handle_vbus_present(tcpc);
-
+#endif /* CONFIG_TCPC_SC2150 */
 	return typec_handle_vbus_absent(tcpc);
 }
 

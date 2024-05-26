@@ -11,6 +11,11 @@
  * GNU General Public License for more details.
  */
 #include <dt-bindings/iio/mt635x-auxadc.h>
+
+&mt6375 {
+	status = "disabled";
+};
+
 &i2c5 {
 	sgm4154x_chg: sgm41542@3B {
 		status = "okay";
@@ -69,6 +74,89 @@
                 aw35615,src_pdo_cur = <1000>; /* set source pdo current mA*/
                 aw35615,snk_tog_time = <0x38>; /* set toggle sink time */
                 aw35615,src_tog_time = <0x24>; /* set toggle source time */
+        };
+        sc2150-pd@4e{
+                compatible = "southchip,sc2150";
+                reg = <0x4E>;
+                status = "okay";
+                sc-tcpc,name = "type_c_port0"; /* tcpc_device's name */
+                sc-tcpc,role_def = <5>; /* 0: Unknown, 1: SNK, 2: SRC */
+                                        /* 3: DRP, 4: Try.SRC, 5: Try.SNK */
+                sc-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
+                sc-tcpc,vconn_supply  = <1>;  /* 0: Never, 1: Always, */
+                                              /* 2: EMarkOnly, 3: StartOnly */
+                sc-tcpc,notifier_supply_num = <2>;
+                sc2150,intr_gpio_num = <307>;
+                pd-data {
+                        pd,vid = <0x311c>;
+                        pd,pid = <0x2150>;
+                        pd,source-cap-ext = /bits/ 8 <0x1c 0x31 0x00 0x66
+                                                      0x00 0x00 0x00 0x00
+                                                      0x00 0x00 0x00 0x00
+                                                      0x00 0x00 0x00 0x00
+                                                      0x00 0x00 0x00 0x00
+                                                      0x00 0x00 0x01 0x02
+                                                      0x00>;
+                        pd,sink-cap-ext = /bits/ 8 <0x1c 0x31 0x00 0x66
+                                                           0x00 0x00 0x00 0x00
+                                                           0x01 0x00 0x00 0x00
+                                                           0x00 0x00 0x00 0x00
+                                                           0x01 0x00 0x00 0x00
+                                                           0x00 0x00 0x00 0x00>;
+                        pd,mfrs = "SouthChip";
+
+                        /*
+                         *      VSAFE5V = 0, MAX_POWER = 1, CUSTOM = 2,
+                         *      MAX_POWER_LV = 0x21, MAX_POWER_LVIC = 0x31
+                         *      MAX_POWER_HV = 0x41, MAX_POWER_HVIC = 0x51
+                         */
+                        pd,charging_policy= <0x31>;
+
+                        /*
+                         * Fixed 5V, 500 mA <0x00019032>
+                         * Fixed 5V, 1A <0x00019064>
+                         * Fixed 5V, 2A <0x000190c8>
+                         * Fixed 5V, 3A <0x0001912c>
+                         * Fixed 9V, 500 mA <0x0002d032>
+                         * Fixed 9V, 1A <0x0002d064>
+                         * Fixed 9V, 2A <0x0002d0c8>
+                         * Fixed 9V, 3A <0x0002d12c>
+                         * Variable 5-9V, 1A <0x8642d064>
+                         * Variable 5-9V, 2A <0x8642d0c8>
+                         * Variable 5-9V, 3A <0x8642d12c>
+                         * PPS 3V~5.9V, 3A <0xC0761E3C>
+                         */
+                        pd,source-pdo-size = <1>;
+                        /* Fixed 5V,1.5A */
+                        pd,source-pdo-data = <0x00019096>;
+                        pd,sink-pdo-size = <1>;
+                        pd,sink-pdo-data = <0x000190c8>;
+                        /*0110 1110 0011 0010
+                         * No DP, host + device
+                         *      pd,id-vdo-size = <6>;
+                         *      pd,id-vdo-data = <0xd14029cf 0x0 0x17110000
+                                                  0x61000000 0x0 0x41000000>;
+                         * With DP
+                         *      pd,id-vdo-size = <6>;
+                         *      pd,id-vdo-data = <0xd54029cf 0x0 0x17110000
+                                                  0x61000000 0x0 0x41000000>;
+                         */
+
+                        pd,id-vdo-size = <6>;
+                        pd,id-vdo-data = <0xd14029cf 0x0 0x17110000
+                                                  0x61000000 0x0 0x41000000>;
+
+                        bat,nr = <1>;
+                        pd,country_nr = <0>;
+
+                        bat-info0 {
+                                bat,vid = <0x311c>;
+                                bat,pid = <0x2150>;
+                                bat,mfrs = "bat1";
+                                bat,design_cap = <3000>;
+                        };
+
+                };
         };
 };
 

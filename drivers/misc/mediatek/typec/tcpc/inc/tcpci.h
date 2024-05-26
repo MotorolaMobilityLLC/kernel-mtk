@@ -21,6 +21,17 @@
 #include "pd_core.h"
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+#define SOUTHCHIP_PD_VER   0X3116
+#define SOUTHCHIP_PD_VID	0x311C
+#define SC2150_PID			0x2150
+#define SC2150A_DID			0x0000
+#define SC2150A_1P2_DID 	0x0001
+#define SC2150P_DID			0x0003
+#define SC6601_PID			0x6600
+#define SC6601_DID			0x0000
+#endif /* CONFIG_TCPC_SC2150 */
+
 #define PE_STATE_FULL_NAME	0
 
 #define TCPC_LOW_RP_DUTY		(100)		/* 10 % */
@@ -60,6 +71,11 @@ bool tcpci_check_vsafe0v(struct tcpc_device *tcpc);
 int tcpci_alert_status_clear(struct tcpc_device *tcpc, uint32_t mask);
 int tcpci_fault_status_clear(struct tcpc_device *tcpc, uint8_t status);
 int tcpci_set_alert_mask(struct tcpc_device *tcpc, uint32_t mask);
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+int tcpci_get_chip_id(struct tcpc_device *tcpc,uint32_t *chip_id);
+int tcpci_get_chip_pid(struct tcpc_device *tcpc,uint32_t *chip_pid);
+int tcpci_get_chip_vid(struct tcpc_device *tcpc,uint32_t *chip_vid);
+#endif /* CONFIG_TCPC_SC2150 */
 int tcpci_get_alert_mask(struct tcpc_device *tcpc, uint32_t *mask);
 int tcpci_get_alert_status(struct tcpc_device *tcpc, uint32_t *alert);
 int tcpci_get_fault_status(struct tcpc_device *tcpc, uint8_t *fault);

@@ -23,6 +23,12 @@ config USB_POWER_DELIVERY
 	  Power Delivery
 	  support
 
+config TCPC_SC2150
+	tristate "oem tcpc pd sc2150"
+	default n
+	help
+	  support oem_tcpc_pd_sc2150
+
 config TCPC_AW35615
 	tristate "AW35615 TypeC port Controller Driver"
 	depends on TCPC_CLASS
