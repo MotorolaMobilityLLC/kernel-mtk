@@ -150,6 +150,13 @@ static inline bool pd_process_ctrl_msg(
 			return true;
 		break;
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	case PD_CTRL_GET_SINK_CAP_EXT:
+		if (PE_MAKE_STATE_TRANSIT_SINGLE(
+			PE_SNK_READY, PE_SNK_GIVE_SINK_CAP_EXT))
+			return true;
+		break;
+#endif /* CONFIG_TCPC_SC2150 */
 
 #if CONFIG_USB_PD_REV30_STATUS_LOCAL
 	case PD_CTRL_GET_STATUS:

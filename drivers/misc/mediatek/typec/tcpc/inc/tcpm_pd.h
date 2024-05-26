@@ -33,6 +33,9 @@
 
 #define PD_BSDO_SIZE	1
 #define PD_CCDO_SIZE	1
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+#define PD_VERDO_SIZE   1
+#endif /* CONFIG_TCPC_SC2150 */
 #define PD_ADO_SIZE		1
 
 /*
@@ -128,9 +131,36 @@ enum pd_battery_reference {
 /* SCEDB, Source_Capabilities_Extended */
 
 #define PD_SCEDB_SIZE	25
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+#define PD_SINK_CAP_EXT_DATA_BYTE		24
+#endif /* CONFIG_TCPC_SC2150 */
 
 #define PD_SCEDB_VR(load_step, ioc)	\
 	((load_step) | (ioc << 2))
+
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+struct pd_snk_cap_ext {
+	uint16_t	vid;
+	uint16_t	pid;
+	uint32_t	xid;
+	uint8_t		fw_ver;
+	uint8_t		hw_ver;
+	uint8_t		skedb_ver;
+	uint8_t		load_step;
+	uint8_t		snk_load_char;
+	uint8_t		compliance;
+	uint8_t		touch_temp;
+	uint8_t		bat_info;
+	uint8_t		snk_mode;
+	uint8_t		snk_min_pdp;
+	uint8_t		snk_oper_pdp;
+	uint8_t		snk_max_pdp;
+	uint8_t		epr_snk_min_pdp;
+	uint8_t		epr_snk_oper_pdp;
+	uint8_t		epr_snk_max_pdp;
+};
+#endif /* CONFIG_TCPC_SC2150 */
+
 
 enum {
 	PD_SCEDB_VR_LOAD_STEP_150 = 0x00,

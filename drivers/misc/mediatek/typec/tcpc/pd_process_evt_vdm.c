@@ -131,6 +131,12 @@ static inline bool pd_vdm_state_transit_rx(struct pd_port *pd_port,
 		PE_DBG("670 : invalid, current status\n");
 		return false;
 	}
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	if (state_transition->vdm_cmd != CMD_DISCOVER_IDENT) {
+		PE_TRANSIT_STATE(pd_port, PE_UFP_VDM_SEND_NAK);
+		return true;
+	}
+#endif /* CONFIG_TCPC_SC2150 */
 
 	PE_TRANSIT_STATE(pd_port, state_transition->vdm_init_state);
 	return true;
