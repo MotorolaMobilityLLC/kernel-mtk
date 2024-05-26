@@ -323,6 +323,13 @@ static inline bool pd_process_ctrl_msg(
 				pd_port->tcpc, PD_PE_VDM_NOT_SUPPORT);
 		}
 		break;
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	case PD_CTRL_GET_REVISION:
+		ret = PE_MAKE_STATE_TRANSIT_SINGLE(
+			pe_get_curr_ready_state(pd_port),
+			PE_GIVE_REVISION);
+		break;
+#endif /* CONFIG_TCPC_SC2150 */
 #endif	/* CONFIG_USB_PD_REV30 */
 	}
 

@@ -313,9 +313,16 @@
 	 ((type) << 15) |				\
 	 ((custom) & 0x7FFF))
 
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+#define VDO_S(svid, ver, cmd_type, cmd, obj)	\
+	VDO(svid, 1, VDO_SVDM_VERS(ver) | VDO_SVDM_VER_MINOR(ver) | \
+		VDO_CMDT(cmd_type) | VDO_OPOS(obj) | cmd)
+#else
 #define VDO_S(svid, ver, cmd_type, cmd, obj)	\
 	VDO(svid, 1, VDO_SVDM_VERS(ver) | \
 		VDO_CMDT(cmd_type) | VDO_OPOS(obj) | cmd)
+#endif /* CONFIG_TCPC_SC2150 */
+
 
 #define VDO_REPLY(ver, cmd_type, request_vdo)	\
 	(VDO_SVDM_VERS(ver) | VDO_CMDT(cmd_type) \
@@ -326,6 +333,9 @@
 
 #define VDO_SVDM_TYPE     (1 << 15)
 #define VDO_SVDM_VERS(x)  (x << 13)
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+#define VDO_SVDM_VER_MINOR(x) (x << 11)
+#endif /* CONFIG_TCPC_SC2150 */
 #define VDO_OPOS(x)       (x << 8)
 #define VDO_CMDT(x)       (x << 6)
 
@@ -851,6 +861,12 @@ struct pd_port {
 	struct tcpc_device *tcpc;
 	struct mutex pd_lock;
 
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	/* miss msg */
+	bool miss_msg;
+	uint8_t rx_cap;
+#endif /* CONFIG_TCPC_SC2150 */
+
 	/* PD */
 	uint8_t state_machine;
 	uint8_t pd_connect_state;
@@ -995,6 +1011,10 @@ struct pd_port {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL
 	struct pd_source_cap_ext src_cap_ext;
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
+
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	struct pd_snk_cap_ext snk_cap_ext;
+#endif /* CONFIG_TCPC_SC2150 */
 
 #if CONFIG_USB_PD_REV30_MFRS_INFO_LOCAL
 	struct pd_manufacturer_info mfrs_info;
@@ -1628,5 +1648,9 @@ static inline uint8_t pd_get_swap_battery_nr(struct pd_port *pd_port)
 struct pd_battery_info *pd_get_battery_info(
 	struct pd_port *pd_port, enum pd_battery_reference ref);
 #endif	/* CONFIG_USB_PD_REV30 */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+void pd_add_miss_msg(struct pd_port *pd_port,struct pd_event *pd_event,
+				uint8_t msg);
+#endif /* CONFIG_TCPC_SC2150 */
 
 #endif /* PD_CORE_H_ */

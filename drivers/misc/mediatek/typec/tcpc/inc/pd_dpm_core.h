@@ -126,6 +126,10 @@ void pd_dpm_vcs_enable_vconn(struct pd_port *pd_port, uint8_t role);
 int pd_dpm_send_source_cap_ext(struct pd_port *pd_port);
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
 
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+int pd_dpm_send_sink_cap_ext(struct pd_port *pd_port);
+#endif /* CONFIG_TCPC_SC2150 */
+
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
 void pd_dpm_inform_source_cap_ext(struct pd_port *pd_port);
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */

@@ -57,6 +57,9 @@ static const char *const pe_state_name[] = {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL
 	"PE_SRC_GIVE_SOURCE_CAP_EXT",
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	"PE_SRC_GIVE_SINK_CAP_EXT",
+#endif /* CONFIG_TCPC_SC2150 */
 #if CONFIG_USB_PD_REV30_STATUS_LOCAL
 	"PE_SRC_GIVE_SOURCE_STATUS",
 #endif	/* CONFIG_USB_PD_REV30_STATUS_LOCAL */
@@ -106,6 +109,9 @@ static const char *const pe_state_name[] = {
 #if CONFIG_USB_PD_REV30_PPS_SINK
 	"PE_SNK_GET_PPS_STATUS",
 #endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	"PE_SNK_GIVE_SINK_CAP_EXT",
+#endif /* CONFIG_TCPC_SC2150 */
 #endif	/* CONFIG_USB_PD_REV30 */
 #endif	/* CONFIG_USB_PD_PE_SINK */
 /******************* DR_SWAP *******************/
@@ -251,6 +257,9 @@ static const char *const pe_state_name[] = {
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
 
 	"PE_VDM_NOT_SUPPORTED",
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	"PE_GIVE_REVISION",
+#endif /* CONFIG_TCPC_SC2150 */
 #endif /* CONFIG_USB_PD_REV30 */
 /******************* Others *******************/
 #if CONFIG_USB_PD_CUSTOM_DBGACC
@@ -323,6 +332,9 @@ static const char *const pe_state_name[] = {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL
 	"SRC_GIVE_CAP_EXT",
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	"SRC_GIVE_SNK_CAP_EXT",
+#endif /* CONFIG_TCPC_SC2150 */
 #if CONFIG_USB_PD_REV30_STATUS_LOCAL
 	"SRC_GIVE_STATUS",
 #endif	/* CONFIG_USB_PD_REV30_STATUS_LOCAL */
@@ -373,6 +385,9 @@ static const char *const pe_state_name[] = {
 #if CONFIG_USB_PD_REV30_PPS_SINK
 	"SNK_GET_PPS",
 #endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	"SNK_GIVE_SNK_CAP_EXT",
+#endif /* CONFIG_TCPC_SC2150 */
 #endif	/* CONFIG_USB_PD_REV30 */
 #endif	/* CONFIG_USB_PD_PE_SINK */
 /******************* DR_SWAP *******************/
@@ -519,6 +534,9 @@ static const char *const pe_state_name[] = {
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
 
 	"VDM_NO_SUPP",
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	"GIVE_REVISION",
+#endif /* CONFIG_TCPC_SC2150 */
 #endif /* CONFIG_USB_PD_REV30 */
 /******************* Others *******************/
 #if CONFIG_USB_PD_CUSTOM_DBGACC
@@ -601,6 +619,9 @@ static const struct pe_state_actions pe_state_actions[] = {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL
 	PE_STATE_ACTIONS(pe_src_give_source_cap_ext),
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	PE_STATE_ACTIONS(pe_src_give_sink_cap_ext),
+#endif /* CONFIG_TCPC_SC2150 */
 #if CONFIG_USB_PD_REV30_STATUS_LOCAL
 	PE_STATE_ACTIONS(pe_src_give_source_status),
 #endif	/* CONFIG_USB_PD_REV30_STATUS_LOCAL */
@@ -651,6 +672,9 @@ static const struct pe_state_actions pe_state_actions[] = {
 #if CONFIG_USB_PD_REV30_PPS_SINK
 	PE_STATE_ACTIONS(pe_snk_get_pps_status),
 #endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	PE_STATE_ACTIONS(pe_snk_give_sink_cap_ext),
+#endif /* CONFIG_TCPC_SC2150 */
 #endif	/* CONFIG_USB_PD_REV30 */
 #endif	/* CONFIG_USB_PD_PE_SINK */
 /******************* DR_SWAP *******************/
@@ -796,6 +820,9 @@ static const struct pe_state_actions pe_state_actions[] = {
 	PE_STATE_ACTIONS(pe_give_country_info),
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
 	PE_STATE_ACTIONS(pe_vdm_not_supported),
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	PE_STATE_ACTIONS(pe_give_revision),
+#endif /* CONFIG_TCPC_SC2150 */
 #endif /* CONFIG_USB_PD_REV30 */
 /******************* Others *******************/
 #if CONFIG_USB_PD_CUSTOM_DBGACC
@@ -1078,9 +1105,23 @@ static inline bool pd_try_get_vdm_event(
 {
 	bool ret = false;
 	struct pd_port *pd_port = &tcpc->pd_port;
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	int rv = 0;
+	uint32_t chip_id, chip_pid;
+	rv = tcpci_get_chip_id(tcpc, &chip_id);
+	rv |= tcpci_get_chip_pid(tcpc, &chip_pid);
+#endif /* CONFIG_TCPC_SC2150 */
 
 	switch (pd_port->pe_pd_state) {
 #if CONFIG_USB_PD_PE_SINK
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	case PE_SNK_TRANSITION_SINK:
+		if (!rv && SC2150A_DID == chip_id &&
+			SC2150_PID == chip_pid)  {
+		ret = pd_get_vdm_event(tcpc, pd_event);
+	}
+	break;
+#endif /* CONFIG_TCPC_SC2150 */
 	case PE_SNK_READY:
 #endif	/* CONFIG_USB_PD_PE_SINK */
 #if CONFIG_USB_PD_PE_SOURCE
