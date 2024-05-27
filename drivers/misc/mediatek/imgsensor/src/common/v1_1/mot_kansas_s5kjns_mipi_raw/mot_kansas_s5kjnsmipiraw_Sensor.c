@@ -71,7 +71,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define S5KJNS_MAX_GAIN_120FPS_PLATFORM 2048          /*16*128, 128 GAINBASE*/
 #define S5KJNS_MAX_GAIN_SLIM_PLATFORM 2048          /*16*128, 128 GAINBASE*/
 
-#define FPT_PDAF_SUPPORT 0
+#define FPT_PDAF_SUPPORT 1
 
 #define MULTI_WRITE 1
 
@@ -242,8 +242,8 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[4] = {
 	/* Preview mode setting 30fps */
 	{
 		0x03, 0x0A, 0x00, 0x08, 0x40, 0x00,
-		0x00, 0x2B, 0x1000, 0xC00, 0x00, 0x00, 0x0000, 0x0000,
-		0x01, 0x2B, 0x3E0, 0x2F8, 0x00, 0x00, 0x0000, 0x0000
+		0x00, 0x2B, 0xFF0, 0xBF4, 0x00, 0x00, 0x0000, 0x0000,
+		0x01, 0x2B, 0x1FC, 0xBF0, 0x00, 0x00, 0x0000, 0x0000
 	},
 	/* Video mode setting */
 	{
@@ -266,22 +266,20 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[4] = {
 };
 
 static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
-	.i4OffsetX = 64,
-	.i4OffsetY = 16,
-	.i4PitchX = 16,
-	.i4PitchY = 16,
-	.i4PairNum = 8,
+	.i4OffsetX = 8,
+	.i4OffsetY = 2,
+	.i4PitchX = 8,
+	.i4PitchY = 8,
+	.i4PairNum = 4,
 	.i4SubBlkW = 8,
-	.i4SubBlkH = 4,
-	.i4PosL = {{71, 17}, {79, 17}, {67, 21}, {75, 21},
-		{71, 25}, {79, 25}, {67, 29}, {75, 29} },
-	.i4PosR = {{70, 17}, {78, 17}, {66, 21}, {74, 21},
-		{70, 25}, {78, 25}, {66, 29}, {74, 29} },
+	.i4SubBlkH = 2,
+	.i4PosL = {{11, 2}, {9, 5}, {13, 6}, {15, 9} },
+	.i4PosR = {{10, 2}, {8, 5}, {12, 6}, {14, 9} },
 	.iMirrorFlip = 0,
-	.i4BlockNumX = 248,
-	.i4BlockNumY = 190,
-	.i4Crop = { {0, 0}, {0, 0}, {0, 384}, {0, 0}, {0, 0},
-		{0, 384}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
+	.i4BlockNumX = 508,
+	.i4BlockNumY = 382,
+	.i4Crop = { {0, 6}, {0, 0}, {0, 388}, {0, 382}, {0, 0},
+		{0, 382}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
 };
 #endif
 
@@ -1712,6 +1710,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		switch (*feature_data) {
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+				imgsensor_pd_info.i4BlockNumX = 508;
+				imgsensor_pd_info.i4BlockNumY = 382;
+				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+					sizeof(struct SET_PD_BLOCK_INFO_T));
+				break;
 			case MSDK_SCENARIO_ID_SLIM_VIDEO:
 				imgsensor_pd_info.i4BlockNumX = 248;
 				imgsensor_pd_info.i4BlockNumY = 190;
@@ -1736,6 +1739,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		/*PDAF capacity enable or not, 2p8 only full size support PDAF*/
 		switch (*feature_data) {
 			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+				break;
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			case MSDK_SCENARIO_ID_SLIM_VIDEO:
