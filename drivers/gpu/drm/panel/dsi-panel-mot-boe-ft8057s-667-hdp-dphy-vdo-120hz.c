@@ -166,7 +166,7 @@ static void boe_ft8057s_panel_init(struct boe_ft8057s *ctx)
 	msleep(90);
 	boe_ft8057s_dcs_write_seq_static(ctx, 0x29);
 	boe_ft8057s_dcs_write_seq_static(ctx, 0x35,0x00);
-	boe_ft8057s_dcs_write_seq_static(ctx, 0x51,0xCC,0x0C);
+	boe_ft8057s_dcs_write_seq_static(ctx, 0x51,0xFF,0x0F);
 	boe_ft8057s_dcs_write_seq_static(ctx, 0x53,0x2C);
 	boe_ft8057s_dcs_write_seq_static(ctx, 0x55,0x01);
 	msleep(10);
