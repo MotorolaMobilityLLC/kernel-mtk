@@ -140,16 +140,16 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 801600000,
 	},
 	.slim_video = {
-		.pclk = 600000000,
-		.linelength = 4096,
-		.framelength = 4880,
+		.pclk = 560000000,
+		.linelength = 4224,
+		.framelength = 4416,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2040,
-		.grabwindow_height = 1528,
+		.grabwindow_width = 4080,
+		.grabwindow_height = 3060,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 792000000,
+		.mipi_pixel_rate =792000000,
 	},
 	.custom1 = {
 		.pclk = 600000000,
@@ -232,7 +232,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
 	/* hs_video */
     { 8160, 6120,    0,  764, 8160, 4592, 2040, 1148,  0,   0, 2040, 1148,    0,    0, 2040, 1148}, // hs
 	/* slim_video */
-    { 8160, 6120,    0,    4, 8160, 6112, 2040, 1528,  0,   0, 2040, 1528,    0,    0, 2040, 1528}, // slim
+    { 8160, 6120,    0,    0, 8160, 6120, 4080, 3060,  0,   0, 4080, 3060,    0,    0, 4080, 3060}, // slim
 	/* custom1 */
     { 8160, 6120,    0,    4, 8160, 6112, 2040, 1528,  0,   0, 2040, 1528,    0,    0, 2040, 1528}, // custom1
 };
@@ -254,14 +254,14 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[4] = {
 	/* Slim Video mode setting */
 	{
 		0x03, 0x0A, 0x00, 0x08, 0x40, 0x00,
-		0x00, 0x2B, 0x800, 0x600, 0x00, 0x00, 0x0000, 0x0000,
-		0x01, 0x2B, 0x3E0, 0x2F8, 0x00, 0x00, 0x0000, 0x0000
+		0x00, 0x2B, 0xFF0, 0xBF4, 0x00, 0x00, 0x0000, 0x0000,
+		0x01, 0x2B, 0x1FC, 0xBF0, 0x00, 0x00, 0x0000, 0x0000
 	},
 	/* Custom1 mode setting */
 	{
 		0x03, 0x0A, 0x00, 0x08, 0x40, 0x00,
-		0x00, 0x2B, 0x800, 0x480, 0x00, 0x00, 0x0000, 0x0000,
-		0x01, 0x2B, 0x3E0, 0x240, 0x00, 0x00, 0x0000, 0x0000
+		0x00, 0x2B, 0x7F8, 0x5F8, 0x00, 0x00, 0x0000, 0x0000,
+		0x01, 0x2B, 0x1FC, 0x2F8, 0x00, 0x00, 0x0000, 0x0000
 	},
 };
 
@@ -278,8 +278,24 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.iMirrorFlip = 0,
 	.i4BlockNumX = 508,
 	.i4BlockNumY = 382,
-	.i4Crop = { {0, 6}, {0, 0}, {0, 388}, {0, 382}, {0, 0},
+	.i4Crop = { {0, 6}, {0, 0}, {0, 388}, {0, 382}, {0, 6},
 		{0, 382}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
+};
+static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info_binning = {
+	.i4OffsetX = 4,
+	.i4OffsetY = 2,
+	.i4PitchX = 4,
+	.i4PitchY = 4,
+	.i4PairNum = 1,
+	.i4SubBlkW = 4,
+	.i4SubBlkH = 4,
+	.i4PosL = {{7, 5} },
+	.i4PosR = {{6, 5} },
+	.iMirrorFlip = 0,
+	.i4BlockNumX = 508,
+	.i4BlockNumY = 380,
+	.i4Crop = { {0, 0}, {0, 0}, {0, 382}, {0, 382}, {0, 8},
+		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
 };
 #endif
 
@@ -1716,8 +1732,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
 			case MSDK_SCENARIO_ID_SLIM_VIDEO:
-				imgsensor_pd_info.i4BlockNumX = 248;
-				imgsensor_pd_info.i4BlockNumY = 190;
+				imgsensor_pd_info.i4BlockNumX = 508;
+				imgsensor_pd_info.i4BlockNumY = 382;
 				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
 					sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
@@ -1728,9 +1744,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
 			case MSDK_SCENARIO_ID_CUSTOM1:
-				imgsensor_pd_info.i4BlockNumX = 248;
-				imgsensor_pd_info.i4BlockNumY = 144;
-				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+				imgsensor_pd_info_binning.i4BlockNumX = 508;
+				imgsensor_pd_info_binning.i4BlockNumY = 380;
+				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info_binning,
 					sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
 			default:
@@ -1751,8 +1767,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 				break;
 			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+				break;
 			case MSDK_SCENARIO_ID_CUSTOM1:
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 				break;
 			default:
 				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
