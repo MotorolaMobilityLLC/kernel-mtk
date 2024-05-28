@@ -82,15 +82,14 @@
                 netlink-event = <30>;
                 status = "okay";
         };
-/*
-        chipone_tee@1 {
+
+        focaltech@1 {
                 status = "okay";
-                compatible = "mediatek,finger-chipone";
+                compatible = "mediatek,finger-focal";
                 reg = <1>;
                 spi-max-frequency = <10000000>;
                 netlink-event = <30>;
         };
-*/
 };
 
 &odm {
@@ -107,6 +106,17 @@
                 pinctrl-1 = <&fingerprint_reset_high>;
                 pinctrl-2 = <&fingerprint_reset_low>;
                 status = "okay";
+        };
+
+        focaltech_fp: focaltech_fp {
+	        status = "okay";
+	        compatible = "mediatek,fingerprint-focal";
+	        interrupt-parent = <&pio>;
+	        interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
+	        focaltech_fp,use-regulator;
+	        ff_vdd-supply = <&mt6377_vfp>;
+	        focaltech_fp,reset-gpio = <&pio 7 0x00>;
+	        focaltech_fp,irq-gpio = <&pio 15 0x00>;
         };
 };
 
