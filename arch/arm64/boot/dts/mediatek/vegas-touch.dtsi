@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (c) 2024, Motorola Mobility Inc. All rights reserved.
+*/
+
+&spi3 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	mediatek,pad-select = <0>, <1>;
+	pinctrl-names = "default", "nt36528_int_active",
+	"nt36528_reset_active", "nt36528_int_suspend",
+	"nt36528_reset_suspend", "nt36528_spi_mode";
+
+	pinctrl-0 = <&ctp_nt36528_pins_default>;
+	pinctrl-1 = <&ctp_nt36528_int_active>;
+	pinctrl-2 = <&ctp_nt36528_reset_active>;
+	pinctrl-3 = <&ctp_nt36528_int_suspend>;
+	pinctrl-4 = <&ctp_nt36528_reset_suspend>;
+	pinctrl-5 = <&ctp_nt36528_spi_mode>;
+
+	/* Novatek device tree node */
+	novatek@0 {
+		compatible = "novatek,NVT-ts-spi";
+		reg = <0>; //Same as CS ID
+		status = "ok";
+		spi-max-frequency = <9600000>;	//4800000,9600000,15000000,19200000
+		novatek,reset-gpio = <&pio 147 0x0>;
+		novatek,irq-gpio = <&pio 4 0x1>;
+		novatek,def-max-resolution = <720 1600>;
+		//novatek,usb_charger;
+		//novatek,psy-name = "battery";
+		//novatek,report_gesture_key;
+		//novatek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
+
+		// 525
+		//novatek,swrst-n8-addr = <0x01F01A>;
+
+		// 672A, 525B, 675, 526, 672C, 523
+		//novatek,swrst-n8-addr = <0x03F0FE>;
+		//novatek,spi-rd-fast-addr = <0x03F310>;
+
+	};
+
+	focaltech@1 {
+		compatible = "focaltech,fts";
+                reg = <1>; //Same as CS ID
+                status = "ok";
+                spi-max-frequency = <9600000>;
+                focaltech,reset-gpio = <&pio 147 0x0>;
+                focaltech,irq-gpio = <&pio 4 0x0>;
+                focaltech,max-touch-number = <10>;
+                focaltech,display-coords = <0 0 720 1604>;
+                //focaltech,report_gesture_key = <59>;
+                //focaltech,supported_gesture_type = <0x06>;
+                focaltech,panel-supplier = "boe_ft8057s";
+                //focaltech,touch-charger-detect-psy-name = "battery";
+                //focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
+	};
+};
+
+&pio {
+	ctp_nt36528_pins_default: pins-default {
+	};
+	ctp_nt36528_int_active: int1-active {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
+			input-enable;
+		};
+	};
+	ctp_nt36528_reset_active: reset1-active {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO147__FUNC_GPIO147>;
+			output-high;
+		};
+	};
+	ctp_nt36528_int_suspend: int1-suspend {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
+			output-low;
+		};
+	};
+	ctp_nt36528_reset_suspend: reset1-suspend {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO147__FUNC_GPIO147>;
+			output-low;
+		};
+	};
+	ctp_nt36528_spi_mode: spimode-default {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO68__FUNC_SPI3_CLK>,
+				<PINMUX_GPIO69__FUNC_SPI3_CSB>,
+				<PINMUX_GPIO70__FUNC_SPI3_MO>,
+				<PINMUX_GPIO71__FUNC_SPI3_MI>;
+		};
+	};
+};
+
+/* TOUCH end */
