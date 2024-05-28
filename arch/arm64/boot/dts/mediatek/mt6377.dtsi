@@ -485,8 +485,8 @@
 			mt6377_vio28: vio28 {
 				regulator-compatible = "VIO28";
 				regulator-name = "mt6377_vio28";
-				regulator-min-microvolt = <1200000>;
-				regulator-max-microvolt = <3300000>;
+				regulator-min-microvolt = <3000000>;
+				regulator-max-microvolt = <3000000>;
 				regulator-enable-ramp-delay = <200>;
 				regulator-allowed-modes = <0 2>;
 				regulator-always-on;
