@@ -11,11 +11,15 @@
 
 #define MAX_EEPROM_SIZE_32K 0x8000
 #define MAX_EEPROM_SIZE_16K 0x4000
-
+#if defined(CONFIG_MOT_KANSAS_CAMERA_PROJECT)
+extern unsigned int sc202acs_read_region(struct i2c_client *client, unsigned int addr,
+				unsigned char *data, unsigned int size);
+#endif
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
 #if defined(CONFIG_MOT_KANSAS_CAMERA_PROJECT)
 	{MOT_KANSAS_S5KJNS_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_KANSAS_SC202ACS_SENSOR_ID, 0x6C, sc202acs_read_region},
 	{MOT_KANSAS_S5K3P9_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 #endif
 	{OV48B12M_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
