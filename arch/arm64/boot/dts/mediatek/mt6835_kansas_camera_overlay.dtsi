@@ -337,6 +337,11 @@
 		reg = <0x51>;
 		status = "okay";
 	};
+	mtk_camera_eeprom2:camera_eeprom2@50 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x50>;
+		status = "okay";
+	};
 	camera_main_two_mtk:camera_main_two@10 {
 		compatible = "mediatek,camera_main_two";
 		#thermal-sensor-cells = <0>;
