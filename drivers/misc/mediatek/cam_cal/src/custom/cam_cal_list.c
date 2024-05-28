@@ -14,6 +14,9 @@
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
+#if defined(CONFIG_MOT_KANSAS_CAMERA_PROJECT)
+	{MOT_KANSAS_S5KJNS_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+#endif
 	{OV48B12M_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{OV48B_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{IMX766_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_32K},
