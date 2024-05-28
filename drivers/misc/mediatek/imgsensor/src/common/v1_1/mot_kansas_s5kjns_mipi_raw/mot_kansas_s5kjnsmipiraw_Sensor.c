@@ -248,8 +248,8 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[4] = {
 	/* Video mode setting */
 	{
 		0x03, 0x0A, 0x00, 0x08, 0x40, 0x00,
-		0x00, 0x2B, 0x1000, 0x900, 0x00, 0x00, 0x0000, 0x0000,
-		0x01, 0x2B, 0x3E0, 0x240, 0x00, 0x00, 0x0000, 0x0000
+		0x00, 0x2B, 0xFF0, 0x8F8, 0x00, 0x00, 0x0000, 0x0000,
+		0x01, 0x2B, 0x1FC, 0x8F0, 0x00, 0x00, 0x0000, 0x0000
 	},
 	/* Slim Video mode setting */
 	{
@@ -1722,6 +1722,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+				imgsensor_pd_info.i4BlockNumX = 508;
+				imgsensor_pd_info.i4BlockNumY = 286;
+				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+					sizeof(struct SET_PD_BLOCK_INFO_T));
+				break;
 			case MSDK_SCENARIO_ID_CUSTOM1:
 				imgsensor_pd_info.i4BlockNumX = 248;
 				imgsensor_pd_info.i4BlockNumY = 144;
@@ -1743,6 +1748,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				break;
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+				break;
 			case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			case MSDK_SCENARIO_ID_CUSTOM1:
 				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
