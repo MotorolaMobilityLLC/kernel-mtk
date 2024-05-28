@@ -1,0 +1,72 @@
+/* Copyright (c) 2023, Motorola Mobility Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "mediatek/mt6835-moto-common-overlay.dtsi"
+#include "mediatek/vegas-display.dtsi"
+#include "mediatek/vegas-touch.dtsi"
+#include "mediatek/vegas-fps.dtsi"
+#include "mediatek/mt6835-moto-memory.dtsi"
+#include "mediatek/vegas-charger.dtsi"
+#include "mediatek/vegas-sensor.dtsi"
+#include "mediatek/vegas-msdc.dtsi"
+#include "mediatek/vegas-audio.dtsi"
+/ {
+switch_chg_eint: switch_chg_eint {
+	};
+tcpc_pd: tcpc_pd {
+	};
+eint_cp: eint_cp {
+	};
+};
+
+&mt6377keys {
+	home {
+		linux,keycodes = <114>;
+	};
+};
+
+&i2c3 {
+        clock-frequency = <400000>;
+
+        sn220e: sn220e@28 {
+                compatible = "qcom,sn-nci";
+                reg = <0x28>;
+                qcom,sn-irq = <&pio 41 0>;
+                qcom,sn-ven = <&pio 42  0>;
+                status = "okay";
+        };
+};
+
+&swtp {
+	interrupt-parent = <&pio>;
+	interrupts = <6 IRQ_TYPE_LEVEL_HIGH 6 0>;
+	deb-gpios = <&pio 6 0>;
+	debounce = <512>;
+	status = "okay";
+};
+
+&swtp_1 {
+	interrupt-parent = <&pio>;
+	interrupts = <11 IRQ_TYPE_LEVEL_HIGH 11 0>;
+	deb-gpios = <&pio 11 0>;
+	debounce = <512>;
+	status = "okay";
+};
+&swtp_2 {
+	interrupt-parent = <&pio>;
+	interrupts = <19 IRQ_TYPE_LEVEL_HIGH 19 0>;
+	deb-gpios = <&pio 19 0>;
+	debounce = <512>;
+	status = "okay";
+};
+
+
