@@ -343,9 +343,9 @@ static struct mtk_panel_params ext_params_60hz = {
 	.panel_name = "boe_ft8057s_vid_667_720",
 	.panel_supplier = "boe",
 	.lcm_index = 0,
-/*
 	.max_bl_level = 2047,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
+/*
 
 	//.ssc_enable = 0,
 	.lane_swap_en = 0,
@@ -376,7 +376,7 @@ static struct mtk_panel_params ext_params_90hz = {
 	.panel_supplier = "boe",
 	.lcm_index = 0,
 	.max_bl_level = 2047,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
@@ -404,7 +404,7 @@ static struct mtk_panel_params ext_params_120hz = {
 	.panel_supplier = "boe",
 	.lcm_index = 0,
 	.max_bl_level = 2047,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
