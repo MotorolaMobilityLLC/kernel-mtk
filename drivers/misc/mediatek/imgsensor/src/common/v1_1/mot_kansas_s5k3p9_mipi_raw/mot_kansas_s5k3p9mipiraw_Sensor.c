@@ -166,7 +166,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_settle_delay_mode = 1,
 		/*0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL*/
 		.sensor_output_dataformat =
-			SENSOR_OUTPUT_FORMAT_RAW_4CELL_BAYER_Gr,
+			SENSOR_OUTPUT_FORMAT_RAW_4CELL_BAYER_Gb,
 		.mclk = 24,
 		.mipi_lane_num = SENSOR_MIPI_4_LANE,
 		.i2c_addr_table = {0x21, 0x20, 0xff},
@@ -174,7 +174,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 };
 
 static struct imgsensor_struct imgsensor = {
-	.mirror = IMAGE_NORMAL, //mirrorflip information
+	.mirror = IMAGE_HV_MIRROR, //mirrorflip information
 	.sensor_mode = IMGSENSOR_MODE_INIT,
 	/*IMGSENSOR_MODE enum value,record current sensor mode*/
 	/*such as: INIT, Preview, Capture, Video,High Speed Video, Slim Video*/
@@ -579,6 +579,30 @@ static kal_uint16 set_gain(kal_uint16 gain)
 
 	return gain;
 }	/*	set_gain  */
+
+static void set_mirror_flip(kal_uint8 image_mirror)
+{
+	switch (image_mirror) {
+
+	case IMAGE_NORMAL:
+		write_cmos_sensor_16_8(0x0101, 0x00);   /* Gr*/
+		break;
+
+	case IMAGE_H_MIRROR:
+		write_cmos_sensor_16_8(0x0101, 0x01);
+		break;
+
+	case IMAGE_V_MIRROR:
+		write_cmos_sensor_16_8(0x0101, 0x02);
+		break;
+
+	case IMAGE_HV_MIRROR:
+		write_cmos_sensor_16_8(0x0101, 0x03);  /*Gb*/
+		break;
+	default:
+		LOG_INF("Error image_mirror setting\n");
+	}
+}
 
 /*
  ************************************************************************
@@ -4318,7 +4342,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	preview_setting();
-
+	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }	/*	preview   */
 
@@ -4357,6 +4381,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	capture_setting();
+	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 } /* capture() */
@@ -4376,6 +4401,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	normal_video_setting();
+	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/*	normal_video   */
@@ -4397,6 +4423,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	hs_video_setting();
+	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/*	hs_video   */
@@ -4419,6 +4446,7 @@ static kal_uint32 slim_video(
 	spin_unlock(&imgsensor_drv_lock);
 
 	slim_video_setting();
+	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/*	slim_video	 */
