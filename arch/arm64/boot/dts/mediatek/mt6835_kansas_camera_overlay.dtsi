@@ -332,7 +332,7 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 
-	mtk_camera_eeprom2:camera_eeprom2@51 {
+	mtk_camera_eeprom1:camera_eeprom1@51 {
 		compatible = "mediatek,camera_eeprom";
 		reg = <0x51>;
 		status = "okay";
@@ -355,12 +355,6 @@
 	clock-frequency = <400000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
-
-	mtk_camera_eeprom1:camera_eeprom1@51 {
-		compatible = "mediatek,camera_eeprom";
-		reg = <0x51>;
-		status = "okay";
-	};
 };
 &i2c6 {
         status = "okay";
