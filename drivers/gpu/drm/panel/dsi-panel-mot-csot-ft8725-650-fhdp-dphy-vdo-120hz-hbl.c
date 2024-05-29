@@ -481,7 +481,7 @@ static struct mtk_panel_params ext_params = {
 	.panel_id = 0x08022554,
 	.panel_name = "csot_ft8725_vid_649_1080_120hz",
 	.panel_supplier = "csot",
-	.lcm_index = 2,
+	.lcm_index = 0,
 
 };
 
@@ -542,7 +542,7 @@ static struct mtk_panel_params ext_params_mode_30 = {
 	.panel_id = 0x08022554,
 	.panel_name = "csot_ft8725_vid_649_1080_120hz",
 	.panel_supplier = "csot",
-	.lcm_index = 2,
+	.lcm_index = 0,
 };
 
 static struct mtk_panel_params ext_params_mode_90 = {
@@ -603,7 +603,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	.panel_id = 0x08022554,
 	.panel_name = "csot_ft8725_vid_649_1080_120hz",
 	.panel_supplier = "csot",
-	.lcm_index = 2,
+	.lcm_index = 0,
 
 };
 
@@ -666,7 +666,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	.panel_id = 0x08022554,
 	.panel_name = "csot_ft8725_vid_649_1080_120hz",
 	.panel_supplier = "csot",
-	.lcm_index = 2,
+	.lcm_index = 0,
 
 };
 
