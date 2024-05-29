@@ -19,6 +19,7 @@
 #include "mediatek/kansas-sensor.dtsi"
 #include "mediatek/kansas-msdc.dtsi"
 #include "mediatek/kansas-audio.dtsi"
+#include "mediatek/kansas-fmr.dtsi"
 / {
 switch_chg_eint: switch_chg_eint {
 	};
