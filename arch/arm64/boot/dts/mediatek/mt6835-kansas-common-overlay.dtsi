@@ -71,4 +71,4 @@ eint_cp: eint_cp {
 	status = "okay";
 };
 
-
+/delete-node/ &mt6377_vtp;
