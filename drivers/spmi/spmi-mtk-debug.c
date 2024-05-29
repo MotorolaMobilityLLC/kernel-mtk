@@ -2062,131 +2062,8 @@ static const struct file_operations dump_spmimst_all_reg_proc_fops = {
 	.release = single_release,
 };
 
-static u32 gpmif_of;
-static u32 gpmif_val;
-static ssize_t pmif_access_show(struct device_driver *ddri, char *buf)
-{
-	int ret = 0;
-
-	if (buf == NULL) {
-		pr_notice("[%s] *buf is NULL!\n",  __func__);
-		return -EINVAL;
-	}
-	ret = sprintf(buf, "[%s] [0x%x]=0x%x\n", __func__, gpmif_of, gpmif_val);
-	if (ret < 0)
-		pr_notice("sprintf failed\n");
-
-	return strlen(buf);
-}
-static ssize_t pmif_access_store(struct device_driver *ddri,
-	const char *buf, size_t count)
-{
-	struct pmif *arb = spmi_controller_get_drvdata(dbg_ctrl);
-	int ret = 0;
-	u32 offset = 0;
-	u32 value = 0;
-
-	if (buf != NULL && count != 0) {
-		pr_info("[%s] size is %d, buf is %s\n",
-			__func__, (int)count, buf);
-
-		if (strlen(buf) < 3) {
-			pr_notice("%s() Invalid input!!\n", __func__);
-			return -EINVAL;
-		}
-
-		ret = sscanf(buf, "0x%x 0x%x", &offset, &value);
-		if (ret < 0)
-			return ret;
-		if (offset % 4 != 0) {
-			pr_notice("%s() Invalid offset!\n", __func__);
-			return -EINVAL;
-		}
-
-		if (ret == 2) {
-			if (offset > arb->dbgregs[PMIF_SWINF_3_STA]) {
-				pr_notice("%s() Illegal offset[0x%x]!!\n",
-					__func__, offset);
-			} else {
-				pr_info("%s() set offset[0x%x]=0x%x\n",
-					__func__, arb->base + offset, value);
-				writel(value, arb->base + offset);
-			}
-		}
-
-		gpmif_of = offset;
-		gpmif_val = readl(arb->base + offset);
-	}
-	return count;
-}
-static u32 gspmi_of;
-static u32 gspmi_val;
-static ssize_t spmi_access_show(struct device_driver *ddri, char *buf)
-{
-	int ret = 0;
-
-	if (buf == NULL) {
-		pr_notice("[%s] *buf is NULL!\n",  __func__);
-		return -EINVAL;
-	}
-	ret = sprintf(buf, "[%s] [0x%x]=0x%x\n", __func__, gspmi_of, gspmi_val);
-	if (ret < 0)
-		pr_notice("sprintf failed\n");
-
-	return strlen(buf);
-}
-static ssize_t spmi_access_store(struct device_driver *ddri,
-	const char *buf, size_t count)
-{
-	struct pmif *arb = spmi_controller_get_drvdata(dbg_ctrl);
-	int ret = 0;
-	u32 offset = 0;
-	u32 value = 0;
-
-	if (buf != NULL && count != 0) {
-		pr_info("[%s] size is %d, buf is %s\n",
-			__func__, (int)count, buf);
-
-		if (strlen(buf) < 3) {
-			pr_notice("%s() Invalid input!!\n", __func__);
-			return -EINVAL;
-		}
-
-		ret = sscanf(buf, "0x%x 0x%x", &offset, &value);
-		if (((offset % 4) != 0) || (ret != 2)) {
-			pr_notice("%s() Invalid input!!\n", __func__);
-			return ret;
-		}
-
-		if (value) {
-			if (offset > arb->spmimst_regs[SPMI_MST_DBG]) {
-				pr_notice("%s() Illegal offset[0x%x]!!\n",
-					__func__, offset);
-			} else {
-				pr_info("%s() set offset[0x%x]=0x%x\n",
-					__func__, arb->spmimst_base + offset,
-					value);
-				writel(value, arb->spmimst_base + offset);
-			}
-		}
-
-		gspmi_of = offset;
-		gspmi_val = readl(arb->spmimst_base + offset);
-	}
-	return count;
-}
-static DRIVER_ATTR_RW(pmif_access);
-static DRIVER_ATTR_RW(spmi_access);
-
-static struct driver_attribute *spmi_pmif_attr_list[] = {
-	&driver_attr_pmif_access,
-	&driver_attr_spmi_access,
-};
-
 int spmi_pmif_create_attr(struct device_driver *driver)
 {
-	int idx, err;
-	int num = ARRAY_SIZE(spmi_pmif_attr_list);
 	struct dentry *mtk_spmi_dir;
 
 	mtk_spmi_dir = debugfs_create_dir("mtk_spmi", NULL);
@@ -2215,16 +2092,7 @@ int spmi_pmif_create_attr(struct device_driver *driver)
 	if (driver == NULL)
 		return -EINVAL;
 
-	/* /sys/bus/platform/drivers/spmi-mtk/ */
-	for (idx = 0; idx < num; idx++) {
-		err = driver_create_file(driver, spmi_pmif_attr_list[idx]);
-		if (err) {
-			pr_notice("%s() driver_create_file %s err:%d\n",
-			__func__, spmi_pmif_attr_list[idx]->attr.name, err);
-			break;
-		}
-	}
-	return err;
+	return 0;
 }
 EXPORT_SYMBOL_GPL(spmi_pmif_create_attr);
 
