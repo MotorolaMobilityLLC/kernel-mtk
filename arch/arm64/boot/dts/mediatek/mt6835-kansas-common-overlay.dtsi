@@ -20,6 +20,7 @@
 #include "mediatek/kansas-msdc.dtsi"
 #include "mediatek/kansas-audio.dtsi"
 #include "mediatek/kansas-fmr.dtsi"
+#include "mediatek/kansas-ntc.dtsi"
 / {
 switch_chg_eint: switch_chg_eint {
 	};
