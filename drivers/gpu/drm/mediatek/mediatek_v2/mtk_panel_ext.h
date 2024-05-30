@@ -672,6 +672,7 @@ struct mtk_panel_funcs {
 	int (*panel_feature_set)(struct drm_panel *panel, void *dsi_drv,
 			    dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info);
 	int (*panel_feature_get)(struct drm_panel *panel, struct panel_param_info *param_info);
+	int (*set_gesture_flag)(int state);
 };
 
 void mtk_panel_init(struct mtk_panel_ctx *ctx);
