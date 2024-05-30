@@ -49,7 +49,7 @@
 #define AW36515_DTNAME "mediatek,flashlights_aw36515"
 #endif
 #ifndef AW36515_DTNAME_I2C
-#define AW36515_DTNAME_I2C "mediatek,flashlights_aw36515_i2c"
+#define AW36515_DTNAME_I2C "mediatek,strobe_main"
 #endif
 #define AW36515_NAME "flashlights-aw36515"
 
@@ -77,6 +77,8 @@
 #define AW36515_REG_CTRL2            (0x69)
 #define AW36515_REG_CHIP_VENDOR_ID   (0x25)
 #define AW36515_CHIP_VENDOR_ID       (0x04)
+#define AW36515_REG_DEVICES_ID       (0x0C)
+#define AW36515_VER_DEVICES_ID       (0x02)
 
 #define AW36515_REG_TORCH_LEVEL_LED1 (0x05)
 #define AW36515_REG_FLASH_LEVEL_LED1 (0x03)
@@ -631,6 +633,8 @@ aw36515_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	struct aw36515_chip_data *chip;
 	struct aw36515_platform_data *pdata = client->dev.platform_data;
 	int err;
+	unsigned char device_id;
+	int dev_id;
 
 	pr_info("%s Probe AW36515 start.\n", __func__);
 
@@ -684,6 +688,15 @@ aw36515_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 	/* init chip hw */
 	aw36515_chip_init(chip);
+
+	dev_id = aw36515_i2c_read(aw36515_i2c_client, AW36515_REG_DEVICES_ID, &device_id);
+	pr_info("%s AW36515_DEVICES_ID 0x%2x\n", __func__, dev_id);
+
+	if (dev_id != AW36515_VER_DEVICES_ID) {
+		pr_info("%s is not aw36515 flashlight", __func__);
+		err = -ENODEV;
+		goto err_free;
+	}
 
 	/* register flashlight operations */
 	if (flashlight_dev_register(AW36515_NAME, &aw36515_ops)) {
