@@ -31,7 +31,7 @@
 
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
-
+static int tp_gesture_flag=0;
 struct csot {
 	struct device *dev;
 	struct drm_panel panel;
@@ -240,6 +240,21 @@ static int csot_disable(struct drm_panel *panel)
 	return 0;
 }
 
+static int csot_set_gesture_flag(int state)
+{
+	if(state == 1)
+	{
+		tp_gesture_flag = 1;
+	}
+	else
+	{
+		tp_gesture_flag = 0;
+	}
+	pr_info("%s, tp_gesture_flag = %d\n", __func__, tp_gesture_flag);
+
+	return 0;
+}
+
 static int csot_unprepare(struct drm_panel *panel)
 {
 	struct csot *ctx = panel_to_csot(panel);
@@ -253,26 +268,29 @@ static int csot_unprepare(struct drm_panel *panel)
 	csot_dcs_write_seq_static(ctx, 0x10);
 	msleep(120);
 
-	ctx->bias_n_gpio = devm_gpiod_get(ctx->dev, "bias_n", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->bias_n_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get bias_n_gpio %ld\n",
-			__func__, PTR_ERR(ctx->bias_n_gpio));
-		return -1;
-	}
+	if (tp_gesture_flag == 0)
+	{
+		ctx->bias_n_gpio = devm_gpiod_get(ctx->dev, "bias_n", GPIOD_OUT_HIGH);
+		if (IS_ERR(ctx->bias_n_gpio)) {
+			dev_err(ctx->dev, "%s: cannot get bias_n_gpio %ld\n",
+				__func__, PTR_ERR(ctx->bias_n_gpio));
+			return -1;
+		}
 
-	ctx->bias_p_gpio = devm_gpiod_get(ctx->dev, "bias_p", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->bias_p_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get bias_p_gpio %ld\n",
-			__func__, PTR_ERR(ctx->bias_p_gpio));
-		return -1;
+		ctx->bias_p_gpio = devm_gpiod_get(ctx->dev, "bias_p", GPIOD_OUT_HIGH);
+		if (IS_ERR(ctx->bias_p_gpio)) {
+			dev_err(ctx->dev, "%s: cannot get bias_p_gpio %ld\n",
+				__func__, PTR_ERR(ctx->bias_p_gpio));
+			return -1;
+		}
+		gpiod_set_value(ctx->bias_n_gpio, 0);
+		udelay(10 * 1000);
+		gpiod_set_value(ctx->bias_p_gpio, 0);
+		udelay(10 * 1000);
+		devm_gpiod_put(ctx->dev, ctx->bias_n_gpio);
+		devm_gpiod_put(ctx->dev, ctx->bias_p_gpio);
+		printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 	}
-	gpiod_set_value(ctx->bias_n_gpio, 0);
-	udelay(10 * 1000);
-	gpiod_set_value(ctx->bias_p_gpio, 0);
-	udelay(10 * 1000);
-	devm_gpiod_put(ctx->dev, ctx->bias_n_gpio);
-	devm_gpiod_put(ctx->dev, ctx->bias_p_gpio);
-	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
 	ctx->error = 0;
 	ctx->prepared = false;
@@ -571,6 +589,7 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = csot_setbacklight_cmdq,
 	.reset = panel_ext_reset,
+	.set_gesture_flag = csot_set_gesture_flag,
 	.ext_param_set = mtk_panel_ext_param_set,	//EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
 //	.ata_check = panel_ata_check,
 	.panel_feature_set = panel_feature_set,
