@@ -15,7 +15,7 @@
 #define REGFLAG_RESET_HIGH      0xFFFF
 
 #define FRAME_WIDTH                 720
-#define FRAME_HEIGHT                1600
+#define FRAME_HEIGHT                1604
 
 #define PHYSICAL_WIDTH              67716
 #define PHYSICAL_HEIGHT            150480
