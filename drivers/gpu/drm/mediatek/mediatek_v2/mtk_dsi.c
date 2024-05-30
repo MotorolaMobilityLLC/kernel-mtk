@@ -408,6 +408,20 @@ enum DSI_MODE_CON {
 static struct mtk_drm_property mtk_connector_property[CONNECTOR_PROP_MAX] = {
 	{DRM_MODE_PROP_IMMUTABLE, "CAPS_BLOB_ID", 0, UINT_MAX, 0},
 };
+
+static int tp_gesture_flag=0;
+int touch_set_state(int state, int panel_idx)
+{
+        if (state == 1) {
+                tp_gesture_flag = 1;
+        } else{
+                tp_gesture_flag = 0;
+        }
+
+        return 0;
+}
+EXPORT_SYMBOL(touch_set_state);
+
 struct mtk_panel_ext *mtk_dsi_get_panel_ext(struct mtk_ddp_comp *comp);
 static void mtk_dsi_set_targetline(struct mtk_ddp_comp *comp,
 				struct cmdq_pkt *handle, unsigned int hacive);
@@ -3814,7 +3828,13 @@ static void mtk_output_dsi_disable(struct mtk_dsi *dsi, struct cmdq_pkt *cmdq_ha
 	unsigned int crtc_idx = 0;
 	bool skip_panel_switch = mtk_dsi_skip_panel_switch(dsi);
 
+	struct mtk_panel_ext *panel_ext = mtk_crtc->panel_ext;
+
 	DDPINFO("%s+ doze_enabled:%d\n", __func__, new_doze_state);
+
+	if (panel_ext && panel_ext->funcs && panel_ext->funcs->set_gesture_flag)
+		panel_ext->funcs->set_gesture_flag(tp_gesture_flag);
+
 	if (!dsi->output_en)
 		return;
 
