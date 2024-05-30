@@ -20,6 +20,7 @@
 		touch,psy-name = "battery";
 		ili,dda-device-info = "ilitek-ts for Geneva4G";
 		ilitek,report_gesture_key;
+		ilitek,supported_gesture_type = <0x02>; //bit2-0: only support single tap
 
 		//novatek
 		novatek,reset-gpio = <&pio 23 0x0>;
@@ -30,6 +31,7 @@
 		novatek,usb_charger;
 		novatek,report_gesture_key = <1>;
 		novatek,panel_wakeup = <1>;
+		novatek,supported_gesture_type = <0x02>; //bit2-0: only support single tap
 
 		/* 672A, 525B, 675, 526, 672C, 523 */
 		novatek,swrst-n8-addr = <0x03F0FE>;
