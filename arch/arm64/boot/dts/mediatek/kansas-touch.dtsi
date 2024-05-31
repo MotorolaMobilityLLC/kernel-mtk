@@ -31,8 +31,8 @@
 		novatek,panel-supplier = "nt36528a", "nt36528";
 		//novatek,usb_charger;
 		//novatek,psy-name = "battery";
-		//novatek,report_gesture_key;
-		//novatek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
+		novatek,report_gesture_key;
+		novatek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
 
 		// 525
 		//novatek,swrst-n8-addr = <0x01F01A>;
@@ -52,8 +52,8 @@
                 focaltech,irq-gpio = <&pio 4 0x0>;
                 focaltech,max-touch-number = <10>;
                 focaltech,display-coords = <0 0 720 1604>;
-                //focaltech,report_gesture_key = <59>;
-                //focaltech,supported_gesture_type = <0x06>;
+                focaltech,report_gesture_key = <59>;
+                focaltech,supported_gesture_type = <0x06>;
                 focaltech,panel-supplier = "boe_ft8057s";
                 //focaltech,touch-charger-detect-psy-name = "battery";
                 //focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
