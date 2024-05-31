@@ -45,6 +45,34 @@ struct csot {
 	bool enabled;
 
 	int error;
+	unsigned int hbm_mode;
+	unsigned int cabc_mode;
+};
+
+static struct mtk_panel_para_table panel_cabc_ui[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{2, {0x55, 0x01}},
+};
+
+static struct mtk_panel_para_table panel_cabc_mv[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{2, {0x55, 0x03}},
+};
+
+static struct mtk_panel_para_table panel_cabc_disable[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{2, {0x55, 0x00}},
+};
+
+//DVT2 PVT max_brightness 1463
+static struct mtk_panel_para_table panel_hbm_on[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{3, {0x51, 0x07, 0xFF}},
+};
+
+static struct mtk_panel_para_table panel_hbm_off[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{3, {0x51, 0x05, 0xB0}},
 };
 
 #define csot_dcs_write_seq(ctx, seq...)                                     \
@@ -292,7 +320,7 @@ static int csot_enable(struct drm_panel *panel)
 
 	return 0;
 }
-//+EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
+
 static const struct drm_display_mode default_mode = {
 	.clock		= 115841,
 	.hdisplay = FRAME_WIDTH,
@@ -315,13 +343,14 @@ static const struct drm_display_mode performance_mode_1 = {
 	.vsync_end = FRAME_HEIGHT + MODE_1_VFP + VSA,
 	.vtotal = FRAME_HEIGHT + MODE_1_VFP + VSA + VBP,
 };
-//-EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
+
 #if defined(CONFIG_MTK_PANEL_EXT)
+//60HZ
 static struct mtk_panel_params ext_params = {
 	//.pll_clk = 600,
-	.data_rate = 752,	//EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
-	.cust_esd_check = 0,
-	.esd_check_enable = 0,
+	.data_rate = 752,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
@@ -329,26 +358,26 @@ static struct mtk_panel_params ext_params = {
 	},
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
-//+EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
+
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+};
+//90HZ
+static struct mtk_panel_params ext_params_mode_1 = {
+	.data_rate = 752,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.lane_swap_en = 0,
+	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
 };
 
-static struct mtk_panel_params ext_params_mode_1 = {
-	.data_rate = 752,
-	.cust_esd_check = 0,
-	.esd_check_enable = 0,
-	.lcm_esd_check_table[0] = {
-		.cmd = 0x0a,
-		.count = 1,
-		.para_list[0] = 0x9c,
-	},
-	.lane_swap_en = 0,
-	.lp_perline_en = 0,
-	.physical_width_um = PHYSICAL_WIDTH,
-	.physical_height_um = PHYSICAL_HEIGHT,
-};
-//-EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
 static int csot_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
@@ -403,7 +432,7 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 		ret = 1;
 	return ret;
 }
-//-EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
+
 static int panel_ext_reset(struct drm_panel *panel, int on)
 {
 	struct csot *ctx = panel_to_csot(panel);
@@ -415,11 +444,129 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 
 	return 0;
 }
+
+static int panel_cabc_set_cmdq(struct csot *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable = NULL;
+
+	if (cabc_mode > 3) {
+		pr_info("%s: invalid CABC mode:%d, return\n", __func__, cabc_mode);
+		return -1;
+	}
+
+	switch (cabc_mode) {
+		case 0:
+			para_count = sizeof(panel_cabc_ui) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_ui;
+			break;
+		case 1:
+			para_count = sizeof(panel_cabc_mv) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_mv;
+			break;
+		case 2:
+			para_count = sizeof(panel_cabc_disable) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_disable;
+			break;
+		default:
+			break;
+	}
+
+	if (pTable) {
+		pr_info("%s: set CABC mode :%d", __func__, cabc_mode);
+		cb(dsi, handle, pTable, para_count);
+	}
+	else
+		pr_info("%s: CABC mode:%d not support", __func__, cabc_mode);
+
+	return 0;
+}
+
+static int panel_hbm_set_cmdq(struct csot *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable = NULL;
+
+	if (hbm_state > 1) {
+		pr_info("%s: invalid hbm_state:%d, return\n", __func__, hbm_state);
+		return -1;
+	}
+
+	switch (hbm_state) {
+		case 1:
+			para_count = sizeof(panel_hbm_on) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_hbm_on;
+			pr_info("%s: set HBM on", __func__);
+			break;
+		case 0:
+			para_count = sizeof(panel_hbm_off) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_hbm_off;
+			pr_info("%s: set HBM off", __func__);
+			break;
+		default:
+			break;
+	}
+
+	if (pTable) {
+		cb(dsi, handle, pTable, para_count);
+	}
+	else
+		pr_info("%s: HBM pTable null, hbm_state:%s", __func__, hbm_state);
+
+	return 0;
+}
+
+static int panel_feature_set(struct drm_panel *panel, void *dsi,
+			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
+{
+	struct csot *ctx = panel_to_csot(panel);
+	int ret = -1;
+
+	if (!cb)
+		return -1;
+
+	if (!ctx->enabled) {
+		pr_info("%s: skip set feature %d to %d, panel not enabled\n", __func__, param_info.param_idx, param_info.value);
+		return -1;
+	}
+
+	pr_info("%s: start set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+
+	switch (param_info.param_idx) {
+		case PARAM_CABC:
+			if (ctx->cabc_mode != param_info.value) {
+				ctx->cabc_mode = param_info.value;
+				panel_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set CABC to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else
+				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
+			break;
+		case PARAM_HBM:
+			if (ctx->hbm_mode != param_info.value) {
+				ctx->hbm_mode = param_info.value;
+				panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set HBM to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else
+				pr_info("%s: skip same HBM mode:%d\n", __func__, ctx->hbm_mode);
+			break;
+		default:
+			pr_info("%s: skip unsupport feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+			break;
+	}
+
+	return ret;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = csot_setbacklight_cmdq,
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,	//EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
 //	.ata_check = panel_ata_check,
+	.panel_feature_set = panel_feature_set,
 };
 #endif
 
