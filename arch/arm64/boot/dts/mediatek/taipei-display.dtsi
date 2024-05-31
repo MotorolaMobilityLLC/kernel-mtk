@@ -72,15 +72,15 @@
 		aw99703,map-type = <0>; /* 0 exponential, 4 linear */
 		aw99703,current-align-type = <0x01>;
 		aw99703,work-mode = <1>; /* backlight */
-		aw99703,default-brightness = <743>;
+		aw99703,default-brightness = <519>;
 		aw99703,init-seq-enable = <1>;
 		aw99703,init-seq = <0x02 0x00>,
 				<0x03 0xE7>,
 				<0x04 0x2E>,
 				<0x09 0x00>,
 				<0x05 0x50>,
-				<0x06 0x04>,
-				<0x07 0xd4>,
+				<0x06 0x02>,
+				<0x07 0xC5>,
 				<0x67 0x1C>,
 				<0x25 0x61>,
 				<0x24 0x4C>,
@@ -102,15 +102,15 @@
                 ktd,ocp-level = <2600>;
                 ktd,switching-frequency = <1>;
                 ktd,inductor-current = <1>;
-                ktd,default-brightness = <743>;
+                ktd,default-brightness = <519>;
                 ktd,map-type = <0>; /* 0 exponential, 1 linear */
                 ktd,current-align-type = <0x01>;
                 ktd3136,init-seq-enable = <1>;
                 ktd3136,init-seq = <0x02 0xE1>,
 				<0x03 0x28>,
 				<0x06 0x04>,
-				<0x04 0xd4>,
-				<0x05 0xE2>,
+				<0x04 0x02>,
+				<0x05 0xC5>,
 				<0x07 0x03>,
 				<0x08 0x01>;
 
@@ -126,7 +126,7 @@
 		led_mode = <6>;
 		max-brightness = <2047>;
 		max-hw-brightness = <2047>;
-		default-brightness = <1810>;
+		default-brightness = <1578>;
 	};
 };
 
