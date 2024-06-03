@@ -1068,7 +1068,7 @@ static int bq2589x_get_charge_stat(struct bq2589x *bq, int *state)
 		val = val >> BQ2589X_CHRG_STAT_SHIFT;
 		switch (val) {
 		case BQ2589X_CHRG_STAT_IDLE:
-			if (((bq->power_good) || (vbus > BQ2589X_VBUS_VALID))
+			if (((bq->power_good) && (vbus > BQ2589X_VBUS_VALID))
 				&& (bq->part_no != pn_data[PN_SC89890H]))
 				*state = POWER_SUPPLY_STATUS_CHARGING;
 			else
@@ -1228,10 +1228,6 @@ static void bq2589x_read_byte_work(struct work_struct *work)
 		pr_info("%s get vbus fail\n", __func__);
 	}
 
-	if (!(bq->power_good) && (vbus > BQ2589X_VBUS_VALID)
-		&& (bq->part_no != pn_data[PN_SC89890H]))
-		bq->power_good = 1;
-
 	if (!prev_pg && bq->power_good)
 		bq2589x_set_input_current_limit(bq, 400);
 #if 0
@@ -1290,7 +1286,9 @@ static irqreturn_t bq2589x_irq_handler_thread(int irq, void *data)
 {
 	struct bq2589x *bq = data;
 
-	schedule_delayed_work(&bq->read_byte_work, msecs_to_jiffies(40));
+	disable_irq_nosync(bq->client->irq);
+	schedule_delayed_work(&bq->read_byte_work, msecs_to_jiffies(600));
+	enable_irq(bq->client->irq);
 
 	return IRQ_HANDLED;
 }
@@ -1301,7 +1299,7 @@ static int bq2589x_register_interrupt(struct bq2589x *bq)
 
 	ret = devm_request_threaded_irq(bq->dev, bq->client->irq, NULL,
 					bq2589x_irq_handler_thread,
-					IRQF_TRIGGER_FALLING | IRQF_NO_SUSPEND |
+					IRQF_TRIGGER_FALLING |
 					IRQF_ONESHOT, "chr_stat", bq);
 	if (ret < 0) {
 		pr_info("request thread irq failed:%d\n", ret);
@@ -1311,7 +1309,7 @@ static int bq2589x_register_interrupt(struct bq2589x *bq)
 			ret, bq->client->irq);
 	}
 
-	enable_irq_wake(bq->irq);
+	enable_irq_wake(bq->client->irq);
 
 	return 0;
 }
@@ -1994,7 +1992,7 @@ static int bq2589x_chg_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_ONLINE:
 		if ((bq->part_no != pn_data[PN_SC89890H])) {
 			bq2589x_get_vbus(bq->chg_dev, &vbus);
-			if (!bq->power_good && vbus < BQ2589X_VBUS_UVLO)
+			if (!bq->power_good || vbus < BQ2589X_VBUS_UVLO)
 				val->intval = 0;
 			else if (vbus < BQ2589X_VBUS_UVLO)
 				val->intval = 0;
