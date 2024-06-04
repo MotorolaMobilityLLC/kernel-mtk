@@ -101,6 +101,8 @@
                 interrupt-parent = <&pio>;
                 goodix_rst = <&pio 7 0x00>;
                 gf,gpio_irq = <&pio 15 0x00>;
+                goodix_avdd = <&pio 89 0x00>;
+                gpio_power_ctrl;
                 interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
                 pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
                 pinctrl-0 = <&fingerprint_irq>;
@@ -110,41 +112,3 @@
         };
 };
 
-/*
-&spi1 {
-	status = "okay";
-	#address-cells = <1>;
-	#size-cells = <0>;
-	tee-only;
-	goodix@0 {
-		compatible = "mediatek,finger-goodix";
-		reg = <0>;
-		spi-max-frequency = <1000000>;
-		status = "okay";
-	};
-};
-
-&pio {
-	fpc_fp_pins_spi: state_spi_mode {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO61__FUNC_SPI1_CSB>,
-					<PINMUX_GPIO60__FUNC_SPI1_CLK>,
-					<PINMUX_GPIO63__FUNC_SPI1_MI>,
-					<PINMUX_GPIO62__FUNC_SPI1_MO>;
-			drive-strength = <4>;
-		};
-	};
-};
-
-&odm {
-	goodix_fp: goodix_fp {
-		compatible = "mediatek,fingerprint-goodix";
-		interrupt-parent = <&pio>;
-		interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
-		fp_vdd-supply = <&mt6377_vfp>;
-		goodix_rst = <&pio 7 0x00>;
-		gf,gpio_irq = <&pio 15 0x00>;
-		status = "okay";
-	};
-};
-*/
