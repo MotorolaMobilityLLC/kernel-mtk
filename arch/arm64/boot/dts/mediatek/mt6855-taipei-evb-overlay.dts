@@ -27,5 +27,5 @@
 };
 
 #include <taipei_evb/cust.dtsi>
-#include "mediatek/cancunf-30w_charger.dtsi"
+#include "mediatek/taipei-charger-overlay.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
