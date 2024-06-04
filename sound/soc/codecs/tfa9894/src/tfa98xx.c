@@ -71,6 +71,8 @@ static TfaContainer_t *tfa98xx_container = NULL;
 
 static int tfa98xx_kmsg_regs = 0;
 static int tfa98xx_ftrace_regs = 0;
+static uint8_t tfadsp_volume = 0;
+
 #define TFADSP_FLAG_CALIBRATE_DONE	1
 #ifdef TFA98xx_calibrate
 struct tfa98xx *tfa98xx_global[2] = {0};
@@ -111,6 +113,7 @@ static void tfa98xx_interrupt_enable(struct tfa98xx *tfa98xx, bool enable);
 
 static int get_profile_from_list(char *buf, int id);
 static int get_profile_id_for_sr(int id, unsigned int rate);
+static int tfa98xx_send_volume(uint8_t volume, int only_left);
 
 struct tfa98xx_rate {
 	unsigned int rate;
@@ -1513,6 +1516,74 @@ static int tfa98xx_set_stop_ctl(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
+static int tfa98xx_send_volume(uint8_t volume, int only_left)
+{
+	uint8_t cmd[9] = {0x00, 0x81, 0x04, 0x00, 0x00, 0xff, 0x00, 0x00, 0xff};
+	struct tfa98xx *tfa98xx = NULL;
+	int is_probus = 0, err = 0;
+
+	list_for_each_entry(tfa98xx, &tfa98xx_device_list, list) {
+	if (tfa98xx->tfa->is_probus_device) {
+		is_probus = 1;
+		break;
+	}
+	pr_info("tfa send volume 0x%x to PA-0x%x.\n",  volume, tfa98xx->i2c->addr);
+	if ((!only_left) || (tfa98xx->tfa->dev_idx==0))
+		tfa98xx_set_volume_level(tfa98xx->tfa, volume);
+	}
+	if (is_probus) {
+		cmd[5] = volume;
+		if (!only_left)
+			cmd[8] = volume;
+
+		pr_info("tfadsp send volume 0x%x to host DSP.\n",  volume);
+		err = tfa98xx_send_data_to_dsp(&cmd[0], sizeof(cmd));
+	}
+
+	return err;
+}
+
+static int tfa98xx_info_volume_ctl(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	mutex_lock(&tfa98xx_mutex);
+	uinfo->count = 1;
+	mutex_unlock(&tfa98xx_mutex);
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 0xFF;  /* 16 bit value */
+
+	return 0;
+}
+
+static int tfa98xx_get_volume_ctl(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	mutex_lock(&tfa98xx_mutex);
+	ucontrol->value.integer.value[0] = tfadsp_volume;
+	mutex_unlock(&tfa98xx_mutex);
+
+	return 0;
+}
+
+static int tfa98xx_set_volume_ctl(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+
+	mutex_lock(&tfa98xx_mutex);
+	pr_info("tfa98xx_set_volume_ctl value: %ld\n", ucontrol->value.integer.value[0]);
+	tfadsp_volume = ucontrol->value.integer.value[0];
+
+	if (tfadsp_volume >=0 && tfadsp_volume <= 255)
+		tfa98xx_send_volume(tfadsp_volume, 1);
+	else
+		pr_err("%s out of range %d\n", __func__, tfadsp_volume);
+
+	mutex_unlock(&tfa98xx_mutex);
+
+	return 1;
+}
+
 static int tfa98xx_info_cal_ctl(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_info *uinfo)
 {
@@ -1657,6 +1728,7 @@ static int tfa98xx_create_controls(struct tfa98xx *tfa98xx)
 #ifdef TFA98xx_STEREO
     nr_controls +=1 ;
 #endif
+	nr_controls +=1 ; /* set volume */
 
 	if (tfa98xx->flags & TFA98XX_FLAG_CALIBRATION_CTL)
 		nr_controls += 1; /* calibration */
@@ -1751,6 +1823,18 @@ static int tfa98xx_create_controls(struct tfa98xx *tfa98xx)
 	tfa98xx_controls[mix_index].info = tfa98xx_info_stop_ctl;
 	tfa98xx_controls[mix_index].get = tfa98xx_get_stop_ctl;
 	tfa98xx_controls[mix_index].put = tfa98xx_set_stop_ctl;
+	mix_index++;
+
+	/* Create a mixer item for volume control */
+	name = devm_kzalloc(tfa98xx->codec->dev, MAX_CONTROL_NAME, GFP_KERNEL);
+	if (!name)
+		return -ENOMEM;
+	scnprintf(name, MAX_CONTROL_NAME, "%s_Ramp_Volume", tfa98xx->fw.name);
+	tfa98xx_controls[mix_index].name = name;
+	tfa98xx_controls[mix_index].iface = SNDRV_CTL_ELEM_IFACE_MIXER;
+	tfa98xx_controls[mix_index].info = tfa98xx_info_volume_ctl;
+	tfa98xx_controls[mix_index].get = tfa98xx_get_volume_ctl;
+	tfa98xx_controls[mix_index].put = tfa98xx_set_volume_ctl;
 	mix_index++;
 
 	if (tfa98xx->flags & TFA98XX_FLAG_CALIBRATION_CTL) {
@@ -3085,6 +3169,8 @@ static int tfa98xx_mute(struct snd_soc_dai *dai, int mute, int stream)
 		/* stop DSP only when both playback and capture streams
 		 * are deactivated
 		 */
+		tfadsp_volume = 0; // reset volume ctrl here.
+
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 			tfa98xx->pstream = 0;
 		else
