@@ -206,6 +206,7 @@ struct charger_ops {
 	int (*get_ctd_dischg_status)(struct charger_device *dev, u8 *status);
 	int (*enable_hz)(struct charger_device *dev, bool en);
 	int (*set_vac_ovp)(struct charger_device *dev, u32 uV);
+	int (*get_chip_id)(struct charger_device *dev, int *id);
 
 	int (*set_property)(struct charger_device *dev,
 			    enum charger_property prop,
@@ -329,7 +330,8 @@ extern int charger_dev_enable_hz(
 	struct charger_device *charger_dev, bool en);
 extern int charger_dev_set_vac_ovp(
 	struct charger_device *charger_dev, u32 uV);
-
+extern int charger_dev_get_chip_id(
+	struct charger_device *charger_dev, int *id);
 /* PE+/PE+2.0 */
 extern int charger_dev_send_ta_current_pattern(
 	struct charger_device *charger_dev, bool is_increase);

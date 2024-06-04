@@ -378,6 +378,16 @@ int charger_dev_set_vac_ovp(struct charger_device *chg_dev, u32 uV)
 }
 EXPORT_SYMBOL(charger_dev_set_vac_ovp);
 
+int charger_dev_get_chip_id(struct charger_device *chg_dev, int *id)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL &&
+	    chg_dev->ops->get_chip_id)
+		return chg_dev->ops->get_chip_id(chg_dev, id);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_chip_id);
+
 int charger_dev_enable_adc(struct charger_device *chg_dev, bool en)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&
