@@ -132,6 +132,18 @@ int pe50_hal_set_ta_cap(struct chg_alg_device *alg, int mV, int mA)
 	return (ret <= MTK_ADAPTER_OK) ? ret : -ret;
 }
 
+int pe50_hal_get_chip_id(struct chg_alg_device *alg, enum chg_idx chgidx)
+{
+	int chgtyp = to_chgtyp(chgidx);
+	int id = PE50_CHIP_NULL;
+	struct pe50_hal *hal = chg_alg_dev_get_drv_hal_data(alg);
+
+	if (chgtyp < 0)
+		return chgtyp;
+	charger_dev_get_chip_id(hal->chgdevs[chgtyp], &id);
+	return id;
+}
+
 int pe50_hal_is_ta_cc(struct chg_alg_device *alg, bool *is_cc)
 {
 	int ret;

@@ -2758,11 +2758,15 @@ static int pe50_algo_cc_cv_with_ta_cv(struct pe50_algo_info *info)
 		goto out;
 	}
 
-	ret = pe50_hal_get_adc(info->alg, CHG1, PE50_ADCCHAN_VSYS,
-				   &vsys);
-	if (ret < 0) {
-		PE50_ERR("get vsys fail(%d)\n", ret);
-		goto out;
+	ret = pe50_hal_get_chip_id(info->alg, CHG1);
+	PE50_ERR("get chip id(%d)\n", ret);
+	if  (ret != PE50_CHIP_SGM41542) {
+		ret = pe50_hal_get_adc(info->alg, CHG1, PE50_ADCCHAN_VSYS,
+				   	&vsys);
+		if (ret < 0) {
+			PE50_ERR("get vsys fail(%d)\n", ret);
+			goto out;
+		}
 	}
 
 	ret = pe50_get_ta_cap_by_supportive(info, &data->vta_measure,
