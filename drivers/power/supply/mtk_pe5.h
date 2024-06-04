@@ -40,6 +40,11 @@ extern int pe50_get_log_level(void);
 			pr_info("[PE50]%s " fmt, __func__, ##__VA_ARGS__); \
 	} while (0)
 
+enum pe50_chip_id {
+	PE50_CHIP_NULL = 0,
+	PE50_CHIP_SC89890H,
+	PE50_CHIP_SGM41542,
+};
 enum pe50_adc_channel {
 	PE50_ADCCHAN_VBUS = 0,
 	PE50_ADCCHAN_IBUS,
@@ -278,6 +283,8 @@ static inline int micro_to_milli(int val)
 	return (val < 0) ? -1 : div1000(val);
 }
 
+extern int pe50_hal_get_chip_id(struct chg_alg_device *alg,
+				    enum chg_idx chgidx);
 extern int pe50_hal_get_ta_output(struct chg_alg_device *alg, int *mV, int *mA);
 extern int pe50_hal_get_ta_status(struct chg_alg_device *alg,
 				  struct pe50_ta_status *status);
