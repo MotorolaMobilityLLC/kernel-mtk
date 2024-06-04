@@ -664,6 +664,7 @@
 		125000 2522>;
 };
 
+/*
 &tboard_thermistor8 {
 	compatible = "mediatek,mt6855-board-ntc";
 	#thermal-sensor-cells = <0>;
@@ -841,6 +842,7 @@
 &tboard_thermistor1 {
 	usb_conn_ntc_pull_up_r = <2700>;
 };
+*/
 
 &thermal_zones{
 		surface_ntc: surface_ntc {
