@@ -1190,4 +1190,10 @@ config OPT_FACTORY_IBUS_LIMIT
 	help
 	  This is config cancunn factorymode set icl support
 
+config MOTO_LOTX_SUPPORT
+	bool "lotx feature support"
+        default n
+	help
+	  enable lotx feature 95% recharge
+
 endif # POWER_SUPPLY
