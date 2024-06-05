@@ -7,7 +7,6 @@ ifneq ($(TARGET_BUILD_VARIANT), user)
 DEFCONFIG_BASENAME		:= $(subst _debug,,$(DEFCONFIG_BASENAME))
 endif
 TARGET_DEFCONFIG		:= $(KERNEL_DIR)/kernel/configs/moto_extra.config
-#TARGET_DEFCONFIG        := $(KERNEL_OUT)/mapphone_defconfig
 PRODUCT_SPECIFIC_DEFCONFIGS	:= $(LJAPDEFCONFIGSRC)/moto-$(DEFCONFIG_BASENAME).config
 
 KERNEL_DEBUG_DEFCONFIG          := $(LJAPDEFCONFIGSRC)/debug-$(DEFCONFIG_BASENAME).config
