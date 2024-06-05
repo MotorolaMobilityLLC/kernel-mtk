@@ -56,3 +56,8 @@ config  MOT_KANSAS_CAMERA_PROJECT
         tristate "set kansas camera driver"
         help
           Used to distinguish project-driver code from other projects.
+
+config  MOT_VEGAS_CAMERA_PROJECT
+        tristate "set vegas camera driver"
+        help
+          Used to distinguish project-driver code from other projects.
