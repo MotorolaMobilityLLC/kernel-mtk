@@ -966,6 +966,21 @@ unsigned int mtk_dsi_default_rate(struct mtk_dsi *dsi)
 		(dsi->d_rate != 0)) {
 		data_rate = dsi->d_rate;
 		DDPMSG("%s, data rate=%d\n", __func__, data_rate);
+
+	} else if (dsi->mipi_hopping_sta
+		&& dsi->ext && dsi->ext->params
+		&& dsi->ext->params->dyn.switch_en
+		&& dsi->ext->params->dyn.data_rate) {
+		data_rate = dsi->ext->params->dyn.data_rate;
+		DDPMSG("%s, mipi_hopping_sta, data rate=%d\n", __func__, data_rate);
+
+	} else if (dsi->mipi_hopping_sta
+		&& dsi->ext && dsi->ext->params
+		&& dsi->ext->params->dyn.switch_en
+		&& dsi->ext->params->dyn.pll_clk) {
+		data_rate = dsi->ext->params->dyn.pll_clk * 2;
+		DDPMSG("%s, mipi_hopping_sta, data rate=%d\n", __func__, data_rate);
+
 	} else if (priv && mtk_drm_helper_get_opt(priv->helper_opt,
 		MTK_DRM_OPT_DYN_MIPI_CHANGE)
 		&& dsi->ext && dsi->ext->params
@@ -8825,9 +8840,12 @@ static void mtk_dsi_vdo_timing_change(struct mtk_dsi *dsi,
 	}
 	mtk_crtc_pkt_create(&handle, &(mtk_crtc->base), client);
 
+	/* video mode do not support to only change mipi clock */
 	if (fps_chg_index & MODE_DSI_CLK) {
 		DDPINFO("%s, change MIPI Clock\n", __func__);
-	} else if (fps_chg_index & MODE_DSI_HFP) {
+	}
+
+	if (fps_chg_index & MODE_DSI_HFP) {
 		DDPINFO("%s, change HFP\n", __func__);
 		/*wait and clear EOF
 		 * avoid other display related task break fps change task
@@ -8845,13 +8863,20 @@ static void mtk_dsi_vdo_timing_change(struct mtk_dsi *dsi,
 			if (dsi->data_rate != 0)
 				mtk_dsi_phy_timconfig(dsi, NULL);
 		}
-		if (dsi->mipi_hopping_sta) {
+
+		/* if change hfp, get hfp */
+		if (dsi->mipi_hopping_sta
+			&& dsi->ext && dsi->ext->params
+			&& dsi->ext->params->dyn.switch_en
+			&& dsi->ext->params->dyn.hfp) {
 			DDPINFO("%s,mipi_clk_change_sta\n", __func__);
 			hfp = dsi->ext->params->dyn.hfp;
 		} else
 			hfp = adjusted_mode.hsync_start -
 				adjusted_mode.hdisplay;
 		dsi->vm.hfront_porch = hfp;
+
+		/* if change vfp, get vfp, refer to hfp modification */
 
 		mtk_dsi_calc_vdo_timing(dsi);
 		mtk_dsi_porch_setting(comp, handle, DSI_HFP, dsi->hfp_byte);
@@ -8889,8 +8914,9 @@ static void mtk_dsi_vdo_timing_change(struct mtk_dsi *dsi,
 
 		if (dsi && dsi->ext && dsi->ext->params
 			&& (dsi->mipi_hopping_sta
-			|| (is_bdg_supported() && dsi->bdg_mipi_hopping_sta)
-			) && dsi->ext->params->dyn.vfp) {
+				|| (is_bdg_supported() && dsi->bdg_mipi_hopping_sta))
+			&& dsi->ext->params->dyn.switch_en
+			&& dsi->ext->params->dyn.vfp) {
 			DDPINFO("%s,mipi_clk_change_sta\n", __func__);
 			vfp = dsi->ext->params->dyn.vfp;
 		} else
