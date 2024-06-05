@@ -586,6 +586,10 @@ void mtk_rdma_cal_golden_setting(struct mtk_ddp_comp *comp,
 	unsigned int fill_rate = 0;	  /* 100 times */
 	unsigned long long consume_rate = 0; /* 100 times */
 
+	struct mtk_drm_private *priv = comp->mtk_crtc->base.dev->dev_private;
+	struct mtk_panel_params *panel_ext =
+		mtk_drm_get_lcm_ext_params(&comp->mtk_crtc->base);
+
 	if (if_fps == 0) {
 		DDPPR_ERR("%s invalid vrefresh %u\n",
 			__func__, if_fps);
@@ -662,8 +666,6 @@ void mtk_rdma_cal_golden_setting(struct mtk_ddp_comp *comp,
 		gs[GS_RDMA_OUTPUT_VALID_FIFO_TH] = gs[GS_RDMA_PRE_ULTRA_TH_LOW];
 
 	if (rdma->data->dsi_buffer) {
-		struct mtk_drm_private *priv = comp->mtk_crtc->base.dev->dev_private;
-
 		if (priv->data->mmsys_id == MMSYS_MT6879)
 			gs[GS_RDMA_FIFO_SIZE] = 0x20;
 		else
@@ -684,16 +686,23 @@ void mtk_rdma_cal_golden_setting(struct mtk_ddp_comp *comp,
 		(gs[GS_RDMA_FIFO_SIZE] - gs[GS_RDMA_PRE_ULTRA_TH_LOW]);
 
 	/* DISP_RDMA_THRESHOLD_FOR_SODI */
-	gs[GS_RDMA_TH_LOW_FOR_SODI] =
-		DIV_ROUND_UP(consume_rate * (ultra_low_us + 50), FP);
-	gs[GS_RDMA_TH_HIGH_FOR_SODI] = DIV_ROUND_UP(
-		gs[GS_RDMA_FIFO_SIZE] * FP - (fill_rate - consume_rate) * 12,
-		FP);
-	if (gs[GS_RDMA_TH_HIGH_FOR_SODI] < gs[GS_RDMA_PRE_ULTRA_TH_HIGH])
-		gs[GS_RDMA_TH_HIGH_FOR_SODI] = gs[GS_RDMA_PRE_ULTRA_TH_HIGH];
+	if (panel_ext && panel_ext->round_corner_en &&
+		(priv->data->mmsys_id == MMSYS_MT6835 ||
+		priv->data->mmsys_id == MMSYS_MT6886)) {
+		gs[GS_RDMA_TH_LOW_FOR_SODI] = 0x3fff;
+		gs[GS_RDMA_TH_HIGH_FOR_SODI] = 0x3fff;
+	} else {
+		gs[GS_RDMA_TH_LOW_FOR_SODI] =
+			DIV_ROUND_UP(consume_rate * (ultra_low_us + 50), FP);
+		gs[GS_RDMA_TH_HIGH_FOR_SODI] = DIV_ROUND_UP(
+			gs[GS_RDMA_FIFO_SIZE] * FP - (fill_rate - consume_rate) * 12,
+			FP);
+		if (gs[GS_RDMA_TH_HIGH_FOR_SODI] < gs[GS_RDMA_PRE_ULTRA_TH_HIGH])
+			gs[GS_RDMA_TH_HIGH_FOR_SODI] = gs[GS_RDMA_PRE_ULTRA_TH_HIGH];
 
-	if (gs[GS_RDMA_TH_HIGH_FOR_SODI] >= gs[GS_RDMA_FIFO_SIZE])
-		gs[GS_RDMA_TH_HIGH_FOR_SODI] = gs[GS_RDMA_FIFO_SIZE] - 1;
+		if (gs[GS_RDMA_TH_HIGH_FOR_SODI] >= gs[GS_RDMA_FIFO_SIZE])
+			gs[GS_RDMA_TH_HIGH_FOR_SODI] = gs[GS_RDMA_FIFO_SIZE] - 1;
+	}
 
 	/* DISP_RDMA_THRESHOLD_FOR_DVFS */
 	gs[GS_RDMA_TH_LOW_FOR_DVFS] = gs[GS_RDMA_PRE_ULTRA_TH_LOW];
