@@ -131,6 +131,7 @@ thermal_monitor-y += src/mtk_tc.o
 thermal_monitor-y += src/mtk_ts_6358buck1.o
 thermal_monitor-y += src/mtk_ts_6358buck2.o
 thermal_monitor-y += src/mtk_ts_6358buck3.o
+thermal_monitor-y += src/vtskin_temp.o
 thermal_monitor-y += common/thermal_zones/mtk_ts_cpu_noBank.o
 ifeq ($(CONFIG_MTK_THERMAL_PA_VIA_ATCMD),y)
 thermal_monitor-y += common/coolers/mtk_cooler_mutt.o
