@@ -38,6 +38,8 @@ extern void mtkts_wt_flash_exit(void);
 extern int mtkts_wt_flash_init(void);
 extern void mtkts_wt_receiver_exit(void);
 extern int mtkts_wt_receiver_init(void);
+extern void vtskin_exit(void);
+extern int vtskin_init(void);
 extern void tscpu_exit(void);
 extern int tscpu_init(void);
 extern void mtktspa_exit(void);
