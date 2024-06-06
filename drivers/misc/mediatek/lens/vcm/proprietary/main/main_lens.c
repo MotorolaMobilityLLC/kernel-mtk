@@ -79,10 +79,12 @@ static struct stAF_OisPosInfo OisPosInfo;
 /* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+#if defined(CONFIG_MOT_KANSAS_CAMERA_PROJECT)
 //Begin: Add lens driver for Kansas
 	{1, MOT_KANSAS_AFDRV_GT9764, MOT_KANSAS_GT9764_SetI2CClient, MOT_KANSAS_GT9764_Ioctl,
 	MOT_KANSAS_GT9764_Release, MOT_KANSAS_GT9764_GetFileName, NULL},
 //End
+#endif
 	{1, AFDRV_DW9718TAF, DW9718TAF_SetI2Cclient, DW9718TAF_Ioctl,
 	 DW9718TAF_Release, DW9718TAF_GetFileName, NULL},
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl,
