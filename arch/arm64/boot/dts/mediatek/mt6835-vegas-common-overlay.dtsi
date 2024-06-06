@@ -19,6 +19,7 @@
 #include "mediatek/vegas-sensor.dtsi"
 #include "mediatek/vegas-msdc.dtsi"
 #include "mediatek/vegas-audio.dtsi"
+#include "mediatek/vegas-thermal.dtsi"
 / {
 switch_chg_eint: switch_chg_eint {
 	};
