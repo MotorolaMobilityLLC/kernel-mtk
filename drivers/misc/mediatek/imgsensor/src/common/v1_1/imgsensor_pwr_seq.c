@@ -11,6 +11,7 @@
 
 /* Legacy design */
 struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
+#if defined(CONFIG_MOT_KANSAS_CAMERA_PROJECT)
 #if defined(MOT_KANSAS_S5KJNS_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_MOT_KANSAS_S5KJNS_MIPI_RAW,
@@ -48,6 +49,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{RST, Vol_High, 12},
 		},
 	},
+#endif
 #endif
 #if defined(IMX766_MIPI_RAW)
 	{
