@@ -12,10 +12,10 @@
  */
 #include <dt-bindings/iio/mt635x-auxadc.h>
 &i2c5 {
-	sgm4154x_chg: sgm41542@3B {
+	sgm4154x_chg: sgm41543D@0B {
 		status = "okay";
-		compatible = "sgm,sgm41542";
-		reg = <0x3B>;
+		compatible = "sgm,sgm41543D";
+		reg = <0x0B>;
                 io-channels = <&pmic_adc AUXADC_VCDT>;
 		io-channel-names = "pmic_vbus";
 		sgm,irq-gpio = <&pio 3 IRQ_TYPE_EDGE_FALLING>;     //irq num base on hardware design
