@@ -9,7 +9,6 @@
 #include <dt-bindings/phy/phy.h>
 #include <dt-bindings/pinctrl/mt6835-pinfunc.h>
 #include "mediatek/mt6835_6377.dtsi"
-#include "mediatek/mt6835_kansas_camera_overlay.dtsi"
 
 &utags {
 	compatible = "mmi,utags";
