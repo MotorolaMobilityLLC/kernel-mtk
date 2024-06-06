@@ -46,7 +46,7 @@
 #ifdef VENDOR_EDIT
 	#undef VENDOR_EDIT
 #endif
-#define USE_REMOSAIC 1
+#define USE_REMOSAIC 0
 
 #ifndef USE_TNP_BURST
 #define USE_TNP_BURST
@@ -91,14 +91,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 			.max_framerate = 300,
 #else
 			.pclk = 560000000,
-			.linelength = 7152,
-			.framelength = 2608,
+			.linelength = 9200,
+			.framelength = 2024,
 			.startx = 0,
 			.starty = 0,
 			.grabwindow_width = 2320,
-			.grabwindow_height = 1744,
+			.grabwindow_height = 1740,
 			.mipi_data_lp2hs_settle_dc = 85,
-			.mipi_pixel_rate = 269400000,
+			.mipi_pixel_rate = 307200000,
 			.max_framerate = 300,
 #endif
 		},
@@ -128,14 +128,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 		},
 		.slim_video = {
 			.pclk = 560000000,
-			.linelength = 5088,
-			.framelength = 3668,
+			.linelength = 9200,
+			.framelength = 2024,
 			.startx = 0,
 			.starty = 0,
 			.grabwindow_width = 2320,
-			.grabwindow_height = 1744,
+			.grabwindow_height = 1740,
 			.mipi_data_lp2hs_settle_dc = 85,
-			.mipi_pixel_rate = 269400000,
+			.mipi_pixel_rate = 307200000,
 			.max_framerate = 300,
 		},
 		.margin = 3,
@@ -207,14 +207,14 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 	 0000, 0000, 4640, 3488, 0000, 0000, 4640, 3488},/* Capture Remosaic */
 #else
 	{4640, 3488, 0000, 0000, 4640, 3488, 2320, 1744,
-	 0000, 0000, 2320, 1744, 0000, 0000, 2320, 1744},/* Capture == Preview*/
+	 0000, 0000, 2320, 1744, 0000, 0002, 2320, 1740},/* Capture == Preview*/
 #endif
 	{4640, 3488, 0000, 0436, 4640, 2616, 2320, 1308,
 	 0000, 0000, 2320, 1308, 0000, 0000, 2320, 1308},/* Video */
 	{4640, 3488, 0400, 0664, 3840, 2160, 1920, 1080,
 	 0000, 0000, 1920, 1080, 0000, 0000, 1920, 1080},/* hs_video == Video */
 	{4640, 3488, 0000, 0000, 4640, 3488, 2320, 1744,
-	 0000, 0000, 2320, 1744, 0000, 0000, 2320, 1744},/* slim_video == Preview */
+	 0000, 0000, 2320, 1744, 0000, 0002, 2320, 1740},/* slim_video == Preview */
 };
 
 static struct IMGSENSOR_I2C_CFG *get_i2c_cfg(void)
@@ -3764,11 +3764,11 @@ static kal_uint16 addr_data_pair_capture[] = {
 	0x6F12, 0x0000,
 	0x6028, 0x4000,
 	0x0344, 0x0000,
-	0x0346, 0x0008,
+	0x0346, 0x000C,
 	0x0348, 0x122F,
-	0x034A, 0x0DA7,
+	0x034A, 0x0DA3,
 	0x034C, 0x0910,
-	0x034E, 0x06D0,
+	0x034E, 0x06CC,
 	0x0350, 0x0004,
 	0x0900, 0x0122,
 	0x0380, 0x0002,
@@ -3789,15 +3789,20 @@ static kal_uint16 addr_data_pair_capture[] = {
 	0x030A, 0x0001,
 	0x030C, 0x0000,
 	0x030E, 0x0004,
-	0x0310, 0x0070,
+	0x0310, 0x0080,
 	0x0312, 0x0001,
-	0x0340, 0x0A30,
-	0x0342, 0x1BF0,
+	0x6028, 0x2000,
+	0x602A, 0x16A6,
+	0x6F12, 0x006C,
+	0x6028, 0x4000,
+	0x0340, 0x07E8,
+	0x0342, 0x23F0,
 	0x0202, 0x0100,
 	0x0200, 0x0100,
 	0x021E, 0x0000,
 	0x0D00, 0x0000,
 	0x0D02, 0x0001,
+	0x0112, 0x0A0A,
 #endif
 };
 
