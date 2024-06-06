@@ -184,8 +184,10 @@ static int register_sensor(struct sensor_info *psensor)
 	mutex_lock(&pn3d->n3d_mutex);
 
 	if (psensor->sensor_idx < MAX_NUM_OF_SUPPORT_SENSOR) {
-		if (pn3d->sync_sensors[psensor->sensor_idx] != NULL)
+		if (pn3d->sync_sensors[psensor->sensor_idx] != NULL) {
 			kfree(pn3d->sync_sensors[psensor->sensor_idx]);
+			pn3d->sync_sensors[psensor->sensor_idx] = NULL;
+		}
 		info = kmalloc(sizeof(struct sensor_info), GFP_KERNEL);
 		if (!info)
 			return -1;
@@ -218,6 +220,7 @@ static int unregister_sensor(struct sensor_info *psensor)
 			pn3d->fsync_mgr->fs_streaming(0, &st);
 			pn3d->fl_result[psensor->sensor_idx] = 0;
 			kfree(pn3d->sync_sensors[psensor->sensor_idx]);
+			pn3d->sync_sensors[psensor->sensor_idx] = NULL;
 		}
 		LOG_D("unregister sensor index = %u\n",
 		      psensor->sensor_idx);
