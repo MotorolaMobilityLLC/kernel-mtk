@@ -583,7 +583,7 @@ obj-$(CONFIG_SND_SOC_TAS2770) += snd-soc-tas2770.o
 obj-$(CONFIG_SND_SOC_TFA9874)	+= tfa98xx/
 # kansas audio bring up begin
 obj-$(CONFIG_SND_SOC_TFA9894)	+= tfa9894/
-obj-$(CONFIG_SND_SOC_TFA9894)	+= aw883xx/
+obj-$(CONFIG_SND_SOC_AW883XX)	+= aw883xx/
 # kansas audio bring up end
 obj-$(CONFIG_SND_SOC_TFA9879)	+= snd-soc-tfa9879.o
 obj-$(CONFIG_SND_SOC_TFA989X)	+= snd-soc-tfa989x.o
