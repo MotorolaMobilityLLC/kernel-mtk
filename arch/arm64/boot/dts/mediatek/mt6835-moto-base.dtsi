@@ -23,6 +23,7 @@
 	tboard_thermistor8: thermal-ntc8 { };
 	tboard_thermistor9: thermal-ntc9 { };
 	moto_wlc: moto_wlc {};
+	flashlights_vegas: flashlights_vegas { };
 };
 
 &extcon_usb {
