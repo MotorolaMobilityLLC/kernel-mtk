@@ -568,13 +568,23 @@ SND_SOC_DAILINK_DEFS(i2s0,
 	                   COMP_CODEC("tfa98xx.6-0035", "tfa98xx-aif-6-35"),
 	                   COMP_CODEC("aw883xx_smartpa.6-0037", "aw883xx-aif-6-37")),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+//kansas audio bring up end
+#else
+#ifdef CONFIG_SND_SOC_VEGAS_AUDIO
+//veags audio bringup begin
+SND_SOC_DAILINK_DEFS(i2s0,
+	DAILINK_COMP_ARRAY(COMP_CPU("I2S0")),
+	DAILINK_COMP_ARRAY(COMP_CODEC("aw883xx_smartpa.6-0034", "aw883xx-aif-6-34"),
+	                   COMP_CODEC("aw883xx_smartpa.6-0035", "aw883xx-aif-6-35")),
+	DAILINK_COMP_ARRAY(COMP_EMPTY()));
 #else
 SND_SOC_DAILINK_DEFS(i2s0,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S0")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
 #endif
-//kansas audio bring up end
+#endif
+//veags audio bringup end
 SND_SOC_DAILINK_DEFS(i2s1,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S1")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
@@ -583,6 +593,7 @@ SND_SOC_DAILINK_DEFS(i2s2,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S2")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+
 //kansas audio bring up begin
 #ifdef CONFIG_SND_SOC_KANSAS_AUDIO
 SND_SOC_DAILINK_DEFS(i2s3,
@@ -591,13 +602,22 @@ SND_SOC_DAILINK_DEFS(i2s3,
 	                   COMP_CODEC("tfa98xx.6-0035", "tfa98xx-aif-6-35"),
 	                   COMP_CODEC("aw883xx_smartpa.6-0037", "aw883xx-aif-6-37")),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+//kansas audio bring up end
+#else
+#ifdef CONFIG_SND_SOC_VEGAS_AUDIO
+SND_SOC_DAILINK_DEFS(i2s3,
+	DAILINK_COMP_ARRAY(COMP_CPU("I2S3")),
+	DAILINK_COMP_ARRAY(COMP_CODEC("aw883xx_smartpa.6-0034", "aw883xx-aif-6-34"),
+	                   COMP_CODEC("aw883xx_smartpa.6-0035", "aw883xx-aif-6-35")),
+	DAILINK_COMP_ARRAY(COMP_EMPTY()));
 #else
 SND_SOC_DAILINK_DEFS(i2s3,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S3")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
 #endif
-//kansas audio bring up end
+#endif
+//veags audio bringup end
 SND_SOC_DAILINK_DEFS(i2s5,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S5")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
