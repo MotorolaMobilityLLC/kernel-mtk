@@ -234,6 +234,44 @@
 	};
 	camera_pins_default: camdefault {
 	};
+
+	flashlight_gpio_high: flashlight@0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlight_gpio_low: flashlight@1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlight_pwm_high: flashlight@2 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO148__FUNC_GPIO148>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlight_pwm_low: flashlight@3 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO148__FUNC_GPIO148>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlight_pwm_en: flashlight@4 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO148__FUNC_PWM_1>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flash_default: flashlightdefault {
+	};
 };
 &kd_camera_hw1 {
 	pinctrl-names = "default",
@@ -409,3 +447,31 @@
 &kd_camera_hw1 {
        cust-sensor = "mot_vegas_ov50d_mipi_raw mot_vegas_s5k3p9_mipi_raw mot_vegas_ov08d_mipi_raw";
 };
+
+/* CAMERA Flashlight */
+&flashlights_vegas {
+	compatible = "mediatek,flashlights_ocp8135_pwm";
+	pinctrl-names = "default",
+		"flashlight_gpio_high",
+		"flashlight_gpio_low",
+		"flashlight_pwm_high",
+		"flashlight_pwm_low",
+		"flashlight_pwm_en";
+
+	pinctrl-0 = <&flash_default>;
+	pinctrl-1 = <&flashlight_gpio_high>;
+	pinctrl-2 = <&flashlight_gpio_low>;
+	pinctrl-3 = <&flashlight_pwm_high>;
+	pinctrl-4 = <&flashlight_pwm_low>;
+	pinctrl-5 = <&flashlight_pwm_en>;
+        srcclk = <&pericfg_ao_clk>;
+
+	decouple = <1>;
+	channel@1 {
+                status = "okay";
+		type = <0>;
+		ct = <0>;
+		part = <0>;
+	};
+};
+/* CAMERA Flashlight end */

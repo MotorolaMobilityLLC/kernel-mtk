@@ -21,6 +21,7 @@ obj-$(CONFIG_MTK_FLASHLIGHT_AW36515)      += flashlights-aw36515.o
 obj-$(CONFIG_MTK_FLASHLIGHT_OCP81375)    += flashlights-ocp81375.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY)       += flashlights-dummy.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY_GPIO)  += flashlights-dummy-gpio.o
+obj-$(CONFIG_MTK_FLASHLIGHT_VEGAS)     += flashlights-ocp8135-pwm.o
 
 ccflags-$(CONFIG_MTK_FLASHLIGHT_DEBUG)     := -DDEBUG
 ccflags-$(CONFIG_MTK_FLASHLIGHT_PT)        += -DCONFIG_MTK_FLASHLIGHT_PT
@@ -37,6 +38,9 @@ ccflags-y += -DCONFIG_MTK_FLASHLIGHT_AW36515
 endif
 ifeq ($(CONFIG_MTK_FLASHLIGHT_OCP81375),m)
 ccflags-y += -DCONFIG_MTK_FLASHLIGHT_OCP81375
+endif
+ifeq ($(CONFIG_MTK_FLASHLIGHT_VEGAS),m)
+ccflags-y += -DCONFIG_MTK_FLASHLIGHT_VEGAS
 endif
 subdir-ccflags-y += \
 	-I$(MTK_CUSTOM_PATH)/power_throttling
