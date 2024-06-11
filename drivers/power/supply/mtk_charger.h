@@ -362,6 +362,14 @@ struct mmi_params {
 	int			wls_boost_en;
 	int			charge_rate;
 	unsigned int	active_fast_alg;
+	int			typec_rp_max_current;
+
+	int			pd_pmax_mw;
+	struct adapter_auth_data	apdo_cap;
+	int			pd_cap_max_watt;
+	int			vbus_h;
+	int			vbus_l;
+	int			charger_watt;
 };
 /*moto mmi Functionality end*/
 
