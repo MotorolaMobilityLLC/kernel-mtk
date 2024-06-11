@@ -392,6 +392,8 @@
 
 #define MOT_VEGAS_OV50D_SENSOR_ID                        0x565044
 #define SENSOR_DRVNAME_MOT_VEGAS_OV50D_MIPI_RAW          "mot_vegas_ov50d_mipi_raw"
+#define MOT_VEGAS_S5K3P9_SENSOR_ID                       0x3109
+#define SENSOR_DRVNAME_MOT_VEGAS_S5K3P9_MIPI_RAW         "mot_vegas_s5k3p9_mipi_raw"
 
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
