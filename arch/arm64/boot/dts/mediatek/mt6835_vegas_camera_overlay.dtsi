@@ -315,6 +315,7 @@
 
 	cam0_enable_sensor = "mot_vegas_ov50d_mipi_raw";
 	cam1_enable_sensor = "mot_vegas_s5k3p9_mipi_raw";
+	cam2_enable_sensor = "mot_vegas_ov08d_mipi_raw";
 	status = "okay";
 };
 /* CAMERA GPIO end */
@@ -325,6 +326,13 @@
 	clock-frequency = <1000000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
+
+	camera_main_two_mtk:camera_main_two@20 {
+		compatible = "mediatek,camera_main_two";
+		#thermal-sensor-cells = <0>;
+		reg = <0x20>;
+		status = "okay";
+	};
 };
 &i2c4 {
 	status = "okay";
@@ -391,8 +399,13 @@
 		polling-delay-passive = <0>; /* milliseconds */
 		thermal-sensors = <&camera_sub_mtk>;
 	};
+	camera_main_two: camera_main_two {
+		polling-delay = <1000>; /* milliseconds */
+		polling-delay-passive = <0>; /* milliseconds */
+		thermal-sensors = <&camera_main_two_mtk>;
+	};
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_vegas_ov50d_mipi_raw mot_vegas_s5k3p9_mipi_raw";
+       cust-sensor = "mot_vegas_ov50d_mipi_raw mot_vegas_s5k3p9_mipi_raw mot_vegas_ov08d_mipi_raw";
 };
