@@ -2677,11 +2677,8 @@ int tcpc_typec_handle_ps_change(struct tcpc_device *tcpc, int vbus_level)
 #endif	/* CONFIG_TYPEC_CAP_AUDIO_ACC_SINK_VBUS */
 
 	if (vbus_level >= TCPC_VBUS_VALID)
-#if IS_ENABLED(CONFIG_TCPC_SC2150)
-		return typec_handle_vbus_absent(tcpc);
-#else
 		return typec_handle_vbus_present(tcpc);
-#endif /* CONFIG_TCPC_SC2150 */
+
 	return typec_handle_vbus_absent(tcpc);
 }
 
