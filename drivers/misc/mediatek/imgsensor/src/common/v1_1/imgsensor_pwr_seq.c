@@ -25,6 +25,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(MOT_VEGAS_S5K3P9_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_VEGAS_S5K3P9_MIPI_RAW,
+		{
+			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
+			{DOVDD, Vol_1800, 1},
+			{DVDD, Vol_1050, 1},
+			{AVDD, Vol_2800, 1},
+			{RST, Vol_High, 12},
+		},
+	},
+#endif
 #endif
 #if defined(CONFIG_MOT_KANSAS_CAMERA_PROJECT)
 #if defined(MOT_KANSAS_S5KJNS_MIPI_RAW)
