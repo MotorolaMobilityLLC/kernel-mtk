@@ -1,0 +1,41 @@
+/*aw37004 dtsi*/
+
+&i2c7 {
+	status = "ok";
+	cam_pmic: aw37004@28 {
+		compatible = "aw37004";
+		reg = <0x28>;
+
+		cs-gpios = <&pio 20 0>;
+		vin1-gpios = <&pio 58 0>;
+
+		init-value = <0x00>;
+
+		regulators {
+			cam_dvdd_rear_main: ldo1 {
+				regulator-name = "ldo1";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <1800000>;
+			};
+
+			cam_dvdd_front: ldo2 {
+				regulator-name = "ldo2";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <1800000>;
+			};
+
+			cam_afvdd_rear_wide: ldo3 {
+				regulator-name = "ldo3";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <4300000>;
+			};
+
+			cam_afvdd_rear_main: ldo4 {
+				regulator-name = "ldo4";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <4300000>;
+			};
+		};
+	};
+};
+
