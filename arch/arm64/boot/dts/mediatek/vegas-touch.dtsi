@@ -42,21 +42,16 @@
 
 	};
 
-	focaltech@1 {
-		compatible = "focaltech,fts";
+	ilitek@1 {
+                compatible = "tchip,ilitek";
                 reg = <1>; //Same as CS ID
                 status = "ok";
                 spi-max-frequency = <9600000>;
-                focaltech,reset-gpio = <&pio 147 0x0>;
-                focaltech,irq-gpio = <&pio 4 0x0>;
-                focaltech,max-touch-number = <10>;
-                focaltech,display-coords = <0 0 720 1604>;
-                //focaltech,report_gesture_key = <59>;
-                //focaltech,supported_gesture_type = <0x06>;
-                focaltech,panel-supplier = "boe_ft8057s";
-                //focaltech,touch-charger-detect-psy-name = "battery";
-                //focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
-	};
+		interrupt-parent = <&pio>;
+                /* vtouch-supply = <&mt6368_vtp>; */
+                touch,reset-gpio = <&pio 147 0x0>;
+                touch,irq-gpio = <&pio 4 0x0>;
+        };
 };
 
 &pio {
