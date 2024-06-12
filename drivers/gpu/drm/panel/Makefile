@@ -114,6 +114,7 @@ obj-$(CONFIG_DRM_PANEL_BOE_BF130_DPHY_CMD_HD) += k6985v1_64_flip_alpha/panel-boe
 obj-$(CONFIG_DRM_PANEL_SAMSUNG_AMF680CM01_CMD_FHD) += k6985v1_64_flip_alpha/panel-samsung-amf680cm01-cmd-fhd.o
 endif
 obj-$(CONFIG_DRM_PANEL_MOT_DUMMY_VDO_60HZ) += dsi-panel-mot-dummy-vdo-60hz.o
+obj-$(CONFIG_DRM_PANEL_MOT_VDO_TM_ILI7807S_1080_2388_DPHY_120HZ) += dsi-panel-mot-vdo-tm-ili7807s-1080-2388-dphy-120hz.o
 obj-$(CONFIG_DRM_PANEL_TM_NT36528_667_HDP_DPHY_VDO_120HZ) += dsi-panel-mot-tm-nt36528-667-hdp-dphy-vdo-120hz.o
 obj-$(CONFIG_DRM_PANEL_BOE_FT8057S_667_720_1604_DPHY_120HZ) += dsi-panel-mot-boe-ft8057s-667-hdp-dphy-vdo-120hz.o
 obj-$(CONFIG_DRM_PANEL_TM_NT36528A_667_HDP_DPHY_VDO_120HZ) += dsi-panel-mot-tm-nt36528a-667-hdp-dphy-vdo-120hz.o
