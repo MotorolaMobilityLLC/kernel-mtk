@@ -20,10 +20,10 @@
 	i2c_lcd_bias_mtk:i2c_lcd_bias@3e {
 		compatible = "ocp,bias_ocp2138";
 		reg = <0x3e>;
-		ocp,lcd-bias-enn-gpio = <&pio 57 0>;
+		ocp,lcd-bias-enn-gpio = <&pio 124 0>;
 		ocp,lcd-bias-enp-gpio = <&pio 150 0>;
 		biasp_en_pin = <150>;
-		biasn_en_pin = <57>;
+		biasn_en_pin = <124>;
 		status = "okay";
 	};
 
@@ -125,7 +125,14 @@
 		};
 	};
 
-	mtkfb_pins_lcm_bias_en: lcm_bias_en_gpio {
+	mtkfb_pins_lcm_bias_enn: lcm_bias_enn_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO124__FUNC_GPIO124>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcm_bias_enp: lcm_bias_enp_gpio {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO150__FUNC_GPIO150>;
 			slew-rate = <1>;
@@ -157,26 +164,28 @@
 };
 
 &mtkfb {
-	pinctrl-names = "lcm_bl_en_gpio", "lcm_bias_en_gpio",
+	pinctrl-names = "lcm_bl_en_gpio", "lcm_bias_enn_gpio","lcm_bias_enp_gpio",
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
 		"mode_te_te";
 	pinctrl-0 = <&mtkfb_pins_lcm_bl_en>;
-	pinctrl-1 = <&mtkfb_pins_lcm_bias_en>;
-	pinctrl-2 = <&mtkfb_pins_lcm_rst_out1_gpio>;
-	pinctrl-3 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-4 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-1 = <&mtkfb_pins_lcm_bias_enn>;
+	pinctrl-2 = <&mtkfb_pins_lcm_bias_enp>;
+	pinctrl-3 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-4 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-5 = <&mtkfb_pins_lcm_dsi_te>;
 	status = "okay";
 };
 
 &dispsys_config {
-	pinctrl-names = "lcm_bl_en_gpio", "lcm_bias_en_gpio",
+	pinctrl-names = "lcm_bl_en_gpio", "lcm_bias_enn_gpio","lcm_bias_enp_gpio",
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
 		"mode_te_te";
 	pinctrl-0 = <&mtkfb_pins_lcm_bl_en>;
-	pinctrl-1 = <&mtkfb_pins_lcm_bias_en>;
-	pinctrl-2 = <&mtkfb_pins_lcm_rst_out1_gpio>;
-	pinctrl-3 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-4 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-1 = <&mtkfb_pins_lcm_bias_enn>;
+	pinctrl-2 = <&mtkfb_pins_lcm_bias_enp>;
+	pinctrl-3 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-4 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-5 = <&mtkfb_pins_lcm_dsi_te>;
 	status = "okay";
 };
 
@@ -202,10 +211,10 @@
 	};
 
 	panel2@0 {
-		compatible = "tm,nt36528,vdo,120hz";
+		compatible = "tm,ili7807s,vdo,120hz";
 		reg = <1>;
 		reset-gpios = <&pio 86 0>;
-		//bias_n-gpios = <&pio 150 0>;
+		//bias_n-gpios = <&pio 124 0>;
 		//bias_p-gpios = <&pio 150 0>;
 		pinctrl-names = "default";
 		port {
@@ -213,38 +222,7 @@
 				remote-endpoint = <&dsi_out>;
 			};
 		};
-
 	};
-
-	panel3@0 {
-                compatible = "boe,ft8057s,vdo,120hz";
-                reg = <2>;
-		reset-gpios = <&pio 86 0>;
-		//bias_n-gpios = <&pio 150 0>;
-		//bias_p-gpios = <&pio 150 0>;
-                pinctrl-names = "default";
-                port {
-                        panel_in3: endpoint {
-                                remote-endpoint = <&dsi_out>;
-                        };
-                };
-
-        };
-
-	panel4@0 {
-                compatible = "tm,nt36528a,vdo,120hz";
-                reg = <3>;
-		reset-gpios = <&pio 86 0>;
-		//bias_n-gpios = <&pio 150 0>;
-		//bias_p-gpios = <&pio 150 0>;
-                pinctrl-names = "default";
-                port {
-                        panel_in4: endpoint {
-                                remote-endpoint = <&dsi_out>;
-                        };
-                };
-
-        };
 
 	ports {
 		port {
