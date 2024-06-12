@@ -490,12 +490,4 @@
 	pinctrl-2 = <&flashlight_pins_hwen_low>;
 	status = "okay";
 };
-
-&mtk_composite_v4l2_1 {
-	port@0 {
-		flashlight_0: endpoint {
-			remote-endpoint = <&fl_core_0>;
-		};
-	};
-};
 /* flashlight gpio end*/
