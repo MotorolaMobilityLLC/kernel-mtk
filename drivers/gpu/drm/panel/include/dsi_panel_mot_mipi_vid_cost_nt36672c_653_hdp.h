@@ -27,7 +27,7 @@
 
 /*Parameter setting for mode 0 Start*/
 #define MODE_0_FPS                  60
-#define MODE_0_VFP                  878
+#define MODE_0_VFP                  880
 #define MODE_0_HFP                  60
 
 #define MODE_0_DATA_RATE            818
