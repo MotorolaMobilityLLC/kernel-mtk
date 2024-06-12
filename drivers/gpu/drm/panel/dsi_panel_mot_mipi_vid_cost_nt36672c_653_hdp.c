@@ -360,7 +360,7 @@ static int csot_enable(struct drm_panel *panel)
 }
 //+EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
 static const struct drm_display_mode default_mode = {
-	.clock		= 126498,
+	.clock		= 126600,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_0_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_0_HFP + HSA,

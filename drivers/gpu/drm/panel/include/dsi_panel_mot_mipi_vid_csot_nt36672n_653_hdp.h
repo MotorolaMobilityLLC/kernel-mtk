@@ -19,7 +19,7 @@
 #define PHYSICAL_WIDTH              68040
 #define PHYSICAL_HEIGHT            151200
 //+EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
-#define DATA_RATE                   826
+#define DATA_RATE                   838
 #define HSA                         4
 #define HBP                         68
 #define VSA                         2
@@ -27,10 +27,10 @@
 
 /*Parameter setting for mode 0 Start*/
 #define MODE_0_FPS                  60
-#define MODE_0_VFP                  858
+#define MODE_0_VFP                  900
 #define MODE_0_HFP                  68
 
-#define MODE_0_DATA_RATE            826
+#define MODE_0_DATA_RATE            838
 /*Parameter setting for mode 0 End*/
 
 /*Parameter setting for mode 1 Start*/
@@ -38,7 +38,7 @@
 #define MODE_1_VFP                  54
 #define MODE_1_HFP                  68
 
-#define MODE_1_DATA_RATE            826
+#define MODE_1_DATA_RATE            838
 /*Parameter setting for mode 1 End*/
 
 //-EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps

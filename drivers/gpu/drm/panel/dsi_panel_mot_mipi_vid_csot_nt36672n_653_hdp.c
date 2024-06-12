@@ -348,7 +348,7 @@ static int csot_enable(struct drm_panel *panel)
 }
 //+EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
 static const struct drm_display_mode default_mode = {
-	.clock		= 129567,
+	.clock		= 130032,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_0_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_0_HFP + HSA,
@@ -374,7 +374,7 @@ static const struct drm_display_mode performance_mode_1 = {
 //60HZ
 static struct mtk_panel_params ext_params = {
 	//.pll_clk = 600,
-	.data_rate = 826,
+	.data_rate = 838,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
@@ -390,7 +390,7 @@ static struct mtk_panel_params ext_params = {
 
 //90HZ
 static struct mtk_panel_params ext_params_mode_1 = {
-	.data_rate = 826,
+	.data_rate = 838,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {

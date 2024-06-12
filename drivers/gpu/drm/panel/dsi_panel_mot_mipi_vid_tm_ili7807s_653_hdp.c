@@ -341,7 +341,7 @@ static int csot_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-	.clock		= 115841,
+	.clock		= 112439,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_0_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_0_HFP + HSA,
@@ -352,7 +352,7 @@ static const struct drm_display_mode default_mode = {
 	.vtotal = FRAME_HEIGHT + MODE_0_VFP + VSA + VBP,
 };
 static const struct drm_display_mode performance_mode_1 = {
-	.clock		= 115841,
+	.clock		= 112348,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_1_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_1_HFP + HSA,
@@ -367,7 +367,7 @@ static const struct drm_display_mode performance_mode_1 = {
 //60HZ
 static struct mtk_panel_params ext_params = {
 	//.pll_clk = 600,
-	.data_rate = 752,
+	.data_rate = 728,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
@@ -383,7 +383,7 @@ static struct mtk_panel_params ext_params = {
 };
 //90HZ
 static struct mtk_panel_params ext_params_mode_1 = {
-	.data_rate = 752,
+	.data_rate = 728,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
