@@ -1517,5 +1517,11 @@ config REGULATOR_QCOM_LABIBB
 	  boost regulator and IBB can be used as a negative boost regulator
 	  for LCD display panel.
 
+config MOTO_AW37004
+	tristate "AW37004 regulator driver"
+	help
+	    This option enables support for the aw37004 power connected
+	    through I2C. Say Y to enable support for the aw37004 .
+
 endif
 
