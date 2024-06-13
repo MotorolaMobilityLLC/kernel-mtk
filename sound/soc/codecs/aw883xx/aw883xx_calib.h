@@ -17,7 +17,7 @@
 /*#define AW_CALI_STORE_EXAMPLE*/
 #include "aw883xx_data_type.h"
 
-#define AW_CALI_STORE_EXAMPLE
+//#define AW_CALI_STORE_EXAMPLE
 #define AW_ERRO_CALI_RE_VALUE (0)
 #define AW_ERRO_CALI_F0_VALUE (2600)
 
