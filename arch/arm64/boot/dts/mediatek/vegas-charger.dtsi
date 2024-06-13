@@ -220,6 +220,7 @@
 
 &pe5 {
 	start_soc_max = <90>;
+	tdvchg_curlmt = <0 0 0 0 0 0 0 0 0>;
 };
 
 &mtk_gauge {
