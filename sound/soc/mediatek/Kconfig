@@ -433,3 +433,9 @@ config MTK_SCP_AUDIO
 	  that can be used with other platforms
 	  Select Y if you have such device.
 	  If unsure select "N".
+
+config SND_SOC_VEGAS_AUDIO
+	tristate "SoC VEGAS Audio for aw883xx"
+	depends on I2C
+	help
+	  This option enables support for VEGAS aw883xx Smart PA.
