@@ -175,11 +175,11 @@ static void csot_panel_init(struct csot *ctx)
 	msleep(5);
 //+EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(10);
+	msleep(1);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	msleep(5);
+	msleep(10);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(60);
+	msleep(5);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 	devm_gpiod_put(ctx->dev, ctx->bias_n_gpio);
@@ -187,27 +187,39 @@ static void csot_panel_init(struct csot *ctx)
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
 	csot_dcs_write_seq_static(ctx, 0xFF, 0X78, 0X07, 0X06);
-	csot_dcs_write_seq_static(ctx, 0x08, 0x20);
 	csot_dcs_write_seq_static(ctx, 0x1B, 0x00);
 	csot_dcs_write_seq_static(ctx, 0x3E, 0xE2);
 	csot_dcs_write_seq_static(ctx, 0x80, 0x00);
+
 	csot_dcs_write_seq_static(ctx, 0xFF, 0X78, 0X07, 0X07);
 	csot_dcs_write_seq_static(ctx, 0x11, 0x16);
+
 	csot_dcs_write_seq_static(ctx, 0xFF, 0X78, 0X07, 0X08);
 	csot_dcs_write_seq_static(ctx, 0xFD, 0x00, 0x9F);
 	csot_dcs_write_seq_static(ctx, 0xE1, 0xE1);
 	csot_dcs_write_seq_static(ctx, 0xFD, 0x00, 0x00);
+
 	csot_dcs_write_seq_static(ctx, 0xFF, 0X78, 0X07, 0X03);
 	csot_dcs_write_seq_static(ctx, 0x83, 0xB8);
+	csot_dcs_write_seq_static(ctx, 0xFF, 0X78, 0X07, 0X03);
 	csot_dcs_write_seq_static(ctx, 0x84, 0x02);
+	csot_dcs_write_seq_static(ctx, 0xFF, 0X78, 0X07, 0X06);
+	csot_dcs_write_seq_static(ctx, 0x08, 0x20);
+
+	csot_dcs_write_seq_static(ctx, 0xFF, 0X78, 0X07, 0X05);
+	csot_dcs_write_seq_static(ctx, 0x46, 0x80);
+	csot_dcs_write_seq_static(ctx, 0xB5, 0x80);
+	csot_dcs_write_seq_static(ctx, 0xB7, 0x80);
+
 	csot_dcs_write_seq_static(ctx, 0xFF, 0X78, 0X07, 0X00);
 	csot_dcs_write_seq_static(ctx, 0x35, 0x00);
+	csot_dcs_write_seq_static(ctx, 0x68, 0x05);
+
 	csot_dcs_write_seq_static(ctx, 0x11, 0x00);
-	msleep(120);
-	csot_dcs_write_seq_static(ctx, 0x51, 0x07, 0xFF);
+	msleep(90);
+	csot_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
 	csot_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	csot_dcs_write_seq_static(ctx, 0x55, 0x00);
-	csot_dcs_write_seq_static(ctx, 0x29, 0x00);
 	csot_dcs_write_seq_static(ctx, 0x29, 0x00);
 	msleep(20);
 
@@ -216,7 +228,7 @@ static void csot_panel_init(struct csot *ctx)
 static int csot_disable(struct drm_panel *panel)
 {
 	struct csot *ctx = panel_to_csot(panel);
-	
+
 	printk("[%d  %s]hxl_check_dsi_pcl_data_rate !!\n",__LINE__, __FUNCTION__);
 
 	if (!ctx->enabled)
@@ -324,7 +336,7 @@ printk("[%d  %s]hxl_check_dsi  ret:%d !!\n",__LINE__, __FUNCTION__,ret);
 static int csot_enable(struct drm_panel *panel)
 {
 	struct csot *ctx = panel_to_csot(panel);
-	
+
 	printk("[%d  %s]hxl_check_dsi !!\n",__LINE__, __FUNCTION__);
 
 	if (ctx->enabled)

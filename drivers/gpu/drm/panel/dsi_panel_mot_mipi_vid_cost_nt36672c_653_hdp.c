@@ -180,11 +180,11 @@ static void csot_panel_init(struct csot *ctx)
 	msleep(5);
 //+EKCEBU-680,pengzhenhua.wt,modify,20220618, modify to lcd 120 fps
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(10);
+	msleep(3);
 	gpiod_set_value(ctx->reset_gpio, 0);
 	msleep(5);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(60);
+	msleep(10);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 	devm_gpiod_put(ctx->dev, ctx->bias_n_gpio);
@@ -194,37 +194,49 @@ static void csot_panel_init(struct csot *ctx)
 	csot_dcs_write_seq_static(ctx, 0XFF, 0XE0),
 	csot_dcs_write_seq_static(ctx, 0XFB, 0X01),
 	csot_dcs_write_seq_static(ctx, 0X35, 0X82),
+
 	csot_dcs_write_seq_static(ctx, 0XFF, 0XF0),
 	csot_dcs_write_seq_static(ctx, 0XFB, 0X01),
 	csot_dcs_write_seq_static(ctx, 0X1C, 0X01),
 	csot_dcs_write_seq_static(ctx, 0X33, 0X01),
 	csot_dcs_write_seq_static(ctx, 0X5A, 0X00),
+
 	csot_dcs_write_seq_static(ctx, 0XFF, 0XD0),
 	csot_dcs_write_seq_static(ctx, 0XFB, 0X01),
 	csot_dcs_write_seq_static(ctx, 0X53, 0X22),
+
 	csot_dcs_write_seq_static(ctx, 0X54, 0X02),
 	csot_dcs_write_seq_static(ctx, 0XFF, 0XC0),
 	csot_dcs_write_seq_static(ctx, 0XFB, 0X01),
 	csot_dcs_write_seq_static(ctx, 0X9C, 0X11),
 	csot_dcs_write_seq_static(ctx, 0X9D, 0X11),
+
 	csot_dcs_write_seq_static(ctx, 0XFF, 0X2B),
 	csot_dcs_write_seq_static(ctx, 0XFB, 0X01),
-	csot_dcs_write_seq_static(ctx, 0XB7, 0X2A),
-	csot_dcs_write_seq_static(ctx, 0XB8, 0X0D),
+	csot_dcs_write_seq_static(ctx, 0XB7, 0X2C),
+	csot_dcs_write_seq_static(ctx, 0XB8, 0X1E),
 	csot_dcs_write_seq_static(ctx, 0XC0, 0X01),
+
+	csot_dcs_write_seq_static(ctx, 0xFF, 0x24),
+	csot_dcs_write_seq_static(ctx, 0xFB, 0x01),
+	csot_dcs_write_seq_static(ctx, 0x32, 0x09),
+
 	csot_dcs_write_seq_static(ctx, 0xFF, 0xF0),
 	csot_dcs_write_seq_static(ctx, 0xFB, 0x01),
 	csot_dcs_write_seq_static(ctx, 0xD2, 0x50),
+
 	csot_dcs_write_seq_static(ctx, 0XFF, 0X10),
 	csot_dcs_write_seq_static(ctx, 0XFB, 0X01),
+
 	csot_dcs_write_seq_static(ctx, 0X35, 0X00),
-	csot_dcs_write_seq_static(ctx, 0x51, 0x07,0xFF);
 	csot_dcs_write_seq_static(ctx, 0x53, 0x2C),
 	csot_dcs_write_seq_static(ctx, 0x55, 0x01),
-	csot_dcs_write_seq_static(ctx, 0x68, 0x00,0x01),
+	csot_dcs_write_seq_static(ctx, 0x68, 0x03,0x01),
+
 	csot_dcs_write_seq_static(ctx, 0XB0, 0X00),
 	csot_dcs_write_seq_static(ctx, 0XC0, 0X00),
 	csot_dcs_write_seq_static(ctx, 0XC2, 0X1B,0XA0),
+
 	csot_dcs_write_seq_static(ctx, 0x11, 0x00);
 	msleep(120);
 	csot_dcs_write_seq_static(ctx, 0x29, 0x00);
