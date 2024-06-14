@@ -1400,6 +1400,7 @@ void cpuhvfs_update_imax_thermal_state(unsigned int state)
 u8 *record_CCI_Ref;
 unsigned char *record_CCI_Tbl;
 
+#if IS_ENABLED(CONFIG_MTK_CPU_DVFS_ENG_DEBUG)
 unsigned int cpuhvfs_get_cci_result(unsigned int idx_1,
 	unsigned int idx_2, unsigned int mode)
 {
@@ -1416,16 +1417,26 @@ unsigned int cpuhvfs_get_cci_result(unsigned int idx_1,
 void cpuhvfs_update_cci_map_tbl(unsigned int idx_1, unsigned int idx_2,
 	unsigned char result, unsigned int mode, unsigned int use_id)
 {
-	if (idx_1 < NR_FREQ && idx_2 < NR_FREQ && mode < NR_CCI_TBL) {
-		csram_write(OFFS_CCI_TBL_USER, use_id);
-		if (mode == 0)
-			record_CCI_Ref[(idx_1 * NR_FREQ) + idx_2] = result;
-		else
-			record_CCI_Ref[((idx_1 + NR_FREQ) * NR_FREQ)
-				+ idx_2] = result;
-		csram_write(OFFS_CCI_TOGGLE_BIT, 1);
+	unsigned int index;
+
+	if (idx_1 >= NR_FREQ || idx_2 >= NR_FREQ || mode >= NR_CCI_TBL)
+		return;
+
+	csram_write(OFFS_CCI_TBL_USER, use_id);
+
+	if (mode == 0) {
+		index = (idx_1 * NR_FREQ) + idx_2;
+	} else {
+		index = ((idx_1 + NR_FREQ) * NR_FREQ) + idx_2;
 	}
+
+	if (index >= PVT_CCI_TBL_SIZE)
+		return;
+
+	record_CCI_Ref[index] = result;
+	csram_write(OFFS_CCI_TOGGLE_BIT, 1);
 }
+#endif /* CONFIG_MTK_CPU_DVFS_ENG_DEBUG */
 
 void cpuhvfs_update_cci_mode(unsigned int mode, unsigned int use_id)
 {

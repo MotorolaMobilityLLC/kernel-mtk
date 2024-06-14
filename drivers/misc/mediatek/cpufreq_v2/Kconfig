@@ -50,3 +50,11 @@ config MEDIATEK_CPU_DVFS_MT6833
 	  for power management.
 	  Set Y to select this feature for specific platform-MT6765.
 	  If unsure, set N to disable.
+
+config MTK_CPU_DVFS_ENG_DEBUG
+	bool "Enable certain cpu dvfs debug nodes for eng build"
+	depends on MEDIATEK_CPU_DVFS
+	help
+		Enable certain cpu dvfs debug nodes in engineering builds.
+		Select "y" if you want to enable these features.
+		Select "n" if unsure.

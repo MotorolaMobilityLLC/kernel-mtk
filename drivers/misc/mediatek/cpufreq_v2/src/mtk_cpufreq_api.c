@@ -166,7 +166,7 @@ EXPORT_SYMBOL(mt_cpufreq_update_volt);
 void mt_cpufreq_update_cci_map_tbl(unsigned int idx_1, unsigned int idx_2,
 	unsigned char result, unsigned int mode, unsigned int use_id)
 {
-#if defined(HYBRID_CPU_DVFS) && defined(CCI_MAP_TBL_SUPPORT)
+#if defined(HYBRID_CPU_DVFS) && defined(CCI_MAP_TBL_SUPPORT) && IS_ENABLED(CONFIG_MTK_CPU_DVFS_ENG_DEBUG)
 	cpuhvfs_update_cci_map_tbl(idx_1, idx_2, result, mode, use_id);
 #endif
 }

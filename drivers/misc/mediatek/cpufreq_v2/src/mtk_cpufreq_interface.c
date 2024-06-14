@@ -531,6 +531,8 @@ static ssize_t cpufreq_dvfs_time_profile_proc_write(struct file *file,
 }
 
 #ifdef CCI_MAP_TBL_SUPPORT
+
+#if IS_ENABLED(CONFIG_MTK_CPU_DVFS_ENG_DEBUG)
 /* cpufreq_cci_map_table */
 static int cpufreq_cci_map_table_proc_show(struct seq_file *m, void *v)
 {
@@ -587,6 +589,8 @@ static ssize_t cpufreq_cci_map_table_proc_write(struct file *file,
 
 	return count;
 }
+#endif /* CONFIG_MTK_CPU_DVFS_ENG_DEBUG */
+
 /* cpufreq_cci_mode */
 static int cpufreq_cci_mode_proc_show(struct seq_file *m, void *v)
 {
@@ -730,7 +734,9 @@ PROC_FOPS_RW(cpufreq_power_mode);
 PROC_FOPS_RW(cpufreq_sched_disable);
 PROC_FOPS_RW(cpufreq_dvfs_time_profile);
 #ifdef CCI_MAP_TBL_SUPPORT
+#if IS_ENABLED(CONFIG_MTK_CPU_DVFS_ENG_DEBUG)
 PROC_FOPS_RW(cpufreq_cci_map_table);
+#endif /* CONFIG_MTK_CPU_DVFS_ENG_DEBUG */
 PROC_FOPS_RW(cpufreq_cci_mode);
 #endif
 #ifdef IMAX_ENABLE
@@ -763,7 +769,9 @@ int cpufreq_procfs_init(void)
 		PROC_ENTRY(cpufreq_sched_disable),
 		PROC_ENTRY(cpufreq_dvfs_time_profile),
 #ifdef CCI_MAP_TBL_SUPPORT
+#if IS_ENABLED(CONFIG_MTK_CPU_DVFS_ENG_DEBUG)
 		PROC_ENTRY(cpufreq_cci_map_table),
+#endif /* CONFIG_MTK_CPU_DVFS_ENG_DEBUG */
 		PROC_ENTRY(cpufreq_cci_mode),
 #endif
 #ifdef IMAX_ENABLE
