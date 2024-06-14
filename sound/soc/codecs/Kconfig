@@ -1469,6 +1469,13 @@ config SND_SOC_KANSAS_AUDIO
 	default n
 	help
 	  Support kansas audio
+
+config SND_SOC_MOTO_MIC_BIAS
+	tristate "Support moto mic bias set"
+	depends on I2C
+	default n
+	help
+	  Support moto mic bias set
 # kansas audio bring up end
 
 config SND_SOC_TFA9874
