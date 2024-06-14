@@ -163,7 +163,7 @@ static void tm_nt36528a_panel_init(struct tm_nt36528a *ctx)
 {
 	pr_info("disp: %s+\n", __func__);
 
-	ocp2138_BiasPower_enable(15,15,5);
+	ocp2138_BiasPower_enable(20,20,5);
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
 		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
