@@ -1523,13 +1523,14 @@ static int tfa98xx_send_volume(uint8_t volume, int only_left)
 	int is_probus = 0, err = 0;
 
 	list_for_each_entry(tfa98xx, &tfa98xx_device_list, list) {
-	if (tfa98xx->tfa->is_probus_device) {
-		is_probus = 1;
-		break;
-	}
-	pr_info("tfa send volume 0x%x to PA-0x%x.\n",  volume, tfa98xx->i2c->addr);
-	if ((!only_left) || (tfa98xx->tfa->dev_idx==0))
-		tfa98xx_set_volume_level(tfa98xx->tfa, volume);
+		if (tfa98xx->tfa->is_probus_device) {
+			is_probus = 1;
+			break;
+		}
+		if ((!only_left) || (tfa98xx->tfa->dev_idx==0)) {
+			pr_info("tfa send volume 0x%x to PA-0x%x.\n",  volume, tfa98xx->i2c->addr);
+			tfa98xx_set_volume_level(tfa98xx->tfa, volume);
+		}
 	}
 	if (is_probus) {
 		cmd[5] = volume;
