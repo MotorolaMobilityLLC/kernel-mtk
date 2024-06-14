@@ -215,6 +215,7 @@
          mmi,upper-limit-capacity = <65>;
          mmi,lower-limit-capacity = <60>;
          mmi,vfloat-comp-uv = <0>;
+         mmi,enable-mux;
 };
 
 &pe5 {
