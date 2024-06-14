@@ -230,9 +230,11 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 	} else {
 		dev_info(dev, "primary_charger, vbus turn %s\n", is_on ? "on" : "off");
 		if (is_on) {
+			mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
 			charger_dev_enable_otg(primary_charger, true);
 		} else {
 			charger_dev_enable_otg(primary_charger, false);
+			mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, false);
 		}
 	}
 
