@@ -1629,10 +1629,16 @@ static signed int fg_set_iavg_intr(struct mtk_gauge *gauge_dev, void *data)
 	gauge_dev->hw_status.iavg_lt = iavg_lt;
 
 	/* iavg_ht */
-	fg_iavg_reg_ht = iavg_ht * 1000 * 1000;
-	if (gauge_dev->hw_status.r_fg_value != DEFAULT_R_FG)
+	fg_iavg_reg_ht = iavg_ht * 1000 * 1000 * gauge_dev->hw_status.r_fg_value;
+	if (gauge_dev->hw_status.r_fg_value != DEFAULT_R_FG) {
 		fg_iavg_reg_ht = fg_iavg_reg_ht *
 			gauge_dev->hw_status.r_fg_value;
+#if defined(__LP64__) || defined(_LP64)
+		do_div(fg_iavg_reg_ht, DEFAULT_R_FG);
+#else
+		fg_iavg_reg_ht = div_s64(fg_iavg_reg_ht, DEFAULT_R_FG);
+#endif
+	}
 
 	if (fg_iavg_reg_ht < 0) {
 		sign_bit_ht = 1;
@@ -1654,11 +1660,17 @@ static signed int fg_set_iavg_intr(struct mtk_gauge *gauge_dev, void *data)
 
 
 	/* iavg_lt */
-	fg_iavg_reg_lt = iavg_lt * 1000 * 1000;
+	fg_iavg_reg_lt = iavg_lt * 1000 * 1000 * gauge_dev->hw_status.r_fg_value;
 
-	if (gauge_dev->hw_status.r_fg_value != DEFAULT_R_FG)
+	if (gauge_dev->hw_status.r_fg_value != DEFAULT_R_FG){
 		fg_iavg_reg_lt = fg_iavg_reg_lt *
 			gauge_dev->hw_status.r_fg_value;
+#if defined(__LP64__) || defined(_LP64)
+        do_div(fg_iavg_reg_lt, DEFAULT_R_FG);
+#else
+        fg_iavg_reg_lt = div_s64(fg_iavg_reg_lt, DEFAULT_R_FG);
+#endif
+	}
 
 	if (fg_iavg_reg_lt < 0) {
 		sign_bit_lt = 1;
