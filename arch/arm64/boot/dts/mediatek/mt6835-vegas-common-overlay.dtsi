@@ -88,6 +88,10 @@ eint_cp: eint_cp {
 	};
 };
 
+&rt5133 {
+	status = "disabled";
+};
+
 &regulator_vibrator {
 	status = "disabled";
 };
