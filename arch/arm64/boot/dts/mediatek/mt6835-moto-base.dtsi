@@ -22,6 +22,7 @@
 	tboard_thermistor7: thermal-ntc7 { };
 	tboard_thermistor8: thermal-ntc8 { };
 	tboard_thermistor9: thermal-ntc9 { };
+	moto_wlc: moto_wlc {};
 };
 
 &extcon_usb {
