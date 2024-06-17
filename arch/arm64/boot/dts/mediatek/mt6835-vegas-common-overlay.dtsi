@@ -122,4 +122,11 @@ eint_cp: eint_cp {
 	};
 };
 
-
+&u2port0 {
+	mediatek,eye-vrt = <7>;
+	mediatek,eye-term = <3>;
+	mediatek,rev6 = <3>;
+	mediatek,eye-vrt-host = <5>;
+	mediatek,eye-term-host = <5>;
+	mediatek,rev6-host = <3>;
+};
