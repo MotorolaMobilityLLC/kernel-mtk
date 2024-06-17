@@ -195,6 +195,19 @@ static int aw_request_pdo(struct tcpc_device *tcpc, AW_U16 pdo_vol, AW_U16 pdo_c
 	return 1;
 }
 
+static void aw_wait_heart_beat_done(struct aw35615_chip *chip)
+{
+	AW_U8 retry = 10;
+	while (retry > 0) {
+		if ((!chip->queued) && (chip->port.PolicyState == peSinkReady))
+			return;
+		else
+			usleep_range(10 * 1000, 10 * 1000);
+		retry--;
+		AW_LOG("retry = %d\n", 10 - retry);
+	}
+}
+
 static int aw_request_apdo(struct tcpc_device *tcpc, AW_U16 apdo_vol, AW_U16 apdo_cur)
 {
 	struct aw35615_chip *chip = tcpc_get_dev_data(tcpc);
@@ -240,7 +253,7 @@ static int aw_request_apdo(struct tcpc_device *tcpc, AW_U16 apdo_vol, AW_U16 apd
 	chip->port.PDTransmitObjects[0].PPSRDO.UnChnkExtMsgSupport = AW_FALSE;
 	chip->port.PDTransmitObjects[0].PPSRDO.Voltage = apdo_vol / 20;
 	chip->port.PDTransmitObjects[0].PPSRDO.OpCurrent = apdo_cur / 50;
-
+	aw_wait_heart_beat_done(chip);
 	if ((!chip->queued) && (chip->port.PolicyState == peSinkReady)) {
 		chip->queued = AW_TRUE;
 		queue_work(chip->highpri_wq, &chip->sm_worker);
