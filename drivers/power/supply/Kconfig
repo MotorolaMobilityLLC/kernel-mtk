@@ -702,6 +702,14 @@ config CHARGER_SGM41542
 	help
 	  support SGM41542
 
+config MMI_SGM41543D_CHARGER
+	tristate "SGM41543D battery charger driver"
+	depends on I2C
+	depends on GPIOLIB || COMPILE_TEST
+	select REGMAP_I2C
+	help
+	  support SGM41543D
+
 config CHARGER_BQ256XX
 	tristate "TI BQ256XX battery charger driver"
 	depends on I2C
