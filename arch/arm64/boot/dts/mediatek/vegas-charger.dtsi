@@ -70,6 +70,32 @@
         };
 };
 
+&pio {
+       mmi_control_wls_default: mmi_control_wls_default {
+               wls_control {
+                       pinmux = <PINMUX_GPIO57__FUNC_GPIO57>;
+                      output-low;
+               };
+       };
+
+       wls_cps4035_int_default: wls_cps4035_int_default {
+               wls_int {
+                       pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
+                       input-enable;
+                       bias-pull-up;
+               };
+               wls_det_int {
+                       pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
+                       input-enable;
+                       bias-pull-down;
+               };
+               wls_mode_select {
+                       pinmux = <PINMUX_GPIO34__FUNC_GPIO34>;
+                       output-low;
+                 };
+       };
+};
+
 &i2c0 {
 	clock-frequency = <400000>;
 	sc8541@6A {
@@ -130,8 +156,38 @@
 		ibat_sns_res = <2>;
 		watchdog_dis;
 	};
+
+	cps_wls_charger@38 {
+               compatible = "cps,wls-charger-cps4038";
+               wireless-fw-name = "cps4038.bin";
+               enable_stop_epp = <1>;
+               enable_rx_offset_detect = <1>;
+               /*stop rx offset detect battery soc*/
+               rod_stop_battery_soc = <90>;
+               bootmode = <&chosen>;
+               reg = <0x38>;
+               cps_wls_int = <&pio 9 0x0>;
+               cps_det_int = <&pio 18 0x0>;
+               wls_mode_select = <&pio 34 0x0>;
+               pinctrl-names = "default";
+               pinctrl-0 = <&wls_cps4035_int_default>;
+               status = "okay";
+       };
+
 };
 
+&moto_wlc {
+       compatible = "moto,charger,wlc";
+       min_charger_voltage = <4600000>;
+       wlc_max_charger_current = <3150000>;
+       wlc_max_input_current = <1150000>;
+       mmi,wls_control_en = <&pio 57 0x0>;
+       pinctrl-names = "default";
+       pinctrl-0 = <&mmi_control_wls_default>;
+       #cooling-cells = <2>;
+       mmi,wlc-rx-mitigation = <(-1) 2500000 2000000 1500000 1200000
+                                                       1000000 800000 500000>;
+};
 
 &moto_chg_tcmd {
                 compatible = "mmi,moto-chg-tcmd";
