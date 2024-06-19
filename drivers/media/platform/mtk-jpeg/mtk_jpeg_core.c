@@ -904,14 +904,14 @@ static int mtk_jpeg_buf_prepare(struct vb2_buffer *vb)
 	if (!q_data)
 		return -EINVAL;
 
-	for (i = 0; i < q_data->fmt->colplanes; i++) {
-		plane_fmt = q_data->pix_mp.plane_fmt[i];
-		if (ctx->enable_exif &&
-		    q_data->fmt->fourcc == V4L2_PIX_FMT_JPEG)
-			vb2_set_plane_payload(vb, i, plane_fmt.sizeimage +
-					      MTK_JPEG_MAX_EXIF_SIZE);
-		else
+	if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
+		for (i = 0; i < q_data->fmt->colplanes; i++) {
+			plane_fmt = q_data->pix_mp.plane_fmt[i];
 			vb2_set_plane_payload(vb, i,  plane_fmt.sizeimage);
+		}
+	} else if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+		for (i = 0; i < q_data->fmt->colplanes; i++)
+			vb2_set_plane_payload(vb, i,  0);
 	}
 
 	return 0;

@@ -32,8 +32,6 @@
 
 #define MTK_JPEG_HW_TIMEOUT_MSEC 1000
 
-#define MTK_JPEG_MAX_EXIF_SIZE	(64 * 1024)
-
 /**
  * enum mtk_jpeg_ctx_state - states of the context state machine
  * @MTK_JPEG_INIT:		current state is initialized
