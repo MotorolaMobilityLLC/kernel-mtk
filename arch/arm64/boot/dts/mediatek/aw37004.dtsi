@@ -7,7 +7,7 @@
 		reg = <0x28>;
 
 		cs-gpios = <&pio 20 0>;
-		vin1-gpios = <&pio 58 0>;
+		vin1-gpios = <&pio 40 0>;
 
 		init-value = <0x00>;
 
