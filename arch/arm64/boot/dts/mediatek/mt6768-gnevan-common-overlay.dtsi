@@ -135,6 +135,13 @@
 	};*/
 };
 
+/* SVP */
+&mtee_svp {
+	svp: SecureVideoPath {
+		compatible = "mediatek,mtk_sec_video_path_support";
+	};
+};
+
 &mmc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
         cd-gpios = <&pio 18 GPIO_ACTIVE_HIGH>;
