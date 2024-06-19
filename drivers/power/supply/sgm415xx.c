@@ -1630,7 +1630,7 @@ static int sgm4154x_charger_set_property(struct power_supply *psy,
 #if IS_ENABLED(CONFIG_CHARGER_SGM415XX)
 	struct sgm4154x_device *sgm = power_supply_get_drvdata(psy);
 #endif
-	int ret = -EINVAL;
+	int ret = 0;
 
 	switch (prop) {
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
@@ -1764,6 +1764,8 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 		}
 #else
 		val->intval = 5000;
+		if(!state.vbus_gd || !state.online)
+			val->intval = 0;
 #endif
 		break;
 
