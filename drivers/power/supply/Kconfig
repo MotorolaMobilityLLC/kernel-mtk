@@ -1239,3 +1239,16 @@ config MOTO_LOTX_SUPPORT
 	  enable lotx feature 95% recharge
 
 endif # POWER_SUPPLY
+
+config MOTO_FACTORY_BUILD_LPD
+        bool "Identify if it's a factory build"
+        default n
+        help
+          This is to config whether it is a factory build.
+          If yes, it is a factory build
+
+config MOTO_SUPPORT_MTK_LPD
+        bool "product lpd support"
+        default n
+        help
+          This is to enable MOTO supports of mtk lpd feature.

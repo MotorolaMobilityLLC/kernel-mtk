@@ -259,6 +259,8 @@
 
 #define MT6375_WD_SETTING2(TDET, TSLEEP) \
 	((TDET << MT6375_SFT_WD_TDET) | (TSLEEP << MT6375_SHFT_WD_TSLEEP))
+#define MT6375_SBU_PH_LBOUND_FACTORY	700
+
 struct mt6375_tcpc_data {
 	struct device *dev;
 	struct regmap *rmap;
@@ -1116,6 +1118,12 @@ static int mt6375_is_water_detected(struct mt6375_tcpc_data *ddata,
 	enum tcpc_cable_type cable_type;
 	u8 ctd_evt;
 	struct tcpc_device *tcpc = ddata->tcpc;
+
+#ifdef CONFIG_MOTO_FACTORY_BUILD_LPD
+#ifdef CONFIG_MOTO_SUPPORT_MTK_LPD
+	lb = MT6375_SBU_PH_LBOUND_FACTORY;
+#endif
+#endif
 
 	if (tcpc->tcpc_flags & TCPC_FLAGS_WD_DUAL_PORT &&
 	    chan == MT6375_WD_CHAN_WD2)
