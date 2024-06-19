@@ -1300,6 +1300,7 @@ static irqreturn_t mtk_jpeg_enc_done(struct mtk_jpeg_dev *jpeg)
 	enum vb2_buffer_state buf_state = VB2_BUF_STATE_ERROR;
 	u32 result_size;
 
+	v4l2_info(&jpeg->v4l2_dev, "mtk_jpeg_enc_done\n");
 	ctx = v4l2_m2m_get_curr_priv(jpeg->m2m_dev);
 	if (!ctx) {
 		v4l2_err(&jpeg->v4l2_dev, "Context is NULL\n");
@@ -1328,6 +1329,7 @@ static irqreturn_t mtk_jpeg_enc_irq(int irq, void *priv)
 	u32 irq_status;
 	irqreturn_t ret = IRQ_NONE;
 
+	pr_info("mtk_jpeg_enc_irq, cancel_delayed_work\n");
 	cancel_delayed_work(&jpeg->job_timeout_work);
 
 	irq_status = readl(jpeg->reg_base + JPEG_ENC_INT_STS) &
@@ -1478,6 +1480,7 @@ static int mtk_jpeg_release(struct file *file)
 	struct mtk_jpeg_dev *jpeg = video_drvdata(file);
 	struct mtk_jpeg_ctx *ctx = mtk_jpeg_fh_to_ctx(file->private_data);
 
+	v4l2_info(&jpeg->v4l2_dev, "mtk_jpeg_release");
 	if (ctx->state == MTK_JPEG_RUNNING) {
 		mtk_jpeg_dvfs_end(ctx);
 		mtk_jpeg_end_bw_request(ctx);
@@ -1557,8 +1560,7 @@ static void mtk_jpeg_job_timeout_work(struct work_struct *work)
 	dst_buf = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx);
 
 	jpeg->variant->hw_reset(jpeg->reg_base);
-
-	pm_runtime_put(jpeg->dev);
+	v4l2_info(&jpeg->v4l2_dev, "jpeg_job_timeout_work");
 
 	v4l2_m2m_buf_done(src_buf, VB2_BUF_STATE_ERROR);
 	v4l2_m2m_buf_done(dst_buf, VB2_BUF_STATE_ERROR);
