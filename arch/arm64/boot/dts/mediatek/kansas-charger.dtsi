@@ -233,6 +233,7 @@
 
                 mmi,batid_v_ref = <1800000>;
                 mmi,batid_r_pull = <100000>;
+                mmi,batt-ids-map = "1", "COSRA50COS", "2", "ATLRA50NVT";
 
                 mmi,adc-channel-cpu = <0>;
                 mmi,adc-channel-charger = <2>;
