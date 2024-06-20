@@ -37,3 +37,4 @@ main2af-y  += common/lc898217afc/LC898217AFC.o
 main2af-y  += common/dw9718taf/DW9718TAF.o
 main2af-y  += common/gt9772af/GT9772AF.o
 main2af-y  += common/gt9772baf/GT9772BAF.o
+main2af-y  += common/mot_vegas_gt9764vaf/MOT_VEGAS_GT9764VAF.o
