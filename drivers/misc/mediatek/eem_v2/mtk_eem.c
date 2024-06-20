@@ -1174,6 +1174,7 @@ static enum hrtimer_restart eem_log_timer_func(struct hrtimer *timer)
 	return HRTIMER_RESTART;
 }
 
+#if IS_ENABLED(CONFIG_MTK_PTPOD_ENG_DEBUG)
 static void eem_calculate_aging_margin(struct eem_det *det,
 	int start_oft, int end_oft)
 {
@@ -1193,6 +1194,7 @@ static void eem_calculate_aging_margin(struct eem_det *det,
 	}
 
 }
+#endif /* CONFIG_MTK_PTPOD_ENG_DEBUG */
 
 static void eem_interpolate_mid_opp(struct eem_det *ndet)
 {
@@ -4111,6 +4113,7 @@ out:
 	return (ret < 0) ? ret : count;
 }
 
+#if IS_ENABLED(CONFIG_MTK_PTPOD_ENG_DEBUG)
 /*
  * show current aging margin
  */
@@ -4175,8 +4178,8 @@ static ssize_t eem_setmargin_proc_write(struct file *file,
 		ret = -EINVAL;
 
 	while ((tok = strsep(&buf, " ")) != NULL) {
-		if (i == 3) {
-			eem_error("number of arguments > 3!\n");
+		if (i >= 2) {
+			eem_error("number of arguments > 2!\n");
 			goto out;
 		}
 
@@ -4219,6 +4222,7 @@ out:
 
 	return ret;
 }
+#endif /* CONFIG_MTK_PTPOD_ENG_DEBUG */
 
 /*
  * show current EEM data
@@ -4617,7 +4621,9 @@ PROC_FOPS_RO(eem_cur_volt);
 PROC_FOPS_RW(eem_offset);
 PROC_FOPS_RO(eem_dump);
 PROC_FOPS_RW(eem_log_en);
+#if IS_ENABLED(CONFIG_MTK_PTPOD_ENG_DEBUG)
 PROC_FOPS_RW(eem_setmargin);
+#endif /* CONFIG_MTK_PTPOD_ENG_DEBUG */
 #if ENABLE_INIT1_STRESS
 PROC_FOPS_RW(eem_init1stress_en);
 #endif
@@ -4639,7 +4645,9 @@ static int create_procfs(void)
 		PROC_ENTRY(eem_status),
 		PROC_ENTRY(eem_cur_volt),
 		PROC_ENTRY(eem_offset),
+		#if IS_ENABLED(CONFIG_MTK_PTPOD_ENG_DEBUG)
 		PROC_ENTRY(eem_setmargin),
+		#endif /* CONFIG_MTK_PTPOD_ENG_DEBUG */
 	};
 
 	struct pentry eem_entries[] = {
