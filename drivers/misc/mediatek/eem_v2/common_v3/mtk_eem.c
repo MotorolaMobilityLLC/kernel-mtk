@@ -1019,6 +1019,7 @@ out:
 	return (ret < 0) ? ret : count;
 }
 
+#if IS_ENABLED(CONFIG_MTK_PTPOD_ENG_DEBUG)
 /*
  * show current aging margin
  */
@@ -1077,8 +1078,8 @@ static ssize_t eem_setmargin_proc_write(struct file *file,
 		ret = -EINVAL;
 
 	while ((tok = strsep(&buf, " ")) != NULL) {
-		if (i == 3) {
-			eem_error("number of arguments > 3!\n");
+		if (i >= 2) {
+			eem_error("number of arguments > 2!\n");
 			goto out;
 		}
 
@@ -1114,6 +1115,7 @@ out:
 
 	return ret;
 }
+#endif /* CONFIG_MTK_PTPOD_ENG_DEBUG */
 
 static void dump_sndata_to_de(struct seq_file *m)
 {
@@ -1949,7 +1951,9 @@ PROC_FOPS_RW(eem_en);
 PROC_FOPS_RW(eem_sn_en);
 PROC_FOPS_RO(eem_force_sensing);
 PROC_FOPS_RO(eem_pull_data);
+#if IS_ENABLED(CONFIG_MTK_PTPOD_ENG_DEBUG)
 PROC_FOPS_RW(eem_setmargin);
+#endif /* CONFIG_MTK_PTPOD_ENG_DEBUG */
 
 static int create_procfs(void)
 {
@@ -1968,7 +1972,9 @@ static int create_procfs(void)
 		PROC_ENTRY(eem_status),
 		PROC_ENTRY(eem_cur_volt),
 		PROC_ENTRY(eem_offset),
+		#if IS_ENABLED(CONFIG_MTK_PTPOD_ENG_DEBUG)
 		PROC_ENTRY(eem_setmargin),
+		#endif /* CONFIG_MTK_PTPOD_ENG_DEBUG */
 	};
 
 	struct pentry eem_entries[] = {
