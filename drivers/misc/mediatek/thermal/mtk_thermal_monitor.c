@@ -2200,7 +2200,6 @@ static int __init thermal_monitor_init(void)
 		mt6358tsbuck1_init();
 		mt6358tsbuck2_init();
 		mt6358tsbuck3_init();
-		vtskin_init();
 		mtktsbattery_init();
 		mtkts_bts_init();
 		mtkts_btsmdpa_init();
@@ -2214,6 +2213,9 @@ static int __init thermal_monitor_init(void)
 		mtkts_dctm_init();
 		wmt_tm_init();
 		tsallts_init();
+#if IS_ENABLED(CONFIG_MTK_PLAT_POWER_MT6768)
+		vtskin_init();
+#endif
 		return 0;
 }
 
@@ -2241,7 +2243,6 @@ static void __exit thermal_monitor_exit(void)
 	mt6358tsbuck1_exit();
 	mt6358tsbuck2_exit();
 	mt6358tsbuck3_exit();
-	vtskin_exit();
 	mtktsbattery_exit();
 	mtkts_bts_exit();
 	mtkts_btsmdpa_exit();
@@ -2254,6 +2255,9 @@ static void __exit thermal_monitor_exit(void)
 	mtkts_dctm_exit();
 	wmt_tm_deinit();
 	tsallts_exit();
+#if IS_ENABLED(CONFIG_MTK_PLAT_POWER_MT6768)
+	vtskin_exit();
+#endif
 }
 
 
