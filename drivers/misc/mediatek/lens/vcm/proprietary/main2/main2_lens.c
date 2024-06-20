@@ -79,6 +79,10 @@ static struct stAF_OisPosInfo OisPosInfo;
 /* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+//Begin: Add lens driver for vegas
+	{1, MOT_VEGAS_AFDRV_GT9764V, MOT_VEGAS_GT9764V_SetI2CClient, MOT_VEGAS_GT9764V_Ioctl,
+	MOT_VEGAS_GT9764V_Release, MOT_VEGAS_GT9764V_GetFileName, NULL},
+//End
 	{1, AFDRV_DW9718TAF, DW9718TAF_SetI2Cclient, DW9718TAF_Ioctl,
 	 DW9718TAF_Release, DW9718TAF_GetFileName, NULL},
 	{1, AFDRV_LC898212XDAF_F, LC898212XDAF_F_SetI2Cclient,

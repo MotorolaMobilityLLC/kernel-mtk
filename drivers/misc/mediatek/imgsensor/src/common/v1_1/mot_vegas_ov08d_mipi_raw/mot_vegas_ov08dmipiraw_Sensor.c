@@ -126,9 +126,9 @@ static struct imgsensor_info_struct imgsensor_info = {
     .min_gain =  64,   /*1x gain*/
     .max_gain = 992,   /*15.5x gain*/
     .min_gain_iso = 100,
-    .gain_step = 4,
+    .gain_step = 1, /*minimum step = 4 in 1x~2x gain*/
     .gain_type = 1,    /*to be modify,no gain table for sony*/
-    .max_frame_length = 0x89c7,
+    .max_frame_length = 0x3FFFFF,     /* max framelength by sensor register's limitation */
     .ae_shut_delay_frame = 0,
     .ae_sensor_gain_delay_frame = 0,
     .ae_ispGain_delay_frame = 2,   /*isp gain delay frame for AE cycle*/
@@ -297,7 +297,7 @@ static void set_dummy(void)
     }
     pr_debug("imgsensor.frame_length = %d\n", imgsensor.frame_length);
     write_cmos_sensor(0xfd, 0x01);
-    write_cmos_sensor(0x05, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2) & 0x7F00) >> 8);
+    write_cmos_sensor(0x05, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2) & 0xFF00) >> 8);
     write_cmos_sensor(0x06, ((imgsensor.frame_length - imgsensor.vblank_convert )* 2) & 0xFF);
     write_cmos_sensor(0x01, 0x01);
 }
@@ -305,29 +305,6 @@ static void set_dummy(void)
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
     pr_debug("image_mirror = %d\n", image_mirror);
-    switch (image_mirror) {
-    case IMAGE_NORMAL:
-        write_cmos_sensor(0xfd, 0x01);
-        write_cmos_sensor(0x32, 0x00);   /* Gr*/
-        break;
-
-    case IMAGE_H_MIRROR:
-        write_cmos_sensor(0xfd, 0x01);
-        write_cmos_sensor(0x32, 0x01);
-        break;
-
-    case IMAGE_V_MIRROR:
-        write_cmos_sensor(0xfd, 0x01);
-        write_cmos_sensor(0x32, 0x02);
-        break;
-
-    case IMAGE_HV_MIRROR:
-        write_cmos_sensor(0xfd, 0x01);
-        write_cmos_sensor(0x32, 0x03);  /*Gb*/
-        break;
-    default:
-        LOG_INF("Error image_mirror setting\n");
-    }
 }
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
@@ -437,7 +414,7 @@ static void write_shutter(kal_uint32 shutter)
     if(long_exposure_status == 0){
         imgsensor.frame_length = (imgsensor.frame_length  >> 2) << 2;
 	    write_cmos_sensor(0xfd, 0x01);
-	    write_cmos_sensor(0x05, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2) & 0x7F00) >> 8);
+	    write_cmos_sensor(0x05, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2) & 0xFF00) >> 8);
 	    write_cmos_sensor(0x06, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2)) & 0xFF);
 	    write_cmos_sensor(0x01, 0x01);
     }
@@ -532,6 +509,7 @@ static void preview_setting(void)
     pr_debug("%s start\n", __func__);
     write_cmos_sensor(0xfd, 0x00);
     write_cmos_sensor(0x20, 0x0e);
+    msleep(3);
     write_cmos_sensor(0x20, 0x0b);
     write_cmos_sensor(0xfd, 0x00);
     write_cmos_sensor(0x11, 0x2a);
@@ -674,6 +652,7 @@ static void capture_setting(kal_uint16 currefps)
     pr_debug("%s start currefps = %d\n", __func__);
     write_cmos_sensor(0xfd, 0x00);
     write_cmos_sensor(0x20, 0x0e);
+    msleep(3);
     write_cmos_sensor(0x20, 0x0b);
     write_cmos_sensor(0xfd, 0x00);
     write_cmos_sensor(0x11, 0x2a);
@@ -816,6 +795,7 @@ static void normal_video_setting(kal_uint16 currefps)
     pr_debug("%s start currefps = %d\n", __func__);
     write_cmos_sensor(0xfd, 0x00);
     write_cmos_sensor(0x20, 0x0e);
+    msleep(3);
     write_cmos_sensor(0x20, 0x0b);
     write_cmos_sensor(0xfd, 0x00);
     write_cmos_sensor(0x11, 0x2a);
@@ -958,6 +938,7 @@ static void hs_video_setting(void)
     pr_debug("%s start\n", __func__);
     write_cmos_sensor(0xfd, 0x00);
     write_cmos_sensor(0x20, 0x0e);
+    msleep(3);
     write_cmos_sensor(0x20, 0x0b);
     write_cmos_sensor(0xfd, 0x00);
     write_cmos_sensor(0x11, 0x2a);
@@ -1100,6 +1081,7 @@ static void slim_video_setting(void)
     pr_debug("%s start\n", __func__);
     write_cmos_sensor(0xfd, 0x00);
     write_cmos_sensor(0x20, 0x0e);
+    msleep(3);
     write_cmos_sensor(0x20, 0x0b);
     write_cmos_sensor(0xfd, 0x00);
     write_cmos_sensor(0x11, 0x2a);
@@ -1345,7 +1327,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	LOG_INF("%s E\n", __func__);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
-    imgsensor.vblank_convert = 1252; //for 1632x1224 30fps
+	imgsensor.vblank_convert = 2504; //for 1632x1224 30fps
 	imgsensor.pclk = imgsensor_info.pre.pclk;
 	//imgsensor.video_mode = KAL_FALSE;
 	imgsensor.line_length = imgsensor_info.pre.linelength;
@@ -1404,7 +1386,7 @@ static kal_uint32 hs_video(
 	LOG_INF("%s E\n", __func__);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
-	imgsensor.vblank_convert = 776;
+	imgsensor.vblank_convert = 2504;
 	imgsensor.pclk = imgsensor_info.hs_video.pclk;
 	//imgsensor.video_mode = KAL_TRUE;
 	imgsensor.line_length = imgsensor_info.hs_video.linelength;
@@ -1427,7 +1409,7 @@ static kal_uint32 slim_video(
 	LOG_INF("%s E\n", __func__);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
-	imgsensor.vblank_convert = 768;//776;//1280x720_90fps
+	imgsensor.vblank_convert = 2504;//776;//1280x720_90fps
 	imgsensor.pclk = imgsensor_info.slim_video.pclk;
 	//imgsensor.video_mode = KAL_TRUE;
 	imgsensor.line_length = imgsensor_info.slim_video.linelength;
@@ -1825,7 +1807,6 @@ static kal_uint32 set_test_pattern_mode(kal_uint32 modes)
 	} else if (modes != 5 && (imgsensor.test_pattern == 5)) {
 
 	}
-
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = modes;
 	spin_unlock(&imgsensor_drv_lock);
@@ -1834,6 +1815,7 @@ static kal_uint32 set_test_pattern_mode(kal_uint32 modes)
 
 static kal_uint32 get_sensor_temperature(void)
 {
+#if 0
 	UINT32 temperature = 0;
 	INT32 temperature_convert = 0;
 
@@ -1845,8 +1827,8 @@ static kal_uint32 get_sensor_temperature(void)
 		temperature_convert = temperature / 256;
 	else
 		temperature_convert = 192 - temperature / 256;
-
-	return temperature_convert;
+#endif
+	return ERROR_NONE;
 }
 
 static kal_uint32 ov08d_ana_gain_table_16x[] = {
