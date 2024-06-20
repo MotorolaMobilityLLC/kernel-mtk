@@ -414,6 +414,7 @@
 #define BQ2589X_IDPM_LIM_SHIFT      0
 #define BQ2589X_IDPM_LIM_BASE       100
 #define BQ2589X_IDPM_LIM_LSB        50
+#define BQ2589X_STATUS_VINDPM	    0x10
 
 
 /* Register 0x14*/
