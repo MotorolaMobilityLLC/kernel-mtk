@@ -352,6 +352,7 @@
 	cam0_vcamd-supply = <&cam_dvdd_rear_main>;
 	cam0_vcamaf-supply = <&cam_afvdd_rear_main>;
 	cam1_vcamd-supply = <&cam_dvdd_front>;
+	cam2_vcamaf-supply = <&cam_afvdd_rear_wide>;
 
 	cam0_pin_mclk = "mclk";
 	cam0_pin_rst = "gpio";
@@ -370,6 +371,7 @@
 	cam2_pin_vcama = "gpio";
 	cam2_pin_vcamio = "gpio";
 	cam2_pin_vcamd = "gpio";
+	cam2_pin_vcamaf = "regulator";
 
 	cam0_enable_sensor = "mot_vegas_ov50d_mipi_raw";
 	cam1_enable_sensor = "mot_vegas_s5k3p9_mipi_raw";
@@ -389,6 +391,11 @@
 		compatible = "mediatek,camera_main_two";
 		#thermal-sensor-cells = <0>;
 		reg = <0x10>;
+		status = "okay";
+	};
+	camera_main_two_af_mtk:camera_main_two_af@d {
+		compatible = "mediatek,camera_main_two_af";
+		reg = <0x0d>;
 		status = "okay";
 	};
 };
