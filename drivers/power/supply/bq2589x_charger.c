@@ -1633,6 +1633,78 @@ static int bq2589x_get_ichg(struct charger_device *chg_dev, u32 *curr)
 	return ret;
 }
 
+static int bq2589x_force_ico(struct bq2589x *bq)
+{
+	u8 val;
+	int ret;
+
+	val = BQ2589X_FORCE_ICO << BQ2589X_FORCE_ICO_SHIFT;
+
+	ret = bq2589x_update_bits(bq, BQ2589X_REG_09, BQ2589X_FORCE_ICO_MASK, val);
+
+	return ret;
+}
+
+static int bq2589x_check_force_ico_done(struct bq2589x *bq)
+{
+	u8 val;
+	int ret;
+
+	ret = bq2589x_read_byte(bq, BQ2589X_REG_14,&val);
+	if (ret)
+		return ret;
+
+	if (val & BQ2589X_ICO_OPTIMIZED_MASK)
+		return 1;  /*finished*/
+	else
+		return 0;   /* in progress*/
+}
+
+static int bq2589x_run_aicl(struct charger_device *chg_dev, u32 *uA)
+{
+	struct bq2589x *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret, wait_ico_cnt = 30;
+	u8 status;
+
+	ret = bq2589x_read_byte(bq, BQ2589X_REG_13,&status);
+	if (!ret) {
+		if (status & BQ2589X_VDPM_STAT_MASK) {
+			bq->status |= BQ2589X_STATUS_VINDPM;
+			dev_info(bq->dev, "%s:VINDPM occurred\n", __func__);
+		} else {
+			bq->status &= ~BQ2589X_STATUS_VINDPM;
+		}
+	} else {
+		return ret;
+	}
+	if (bq->status & BQ2589X_STATUS_VINDPM) {
+		ret = bq2589x_force_ico(bq);
+		if (ret < 0) {
+			dev_info(bq->dev, "%s:ICO command issued failed:%d\n", __func__, ret);
+			return ret;
+		}
+		while (wait_ico_cnt >= 0) {
+			ret = bq2589x_check_force_ico_done(bq);
+			if (ret) {/*ico done*/
+				ret = bq2589x_read_byte(bq, BQ2589X_REG_13,&status);
+				if (!ret) {
+					*uA = ((status & BQ2589X_IDPM_LIM_MASK))
+						* BQ2589X_IDPM_LIM_LSB * 1000
+						+ BQ2589X_IDPM_LIM_BASE * 1000;
+					dev_info(bq->dev, "%s:ICO done, result is:%d uA\n",
+							__func__, *uA);
+				}
+				return ret;
+			}
+			msleep(100);
+			wait_ico_cnt--;
+		}
+	}
+
+	return ret;
+}
+
+
 static int bq2589x_get_min_ichg(struct charger_device *chg_dev, u32 *curr)
 {
 	*curr = 60 * 1000;
@@ -2269,7 +2341,7 @@ static struct charger_ops bq2589x_chg_ops = {
 	.is_safety_timer_enabled = bq2589x_is_safety_timer_enabled,
 	.kick_wdt = bq2589x_kick_wdt,
 	/* AICL */
-	.run_aicl = NULL,
+	.run_aicl = bq2589x_run_aicl,
 	/* PE+/PE+20 */
 	.send_ta_current_pattern = NULL,
 	.set_pe20_efficiency_table = NULL,
