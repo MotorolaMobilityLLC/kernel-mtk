@@ -14,7 +14,7 @@
 /plugin/;
 
 #include "mediatek/mt6835-kansas-common-overlay.dtsi"
-
+#include "mediatek/mt6835_kansas_camera_overlay_evb.dtsi"
 /* Board match root node */
 / {
 	fragment@model {
