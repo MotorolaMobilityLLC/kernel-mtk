@@ -94,6 +94,19 @@ enum attach_type {
 #define SGM4154x_INPUT_DET   	0x0e
 #define SGM4154x_CHRG_CTRL_f	0x0f
 
+/* Register 0x04*/
+#define REG04_VREG_MASK		0xF8
+#define REG04_VREG_SHIFT	3
+#define REG04_VREG_BASE		3856
+#define REG04_VREG_LSB		32
+
+#define SGM4154x_REG_08		0x08
+#define SGM4154x_REG_0A		0x0A
+#define SGM4154x_REG_0F		0x0F
+#define SGM41543_VREG_FT_MASK	0xc0
+#define	REG0A_VINDPM_STAT_MASK	0x40
+#define SGM4154x_VREG_LSB	32
+
 /* charge status flags  */
 #define SGM4154x_CHRG_EN		BIT(4)
 #define SGM4154x_HIZ_EN		    BIT(7)

@@ -168,6 +168,30 @@ struct sgm4154x_device {
         struct power_supply *psy;
         struct delayed_work psy_dwork;
 #endif
+
+	/* enable dynamic adjust battery voltage */
+	bool enable_dynamic_adjust_batvol;
+	struct wakeup_source *ir_wakelock;
+	struct delayed_work monitor_work;
+	int	vbus_type;
+	int final_cc;
+	int final_cv;
+	int tune_cv;
+	int ffc_cv;
+	int charge_voltage;
+	int charge_current;
+};
+
+enum sgm4154x_vbus_type {
+	SGM4154x_VBUS_NONE = 0,
+	SGM4154x_VBUS_USB_SDP,
+	SGM4154x_VBUS_USB_CDP,
+	SGM4154x_VBUS_USB_DCP,
+	SGM4154x_VBUS_MAXC,
+	SGM4154x_VBUS_UNKNOWN,
+	SGM4154x_VBUS_NONSTAND,
+	SGM4154x_VBUS_OTG,
+	SGM4154x_VBUS_TYPE_NUM,
 };
 
 struct sgm_sysfs_field_info {
@@ -180,6 +204,7 @@ struct sgm_sysfs_field_info {
 };
 
 static bool sgm4154x_dpdm_detect_is_done(struct sgm4154x_device * sgm);
+static int sgm4154x_run_ir_compensation(struct sgm4154x_device *sgm_chg, bool query, int *vbat_uV_out);
 /**********************************************************
  *
  *   [Global Variable]
@@ -447,6 +472,11 @@ static int sgm4154x_set_ichrg_curr(struct charger_device *chg_dev, unsigned int 
 	u8 reg_val;
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
 
+	/* enable dynamic adjust battery voltage */
+	if (sgm->enable_dynamic_adjust_batvol) {
+		sgm->final_cc = uA;
+	}
+
 	if (uA < SGM4154x_ICHRG_I_MIN_uA)
 		uA = SGM4154x_ICHRG_I_MAX_uA;
 	else if ( uA > sgm->init_data.max_ichg)
@@ -538,6 +568,21 @@ static int sgm4154x_set_chrg_volt(struct charger_device *chg_dev, unsigned int c
 	int reg_val;
 	enum SGM4154x_VREG_FT ft = VREG_FT_DISABLE;
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
+	static u32 old_volt = 0;
+
+	/* enable dynamic adjust battery voltage */
+	if (sgm->enable_dynamic_adjust_batvol) {
+		if (old_volt == chrg_volt) {
+			pr_err("charge volt do not change return %d\n");
+			return 0;
+		} else {
+			pr_err("charge volt = %d\n", chrg_volt);
+		}
+		sgm->final_cv = chrg_volt;
+		old_volt = chrg_volt;
+	} else {
+		pr_err("charge volt = %d\n", chrg_volt);
+	}
 
 	if (chrg_volt < SGM4154x_VREG_V_MIN_uV)
 		chrg_volt = SGM4154x_VREG_V_MIN_uV;
@@ -1046,6 +1091,8 @@ static int sgm41543_get_vbus_type(struct sgm4154x_device *sgm)
 	}
 	sgm->state.chrg_type = chrg_stat & SGM4154x_VBUS_STAT_MASK;
 
+	sgm->vbus_type = sgm->state.chrg_type;
+
 	return ret;
 }
 
@@ -1244,6 +1291,19 @@ static int sgm4154x_enable_termination(struct charger_device *chg_dev, bool enab
 		ret ? "failed" : "success");
 
        return ret;
+}
+
+int sgm4154x_set_chargevolt(struct sgm4154x_device *sgm, int volt)
+{
+	u8 val;
+
+	if (volt < REG04_VREG_BASE)
+		volt = REG04_VREG_BASE;
+
+	val = (volt - REG04_VREG_BASE) / REG04_VREG_LSB;
+	pr_err(" sgm4154x_set_chargevolt : the volt is %d, the val is 0x%.2x \n ", volt, val);
+	return sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_4, REG04_VREG_MASK,
+				   val << REG04_VREG_SHIFT);
 }
 
 int sgm4154x_extern_enable_termination(bool enable)
@@ -1485,6 +1545,27 @@ void sgm41543_enable_statpin(bool en)
 }
 EXPORT_SYMBOL_GPL(sgm41543_enable_statpin);
 
+static int sgm4154x_get_adc(struct charger_device *chg_dev, enum adc_channel chan, int *min, int *max)
+{
+	struct sgm4154x_device *sgm = dev_get_drvdata(&chg_dev->dev);
+	int ret = -ENOTSUPP;
+
+	switch (chan) {
+		case ADC_CHANNEL_VBAT:
+			ret = sgm4154x_run_ir_compensation(sgm, true, min);
+			if (!ret) {
+				if (max && min) {
+					*max = *min;
+				}
+			}
+		break;
+		default:
+		break;
+	}
+
+	return ret;
+}
+
 static int sgm4151_force_dpdm(struct sgm4154x_device *sgm)
 {
 	int ret, timeout = 50;
@@ -1509,6 +1590,12 @@ static void sgm4151_update_chg_type(struct sgm4154x_device *sgm, int attach)
 	int ret;
 	int wait_plugin_cnt = 5;
 	dev_err(sgm->dev, "sgm4151_update_chg_type enter attach=%d\n",attach);
+
+	/* enable dynamic adjust battery voltage */
+	if(attach){
+		if (sgm->enable_dynamic_adjust_batvol)
+			sgm->tune_cv = 0;
+	}
 	mutex_lock(&sgm->attach_lock);
 	atomic_set(&sgm->attach, attach);
 	mutex_unlock(&sgm->attach_lock);
@@ -2314,6 +2401,35 @@ static int sgm4154x_parse_dt(struct sgm4154x_device *sgm)
 	    sgm->init_data.ilim < SGM4154x_IINDPM_I_MIN_uA)
 		return -EINVAL;
 
+	/* enable dynamic adjust battery voltage */
+	ret = device_property_read_u32(sgm->dev, "ti,sgm41543,ffc-cv", &sgm->ffc_cv);
+	if (ret)
+		sgm->ffc_cv = 4510000;
+	else
+		dev_err(sgm->dev, "%s ti,sgm41543,ffc-cv: %d\n", __func__, sgm->ffc_cv);
+
+	ret = device_property_read_u32(sgm->dev, "ti,sgm41543,charge-voltage", &sgm->charge_voltage);
+
+	if (ret < 0) {
+		sgm->charge_voltage = 4400;
+	}
+	dev_err(sgm->dev, "%s ti,sgm41543,charge-voltage: %d\n", __func__, sgm->charge_voltage);
+
+	ret = device_property_read_u32(sgm->dev, "ti,sgm41543,charge-current", &sgm->charge_current);
+
+	if (ret < 0) {
+		sgm->charge_current = 2000;
+	}
+	dev_err(sgm->dev, "%s ti,sgm41543,charge-current: %d\n", __func__, sgm->charge_current);
+
+	sgm->enable_dynamic_adjust_batvol = device_property_read_bool(sgm->dev, "ti,sgm41543,enable-dynamic-adjust-batvol");
+	dev_err(sgm->dev, "%s enable_dynamic_adjust_batvol: %d\n", __func__, sgm->enable_dynamic_adjust_batvol);
+	if (sgm->enable_dynamic_adjust_batvol) {
+		sgm->final_cc = sgm->charge_current * 1000;
+		sgm->final_cv = sgm->charge_voltage * 1000;
+		sgm->tune_cv = 0;
+	}
+
 	return 0;
 }
 
@@ -2681,6 +2797,8 @@ static struct charger_ops sgm4154x_chg_ops = {
 	.is_safety_timer_enabled = sgm4154x_get_is_safetytimer_enable,
 	/* Get vbus voltage*/
 	/*.get_vbus_adc = sgm4154x_get_vbus,*/
+	/* General ADC */
+	.get_adc = sgm4154x_get_adc,
 	/* Power path */
 #if !IS_ENABLED(CONFIG_DISABLED_HIZ_MODE)
 	.enable_powerpath = sgm4154x_enable_power_path,
@@ -2726,6 +2844,149 @@ static int sgm4154x_suspend_notifier(struct notifier_block *nb,
     default:
         return NOTIFY_DONE;
     }
+}
+
+/* enable dynamic adjust battery voltage */
+static void sgm4154x_dynamic_adjust_charge_voltage(struct sgm4154x_device *sgm_chg, int vbat, int ibat_ua)
+{
+	int ret, t1, t2;
+	int cv_adjust = 0;
+	int min_tune_cv = 0;
+	int ft[4] = {0, 0x40, 0xc0, 0x80};
+
+	if ((sgm_chg->final_cv/1000 - REG04_VREG_BASE) > 0) {
+		t1 = (sgm_chg->final_cv/1000 - REG04_VREG_BASE) % REG04_VREG_LSB;
+		t2 = ((t1 % 8) ? 1:0);
+		min_tune_cv = t1/8 + t2;
+	}
+
+	if (sgm_chg->final_cv > vbat && (sgm_chg->final_cv - vbat) < 8000)
+		return;
+
+	if (sgm_chg->final_cv > vbat) {
+		sgm_chg->tune_cv++;
+	} else if (sgm_chg->tune_cv > min_tune_cv) {
+		if (SGM4154x_VBUS_USB_DCP == sgm_chg->vbus_type || SGM4154x_VBUS_MAXC == sgm_chg->vbus_type) {
+			if(sgm_chg->final_cv >= sgm_chg->ffc_cv && ibat_ua<=650000) //18W case
+				pr_err("ffc ibat is close to iterm, and do not tune drop \n");
+			else if(ibat_ua<=350000) // 10W case
+				pr_err("ibat is close to iterm, and do not tune drop \n");
+			else
+				sgm_chg->tune_cv--;
+		} else
+			sgm_chg->tune_cv--;
+	}
+
+	sgm_chg->tune_cv = min(sgm_chg->tune_cv, 10);
+
+	t1 = sgm_chg->tune_cv / 4;
+	t2 = sgm_chg->tune_cv - t1*4;
+	if (t2==2 || t2==3)
+		t1++;
+	cv_adjust = t1 * SGM4154x_VREG_LSB * 1000;
+	cv_adjust += sgm_chg->final_cv;
+	cv_adjust /= 1000;
+
+	pr_err("cv_adjust = %d tune_cv = %d min_tune_cv = %d\n",
+			cv_adjust, sgm_chg->tune_cv*8000, min_tune_cv);
+	sgm4154x_update_bits(sgm_chg, SGM4154x_REG_0F, SGM41543_VREG_FT_MASK, ft[t2]);
+	ret = sgm4154x_set_chargevolt(sgm_chg, cv_adjust);
+	if (!ret)
+		return;
+
+	sgm_chg->tune_cv = 0;
+	sgm4154x_set_chargevolt(sgm_chg, sgm_chg->final_cv/1000);
+
+	return;
+}
+
+/* enable dynamic adjust battery voltage */
+static int sgm4154x_run_ir_compensation(struct sgm4154x_device *sgm_chg, bool query, int *vbat_uV_out)
+{
+	int vbat_uV = 0;
+	int ibat_ua = 0;
+	int ret = 0;
+	struct power_supply *batt_psy;
+	union power_supply_propval propval;
+
+	if (!sgm_chg->ir_wakelock->active) {
+		__pm_stay_awake(sgm_chg->ir_wakelock);
+	}
+
+	batt_psy = power_supply_get_by_name("battery");
+	if (batt_psy) {
+		ret = power_supply_get_property(batt_psy,
+				POWER_SUPPLY_PROP_CURRENT_NOW, &propval);
+		if (ret < 0) {
+			pr_err("[%s]: get current failed, ret = %d\n", __func__, ret);
+			__pm_relax(sgm_chg->ir_wakelock);
+			return ret;
+		}
+		ibat_ua = propval.intval;
+		ret = power_supply_get_property(batt_psy,
+				POWER_SUPPLY_PROP_VOLTAGE_NOW, &propval);
+		if (ret < 0) {
+			pr_err("[%s]: get voltage failed, ret = %d\n", __func__, ret);
+			__pm_relax(sgm_chg->ir_wakelock);
+			return ret;
+		}
+		vbat_uV = propval.intval;
+	} else {
+		dev_err(sgm_chg->dev, "[%s] get batt_psy failed:%d\n", __func__, ret);
+	}
+
+	dev_err(sgm_chg->dev, "[%s] ibat_ma=%d final_cc=%d vbat_uV=%d final_cv=%d \n", __func__,
+			ibat_ua, sgm_chg->final_cc, vbat_uV, sgm_chg->final_cv);
+	if (((ibat_ua > 10000) && ibat_ua < (sgm_chg->final_cc-100000)) || (vbat_uV > sgm_chg->final_cv)) {
+		/* vbat - iR */
+		vbat_uV = vbat_uV - (ibat_ua * 18) / 1000 + 12 * 1000;
+		if (!query) {
+			sgm4154x_dynamic_adjust_charge_voltage(sgm_chg, vbat_uV, ibat_ua);
+		}
+		dev_err(sgm_chg->dev, "[%s] ibat_ma=%d vbat_uV=%d \n",__func__, ibat_ua, vbat_uV);
+	}
+
+	if (vbat_uV_out) {
+		*vbat_uV_out = vbat_uV;
+	}
+
+	__pm_relax(sgm_chg->ir_wakelock);
+	return ret;
+}
+
+static void sgm4154x_monitor_workfunc(struct work_struct *work)
+{
+	struct sgm4154x_device *sgm_chg = container_of(work, struct sgm4154x_device, monitor_work.work);
+	u8 status = 0;
+	u8 fault = 0;
+	int ret;
+
+	/* Read STATUS and FAULT registers */
+	ret = sgm4154x_read_reg(sgm_chg, SGM4154x_REG_08, &status);
+	if (ret) {
+		dev_err(sgm_chg->dev, "read regs:0x08 fail !\n");
+		schedule_delayed_work(&sgm_chg->monitor_work, msecs_to_jiffies(10000));
+		return;
+	}
+
+	ret = sgm4154x_read_reg(sgm_chg, SGM4154x_REG_0A, &fault);
+	if (ret) {
+		dev_err(sgm_chg->dev, "read regs:0x09 fail !\n");
+		schedule_delayed_work(&sgm_chg->monitor_work, msecs_to_jiffies(10000));
+		return;
+	}
+	if (fault & REG0A_VINDPM_STAT_MASK) {
+		dev_info(sgm_chg->dev, "%s:VINDPM occurred\n", __func__);
+	}
+
+	dev_info(sgm_chg->dev, "%s: status:%x fault:%x\n",__func__, status, fault);
+
+	/* enable dynamic adjust battery voltage */
+	if (sgm_chg->enable_dynamic_adjust_batvol) {
+		sgm4154x_run_ir_compensation(sgm_chg, false, NULL);
+	}
+
+	schedule_delayed_work(&sgm_chg->monitor_work, msecs_to_jiffies(10000));
 }
 
 static int sgm4154x_driver_probe(struct i2c_client *client,
@@ -2829,6 +3090,13 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 	INIT_DELAYED_WORK(&sgm->charge_detect_delayed_work, charger_detect_work_func);
 	INIT_DELAYED_WORK(&sgm->charge_monitor_work, charger_monitor_work_func);
 	INIT_WORK(&sgm->rerun_apsd_work, sgm4154x_rerun_apsd_work_func);
+	INIT_DELAYED_WORK(&sgm->monitor_work, sgm4154x_monitor_workfunc);
+
+	/* enable dynamic adjust battery voltage */
+	if (sgm->enable_dynamic_adjust_batvol) {
+		sgm->ir_wakelock = wakeup_source_register(sgm->dev, "sgm4154x ir suspend wakelock");
+	}
+	schedule_delayed_work(&sgm->monitor_work, msecs_to_jiffies(10000));
 
 	if(sgm->typec_support) {
 		INIT_DELAYED_WORK(&sgm->typec_in_work, typec_in_work_func);
@@ -2887,6 +3155,7 @@ static int sgm4154x_charger_remove(struct i2c_client *client)
     struct sgm4154x_device *sgm = i2c_get_clientdata(client);
 
     cancel_delayed_work_sync(&sgm->charge_monitor_work);
+    cancel_delayed_work_sync(&sgm->monitor_work);
 
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
     cancel_delayed_work_sync(&sgm->psy_dwork);
@@ -2911,11 +3180,18 @@ static void sgm4154x_charger_shutdown(struct i2c_client *client)
         pr_err("Failed to disable charger, ret = %d\n", ret);
     }
 
+    /* enable dynamic adjust battery voltage */
+    if (sgm->enable_dynamic_adjust_batvol) {
+        sgm->tune_cv = 0;
+        sgm4154x_set_chargevolt(sgm, sgm->final_cv/1000);
+    }
+
     ret = sgm4154x_disable_vbus(NULL);
     if (ret < 0) {
         pr_err("Failed to disable vbus, ret = %d\n", ret);
     }
     pr_info("sgm4154x_charger_shutdown\n");
+    cancel_delayed_work_sync(&sgm->monitor_work);
 }
 
 static const struct i2c_device_id sgm4154x_i2c_ids[] = {
