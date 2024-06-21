@@ -21,7 +21,7 @@
 #include "mediatek/kansas-audio.dtsi"
 #include "mediatek/kansas-fmr.dtsi"
 #include "mediatek/kansas-ntc.dtsi"
-#include "mediatek/mt6835_kansas_camera_overlay.dtsi"
+//#include "mediatek/mt6835_kansas_camera_overlay.dtsi"
 / {
 switch_chg_eint: switch_chg_eint {
 	};
