@@ -281,5 +281,10 @@
 
 &mtk_gauge {
 	charger = <&sc8989x_chg>;
-	R_FG_VALUE = <(5)>;
+	R_FG_VALUE = <(5)>; /*R_sense resistance*/
+	EMBEDDED_SEL = <(1)>;
+	CURR_MEASURE_20A = <(0)>;
+	UNIT_MULTIPLE = <(1)>;
+	df-serialnum = "ATLRW50NVT";
+	#include "bat_setting/vegas_alt_battery_table_ext.dtsi"
 };
