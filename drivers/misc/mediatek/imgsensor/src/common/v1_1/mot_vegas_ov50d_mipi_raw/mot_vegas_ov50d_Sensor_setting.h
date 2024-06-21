@@ -2040,7 +2040,7 @@ kal_uint16 addr_data_pair_preview_mot_vegas_ov50d[] = {
 };
 
 /* 4096*2304@30fps*/
-kal_uint16 addr_data_pair_normal_viedo_mot_vegas_ov50d[] = {
+kal_uint16 addr_data_pair_normal_video_mot_vegas_ov50d[] = {
 0x3501, 0x01,
 0x3502, 0xc4,
 0x3508, 0x01,
