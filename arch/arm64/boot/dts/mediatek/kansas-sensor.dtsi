@@ -38,7 +38,7 @@
 	sx937x:sx937x@2c {
 		compatible = "Semtech,sx937x";
 		reg = <0x2c>;
-		Semtech,power-supply-type = <0>;
+		Semtech,power-supply-type = <2>;
 		pinctrl-names = "default","sleep";
 		pinctrl-0 = <&sar_int_default>;
 		pinctrl-1 = <&sar_int_sleep>;
@@ -46,7 +46,8 @@
 		interrupts = <13 0x02>;
 		interrupt-names = "sx937x_irq";
 		Semtech,nirq-gpio = <&pio 13 0x02>;
-		cap_vdd-supply = <&mt6377_vio18>;
+		//cap_vdd-supply = <&mt6377_vio18>;
+		Semtech,eldo-gpio = <&pio 58 0x00>;
 		/*use PH4/5/6 as the reference sensor
 		set it to 0xff if the ref-phases-x is not used*/
 		Semtech,ref-phases-a = <5>;
