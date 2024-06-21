@@ -4120,6 +4120,7 @@ static void sensor_init(void)
 	write_cmos_sensor_16_16(0xB134, 0x0000);
 	write_cmos_sensor_16_16(0xB136, 0x0000);
 	write_cmos_sensor_16_16(0xB138, 0x0000);
+	write_cmos_sensor_16_16(0x0BCC, 0x0000);
 #else
 
 	table_write_cmos_sensor(addr_data_pair_init,
