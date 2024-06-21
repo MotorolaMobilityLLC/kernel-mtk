@@ -70,9 +70,9 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 #define OV50D_BASEGAIN 128
 
-#define OV50D_MAX_GAIN_BINNINGSIZE_PLATFORM 32640    /*255*128, 128 GAINBASE*/
-#define OV50D_MAX_GAIN_30FPS_PLATFORM 8160           /*63.75*128, 128 GAINBASE*/
-#define OV50D_MAX_GAIN_120FPS_PLATFORM 8160          /*63.75*128, 128 GAINBASE*/
+#define OV50D_MAX_GAIN_BINNINGSIZE_PLATFORM 7936     /*62*128, 128 GAINBASE*/
+#define OV50D_MAX_GAIN_30FPS_PLATFORM 7936           /*62*128, 128 GAINBASE*/
+#define OV50D_MAX_GAIN_120FPS_PLATFORM 1984          /*15.5*128, 128 GAINBASE*/
 
 #define FPT_PDAF_SUPPORT 0
 
@@ -95,7 +95,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1902000000,
+		.mipi_pixel_rate = 760800000,
 	},
 	.cap = {
 		.pclk = 100000000,
@@ -107,7 +107,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1902000000,
+		.mipi_pixel_rate = 760800000,
 	},
 	.normal_video = {
 		.pclk = 100000000,
@@ -119,7 +119,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 2304,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1902000000,
+		.mipi_pixel_rate = 760800000,
 	},
 	.hs_video = {
 		.pclk = 100000000,
@@ -131,19 +131,19 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1152,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 1200,
-		.mipi_pixel_rate = 1902000000,
+		.mipi_pixel_rate = 760800000,
 	},
 	.slim_video = {
-		.pclk = 75000000,
-		.linelength = 600,
-		.framelength = 4166,
+		.pclk = 100000000,
+		.linelength = 425,
+		.framelength = 7840,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1280448000,
+		.mipi_pixel_rate = 760800000,
 	},
 	.custom1 = {
 		.pclk = 100000000,
@@ -155,14 +155,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1536,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1902000000,
+		.mipi_pixel_rate = 760800000,
 	},
 	.margin = 31,					/* sensor framelength & shutter margin */
-	.min_shutter = 8,				/* min shutter */
+	.min_shutter = 20,				/* min shutter */
 	.min_gain = BASEGAIN, /*1x gain*/
-	.max_gain = 3968, 				/*255 * 64*/
-	.max_gain_30fps = 4080,			/*63.75 * 64*/
-	.max_gain_120fps = 4080,		/*63.75 * 64*/
+	.max_gain = 3968, 				/*62 * 64*/
+	.max_gain_30fps = 3968,			/*62 * 64*/
+	.max_gain_120fps = 992,		    /*15.5 * 64*/
 	.min_gain_iso = 100,
 	.exp_step = 2,
 	.gain_step = 2, /*minimum step = 2 in 1x~2x gain*/
@@ -361,6 +361,16 @@ static void write_shutter(kal_uint32 shutter)
 	spin_unlock(&imgsensor_drv_lock);
 	if (shutter < imgsensor_info.min_shutter)
 		shutter = imgsensor_info.min_shutter;
+
+	if((imgsensor.frame_length >> 1 == imgsensor.last_shutter >> 1) ||
+		(imgsensor.frame_length >> 1 == (imgsensor.last_shutter >> 1) + 1) ||
+		(imgsensor.frame_length >> 1 == (imgsensor.last_shutter >> 1) + 2) ||
+		(imgsensor.frame_length >> 1 == (imgsensor.last_shutter >> 1) + 3)) {
+			imgsensor.frame_length += 8;
+			if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+				imgsensor.frame_length = imgsensor_info.max_frame_length;
+	}
+	imgsensor.last_shutter = shutter;
 
 	if (imgsensor.autoflicker_en) {
 		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10
@@ -584,7 +594,6 @@ static kal_uint32 streaming_control(kal_bool enable)
 	else
 		write_cmos_sensor_8(0x0100, 0x00); // stream off
 
-	mdelay(10);
 	return ERROR_NONE;
 }
 
@@ -657,8 +666,8 @@ static void normal_video_setting(kal_uint16 currefps)
 {
 	pr_debug("MOT VEGAS OV50D normal_video_setting start\n");
 
-	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_normal_viedo_mot_vegas_ov50d,
-		sizeof(addr_data_pair_normal_viedo_mot_vegas_ov50d)/sizeof(kal_uint16));
+	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_normal_video_mot_vegas_ov50d,
+		sizeof(addr_data_pair_normal_video_mot_vegas_ov50d)/sizeof(kal_uint16));
 
 	pr_debug("MOT VEGAS OV50D normal_video_setting end\n");
 }
@@ -1716,18 +1725,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 	case SENSOR_FEATURE_GET_BINNING_TYPE:
 		switch (*(feature_data + 1)) {
-			case MSDK_SCENARIO_ID_CUSTOM1:
-				*feature_return_para_32 = 1540;
-				break;
 			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-				*feature_return_para_32 = 1256;
-				break;
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 			default:
-				*feature_return_para_32 = 1119;
+				*feature_return_para_32 = 1;
 			break;
 		}
 		*feature_para_len = 4;
