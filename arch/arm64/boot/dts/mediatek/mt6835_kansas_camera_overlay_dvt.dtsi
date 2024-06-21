@@ -328,7 +328,7 @@
 /* CAMERA EEPROM */
 &i2c2 {
 	status = "okay";
-	clock-frequency = <400000>;
+	clock-frequency = <1000000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
 
@@ -337,17 +337,7 @@
 		reg = <0x51>;
 		status = "okay";
 	};
-	mtk_camera_eeprom2:camera_eeprom2@50 {
-		compatible = "mediatek,camera_eeprom";
-		reg = <0x50>;
-		status = "okay";
-	};
-	camera_main_two_mtk:camera_main_two@10 {
-		compatible = "mediatek,camera_main_two";
-		#thermal-sensor-cells = <0>;
-		reg = <0x10>;
-		status = "okay";
-	};
+
 	camera_sub_mtk:camera_sub@1a {
 		compatible = "mediatek,camera_sub";
 		#thermal-sensor-cells = <0>;
@@ -360,6 +350,18 @@
 	clock-frequency = <400000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
+	mtk_camera_eeprom2:camera_eeprom2@50 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x50>;
+		status = "okay";
+	};
+
+	camera_main_two_mtk:camera_main_two@10 {
+		compatible = "mediatek,camera_main_two";
+		#thermal-sensor-cells = <0>;
+		reg = <0x10>;
+		status = "okay";
+	};
 };
 &i2c6 {
 	status = "okay";
@@ -390,7 +392,7 @@
 
 &i2c8 {
 	status = "okay";
-	clock-frequency = <400000>;
+	clock-frequency = <1000000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
 
