@@ -767,6 +767,12 @@ config MOTO_CHG_WT6670F_SUPPORT
         help
           This is to enable MOTO supports of IC WT6670F.
 
+config MOTO_FACTORY_PUMP_STOP_STATE_FIX
+        bool "Enable fix pump stop state"
+        default n
+        help
+          This is to enable fix pump stop state.
+
 config FORCE_QC3_ICL
         bool "Force set qc3 input current limit"
         default n
