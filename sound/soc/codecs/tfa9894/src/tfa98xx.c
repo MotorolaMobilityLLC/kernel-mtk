@@ -1482,40 +1482,51 @@ static int tfa98xx_set_stop_ctl(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct tfa98xx *tfa98xx = NULL;
-
+	int ready = 0, i = 0;
 	mutex_lock(&tfa98xx_mutex);
 	list_for_each_entry_reverse(tfa98xx, &tfa98xx_device_list, list) {
-		int ready = 0;
-		int i = tfa98xx->tfa->dev_idx;
-
-		pr_err("%d: %ld\n", i, ucontrol->value.integer.value[i]);
-
+		i = tfa98xx->tfa->dev_idx;
 		tfa98xx_dsp_system_stable(tfa98xx->tfa, &ready);
-
+		pr_info("%s index-%d: stop=%ld, clks=%d\n", __func__, i, ucontrol->value.integer.value[i], ready);
 		if ((ucontrol->value.integer.value[i] != 0)) {
 			cancel_delayed_work_sync(&tfa98xx->monitor_work);
-
 			cancel_delayed_work_sync(&tfa98xx->init_work);
-
 			if(tfa98xx->flags & TFA98XX_FLAG_ADAPT_NOISE_MODE)
 				cancel_delayed_work_sync(&tfa98xx->nmodeupdate_work);
-
 			if (tfa98xx->dsp_fw_state != TFA98XX_DSP_FW_OK)
 				continue;
-
 			mutex_lock(&tfa98xx->dsp_lock);
 			if (ready) tfa_dev_stop(tfa98xx->tfa);
-			tfa98xx->dsp_init = TFA98XX_DSP_INIT_USEROFF;
+				tfa98xx->dsp_init = TFA98XX_DSP_INIT_USEROFF;
+			mutex_unlock(&tfa98xx->dsp_lock);
+		} else if (tfa98xx->dsp_init == TFA98XX_DSP_INIT_USEROFF) {
+			mutex_lock(&tfa98xx->dsp_lock);
+			ready = 1;
+			/* Don't call tfa_dev_start() if this pa is standby. */
+			if (strstr(tfa_cont_profile_name(tfa98xx, tfa98xx->profile), ".standby") != NULL) {
+				pr_info("tfa98xx_set_stop_ctl: Not start because standby\n");
+				ready = 0;
+			}
+			if (ready) {
+				/* Also re-enables the interrupts */
+				if (tfa98xx_tfa_start(tfa98xx, tfa98xx->profile, tfa98xx->vstep)) {
+					pr_err("%s start pa_%d fail! \n", __func__, tfa98xx->tfa->dev_idx);
+				} else {
+					tfa_dev_set_state(tfa98xx->tfa, TFA_STATE_UNMUTE, 0);
+					pr_info("%s start pa_%d sucess！\n", __func__, tfa98xx->tfa->dev_idx);
+				}
+				/* Flag DSP as invalidated as the profile change may invalidate the
+				* current DSP configuration. That way, further stream start can
+				* trigger a tfa_dev_start. */
+				tfa98xx->dsp_init = TFA98XX_DSP_INIT_INVALIDATED;
+			}
 			mutex_unlock(&tfa98xx->dsp_lock);
 		}
-
 		ucontrol->value.integer.value[i] = 0;
 	}
 	mutex_unlock(&tfa98xx_mutex);
-
 	return 1;
 }
-
 static int tfa98xx_send_volume(uint8_t volume, int only_left)
 {
 	uint8_t cmd[9] = {0x00, 0x81, 0x04, 0x00, 0x00, 0xff, 0x00, 0x00, 0xff};
