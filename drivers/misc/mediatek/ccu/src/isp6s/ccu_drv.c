@@ -1129,6 +1129,9 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 		dma_addr_t dma_addr;
 		struct dma_buf *buf;
 
+		if (iova_buf_count >= CCU_IOVA_BUFFER_MAX)
+			return -EFAULT;
+
 		ret = copy_from_user(&va,
 			(void *)arg, sizeof(int));
 		LOG_ERR(
