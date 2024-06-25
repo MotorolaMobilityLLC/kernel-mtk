@@ -30,8 +30,8 @@
 		novatek,def-max-resolution = <1080 2388>;
 		//novatek,usb_charger;
 		//novatek,psy-name = "battery";
-		//novatek,report_gesture_key;
-		//novatek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
+		novatek,report_gesture_key;
+		novatek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
 
 		// 525
 		//novatek,swrst-n8-addr = <0x01F01A>;
@@ -51,7 +51,9 @@
                 /* vtouch-supply = <&mt6368_vtp>; */
                 touch,reset-gpio = <&pio 147 0x0>;
                 touch,irq-gpio = <&pio 4 0x0>;
-        };
+                ilitek,report_gesture_key;
+                ilitek,supported_gesture_type = <0x06>;
+	};
 };
 
 &pio {
