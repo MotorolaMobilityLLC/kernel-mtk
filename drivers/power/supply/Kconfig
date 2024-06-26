@@ -710,6 +710,14 @@ config MMI_SGM41543D_CHARGER
 	help
 	  support SGM41543D
 
+config MMI_AW35615_WATERPROOF
+	tristate "AW35615 WATERPROOF FUNC"
+	depends on I2C
+	depends on GPIOLIB || COMPILE_TEST
+	select REGMAP_I2C
+	help
+	  support AW35615
+
 config CHARGER_BQ256XX
 	tristate "TI BQ256XX battery charger driver"
 	depends on I2C
