@@ -725,11 +725,11 @@ int _wlc_set_setting(struct chg_alg_device *alg_dev,
 
 	wlc = dev_get_drvdata(&alg_dev->dev);
 
-	//wlc_dbg("%s cv:%d icl:%d,%d cc:%d,%d, mmi_fcc:%d, 6pin_en:%d\n",
-	//	__func__, setting->cv, setting->input_current_limit1,
-	//	setting->input_current_limit2, setting->charging_current_limit1,
-	//	setting->charging_current_limit2, setting->mmi_fcc_limit,
-	//	setting->vbat_mon_en);
+	wlc_dbg("%s cv:%d icl:%d,%d cc:%d,%d, mmi_fcc:%d, 6pin_en:%d\n",
+		__func__, setting->cv, setting->input_current_limit1,
+		setting->input_current_limit2, setting->charging_current_limit1,
+		setting->charging_current_limit2, setting->mmi_fcc_limit,
+		setting->vbat_mon_en);
 
 	mutex_lock(&wlc->access_lock);
 	__pm_stay_awake(wlc->suspend_lock);
@@ -738,7 +738,7 @@ int _wlc_set_setting(struct chg_alg_device *alg_dev,
 	wlc->input_current_limit1 = setting->input_current_limit1;
 	wlc->input_current_limit2 = setting->input_current_limit2;
 	wlc->charging_current_limit2 = setting->charging_current_limit2;
-	//wlc->mmi_fcc = setting->mmi_fcc_limit;
+	wlc->mmi_fcc = setting->mmi_fcc_limit;
 
 	__pm_relax(wlc->suspend_lock);
 	mutex_unlock(&wlc->access_lock);
