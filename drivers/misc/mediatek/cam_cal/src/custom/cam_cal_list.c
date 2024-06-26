@@ -23,6 +23,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{MOT_KANSAS_S5K3P9_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 #elif defined(CONFIG_MOT_VEGAS_CAMERA_PROJECT)
 	{MOT_VEGAS_OV50D_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_VEGAS_S5K3P9_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 #endif
 	{OV48B12M_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{OV48B_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
