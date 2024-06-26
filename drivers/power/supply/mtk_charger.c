@@ -5661,7 +5661,6 @@ static int mtk_charger_probe(struct platform_device *pdev)
 			schedule_delayed_work(&info->pd_adapter_check_work, msecs_to_jiffies(200));
 	sc_init(&info->sc);
 	info->chg_alg_nb.notifier_call = chg_alg_event;
-	info->fast_charging_indicator = PE5_ID;
 	info->enable_meta_current_limit = 1;
 	info->is_charging = false;
 	info->safety_timer_cmd = -1;
