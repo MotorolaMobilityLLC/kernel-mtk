@@ -127,7 +127,7 @@
 		sc,sc8541,tsbus-flt = <21>;
 		sc,sc8541,tsbat-flt = <21>;
 		sc,sc8541,vac1-ovp = <2>; /*0:6.5V 1:10.5V 2:12V 3:14V 4:16V 5~7:18V*/
-		sc,sc8541,vac2-ovp = <2>; /*0:6.5V 1:10.5V 2:12V 3:14V 4:16V 5~7:18V*/
+		sc,sc8541,vac2-ovp = <3>; /*0:6.5V 1:10.5V 2:12V 3:14V 4:16V 5~7:18V*/
 		sc,sc8541,vac1-pd-en = <0>;
 		sc,sc8541,vac2-pd-en = <0>;
 		sc,sc8541,fsw-set = <5>; /*0:200KHz 1:300KHz 2:400KHz
@@ -272,6 +272,7 @@
          mmi,lower-limit-capacity = <60>;
          mmi,vfloat-comp-uv = <0>;
          mmi,enable-mux;
+         fast_charging_indicator = <0x8010>;
 };
 
 &pe5 {
