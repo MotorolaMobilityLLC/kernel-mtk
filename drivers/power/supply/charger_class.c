@@ -698,6 +698,21 @@ int charger_dev_set_boost_current_limit(struct charger_device *chg_dev, u32 uA)
 }
 EXPORT_SYMBOL(charger_dev_set_boost_current_limit);
 
+int charger_dev_is_enable_otg(struct charger_device *chg_dev, bool en)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->is_enable_otg)
+		return chg_dev->ops->is_enable_otg(chg_dev, en);
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_is_enable_otg);
+int charger_dev_is_enable_acdrv1(struct charger_device *chg_dev, bool en)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->is_enable_acdrv1)
+		return chg_dev->ops->is_enable_acdrv1(chg_dev, en);
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_is_enable_acdrv1);
+
 int charger_dev_get_zcv(struct charger_device *chg_dev, u32 *uV)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->get_zcv)
