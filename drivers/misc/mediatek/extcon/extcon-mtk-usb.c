@@ -223,16 +223,25 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 	struct regulator *vbus = extcon->vbus;
 	struct device *dev = extcon->dev;
 	int ret;
-	struct charger_device *primary_charger = get_charger_by_name("primary_chg");;
+	struct charger_device *primary_charger = get_charger_by_name("primary_chg");
+	struct charger_device *primary_dvchg = get_charger_by_name("primary_dvchg");
 
+	if (!primary_dvchg) {
+		dev_info(dev, "%s : get primary dvchg device failed\n", __func__);
+	}
         if (!primary_charger) {
 		dev_info(dev, "%s : get primary charger device failed\n", __func__);
 	} else {
 		dev_info(dev, "primary_charger, vbus turn %s\n", is_on ? "on" : "off");
 		if (is_on) {
+			dev_err(dev, "%s : enable otg on charger pump\n", __func__);
+			charger_dev_is_enable_otg(primary_dvchg, true);
+			charger_dev_is_enable_acdrv1(primary_dvchg, true);
 			mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
 			charger_dev_enable_otg(primary_charger, true);
 		} else {
+			dev_err(dev, "%s : disable otg on charger pump\n", __func__);
+			charger_dev_is_enable_otg(primary_dvchg, false);
 			charger_dev_enable_otg(primary_charger, false);
 			mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, false);
 		}
