@@ -55,6 +55,9 @@
 #define PFX "S5K3P9SP_camera_sensor"
 #define LOG_INF(format, args...) pr_debug(PFX "[%s] " format, __func__, ##args)
 
+#define S5K3P9SP_EEPROM_READ_ID  0xA0
+#define S5K3P9SP_EEPROM_WRITE_ID 0xA1
+
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -156,14 +159,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.hs_video_delay_frame = 3,
 		.slim_video_delay_frame = 3,
 
-		.isp_driving_current = ISP_DRIVING_2MA,
+		.isp_driving_current = ISP_DRIVING_6MA,
 		.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 		.mipi_sensor_type = MIPI_OPHY_NCSI2,
 		/*0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2*/
 		.mipi_settle_delay_mode = 1,
 		/*0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL*/
 		.sensor_output_dataformat =
-			SENSOR_OUTPUT_FORMAT_RAW_4CELL_BAYER_Gb,
+			SENSOR_OUTPUT_FORMAT_RAW_Gb,
 		.mclk = 24,
 		.mipi_lane_num = SENSOR_MIPI_4_LANE,
 		.i2c_addr_table = {0x21, 0x20, 0xff},
@@ -341,6 +344,15 @@ static kal_uint16 table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 		#endif
 	}
 	return 0;
+}
+
+static kal_uint16 read_cmos_eeprom_8(kal_uint16 addr)
+{
+	kal_uint16 get_byte = 0;
+	char pusendcmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+
+	iReadRegI2C(pusendcmd, 2, (u8 *)&get_byte, 1, S5K3P9SP_EEPROM_READ_ID);
+	return get_byte;
 }
 
 static void set_dummy(void)
@@ -522,7 +534,7 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint16 reg_gain = 0x0;
 
-	reg_gain = gain/2;
+	reg_gain = gain/4;
 	return (kal_uint16)reg_gain;
 }
 
@@ -548,11 +560,11 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
 
-	if (gain < BASEGAIN || gain > 32 * BASEGAIN) {
-		LOG_INF("Error gain setting");
+	if (gain < (BASEGAIN * 2) || gain > 32 * BASEGAIN) {
+		pr_debug("Error gain setting");
 
-		if (gain < BASEGAIN)
-			gain = BASEGAIN;
+		if (gain < (BASEGAIN * 2))
+			gain = (BASEGAIN * 2);
 		else if (gain > 32 * BASEGAIN)
 			gain = 32 * BASEGAIN;
 	}
@@ -3567,6 +3579,7 @@ static kal_uint16 addr_data_pair_init[] = {
 	0xB134, 0x0000,
 	0xB136, 0x0000,
 	0xB138, 0x0000,
+	0x0BCC, 0x0000,
 };
 #endif
 
@@ -4170,6 +4183,7 @@ static void sensor_init(void)
 	write_cmos_sensor_16_16(0xB134, 0x0000);
 	write_cmos_sensor_16_16(0xB136, 0x0000);
 	write_cmos_sensor_16_16(0xB138, 0x0000);
+	write_cmos_sensor_16_16(0x0BCC, 0x0000);
 #else
 	table_write_cmos_sensor(addr_data_pair_init,
 		   sizeof(addr_data_pair_init) / sizeof(kal_uint16));
@@ -4210,6 +4224,29 @@ static void slim_video_setting(void)
 	LOG_INF("E\n");
 }
 
+#define FOUR_CELL_SIZE 2048
+#define FOUR_CELL_ADDR 0x150F
+static u32 is_read_four_cell;
+static char four_cell_data[FOUR_CELL_SIZE + 2];
+static void read_four_cell_from_eeprom(char *data)
+{
+	int i;
+
+	if (is_read_four_cell != 1) {
+		LOG_INF("need to read from EEPROM\n");
+		four_cell_data[0] = (FOUR_CELL_SIZE & 0xFF);/*Low*/
+		four_cell_data[1] = ((FOUR_CELL_SIZE >> 8) & 0xFF);/*High*/
+		/*Multi-Read*/
+		for (i = 0; i < FOUR_CELL_SIZE; i++)
+			four_cell_data[i+2] = read_cmos_eeprom_8(FOUR_CELL_ADDR + i);
+		is_read_four_cell = 1;
+	}
+	if (data != NULL) {
+		LOG_INF("return data\n");
+		memcpy(data, four_cell_data, FOUR_CELL_SIZE + 2);
+	}
+}
+
 /*************************************************************************
  * FUNCTION
  *	get_imgsensor_id
@@ -4246,6 +4283,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				pr_info("[%s] i2c write id: 0x%x, sensor id: 0x%x\n",
 					__func__, imgsensor.i2c_write_id, *sensor_id);
 				*sensor_id = MOT_VEGAS_S5K3P9_SENSOR_ID;
+				read_four_cell_from_eeprom(NULL);
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x\n",
@@ -5169,6 +5207,21 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		set_shutter_frame_length((UINT16) *feature_data,
 			(UINT16) *(feature_data + 1));
 		break;
+	case SENSOR_FEATURE_GET_4CELL_DATA: {
+		char *data = (char *)(uintptr_t)(*(feature_data + 1));
+		UINT16 type = (UINT16)(*feature_data);
+
+		/*get 4 cell data from eeprom*/
+		if (type == FOUR_CELL_CAL_TYPE_XTALK_CAL) {
+			LOG_INF("Read Cross Talk Start");
+			read_four_cell_from_eeprom(data);
+			LOG_INF("Read Cross Talk = %02x %02x %02x %02x %02x %02x\n",
+				(UINT16)data[0], (UINT16)data[1],
+				(UINT16)data[2], (UINT16)data[3],
+				(UINT16)data[4], (UINT16)data[5]);
+		}
+		break;
+	}
 	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
 		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
 		streaming_control(KAL_FALSE);
@@ -5184,11 +5237,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		switch (*(feature_data + 1)) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			*feature_return_para_32 = 4;
+			*feature_return_para_32 = 1;
 			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*feature_return_para_32 = 4;
+			*feature_return_para_32 = 1;
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		default:
