@@ -166,7 +166,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_settle_delay_mode = 1,
 		/*0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL*/
 		.sensor_output_dataformat =
-			SENSOR_OUTPUT_FORMAT_RAW_4CELL_BAYER_Gb,
+			SENSOR_OUTPUT_FORMAT_RAW_Gb,
 		.mclk = 24,
 		.mipi_lane_num = SENSOR_MIPI_4_LANE,
 		.i2c_addr_table = {0x21, 0x20, 0xff},
@@ -552,7 +552,7 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint16 reg_gain = 0x0;
 
-	reg_gain = gain/2;
+	reg_gain = gain/4;
 	return (kal_uint16)reg_gain;
 }
 
@@ -578,11 +578,11 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
 
-	if (gain < BASEGAIN || gain > 32 * BASEGAIN) {
-		LOG_INF("Error gain setting");
+	if (gain < (BASEGAIN * 2) || gain > 32 * BASEGAIN) {
+		pr_debug("Error gain setting");
 
-		if (gain < BASEGAIN)
-			gain = BASEGAIN;
+		if (gain < (BASEGAIN * 2))
+			gain = (BASEGAIN * 2);
 		else if (gain > 32 * BASEGAIN)
 			gain = 32 * BASEGAIN;
 	}
@@ -5155,11 +5155,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		switch (*(feature_data + 1)) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			*feature_return_para_32 = 4;
+			*feature_return_para_32 = 1;
 			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*feature_return_para_32 = 4;
+			*feature_return_para_32 = 1;
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		default:
