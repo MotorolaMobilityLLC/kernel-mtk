@@ -344,7 +344,8 @@ static void set_shutter(kal_uint16 shutter)
 #define MOT_KANSAS_SC202ACS_SENSOR_GAIN_MAX_VALID_INDEX  6
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
-	kal_uint16 reg_gain = gain << 4;
+	// Porting modification for "gain2reg" from cancunf_sc202acs
+	kal_uint16 reg_gain = gain << 3;
 
 	if (reg_gain < MOT_KANSAS_SC202ACS_SENSOR_GAIN_BASE)
 		reg_gain = MOT_KANSAS_SC202ACS_SENSOR_GAIN_BASE;
