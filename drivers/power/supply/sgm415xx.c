@@ -1665,6 +1665,7 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 	struct sgm4154x_state state = sgm->state;
 	u8 chrg_status = 0;
 	int ret = 0;
+	int tcpc_attach = 0;
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
@@ -1714,7 +1715,11 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 		break;
 
 	case POWER_SUPPLY_PROP_ONLINE:
-		val->intval = state.online;
+		tcpc_attach = atomic_read(&sgm->attach);
+		if(state.online || tcpc_attach == ATTACH_TYPE_TYPEC)
+			val->intval = 1;
+		else
+			val->intval = 0;
 		if (!state.online)
 			sgm->mmi_charging_full = false;
 		break;

@@ -111,6 +111,7 @@ struct bq2589x {
 	int otg_sgm6111_pin;
 	int otg_ocflag_pin;
 	struct mutex i2c_rw_lock;
+	atomic_t attach;
 
 	bool charge_enabled;	/* Register bit status */
 	bool power_good;
@@ -2050,7 +2051,7 @@ static int bq2589x_chg_get_property(struct power_supply *psy,
 	int ret = 0, vbus_volt = 0;
 	u32 _val;
 	u32 data;
-	u32 vbus = 0;
+	int tcpc_attach = 0;
 	struct bq2589x *bq = power_supply_get_drvdata(psy);
 
 	pr_info("psp=%d\n", psp);
@@ -2062,16 +2063,12 @@ static int bq2589x_chg_get_property(struct power_supply *psy,
 			val->strval = "Silergy";
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
+		tcpc_attach = atomic_read(&bq->attach);
 		if ((bq->part_no != pn_data[PN_SC89890H])) {
-			bq2589x_get_vbus(bq->chg_dev, &vbus);
-			if (!bq->power_good || vbus < BQ2589X_VBUS_UVLO)
-				val->intval = 0;
-			else if (vbus < BQ2589X_VBUS_UVLO)
-				val->intval = 0;
-			else
+			if (bq->power_good || tcpc_attach == ATTACH_TYPE_TYPEC)
 				val->intval = 1;
-			pr_info("%s usb online(%d),pd(%d), vbus(%d)\n",
-				__func__, val->intval, bq->power_good, vbus);
+			else
+				val->intval = 0;
 		} else
 			val->intval = bq->power_good;
 		break;
@@ -2163,7 +2160,8 @@ static int bq2589x_chg_set_property(struct power_supply *psy,
 	pr_info("psp=%d\n", psp);
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-		 bq2589x_force_dpdm(bq);
+		atomic_set(&bq->attach, val->intval);
+		bq2589x_force_dpdm(bq);
 		break;
 	case POWER_SUPPLY_PROP_STATUS:
 			  ret = val->intval ? bq2589x_enable_charger(bq) : bq2589x_disable_charger(bq);
