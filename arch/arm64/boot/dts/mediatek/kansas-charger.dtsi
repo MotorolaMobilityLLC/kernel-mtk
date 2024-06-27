@@ -265,6 +265,9 @@
          //enable_pe_plus;
          //enable_sw_jeita;
 
+         /*pe5+pdc*/
+         fast_charging_indicator = <0x14>;
+
          /* charging current */
          usb_charger_current_suspend = <0>;
          usb_charger_current_unconfigured = <70000>;
@@ -317,10 +320,6 @@
 };
 
 &pe2 {
-	status = "disabled";
-};
-
-&pdc {
 	status = "disabled";
 };
 
