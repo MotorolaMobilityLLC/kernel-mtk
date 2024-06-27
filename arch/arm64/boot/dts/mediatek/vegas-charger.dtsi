@@ -287,4 +287,5 @@
 	UNIT_MULTIPLE = <(1)>;
 	df-serialnum = "ATLRW50NVT";
 	#include "bat_setting/vegas_alt_battery_table_ext.dtsi"
+	#include "bat_setting/vegas_cos_battery_table_ext.dtsi"
 };
