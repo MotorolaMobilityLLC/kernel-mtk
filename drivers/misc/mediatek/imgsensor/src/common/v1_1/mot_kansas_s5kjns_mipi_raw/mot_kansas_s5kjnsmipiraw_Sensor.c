@@ -56,11 +56,11 @@
 //extern mot_calibration_status_t *KANSAS_S5KJNS_eeprom_get_calibration_status(void);
 //extern mot_calibration_mnf_t *KANSAS_S5KJNS_eeprom_get_mnf_info(void);
 //extern int aw86006_update_fw_sync(void);
-//extern void KANSAS_S5KJNS_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+extern void KANSAS_S5KJNS_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
-//extern void write_xtc_data(void);
+extern void write_xtc_data(void);
 
-//extern int xtc_data_valid;
+extern int xtc_data_valid;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -698,6 +698,8 @@ static void sensor_init(void)
 	mot_kansas_s5kjns_table_write_cmos_sensor(addr_data_pair_init_mot_kansas_s5kjns,
 		sizeof(addr_data_pair_init_mot_kansas_s5kjns)/sizeof(kal_uint16));
 
+	if (xtc_data_valid == 1)
+		write_xtc_data();
 	pr_debug("MOT KANSAS S5KJNS init end\n");
 
 }	/*	  sensor_init  */
@@ -790,7 +792,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-				//KANSAS_S5KJNS_eeprom_format_calibration_data(&imgsensor);
+				KANSAS_S5KJNS_eeprom_format_calibration_data(&imgsensor);
 				//aw86006_update_fw_sync();
 				return ERROR_NONE;
 			}
