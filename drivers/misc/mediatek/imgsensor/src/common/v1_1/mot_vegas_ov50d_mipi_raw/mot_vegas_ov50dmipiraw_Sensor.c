@@ -55,17 +55,13 @@
 
 extern int aw86006_update_fw_sync(void);
 
-/*
-extern mot_calibration_status_t *VEGAS_OV50D_eeprom_get_calibration_status(void);
-extern mot_calibration_mnf_t *VEGAS_OV50D_eeprom_get_mnf_info(void);
+//extern mot_calibration_status_t *VEGAS_OV50D_eeprom_get_calibration_status(void);
+//extern mot_calibration_mnf_t *VEGAS_OV50D_eeprom_get_mnf_info(void);
 extern void VEGAS_OV50D_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
-extern void write_cross_talk_data(void);
 extern void write_pdc_data(void);
-
-extern int xtalk_data_valid;
 extern int pdc_data_valid;
-*/
+
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 #define OV50D_BASEGAIN 128
@@ -74,7 +70,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define OV50D_MAX_GAIN_30FPS_PLATFORM 7936           /*62*128, 128 GAINBASE*/
 #define OV50D_MAX_GAIN_120FPS_PLATFORM 1984          /*15.5*128, 128 GAINBASE*/
 
-#define FPT_PDAF_SUPPORT 0
+#define FPT_PDAF_SUPPORT 1
 
 #define BINNING_MODE 0
 #define FPS30_MODE 1
@@ -229,27 +225,47 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
 };
 
 #if FPT_PDAF_SUPPORT
-static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[1]=
+static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[4]=
 {
-	{0x02, 0x0A,   0x00,   0x08, 0x40, 0x00,
-	 0x00, 0x2B, 0x1000, 0x0C00, 0x00, 0x00, 0x0000, 0x0000,
-	 0x01, 0x2B, 0x03F0, 0x02F8, 0x03, 0x00, 0x0000, 0x0000
+	/* Preview mode setting 30fps */
+	{
+		0x03, 0x0A, 0x00, 0x08, 0x40, 0x00,
+		0x00, 0x2B, 0x1000, 0x0C00, 0x00, 0x00, 0x0000, 0x0000,
+		0x01, 0x2B, 0x3E0, 0x2F8, 0x00, 0x00, 0x0000, 0x0000
+	},
+	/* Video mode setting */
+	{
+		0x03, 0x0A, 0x00, 0x08, 0x40, 0x00,
+		0x00, 0x2B, 0x1000, 0x900, 0x00, 0x00, 0x0000, 0x0000,
+		0x01, 0x2B, 0x3E0, 0x240, 0x00, 0x00, 0x0000, 0x0000
+	},
+	/* Slim Video mode setting */
+	{
+		0x03, 0x0A, 0x00, 0x08, 0x40, 0x00,
+		0x00, 0x2B, 0x1000, 0x0C00, 0x00, 0x00, 0x0000, 0x0000,
+		0x01, 0x2B, 0x3E0, 0x2F8, 0x00, 0x00, 0x0000, 0x0000
+	},
+	/* Custom1 mode setting */
+	{
+		0x03, 0x0A, 0x00, 0x08, 0x40, 0x00,
+		0x00, 0x2B, 0x800, 0x600, 0x00, 0x00, 0x0000, 0x0000,
+		0x01, 0x2B, 0x3E0, 0x2F8, 0x00, 0x00, 0x0000, 0x0000
 	},
 };
 static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
-	.i4OffsetX = 34,
+	.i4OffsetX = 64,
 	.i4OffsetY = 16,
 	.i4PitchX  = 16,
 	.i4PitchY  = 16,
 	.i4PairNum  =8,
 	.i4SubBlkW  =8,
 	.i4SubBlkH  =4,
-	.i4PosL = {{40, 17},{48, 17},{36, 21},{44, 21},{40, 25},{48, 25},{36, 29},{44, 29}},
-	.i4PosR = {{39, 17},{47, 17},{35, 21},{43, 21},{39, 25},{47, 25},{35, 29},{43, 29}},
+	.i4PosL = {{71, 17},{79, 17},{67, 21},{75, 21},{71, 25},{79, 25},{67, 29},{75, 29}},
+	.i4PosR = {{70, 17},{78, 17},{66, 21},{74, 21},{70, 25},{78, 25},{66, 29},{74, 29}},
 	.iMirrorFlip = 0,
-	.i4BlockNumX = 252,
+	.i4BlockNumX = 248,
 	.i4BlockNumY = 190,
-	.i4Crop = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
+	.i4Crop = { {0, 0}, {0, 0}, {0, 384}, {0, 384}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
 };
 #endif
 
@@ -598,6 +614,43 @@ static kal_uint32 streaming_control(kal_bool enable)
 }
 
 #define I2C_BUFFER_LEN 765
+kal_uint16 mot_vegas_ov50d_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
+{
+	char puSendCmd[I2C_BUFFER_LEN];
+	kal_uint32 tosend, IDX;
+	kal_uint16 addr = 0, data;
+	tosend = 0;
+	IDX = 0;
+
+	addr = para[IDX];
+	puSendCmd[tosend++] = (char)(addr >> 8);
+	puSendCmd[tosend++] = (char)(addr & 0xFF);
+	while (len > IDX) {
+		{
+			data = para[IDX + 1];
+			puSendCmd[tosend++] = (char)(data & 0xFF);
+			IDX += 2;
+		}
+		if ((I2C_BUFFER_LEN - tosend) < 3 || IDX == len) {
+			imgsensor_i2c_write(
+				get_i2c_cfg(),
+				puSendCmd,
+				tosend,
+				tosend,
+				imgsensor.i2c_write_id,
+				imgsensor_info.i2c_speed);
+			tosend = 0;
+			if(IDX < len) {
+				addr = para[IDX];
+				puSendCmd[tosend++] = (char)(addr >> 8);
+				puSendCmd[tosend++] = (char)(addr & 0xFF);
+			}
+
+		}
+ 	}
+	return 0;
+}
+
 kal_uint16 mot_vegas_ov50d_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
@@ -636,6 +689,11 @@ static void sensor_init(void)
 
 	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d,
 		sizeof(addr_data_pair_init_mot_vegas_ov50d)/sizeof(kal_uint16));
+
+	if (pdc_data_valid == 1) {
+		write_pdc_data();
+	}
+
 	pr_debug("MOT VEGAS OV50D end\n");
 
 }	/*	  sensor_init  */
@@ -730,7 +788,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-				//VEGAS_OV50D_eeprom_format_calibration_data(&imgsensor);
+				VEGAS_OV50D_eeprom_format_calibration_data(&imgsensor);
 				aw86006_update_fw_sync();
 				return ERROR_NONE;
 			}
@@ -1074,7 +1132,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
 #if FPT_PDAF_SUPPORT
-	sensor_info->PDAF_Support = 0;
+	sensor_info->PDAF_Support = 2;
 #endif
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
 	sensor_info->TEMPERATURE_SUPPORT = imgsensor_info.temperature_support;
@@ -1644,8 +1702,25 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			(UINT16) *feature_data);
 		PDAFinfo =
 		  (struct SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
-		memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
-			sizeof(struct SET_PD_BLOCK_INFO_T));
+		switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			case MSDK_SCENARIO_ID_CUSTOM1:
+				imgsensor_pd_info.i4BlockNumX = 248;
+				imgsensor_pd_info.i4BlockNumY = 190;
+				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+					sizeof(struct SET_PD_BLOCK_INFO_T));
+				break;
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+				imgsensor_pd_info.i4BlockNumX = 248;
+				imgsensor_pd_info.i4BlockNumY = 144;
+				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+					sizeof(struct SET_PD_BLOCK_INFO_T));
+				break;
+			default:
+				break;
+		}
 		break;
 	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
 		pr_debug(
@@ -1654,19 +1729,12 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		/*PDAF capacity enable or not, 2p8 only full size support PDAF*/
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-			break;
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-			break;
 		case MSDK_SCENARIO_ID_CUSTOM1:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		default:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 			break;
@@ -1772,20 +1840,19 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		pr_info("SENSOR_FEATURE_GET_VC_INFO %d\n", (UINT16)*feature_data);
 		pvcinfo = (struct SENSOR_VC_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
 		switch (*feature_data_32) {
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0], sizeof(struct SENSOR_VC_INFO_STRUCT));
 				break;
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0], sizeof(struct SENSOR_VC_INFO_STRUCT));
-				break;
-			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0], sizeof(struct SENSOR_VC_INFO_STRUCT));
+				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[1], sizeof(struct SENSOR_VC_INFO_STRUCT));
 				break;
 			case MSDK_SCENARIO_ID_SLIM_VIDEO:
-				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0], sizeof(struct SENSOR_VC_INFO_STRUCT));
+				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[2], sizeof(struct SENSOR_VC_INFO_STRUCT));
 				break;
 			case MSDK_SCENARIO_ID_CUSTOM1:
-			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[3], sizeof(struct SENSOR_VC_INFO_STRUCT));
+				break;
 		default:
 			pr_info("error: get wrong vc_INFO id = %d",
 			*feature_data_32);
