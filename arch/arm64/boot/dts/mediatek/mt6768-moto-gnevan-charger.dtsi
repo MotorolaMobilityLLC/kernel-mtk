@@ -95,6 +95,9 @@
         enable_pe_plus;
         enable_sw_jeita;
 
+        /*pe*/
+        fast_charging_indicator = <0x01>;
+
         /* charging current */
         usb_charger_current_suspend = <0>;
         usb_charger_current_unconfigured = <70000>;
@@ -108,10 +111,6 @@
         apple_2_1a_charger_current = <800000>;
         ta_ac_charger_current = <3600000>;
         typec_limit_aicr = <3000000>;
-
-        /* PE */
-        ta_ac_9v_input_current = <2000000>;
-        ta_ac_7v_input_current = <2000000>;
 
         //mmi config
         mmi,iterm-ma = <243>;
@@ -137,6 +136,12 @@
         mmi,upper-limit-capacity = <65>;
         mmi,lower-limit-capacity = <60>;
         mmi,vfloat-comp-uv = <0>;
+};
+
+&pe {
+	/* PE */
+	ta_ac_9v_input_current = <2000000>;
+	ta_ac_7v_input_current = <2000000>;
 };
 
 &mtk_gauge {
