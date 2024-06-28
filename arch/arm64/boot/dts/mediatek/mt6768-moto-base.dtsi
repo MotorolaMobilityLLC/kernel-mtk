@@ -34,3 +34,7 @@
 	/* PE */
 	/delete-property/ ta_12v_support;
 };
+&pe {
+	/* PE */
+	/delete-property/ ta_12v_support;
+};

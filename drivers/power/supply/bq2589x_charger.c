@@ -131,6 +131,7 @@ struct bq2589x {
 	int otg_ocflag_pin;
 	struct mutex i2c_rw_lock;
 	atomic_t attach;
+	struct mutex pe_lock;
 
 	bool charge_enabled;	/* Register bit status */
 	bool power_good;
@@ -2135,6 +2136,92 @@ static int bq2589x_set_boost_ilmt(struct charger_device *chg_dev, u32 curr)
 	return ret;
 }
 
+static int bq2589x_read_pumpup(struct bq2589x *bq, u8 cmd, u8 shift, bool *is_one)
+{
+	int ret = 0;
+	u8 ret_val = 0;
+	u8 data = 0;
+
+	ret = bq2589x_read_byte(bq, cmd, &ret_val);
+	if (ret_val < 0) {
+		*is_one = false;
+		return ret_val;
+	}
+
+	data = ret_val & (1 << shift);
+	*is_one = (data == 0 ? false : true);
+	return ret_val;
+}
+
+static int bq25890x_enable_pump_express(struct bq2589x *bq, bool en)
+{
+	int ret = 0, i = 0;
+	bool pumpx_en = false;
+	const int max_wait_times = 3;
+
+	pr_info("%s: en = %d\n", __func__, en);
+	ret = bq2589x_set_icl(bq->chg_dev, 800000);
+	if (ret){
+		pr_err("Failed to bq2589x_set_icl, ret = %d\n", ret);
+		return ret;
+	}
+	ret = bq2589x_set_ichg(bq->chg_dev, 2000000);
+	if (ret){
+		pr_err("Failed to bq2589x_set_ichg, ret = %d\n", ret);
+		return ret;
+	}
+	ret = bq2589x_charging(bq->chg_dev, true);
+	if (ret){
+		pr_err("Failed to disable charging:%d\n", ret);
+		return ret;
+	}
+	for (i = 0; i < max_wait_times; i++) {
+		msleep(2500);
+		ret = bq2589x_read_pumpup(bq, BQ2589X_REG_09,
+			BQ2589X_PUMPX_UP_SHIFT, &pumpx_en);
+		if (ret >= 0 && !pumpx_en){
+			pr_info("%s: ret:%d\n", __func__, ret);
+			break;
+		}
+	}
+	if (i == max_wait_times) {
+		pr_err("%s: pumpx done fail(%d)\n", __func__, ret);
+		ret = -EIO;
+	} else
+		ret = 0;
+
+	return ret;
+}
+
+static int bq2589x_en_pe_current_partern(struct charger_device *chg_dev, bool is_up)
+{
+	int ret = 0;
+	struct bq2589x *bq = charger_get_data(chg_dev);
+	mutex_lock(&bq->pe_lock);
+	ret = bq2589x_update_bits(bq, BQ2589X_REG_04,
+				BQ2589X_EN_PUMPX_MASK, BQ2589X_PUMPX_ENABLE << BQ2589X_EN_PUMPX_SHIFT);
+	if (ret < 0)
+		pr_err("[%s] enable PUMPX fail\n", __func__);
+
+	if (is_up){
+		ret = bq2589x_update_bits(bq, BQ2589X_REG_09,
+				BQ2589X_PUMPX_UP_MASK, BQ2589X_PUMPX_UP << BQ2589X_PUMPX_UP_SHIFT);
+		pr_info("[%s]  set pumpx up\n", __func__);
+	}
+	else{
+		ret = bq2589x_update_bits(bq, BQ2589X_REG_09,
+				BQ2589X_PUMPX_DOWN_MASK, BQ2589X_PUMPX_DOWN << BQ2589X_PUMPX_DOWN_SHIFT);
+		pr_info("[%s]  set pumpx down\n", __func__);
+	}
+	if (ret < 0)
+		pr_err("%s: set pumpx up/down fail\n", __func__);
+
+	pr_info("%s: set pump\n", __func__);
+	ret = bq25890x_enable_pump_express(bq,true);
+	mutex_unlock(&bq->pe_lock);
+	return ret;
+}
+
 static enum power_supply_usb_type bq2589x_chg_psy_usb_types[] = {
 	POWER_SUPPLY_USB_TYPE_UNKNOWN,
 	POWER_SUPPLY_USB_TYPE_SDP,
@@ -2608,7 +2695,7 @@ static struct charger_ops bq2589x_chg_ops = {
 	/* AICL */
 	.run_aicl = bq2589x_run_aicl,
 	/* PE+/PE+20 */
-	.send_ta_current_pattern = NULL,
+	.send_ta_current_pattern = bq2589x_en_pe_current_partern,
 	.set_pe20_efficiency_table = NULL,
 	.send_ta20_current_pattern = NULL,
 	.reset_ta = NULL,
@@ -2666,6 +2753,7 @@ static int bq2589x_charger_probe(struct i2c_client *client,
 	i2c_set_clientdata(client, bq);
 
 	mutex_init(&bq->i2c_rw_lock);
+	mutex_init(&bq->pe_lock);
 
 	ret = bq2589x_detect_device(bq);
 	if (ret) {
@@ -2774,7 +2862,7 @@ static int bq2589x_charger_remove(struct i2c_client *client)
 	struct bq2589x *bq = i2c_get_clientdata(client);
 
 	mutex_destroy(&bq->i2c_rw_lock);
-
+	mutex_destroy(&bq->pe_lock);
 	sysfs_remove_group(&bq->dev->kobj, &bq2589x_attr_group);
 	return 0;
 }
