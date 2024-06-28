@@ -392,9 +392,7 @@ static int aw37004_i2c_probe(struct i2c_client *client,
 
 	ret = regmap_read(chip->regmap, AW37004_CHIP_REV2, &ldo_chipid);
 	if (ret < 0 || ldo_chipid != AW37004_ID2) {
-		dev_err(dev, "Failed to read CHIP ID2:0x%x, ret:%d\n", ldo_chipid,ret);
-		ret = -ENODEV;
-		return ret;
+		dev_err(dev, "ET5904 matched, read CHIP ID2:0x%x, ret:%d\n", ldo_chipid,ret);
 	} else {
 		dev_info(chip->dev, "AW37004 CHIP ID2 matched!\n");
 	}
