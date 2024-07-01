@@ -36,7 +36,7 @@ static spinlock_t *g_pAF_SpinLock;
 
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
-static unsigned long g_u4CurrPosition;
+static unsigned long g_u4CurrPosition = 180;
 #define Min_Pos 0
 #define Max_Pos 1023
 
@@ -131,8 +131,7 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 /* initAF include driver initialization and standby mode */
 static int initAF(void)
 {
-	u8 gt6764_init_setting[5][2] = {
-					{0x02, 0x00},
+	u8 gt6764_init_setting[4][2] = {
 					{0x0B, 0x10},
 					{0x02, 0x02},
 					{0x06, 0x00}, //SAC setting
@@ -150,7 +149,9 @@ static int initAF(void)
 		s4AF_ReadReg(0x00, &Temp);  //ic info
 		LOG_INF("Check HW version: 0x00 is %x\n", Temp);
 
-		for (regIdx=0; regIdx<5; regIdx++) {
+		ret |= s4AF_WriteReg(0, 0x02, 0x00);
+		usleep_range(5000,5100);
+		for (regIdx=0; regIdx<4; regIdx++) {
 			ret |= s4AF_WriteReg(0, gt6764_init_setting[regIdx][0], gt6764_init_setting[regIdx][1]); //Init setting
 		}
 		spin_lock(g_pAF_SpinLock);
