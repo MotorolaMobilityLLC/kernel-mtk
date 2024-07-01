@@ -55,8 +55,8 @@
                 focaltech,report_gesture_key = <59>;
                 focaltech,supported_gesture_type = <0x06>;
                 focaltech,panel-supplier = "boe_ft8057s";
-                //focaltech,touch-charger-detect-psy-name = "battery";
-                //focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
+                focaltech,touch-charger-detect-psy-name = "battery";
+                focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
 	};
 };
 
