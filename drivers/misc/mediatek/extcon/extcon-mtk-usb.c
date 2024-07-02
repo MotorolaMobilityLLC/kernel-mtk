@@ -239,6 +239,9 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 			charger_dev_is_enable_acdrv1(primary_dvchg, true);
 			mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
 			charger_dev_enable_otg(primary_charger, true);
+			if(extcon->vbus_cur)
+				charger_dev_set_boost_current_limit(primary_charger,extcon->vbus_cur);
+			dev_info(dev, "vbus_cur:%d\n",extcon->vbus_cur);
 		} else {
 			dev_err(dev, "%s : disable otg on charger pump\n", __func__);
 			charger_dev_is_enable_otg(primary_dvchg, false);
@@ -293,6 +296,10 @@ static int mtk_usb_extcon_vbus_init(struct mtk_extcon_info *extcon)
 	int ret = 0;
 	struct device *dev = extcon->dev;
 
+	if (!of_property_read_u32(dev->of_node, "vbus-current",
+				&extcon->vbus_cur))
+		dev_info(dev, "vbus-current=%d", extcon->vbus_cur);
+
 	if (!of_property_read_bool(dev->of_node, "vbus-supply")) {
 		ret = -EINVAL;
 		goto fail;
@@ -313,14 +320,9 @@ static int mtk_usb_extcon_vbus_init(struct mtk_extcon_info *extcon)
 	/* sync vbus state */
 	extcon->vbus_on = regulator_is_enabled(extcon->vbus);
 	dev_info(dev, "vbus is %s\n", extcon->vbus_on ? "on" : "off");
-
 	if (!of_property_read_u32(dev->of_node, "vbus-voltage",
 				&extcon->vbus_vol))
 		dev_info(dev, "vbus-voltage=%d", extcon->vbus_vol);
-
-	if (!of_property_read_u32(dev->of_node, "vbus-current",
-				&extcon->vbus_cur))
-		dev_info(dev, "vbus-current=%d", extcon->vbus_cur);
 
 fail:
 	return ret;
