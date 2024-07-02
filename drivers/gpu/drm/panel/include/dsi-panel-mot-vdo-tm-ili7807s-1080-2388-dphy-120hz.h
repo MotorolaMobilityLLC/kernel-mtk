@@ -29,29 +29,27 @@
 /*Parameter setting for mode 3 Start*/
 #define MODE_120_FPS                120
 #define MODE_120_VFP                36
-#define MODE_120_HFP                21
+#define MODE_120_HFP                14
 
 #define MODE_120_DATA_RATE          830
 /*Parameter setting for mode 3 End*/
 
-/*
 //Parameter setting for mode 0 Start
 #define MODE_60_FPS                 60
-#define MODE_60_VFP                 2494
-#define MODE_60_HFP                 21
+#define MODE_60_VFP                 2507
+#define MODE_60_HFP                 14
 
 #define MODE_0_DATA_RATE            830
 //Parameter setting for mode 0 End
 //Parameter setting for mode 2 Start
 #define MODE_90_FPS                 90
-#define MODE_90_VFP                 852
-#define MODE_90_HFP                 21
+#define MODE_90_VFP                 861
+#define MODE_90_HFP                 14
 
 #define MODE_90_DATA_RATE           830
 //Parameter setting for mode 2 End
-*/
 
-#define LFR_EN                      0
+#define LFR_EN                      1
 /* DSC RELATED */
 
 #define DSC_ENABLE                  1
