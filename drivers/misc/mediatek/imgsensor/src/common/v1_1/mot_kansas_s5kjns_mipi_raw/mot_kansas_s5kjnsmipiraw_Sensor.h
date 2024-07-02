@@ -138,7 +138,7 @@ struct imgsensor_info_struct {
 	kal_uint32 min_gain;
 	kal_uint32 max_gain;
 	kal_uint32 max_gain_slim;
-	kal_uint32 max_gain_60fps;
+	kal_uint32 max_gain_custom1;
 	kal_uint32 max_gain_120fps;
 	kal_uint32 min_gain_iso;
 	kal_uint32 gain_step;

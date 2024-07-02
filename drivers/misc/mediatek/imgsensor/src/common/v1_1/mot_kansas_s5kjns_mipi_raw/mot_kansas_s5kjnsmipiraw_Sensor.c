@@ -67,9 +67,9 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define S5KJNS_BASEGAIN 128
 
 #define S5KJNS_MAX_GAIN_BINNINGSIZE_PLATFORM 8192    /*64*128, 128 GAINBASE*/
-#define S5KJNS_MAX_GAIN_60FPS_PLATFORM 2048           /*16*128, 128 GAINBASE*/
+#define S5KJNS_MAX_GAIN_CUSTOM1_PLATFORM 2048           /*16*128, 128 GAINBASE*/
 #define S5KJNS_MAX_GAIN_120FPS_PLATFORM 2048          /*16*128, 128 GAINBASE*/
-#define S5KJNS_MAX_GAIN_SLIM_PLATFORM 2048          /*16*128, 128 GAINBASE*/
+#define S5KJNS_MAX_GAIN_SLIM_PLATFORM 8192          /*64*128, 128 GAINBASE*/
 
 #define FPT_PDAF_SUPPORT 1
 
@@ -83,7 +83,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 #define BINNING_MODE 0
 #define SLIM_MODE 1
-#define FPS60_MODE 2
+#define CUSTOM1_MODE 2
 #define FPS120_MODE 3
 static int sensor_mode = 0;
 
@@ -168,8 +168,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 	.min_gain = 64, /*1x gain*/
 	.max_gain = 4096, /*64x gain*/
-	.max_gain_slim = 1024,
-	.max_gain_60fps = 1024,			/*16 * 64*/
+	.max_gain_slim = 4096,
+	.max_gain_custom1 = 1024,			/*16 * 64*/
 	.max_gain_120fps = 1024,		/*16 * 64*/
 	.min_gain_iso = 100,
 	.exp_step = 2,
@@ -601,8 +601,8 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	kal_uint16 reg_gain;
 	kal_uint32 max_gain = S5KJNS_MAX_GAIN_BINNINGSIZE_PLATFORM;
 
-	if(sensor_mode == FPS60_MODE) {
-		max_gain = S5KJNS_MAX_GAIN_60FPS_PLATFORM;
+	if(sensor_mode == CUSTOM1_MODE) {
+		max_gain = S5KJNS_MAX_GAIN_CUSTOM1_PLATFORM;
 	}
 	if(sensor_mode == FPS120_MODE) {
 		max_gain = S5KJNS_MAX_GAIN_120FPS_PLATFORM;
@@ -758,8 +758,8 @@ static void slim_video_setting(void)
 static void custom1_setting(void)
 {
 	pr_debug("S5KJNS custom1_setting start\n");
-	mot_kansas_s5kjns_table_write_cmos_sensor(addr_data_pair_60fps_s5kjns,
-		sizeof(addr_data_pair_60fps_s5kjns)/sizeof(kal_uint16));
+	mot_kansas_s5kjns_table_write_cmos_sensor(addr_data_pair_custom1_s5kjns,
+		sizeof(addr_data_pair_custom1_s5kjns)/sizeof(kal_uint16));
 	pr_debug("S5KJNS custom1_setting end\n");
 }
 
@@ -1056,7 +1056,7 @@ static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 {
 	pr_debug("E\n");
 
-	sensor_mode = FPS60_MODE;
+	sensor_mode = CUSTOM1_MODE;
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM1;
 	imgsensor.pclk = imgsensor_info.custom1.pclk;
@@ -1505,8 +1505,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		if(sensor_mode == SLIM_MODE) {
 			*(feature_data + 2) = imgsensor_info.max_gain_slim;
 		}
-		if(sensor_mode == FPS60_MODE) {
-			*(feature_data + 2) = imgsensor_info.max_gain_60fps;
+		if(sensor_mode == CUSTOM1_MODE) {
+			*(feature_data + 2) = imgsensor_info.max_gain_custom1;
 		}
 		if(sensor_mode == FPS120_MODE) {
 			*(feature_data + 2) = imgsensor_info.max_gain_120fps;
