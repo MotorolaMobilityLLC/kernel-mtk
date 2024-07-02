@@ -912,8 +912,8 @@ kal_uint16 addr_data_pair_slim_video_mot_kansas_s5kjns[] = {
 0x6226, 0x0000,
 };
 
-/* 60fps video 2040*1148@60fps*/
-kal_uint16 addr_data_pair_60fps_s5kjns[] = {
+/* 30fps video 2040*1148@30fps*/
+kal_uint16 addr_data_pair_custom1_s5kjns[] = {
 0x6028, 0x2400,
 0x602A, 0x1A28,
 0x6F12, 0x4C00,
