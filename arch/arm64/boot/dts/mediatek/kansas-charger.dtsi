@@ -249,6 +249,7 @@
 
 &extcon_usb {
 	charger = <&sc8989x_chg>;
+        vbus-current = <1200000>;
 };
 
 &mtk_ctd {
