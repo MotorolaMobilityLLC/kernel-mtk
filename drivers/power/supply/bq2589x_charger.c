@@ -2065,7 +2065,7 @@ static int bq2589x_chg_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_ONLINE:
 		tcpc_attach = atomic_read(&bq->attach);
 		if ((bq->part_no != pn_data[PN_SC89890H])) {
-			if (bq->power_good || tcpc_attach == ATTACH_TYPE_TYPEC)
+			if (bq->power_good || tcpc_attach == TCPC_ATTACH_TYPE_TYPEC)
 				val->intval = 1;
 			else
 				val->intval = 0;
