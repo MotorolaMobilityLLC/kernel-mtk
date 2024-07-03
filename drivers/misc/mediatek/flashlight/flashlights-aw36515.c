@@ -87,7 +87,7 @@
 
 #define AW36515_REG_TIMING_CONF      (0x08)
 #define AW36515_TORCH_RAMP_TIME      (0x10)
-#define AW36515_FLASH_TIMEOUT        (0x0A)
+#define AW36515_FLASH_TIMEOUT        (0x09)
 #define AW36515_CHIP_STANDBY         (0x80)
 
 /* define channel, level */
@@ -141,15 +141,21 @@ struct aw36515_chip_data {
 /******************************************************************************
  * aw36515 operations
  *****************************************************************************/
+static const int aw36515_current[AW36515_LEVEL_NUM] = {
+         27,   66,  113,  168,  215,  262, 309, 356, 403, 450,
+        597,  544,  591,  638,  685,  732, 779, 826, 873, 920,
+        967, 1013, 1060, 1107, 1154, 1201
+};
+
 static const unsigned char aw36515_torch_level[AW36515_LEVEL_NUM] = {
-	0x00, 0x0a, 0x14, 0x1e, 0x28, 0x2d, 0x32, 0x00, 0x00, 0x00,
+	0x02, 0x0A, 0x14, 0x1E, 0x28, 0x33, 0x3D, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // I(mA) = level*1.96+0.98  1 20 40 60 80 90 100
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // I(mA) = level*1.96+0.98
 
 static const unsigned char aw36515_flash_level[AW36515_LEVEL_NUM] = {
-	0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x10, 0x14, 0x1C,
-	0x25, 0x30, 0x35, 0x40, 0x45, 0x50, 0x55, 0x60, 0x65, 0x70,
-	0x75, 0x80, 0x95, 0xA2, 0xB3, 0xC0}; // I(mA) = level*7.83+3.91  0xC0 = 1507mA
+	0x03, 0x08, 0x0E, 0x15, 0x1B, 0x21, 0x27, 0x2D, 0x33, 0x39,
+	0x3F, 0x45, 0x4B, 0x51, 0x57, 0x5D, 0x63, 0x69, 0x6F, 0x75,
+	0x7B, 0x81, 0x87, 0x8D, 0x93, 0x99}; // I(mA) = level*7.83+3.91
 
 static volatile unsigned char aw36515_reg_enable;
 static volatile int aw36515_level_ch1 = -1;
@@ -498,7 +504,7 @@ static int aw36515_ioctl(unsigned int cmd, unsigned long arg)
 		fl_arg->arg = aw36515_verify_level(fl_arg->arg);
 		pr_info("FLASH_IOC_GET_DUTY_CURRENT(%d): %d\n",
 				channel, (int)fl_arg->arg);
-		fl_arg->arg = aw36515_flash_level[fl_arg->arg];
+		fl_arg->arg = aw36515_current[fl_arg->arg];
 		break;
 
 	case FLASH_IOC_GET_HW_TIMEOUT:
