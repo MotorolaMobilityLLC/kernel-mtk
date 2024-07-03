@@ -3304,6 +3304,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 	int rc = 0;
 	int rp_level = 0;
 	int vbus = 0;
+	static struct chg_alg_device *pe_alg = NULL;
 	static struct chg_alg_device *pe2_alg = NULL;
 
 #if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
@@ -3359,6 +3360,20 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 		goto end_rate_check;
  	}
+
+	// detect if PE1.0 adaptor insert
+	if(pe_alg == NULL){
+		pe_alg = get_chg_alg_by_name("pe");
+		if (!pe_alg) {
+			pr_err("[%s]Charging not found pe\n", __func__);
+		}
+	}
+	if (pe_alg != NULL) {
+		if (chg_alg_is_algo_running(pe_alg)) {
+			info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+			goto end_rate_check;
+		}
+	}
 
 	//detect if PE2.0 adaptor insert
 	if (pe2_alg == NULL) {
