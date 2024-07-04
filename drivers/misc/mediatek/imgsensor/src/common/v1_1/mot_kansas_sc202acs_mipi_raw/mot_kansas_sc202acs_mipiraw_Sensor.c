@@ -1641,18 +1641,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				case MSDK_SCENARIO_ID_SLIM_VIDEO:
 					memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[4],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 					break;
-		case MSDK_SCENARIO_ID_CUSTOM1:
-			LOG_INF("lch MSDK_SCENARIO_ID_CUSTOM1 \n");
-			memcpy(
-				(void *)wininfo,
-				(void *)&imgsensor_winsize_info[5],
-				sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
-			break;
+				case MSDK_SCENARIO_ID_CUSTOM1:
+					LOG_INF("lch MSDK_SCENARIO_ID_CUSTOM1 \n");
+					memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[5],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
+					break;
 				case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 				default:
 					memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[0],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 					break;
 			}
+			break;
 		case SENSOR_FEATURE_SET_IHDR_SHUTTER_GAIN:
 			LOG_INF("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n",(UINT16)*feature_data,(UINT16)*(feature_data+1),(UINT16)*(feature_data+2));
 			ihdr_write_shutter_gain((UINT16)*feature_data,(UINT16)*(feature_data+1),(UINT16)*(feature_data+2));
