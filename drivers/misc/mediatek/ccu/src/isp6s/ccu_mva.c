@@ -15,11 +15,17 @@ struct CcuMemHandle ccu_buffer_handle[2];
 int ccu_allocate_mem(struct ccu_device_s *dev, struct CcuMemHandle *memHandle,
 			 int size, bool cached)
 {
+	if (dev == NULL)
+		return -1;
+
+	if (memHandle == NULL)
+		return -2;
+
 	LOG_DBG("size(%d) cached(%d) memHandle->ionHandleKd(%d)\n",
 			 size, cached, memHandle->ionHandleKd);
 	// get buffer virtual address
 	memHandle->meminfo.size = size;
-	memHandle->meminfo.cached = cached;
+	memHandle->meminfo.cached = (cached) ? 1 : 0;
 
 	memHandle->meminfo.va = dma_alloc_attrs(dev->dev, size,
 		&memHandle->mva, GFP_KERNEL, DMA_ATTR_WRITE_COMBINE);
