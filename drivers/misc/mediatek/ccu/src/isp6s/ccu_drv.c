@@ -1082,7 +1082,12 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 		ret = copy_from_user(&freq_level,
 			(void *)arg, sizeof(uint32_t));
 
-		LOG_DBG_MUST("request freq level: %d\n", freq_level);
+		LOG_DBG_MUST("request freq level: %d(%d)\n", freq_level, _step_size);
+		if (freq_level >= _step_size) {
+			ret = -EINVAL;
+			break;
+		}
+
 #ifdef CCU_QOS_SUPPORT_ENABLE
 		if (freq_level == CCU_REQ_CAM_FREQ_NONE) {
 			volt = 0;
