@@ -30,6 +30,7 @@
 #include "charger_class.h"
 #include "mtk_charger.h"
 #include "tcpm.h"
+#include <linux/iio/consumer.h>
 /**********************************************************
  *
  *   [I2C Slave Setting]
@@ -40,6 +41,8 @@ extern void Charger_Detect_Init(void);
 extern void Charger_Detect_Release(void);
 extern int sgm_config_qc_charger(struct charger_device *chg_dev);
 #define SGM4154x_REG_NUM    (0xF)
+#define R_VBUS_CHARGER_1    330
+#define R_VBUS_CHARGER_2    39
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 extern int wt6670f_set_voltage(u16 voltage);
 extern int wt6670f_en_hvdcp(void);
@@ -126,7 +129,7 @@ struct sgm4154x_device {
 	struct work_struct usb_work;
 	unsigned long usb_event;
 	struct regmap *regmap;
-
+	struct mutex pe_lock;
 	char model_name[I2C_NAME_SIZE];
 	int device_id;
 
@@ -168,7 +171,7 @@ struct sgm4154x_device {
         struct power_supply *psy;
         struct delayed_work psy_dwork;
 #endif
-
+	struct iio_channel *vbus;
 	/* enable dynamic adjust battery voltage */
 	bool enable_dynamic_adjust_batvol;
 	struct wakeup_source *ir_wakelock;
@@ -1194,6 +1197,24 @@ static int sgm4154x_get_vbus(struct charger_device *chg_dev, u32 *vbus)
 	return 0;
 }
 #endif
+
+static int sgm4154x_get_vbus(struct charger_device *chg_dev, u32 *vbus)
+{
+	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
+	int ret,value;
+
+	ret = iio_read_channel_processed(sgm->vbus,&value);
+	if(ret < 0){
+		dev_err(sgm->dev,"get vbus voltage failed");
+		return -EINVAL;
+	}
+	*vbus = value + R_VBUS_CHARGER_1 * value / R_VBUS_CHARGER_2;
+	*vbus = *vbus * 1000;
+	dev_info(sgm->dev,"vbus voltage: %d\n",*vbus);
+
+	return ret;
+}
+
 static int sgm4154x_enable_charger(struct sgm4154x_device *sgm)
 {
     int ret;
@@ -1487,29 +1508,92 @@ static int sgm4154x_get_is_safetytimer_enable(struct charger_device
 	return 0;
 }
 
-static int sgm4154x_en_pe_current_partern(struct charger_device
-		*chg_dev,bool is_up)
+static int sgm41543_read_pumpup(struct sgm4154x_device *sgm, u8 cmd, u8 shift, bool *is_one)
 {
-	int ret = 0;	
-	
-	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
-	
-	if(sgm->dev_id == SGM41542_ID || sgm->dev_id == SGM41543D_ID || sgm->dev_id == SGM41516D_ID) {
-		ret = mmi_sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
-					SGM4154x_EN_PUMPX, SGM4154x_EN_PUMPX);
-		if (ret < 0)
-		{
-			pr_info("[%s] read SGM4154x_CHRG_CTRL_d fail\n", __func__);
-			return ret;
-		}
-		if (is_up)
-			ret = mmi_sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
-					SGM4154x_PUMPX_UP, SGM4154x_PUMPX_UP);
-		else
-			ret = mmi_sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
-					SGM4154x_PUMPX_DN, SGM4154x_PUMPX_DN);
+	int ret = 0;
+	u8 ret_val = 0;
+	u8 data = 0;
+
+	ret = mmi_sgm4154x_read_reg(sgm, cmd, &data);
+	if (ret_val < 0) {
+		*is_one = false;
+		return ret_val;
 	}
+
+	data = ret_val & (1 << shift);
+	*is_one = (data == 0 ? false : true);
+
+	return ret_val;
+}
+
+static int sgm41543_enable_pump_express(struct sgm4154x_device *sgm, bool en)
+{
+	int ret = 0, i = 0;
+	bool pumpx_en = false;
+	const int max_wait_times = 3;
+
+	pr_info("%s: en = %d\n", __func__, en);
+	ret = sgm4154x_set_input_curr_lim(sgm->chg_dev, 800000);
+	if (ret){
+		pr_err("Failed to sgm4154x_set_input_curr_lim, ret = %d\n", ret);
+		return ret;
+	}
+	ret = sgm4154x_set_ichrg_curr(sgm->chg_dev, 2000000);
+	if (ret){
+		pr_err("Failed to sgm4154x_set_ichrg_curr, ret = %d\n", ret);
+		return ret;
+	}
+	ret = sgm4154x_charging_switch(sgm->chg_dev, true);
+	if (ret){
+		pr_err("Failed to sgm4154x_charging_switch, ret = %d\n", ret);
+		return ret;
+	}
+	for (i = 0; i < max_wait_times; i++) {
+		msleep(2500);
+		ret = sgm41543_read_pumpup(sgm, SGM4154x_CHRG_CTRL_d,
+			SGM4154x_PUMPX_UP_SHIFT, &pumpx_en);
+		if (ret >= 0 && !pumpx_en){
+			pr_info("%s: ret:%d\n", __func__, ret);
+			break;
+		}
+	}
+	if (i == max_wait_times) {
+		pr_err("%s: pumpx done fail(%d)\n", __func__, ret);
+		ret = -EIO;
+	} else
+		ret = 0;
+
 	return ret;
+}
+
+static int sgm4154x_en_pe_current_partern(struct charger_device *chg_dev, bool is_up)
+{
+	int ret = 0;
+	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
+	mutex_lock(&sgm->pe_lock);
+	ret = mmi_sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
+				SGM4154x_PUMPX_EN_MASK, SGM4154x_EN_PUMPX);
+	if (ret <0)
+		pr_err("[%s] enable PUMPX fail\n", __func__);
+
+	if (is_up){
+		ret = mmi_sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
+				SGM4154x_PUMPX_UP_MASK, SGM4154x_PUMPX_UP);
+		pr_info("[%s]  set pumpx up\n", __func__);
+	}
+	else{
+		ret = mmi_sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
+				SGM4154x_PUMPX_DN_MASK, SGM4154x_PUMPX_DN);
+		pr_info("[%s]  set pumpx down\n", __func__);
+	}
+	if (ret < 0)
+		pr_err("%s: set pumpx up/down fail\n", __func__);
+
+	pr_info("%s: set pump\n", __func__);
+	ret = sgm41543_enable_pump_express(sgm,true);
+	mutex_unlock(&sgm->pe_lock);
+	return ret;
+
 }
 
 static int sgm41543_set_stat_ctrl(struct sgm4154x_device *bq, int ctrl)
@@ -1855,9 +1939,8 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 			pr_err("wt6670 probe error,force vbus 5000");
 		}
 #else
-		val->intval = 5000;
-		if(!state.vbus_gd || !state.online)
-			val->intval = 0;
+		sgm4154x_get_vbus(sgm->chg_dev,&(val->intval));
+		val->intval /= 1000;
 #endif
 		break;
 
@@ -2796,7 +2879,7 @@ static struct charger_ops sgm4154x_chg_ops = {
 	.enable_safety_timer = sgm4154x_enable_safetytimer,
 	.is_safety_timer_enabled = sgm4154x_get_is_safetytimer_enable,
 	/* Get vbus voltage*/
-	/*.get_vbus_adc = sgm4154x_get_vbus,*/
+	.get_vbus_adc = sgm4154x_get_vbus,
 	/* General ADC */
 	.get_adc = sgm4154x_get_adc,
 	/* Power path */
@@ -3009,7 +3092,7 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 	
 	mutex_init(&sgm->lock);
 	mutex_init(&sgm->i2c_rw_lock);
-
+	mutex_init(&sgm->pe_lock);
 	i2c_set_clientdata(client, sgm);
 
 	ret = sgm4154x_hw_chipid_detect(sgm);
@@ -3066,6 +3149,12 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 	if (ret) {
 		dev_err(dev, "Cannot initialize the chip.\n");
 		return ret;
+	}
+
+	sgm->vbus = devm_iio_channel_get(sgm->dev,"pmic_vbus");
+	if(IS_ERR_OR_NULL(sgm->vbus)){
+		dev_err(sgm->dev,"sgm4154x get vbus failed\n");
+		return -EINVAL;
 	}
 
 	irq_gpio = of_get_named_gpio(sgm->dev->of_node, "sgm,irq-gpio", 0);
@@ -3166,6 +3255,7 @@ static int sgm4154x_charger_remove(struct i2c_client *client)
 
 	mutex_destroy(&sgm->lock);
     mutex_destroy(&sgm->i2c_rw_lock);
+    mutex_destroy(&sgm->pe_lock);
 
     return 0;
 }
