@@ -904,7 +904,13 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 		uint32_t *outdata = NULL;
 
 		indata = kzalloc(CCU_IPC_IBUF_CAPACITY, GFP_KERNEL);
+		if (!indata)
+			return -ENOMEM;
 		outdata = kzalloc(CCU_IPC_OBUF_CAPACITY, GFP_KERNEL);
+		if (!outdata) {
+			kfree(indata);
+			return -ENOMEM;
+		}
 		ret = copy_from_user(&msg,
 			(void *)arg, sizeof(struct ccu_control_info));
 		if (ret != 0) {
