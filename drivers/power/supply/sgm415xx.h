@@ -254,6 +254,11 @@ enum attach_type {
 #define SGM4154x_PUMPX_UP           BIT(6)
 #define SGM4154x_PUMPX_DN           BIT(5)
 
+#define SGM4154x_PUMPX_EN_MASK      0x80
+#define SGM4154x_PUMPX_UP_MASK      0x40
+#define SGM4154x_PUMPX_UP_SHIFT     6
+#define SGM4154x_PUMPX_DN_MASK      0x20
+
 /* customer define jeita paramter */
 /*
 #define JEITA_TEMP_ABOVE_T4_CV	0

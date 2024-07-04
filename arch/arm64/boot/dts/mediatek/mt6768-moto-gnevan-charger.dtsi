@@ -10,6 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+#include <dt-bindings/iio/mt635x-auxadc.h>
 
 &i2c7 {
         bq25890@6A {
@@ -45,6 +46,8 @@
 		compatible = "sgm,sgm41543D";
 		reg = <0x0B>;
 		charger_name = "primary_chg";
+		io-channels = <&pmic_auxadc AUXADC_VCDT>;
+		io-channel-names = "pmic_vbus";
 		input-voltage-limit-microvolt = <4700000>;
 		input-current-limit-microamp = <500000>;
 		typec-support;
