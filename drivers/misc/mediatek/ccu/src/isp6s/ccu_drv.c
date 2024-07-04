@@ -766,7 +766,13 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 		uint32_t *outdata = NULL;
 
 		indata = kzalloc(CCU_IPC_IBUF_CAPACITY, GFP_KERNEL);
+		if (!indata)
+			return -ENOMEM;
 		outdata = kzalloc(CCU_IPC_OBUF_CAPACITY, GFP_KERNEL);
+		if (!outdata) {
+			kfree(indata);
+			return -ENOMEM;
+		}
 		ret = copy_from_user(&msg,
 			(void *)arg, sizeof(struct ccu_control_info));
 		if (ret != 0) {
@@ -777,7 +783,14 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 			kfree(outdata);
 			break;
 		}
-
+		if (msg.inDataSize > CCU_IPC_IBUF_CAPACITY) {
+			LOG_ERR(
+			"CCU_IOCTL_IPC_SEND_CMD copy_from_user 2 oversize\n");
+			ret = -EINVAL;
+			kfree(indata);
+			kfree(outdata);
+			break;
+		}
 		ret = copy_from_user(indata,
 			(void *)msg.inDataPtr, msg.inDataSize);
 		if (ret != 0) {
