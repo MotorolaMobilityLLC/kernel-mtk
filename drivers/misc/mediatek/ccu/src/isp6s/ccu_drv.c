@@ -792,7 +792,14 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 		msg.feature_type,
 		(enum IMGSENSOR_SENSOR_IDX)msg.sensor_idx,
 		msg.msg_id, indata, msg.inDataSize, outdata, msg.outDataSize);
-
+		if (msg.outDataSize > CCU_IPC_OBUF_CAPACITY) {
+			LOG_ERR(
+			"CCU_IOCTL_IPC_SEND_CMD copy_to_user oversize\n");
+			ret = -EINVAL;
+			kfree(indata);
+			kfree(outdata);
+			break;
+		}
 		ret = copy_to_user((void *)msg.outDataPtr, outdata, msg.outDataSize);
 		kfree(indata);
 		kfree(outdata);
