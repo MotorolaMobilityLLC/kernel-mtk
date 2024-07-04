@@ -1108,19 +1108,19 @@ static kal_uint32 get_default_framerate_by_scenario(
 static kal_uint32 set_test_pattern_mode(kal_uint32 modes)
 {
 	pr_debug("Test_Pattern modes: %d\n", modes);
-	if (modes == 2) {//colorbar
-		write_cmos_sensor(0xfd, 0x00);
-		write_cmos_sensor(0xb6, 0x21);
-	} else if (modes == 5) {//black
+	if (modes) {
+		write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x21, 0x00);
+		write_cmos_sensor(0x22, 0x00);
+		write_cmos_sensor(0x01, 0x01);
+	} else {
+		write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x21, 0x02);
+		write_cmos_sensor(0x22, 0x00);
+		write_cmos_sensor(0x01, 0x01);
 
 	}
 
-	if ((modes != 2) && (imgsensor.test_pattern == 2)) {
-		write_cmos_sensor(0xfd, 0x00);
-		write_cmos_sensor(0xb6, 0x20);
-	} else if (modes != 5 && (imgsensor.test_pattern == 5)) {
-
-	}
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = modes;
 	spin_unlock(&imgsensor_drv_lock);
