@@ -925,6 +925,11 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 			(void *)arg, sizeof(uint32_t));
 
 		LOG_DBG_MUST("request freq level: %d\n", freq_level);
+		if (freq_level >= MAX_FREQ_STEP) {
+			ret = -EINVAL;
+			break;
+		}
+
 #ifdef CONFIG_MTK_QOS_SUPPORT_ENABLE
 		if (freq_level == CCU_REQ_CAM_FREQ_NONE)
 			pm_qos_update_request(&_ccu_qos_request, 0);
