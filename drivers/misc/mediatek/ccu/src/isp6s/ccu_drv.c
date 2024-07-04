@@ -73,6 +73,10 @@
 
 #define CCU_DEV_NAME            "ccu"
 
+#ifndef MAX_FREQ_STEP
+#define MAX_FREQ_STEP 12
+#endif
+
 #define CCU_CLK_PWR_NUM 4
 /* [0]: CCU_CLK_TOP_MUX, [1]: MDP_PWR, [2]: CAM_PWR, [3]: CCU_CLK_CAM_CCU */
 struct clk *ccu_clk_pwr_ctrl[CCU_CLK_PWR_NUM];
