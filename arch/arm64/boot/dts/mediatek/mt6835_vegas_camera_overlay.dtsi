@@ -383,7 +383,7 @@
 /* CAMERA EEPROM */
 &i2c2 {
 	status = "okay";
-	clock-frequency = <1000000>;
+	clock-frequency = <400000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
 
