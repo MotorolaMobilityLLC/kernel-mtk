@@ -302,8 +302,8 @@
 	mmi,mmi-ffc-zones = <0 4200 243>,
 			<10 4500 243>,
 			<15 4500 243>,
-			<25 4530 506>,
-			<35 4530 560>,
+			<25 4530 555>,
+			<35 4530 590>,
 			<45 4530 965>,
 			<60 4200 243>;
 
@@ -317,6 +317,9 @@
 	start_soc_max = <90>;
 	vbat_cv = <4530>;
 	start_vbat_max = <4500>;
+	tdvchg_curlmt = <(-1) (-1) (-1) 300 0 0 0 900 (-1)>;
+	tbat_curlmt = <(-1) (-1) (-1) 300 0 0 0 1050 (-1)>;
+	tta_curlmt = <0 0 0 0 0 0 0 900 (-1)>;
 };
 
 &pe45 {
@@ -407,7 +410,7 @@
 	ACTIVE_TABLE = <(5)>;
 	R_FG_VALUE = <(5)>;
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
-	CAR_TUNE_VALUE = <(99)>;
+	CAR_TUNE_VALUE = <(103)>;
 
 	df-serialnum = "COSRA50COS";
 	#include "bat_setting/mt6835_battery_ra50_cos_5000mah.dtsi"
