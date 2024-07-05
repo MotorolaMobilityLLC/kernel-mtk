@@ -4105,6 +4105,14 @@ static int mmi_charger_check_dcp_ffc_status(struct mtk_charger *info, int batt_s
 						pr_debug("[%s] bump inputcur up to %d\n", __func__, info->data.ac_charger_input_current);
 					}
 */
+#ifdef CONFIG_MOTO_CHG_FFC_10W_2A_SUPPORT
+					if (info->data.ac_charger_input_current == info->ffc_input_current_backup) {
+						info->data.ac_charger_input_current += 500000;
+						// bump charging current +500mA to try ffc
+						charger_dev_set_input_current(info->chg1_dev, info->data.ac_charger_input_current);
+						pr_debug("[%s] bump inputcur up to %d\n", __func__, info->data.ac_charger_input_current);
+					}
+#endif
 					if (batt_soc >= mmi->ffc_uisoc_threshold) {
 						mmi->ffc_state = CHARGER_FFC_STATE_PROBING;
 						pr_debug("[%s] uisoc is up to %d, ffc probing starts\n", __func__, mmi->ffc_uisoc_threshold);
