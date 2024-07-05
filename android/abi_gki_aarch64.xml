@@ -537,7 +537,10 @@
       <elf-symbol name='__traceiter_android_vh_binder_del_ref' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x475c909a'/>
       <elf-symbol name='__traceiter_android_vh_binder_free_buf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcc7c644e'/>
       <elf-symbol name='__traceiter_android_vh_binder_free_proc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x37b10c54'/>
+      <elf-symbol name='__traceiter_android_vh_binder_has_special_work_ilocked' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9074973f'/>
       <elf-symbol name='__traceiter_android_vh_binder_has_work_ilocked' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa00c875a'/>
+      <elf-symbol name='__traceiter_android_vh_binder_ioctl_end' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9afa49dd'/>
+      <elf-symbol name='__traceiter_android_vh_binder_looper_exited' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8b880096'/>
       <elf-symbol name='__traceiter_android_vh_binder_looper_state_registered' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x75fb3794'/>
       <elf-symbol name='__traceiter_android_vh_binder_new_ref' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7f80a68f'/>
       <elf-symbol name='__traceiter_android_vh_binder_preset' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc172900b'/>
@@ -549,8 +552,10 @@
       <elf-symbol name='__traceiter_android_vh_binder_read_done' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbe2ed2c'/>
       <elf-symbol name='__traceiter_android_vh_binder_reply' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcbf7bf6a'/>
       <elf-symbol name='__traceiter_android_vh_binder_restore_priority' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5f27c8d3'/>
+      <elf-symbol name='__traceiter_android_vh_binder_select_special_worklist' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3004a748'/>
       <elf-symbol name='__traceiter_android_vh_binder_select_worklist_ilocked' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf945db36'/>
       <elf-symbol name='__traceiter_android_vh_binder_set_priority' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2b0602f8'/>
+      <elf-symbol name='__traceiter_android_vh_binder_spawn_new_thread' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeb5910d2'/>
       <elf-symbol name='__traceiter_android_vh_binder_special_task' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc34acf3f'/>
       <elf-symbol name='__traceiter_android_vh_binder_thread_read' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa2932880'/>
       <elf-symbol name='__traceiter_android_vh_binder_thread_release' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa1cfbd1a'/>
@@ -7518,7 +7523,10 @@
       <elf-symbol name='__tracepoint_android_vh_binder_del_ref' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xefc746ba'/>
       <elf-symbol name='__tracepoint_android_vh_binder_free_buf' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf64d3ead'/>
       <elf-symbol name='__tracepoint_android_vh_binder_free_proc' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9e624858'/>
+      <elf-symbol name='__tracepoint_android_vh_binder_has_special_work_ilocked' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x522bc7e1'/>
       <elf-symbol name='__tracepoint_android_vh_binder_has_work_ilocked' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x68da440b'/>
+      <elf-symbol name='__tracepoint_android_vh_binder_ioctl_end' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd0b11a87'/>
+      <elf-symbol name='__tracepoint_android_vh_binder_looper_exited' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2a34d63d'/>
       <elf-symbol name='__tracepoint_android_vh_binder_looper_state_registered' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb59ca220'/>
       <elf-symbol name='__tracepoint_android_vh_binder_new_ref' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x33d1d092'/>
       <elf-symbol name='__tracepoint_android_vh_binder_preset' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf03cd6d3'/>
@@ -7530,8 +7538,10 @@
       <elf-symbol name='__tracepoint_android_vh_binder_read_done' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x37a6751'/>
       <elf-symbol name='__tracepoint_android_vh_binder_reply' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x39132f3d'/>
       <elf-symbol name='__tracepoint_android_vh_binder_restore_priority' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbf6d3788'/>
+      <elf-symbol name='__tracepoint_android_vh_binder_select_special_worklist' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4b47e85e'/>
       <elf-symbol name='__tracepoint_android_vh_binder_select_worklist_ilocked' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbc728def'/>
       <elf-symbol name='__tracepoint_android_vh_binder_set_priority' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3b21b81'/>
+      <elf-symbol name='__tracepoint_android_vh_binder_spawn_new_thread' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5accdd27'/>
       <elf-symbol name='__tracepoint_android_vh_binder_special_task' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x46cb2346'/>
       <elf-symbol name='__tracepoint_android_vh_binder_thread_read' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1a799b23'/>
       <elf-symbol name='__tracepoint_android_vh_binder_thread_release' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5ee63788'/>
@@ -129338,7 +129348,7 @@
       <pointer-type-def type-id='46f53066' size-in-bits='64' id='fffb07a4'/>
       <qualified-type-def type-id='55efd1a3' const='yes' id='fffdaf52'/>
       <var-decl name='GKI_struct_blk_mq_alloc_data' type-id='17c43c95' mangled-name='GKI_struct_blk_mq_alloc_data' visibility='default' filepath='block/vendor_hooks.c' line='23' column='1' elf-symbol-id='GKI_struct_blk_mq_alloc_data'/>
-      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='522' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
+      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='523' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
       <var-decl name='GKI_struct_selinux_state' type-id='4ae52763' mangled-name='GKI_struct_selinux_state' visibility='default' filepath='security/selinux/vendor_hooks.c' line='21' column='1' elf-symbol-id='GKI_struct_selinux_state'/>
       <function-decl name='I_BDEV' mangled-name='I_BDEV' filepath='block/bdev.c' line='42' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='I_BDEV'>
         <parameter type-id='7e666abe' name='inode' filepath='block/bdev.c' line='42' column='1'/>
@@ -132490,11 +132500,11 @@
         <parameter type-id='831e6e93' name='gfp_mask' filepath='include/trace/hooks/mm.h' line='211' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_alloc_oem_binder_struct' mangled-name='__traceiter_android_vh_alloc_oem_binder_struct' filepath='include/trace/hooks/binder.h' line='109' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_alloc_oem_binder_struct'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='109' column='1'/>
-        <parameter type-id='55866c73' name='tr' filepath='include/trace/hooks/binder.h' line='109' column='1'/>
-        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='109' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='109' column='1'/>
+      <function-decl name='__traceiter_android_vh_alloc_oem_binder_struct' mangled-name='__traceiter_android_vh_alloc_oem_binder_struct' filepath='include/trace/hooks/binder.h' line='113' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_alloc_oem_binder_struct'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='113' column='1'/>
+        <parameter type-id='55866c73' name='tr' filepath='include/trace/hooks/binder.h' line='113' column='1'/>
+        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='113' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='113' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_alloc_pages_entry' mangled-name='__traceiter_android_vh_alloc_pages_entry' filepath='include/trace/hooks/mm.h' line='258' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_alloc_pages_entry'>
@@ -132597,71 +132607,94 @@
         <parameter type-id='d8e6b335' name='need_ignore' filepath='include/trace/hooks/audio_usboffload.h' line='30' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_alloc_new_buf_locked' mangled-name='__traceiter_android_vh_binder_alloc_new_buf_locked' filepath='include/trace/hooks/binder.h' line='84' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_alloc_new_buf_locked'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='84' column='1'/>
-        <parameter type-id='b59d7dce' name='size' filepath='include/trace/hooks/binder.h' line='84' column='1'/>
-        <parameter type-id='78c01427' name='free_async_space' filepath='include/trace/hooks/binder.h' line='84' column='1'/>
-        <parameter type-id='95e97e5e' name='is_async' filepath='include/trace/hooks/binder.h' line='84' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_alloc_new_buf_locked' mangled-name='__traceiter_android_vh_binder_alloc_new_buf_locked' filepath='include/trace/hooks/binder.h' line='88' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_alloc_new_buf_locked'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='88' column='1'/>
+        <parameter type-id='b59d7dce' name='size' filepath='include/trace/hooks/binder.h' line='88' column='1'/>
+        <parameter type-id='78c01427' name='free_async_space' filepath='include/trace/hooks/binder.h' line='88' column='1'/>
+        <parameter type-id='95e97e5e' name='is_async' filepath='include/trace/hooks/binder.h' line='88' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_buffer_release' mangled-name='__traceiter_android_vh_binder_buffer_release' filepath='include/trace/hooks/binder.h' line='129' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_buffer_release'>
+      <function-decl name='__traceiter_android_vh_binder_buffer_release' mangled-name='__traceiter_android_vh_binder_buffer_release' filepath='include/trace/hooks/binder.h' line='133' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_buffer_release'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='133' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='133' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='133' column='1'/>
+        <parameter type-id='5819e862' name='buffer' filepath='include/trace/hooks/binder.h' line='133' column='1'/>
+        <parameter type-id='b50a4934' name='has_transaction' filepath='include/trace/hooks/binder.h' line='133' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_binder_del_ref' mangled-name='__traceiter_android_vh_binder_del_ref' filepath='include/trace/hooks/binder.h' line='110' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_del_ref'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='110' column='1'/>
+        <parameter type-id='f23e2572' name='proc' filepath='include/trace/hooks/binder.h' line='110' column='1'/>
+        <parameter type-id='8f92235e' name='ref_desc' filepath='include/trace/hooks/binder.h' line='110' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_binder_free_buf' mangled-name='__traceiter_android_vh_binder_free_buf' filepath='include/trace/hooks/binder.h' line='129' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_free_buf'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='129' column='1'/>
         <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='129' column='1'/>
         <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='129' column='1'/>
         <parameter type-id='5819e862' name='buffer' filepath='include/trace/hooks/binder.h' line='129' column='1'/>
-        <parameter type-id='b50a4934' name='has_transaction' filepath='include/trace/hooks/binder.h' line='129' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_del_ref' mangled-name='__traceiter_android_vh_binder_del_ref' filepath='include/trace/hooks/binder.h' line='106' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_del_ref'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='106' column='1'/>
-        <parameter type-id='f23e2572' name='proc' filepath='include/trace/hooks/binder.h' line='106' column='1'/>
-        <parameter type-id='8f92235e' name='ref_desc' filepath='include/trace/hooks/binder.h' line='106' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_free_proc' mangled-name='__traceiter_android_vh_binder_free_proc' filepath='include/trace/hooks/binder.h' line='76' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_free_proc'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='76' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='76' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_free_buf' mangled-name='__traceiter_android_vh_binder_free_buf' filepath='include/trace/hooks/binder.h' line='125' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_free_buf'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='125' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='125' column='1'/>
-        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='125' column='1'/>
-        <parameter type-id='5819e862' name='buffer' filepath='include/trace/hooks/binder.h' line='125' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_has_special_work_ilocked' mangled-name='__traceiter_android_vh_binder_has_special_work_ilocked' filepath='include/trace/hooks/binder.h' line='151' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_has_special_work_ilocked'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='151' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='151' column='1'/>
+        <parameter type-id='b50a4934' name='do_proc_work' filepath='include/trace/hooks/binder.h' line='151' column='1'/>
+        <parameter type-id='d8e6b335' name='has_work' filepath='include/trace/hooks/binder.h' line='151' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_free_proc' mangled-name='__traceiter_android_vh_binder_free_proc' filepath='include/trace/hooks/binder.h' line='72' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_free_proc'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='72' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='72' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_has_work_ilocked' mangled-name='__traceiter_android_vh_binder_has_work_ilocked' filepath='include/trace/hooks/binder.h' line='85' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_has_work_ilocked'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='85' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='85' column='1'/>
+        <parameter type-id='b50a4934' name='do_proc_work' filepath='include/trace/hooks/binder.h' line='85' column='1'/>
+        <parameter type-id='7292109c' name='ret' filepath='include/trace/hooks/binder.h' line='85' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_has_work_ilocked' mangled-name='__traceiter_android_vh_binder_has_work_ilocked' filepath='include/trace/hooks/binder.h' line='81' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_has_work_ilocked'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='81' column='1'/>
-        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='81' column='1'/>
-        <parameter type-id='b50a4934' name='do_proc_work' filepath='include/trace/hooks/binder.h' line='81' column='1'/>
-        <parameter type-id='7292109c' name='ret' filepath='include/trace/hooks/binder.h' line='81' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_ioctl_end' mangled-name='__traceiter_android_vh_binder_ioctl_end' filepath='include/trace/hooks/binder.h' line='137' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_ioctl_end'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='137' column='1'/>
+        <parameter type-id='f23e2572' name='caller_task' filepath='include/trace/hooks/binder.h' line='137' column='1'/>
+        <parameter type-id='f0981eeb' name='cmd' filepath='include/trace/hooks/binder.h' line='137' column='1'/>
+        <parameter type-id='7359adad' name='arg' filepath='include/trace/hooks/binder.h' line='137' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='137' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='137' column='1'/>
+        <parameter type-id='7292109c' name='ret' filepath='include/trace/hooks/binder.h' line='137' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_looper_state_registered' mangled-name='__traceiter_android_vh_binder_looper_state_registered' filepath='include/trace/hooks/binder.h' line='65' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_looper_state_registered'>
+      <function-decl name='__traceiter_android_vh_binder_looper_exited' mangled-name='__traceiter_android_vh_binder_looper_exited' filepath='include/trace/hooks/binder.h' line='145' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_looper_exited'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='145' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='145' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='145' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_binder_looper_state_registered' mangled-name='__traceiter_android_vh_binder_looper_state_registered' filepath='include/trace/hooks/binder.h' line='69' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_looper_state_registered'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='69' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='69' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='69' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_binder_new_ref' mangled-name='__traceiter_android_vh_binder_new_ref' filepath='include/trace/hooks/binder.h' line='107' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_new_ref'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='107' column='1'/>
+        <parameter type-id='f23e2572' name='proc' filepath='include/trace/hooks/binder.h' line='107' column='1'/>
+        <parameter type-id='8f92235e' name='ref_desc' filepath='include/trace/hooks/binder.h' line='107' column='1'/>
+        <parameter type-id='95e97e5e' name='node_debug_id' filepath='include/trace/hooks/binder.h' line='107' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_binder_preset' mangled-name='__traceiter_android_vh_binder_preset' filepath='include/trace/hooks/binder.h' line='99' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_preset'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='99' column='1'/>
+        <parameter type-id='030d0b18' name='hhead' filepath='include/trace/hooks/binder.h' line='99' column='1'/>
+        <parameter type-id='e0ea832a' name='lock' filepath='include/trace/hooks/binder.h' line='99' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_binder_print_transaction_info' mangled-name='__traceiter_android_vh_binder_print_transaction_info' filepath='include/trace/hooks/binder.h' line='65' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_print_transaction_info'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='65' column='1'/>
-        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='65' column='1'/>
+        <parameter type-id='f8dc9def' name='m' filepath='include/trace/hooks/binder.h' line='65' column='1'/>
         <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='65' column='1'/>
-        <return type-id='95e97e5e'/>
-      </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_new_ref' mangled-name='__traceiter_android_vh_binder_new_ref' filepath='include/trace/hooks/binder.h' line='103' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_new_ref'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='103' column='1'/>
-        <parameter type-id='f23e2572' name='proc' filepath='include/trace/hooks/binder.h' line='103' column='1'/>
-        <parameter type-id='8f92235e' name='ref_desc' filepath='include/trace/hooks/binder.h' line='103' column='1'/>
-        <parameter type-id='95e97e5e' name='node_debug_id' filepath='include/trace/hooks/binder.h' line='103' column='1'/>
-        <return type-id='95e97e5e'/>
-      </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_preset' mangled-name='__traceiter_android_vh_binder_preset' filepath='include/trace/hooks/binder.h' line='95' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_preset'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='95' column='1'/>
-        <parameter type-id='030d0b18' name='hhead' filepath='include/trace/hooks/binder.h' line='95' column='1'/>
-        <parameter type-id='e0ea832a' name='lock' filepath='include/trace/hooks/binder.h' line='95' column='1'/>
-        <return type-id='95e97e5e'/>
-      </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_print_transaction_info' mangled-name='__traceiter_android_vh_binder_print_transaction_info' filepath='include/trace/hooks/binder.h' line='61' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_print_transaction_info'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='61' column='1'/>
-        <parameter type-id='f8dc9def' name='m' filepath='include/trace/hooks/binder.h' line='61' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='61' column='1'/>
-        <parameter type-id='80f4b756' name='prefix' filepath='include/trace/hooks/binder.h' line='61' column='1'/>
-        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='61' column='1'/>
+        <parameter type-id='80f4b756' name='prefix' filepath='include/trace/hooks/binder.h' line='65' column='1'/>
+        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='65' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_binder_priority_skip' mangled-name='__traceiter_android_vh_binder_priority_skip' filepath='include/trace/hooks/binder.h' line='30' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_priority_skip'>
@@ -132670,14 +132703,14 @@
         <parameter type-id='d8e6b335' name='skip' filepath='include/trace/hooks/binder.h' line='30' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_proc_transaction' mangled-name='__traceiter_android_vh_binder_proc_transaction' filepath='include/trace/hooks/binder.h' line='98' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_proc_transaction'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='98' column='1'/>
-        <parameter type-id='f23e2572' name='caller_task' filepath='include/trace/hooks/binder.h' line='98' column='1'/>
-        <parameter type-id='f23e2572' name='binder_proc_task' filepath='include/trace/hooks/binder.h' line='98' column='1'/>
-        <parameter type-id='f23e2572' name='binder_th_task' filepath='include/trace/hooks/binder.h' line='98' column='1'/>
-        <parameter type-id='95e97e5e' name='node_debug_id' filepath='include/trace/hooks/binder.h' line='98' column='1'/>
-        <parameter type-id='f0981eeb' name='code' filepath='include/trace/hooks/binder.h' line='98' column='1'/>
-        <parameter type-id='b50a4934' name='pending_async' filepath='include/trace/hooks/binder.h' line='98' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_proc_transaction' mangled-name='__traceiter_android_vh_binder_proc_transaction' filepath='include/trace/hooks/binder.h' line='102' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_proc_transaction'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='102' column='1'/>
+        <parameter type-id='f23e2572' name='caller_task' filepath='include/trace/hooks/binder.h' line='102' column='1'/>
+        <parameter type-id='f23e2572' name='binder_proc_task' filepath='include/trace/hooks/binder.h' line='102' column='1'/>
+        <parameter type-id='f23e2572' name='binder_th_task' filepath='include/trace/hooks/binder.h' line='102' column='1'/>
+        <parameter type-id='95e97e5e' name='node_debug_id' filepath='include/trace/hooks/binder.h' line='102' column='1'/>
+        <parameter type-id='f0981eeb' name='code' filepath='include/trace/hooks/binder.h' line='102' column='1'/>
+        <parameter type-id='b50a4934' name='pending_async' filepath='include/trace/hooks/binder.h' line='102' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_binder_proc_transaction_entry' mangled-name='__traceiter_android_vh_binder_proc_transaction_entry' filepath='include/trace/hooks/binder.h' line='48' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_proc_transaction_entry'>
@@ -132691,33 +132724,42 @@
         <parameter type-id='d8e6b335' name='skip' filepath='include/trace/hooks/binder.h' line='48' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_proc_transaction_finish' mangled-name='__traceiter_android_vh_binder_proc_transaction_finish' filepath='include/trace/hooks/binder.h' line='57' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_proc_transaction_finish'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
-        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
-        <parameter type-id='f23e2572' name='binder_th_task' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
-        <parameter type-id='b50a4934' name='pending_async' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
-        <parameter type-id='b50a4934' name='sync' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_proc_transaction_finish' mangled-name='__traceiter_android_vh_binder_proc_transaction_finish' filepath='include/trace/hooks/binder.h' line='61' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_proc_transaction_finish'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='61' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='61' column='1'/>
+        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='61' column='1'/>
+        <parameter type-id='f23e2572' name='binder_th_task' filepath='include/trace/hooks/binder.h' line='61' column='1'/>
+        <parameter type-id='b50a4934' name='pending_async' filepath='include/trace/hooks/binder.h' line='61' column='1'/>
+        <parameter type-id='b50a4934' name='sync' filepath='include/trace/hooks/binder.h' line='61' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_read_done' mangled-name='__traceiter_android_vh_binder_read_done' filepath='include/trace/hooks/binder.h' line='78' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_read_done'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='78' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='78' column='1'/>
-        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='78' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_read_done' mangled-name='__traceiter_android_vh_binder_read_done' filepath='include/trace/hooks/binder.h' line='82' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_read_done'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='82' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='82' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='82' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_reply' mangled-name='__traceiter_android_vh_binder_reply' filepath='include/trace/hooks/binder.h' line='87' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_reply'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='87' column='1'/>
-        <parameter type-id='d1cf113c' name='target_proc' filepath='include/trace/hooks/binder.h' line='87' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='87' column='1'/>
-        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='87' column='1'/>
-        <parameter type-id='55866c73' name='tr' filepath='include/trace/hooks/binder.h' line='87' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_reply' mangled-name='__traceiter_android_vh_binder_reply' filepath='include/trace/hooks/binder.h' line='91' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_reply'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='91' column='1'/>
+        <parameter type-id='d1cf113c' name='target_proc' filepath='include/trace/hooks/binder.h' line='91' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='91' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='91' column='1'/>
+        <parameter type-id='55866c73' name='tr' filepath='include/trace/hooks/binder.h' line='91' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_binder_restore_priority' mangled-name='__traceiter_android_vh_binder_restore_priority' filepath='include/trace/hooks/binder.h' line='36' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_restore_priority'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='36' column='1'/>
         <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='36' column='1'/>
         <parameter type-id='f23e2572' name='task' filepath='include/trace/hooks/binder.h' line='36' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_binder_select_special_worklist' mangled-name='__traceiter_android_vh_binder_select_special_worklist' filepath='include/trace/hooks/binder.h' line='57' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_select_special_worklist'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
+        <parameter type-id='de160490' name='list' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
+        <parameter type-id='95e97e5e' name='wait_for_proc_work' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
+        <parameter type-id='d8e6b335' name='nothing_to_do' filepath='include/trace/hooks/binder.h' line='57' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_binder_select_worklist_ilocked' mangled-name='__traceiter_android_vh_binder_select_worklist_ilocked' filepath='include/trace/hooks/binder.h' line='53' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_select_worklist_ilocked'>
@@ -132734,36 +132776,43 @@
         <parameter type-id='f23e2572' name='task' filepath='include/trace/hooks/binder.h' line='33' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_special_task' mangled-name='__traceiter_android_vh_binder_special_task' filepath='include/trace/hooks/binder.h' line='120' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_special_task'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='120' column='1'/>
-        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='120' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='120' column='1'/>
-        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='120' column='1'/>
-        <parameter type-id='b84e13c7' name='w' filepath='include/trace/hooks/binder.h' line='120' column='1'/>
-        <parameter type-id='e84b031a' name='head' filepath='include/trace/hooks/binder.h' line='120' column='1'/>
-        <parameter type-id='b50a4934' name='sync' filepath='include/trace/hooks/binder.h' line='120' column='1'/>
-        <parameter type-id='d8e6b335' name='special_task' filepath='include/trace/hooks/binder.h' line='120' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_spawn_new_thread' mangled-name='__traceiter_android_vh_binder_spawn_new_thread' filepath='include/trace/hooks/binder.h' line='148' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_spawn_new_thread'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='148' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='148' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='148' column='1'/>
+        <parameter type-id='d8e6b335' name='force_spawn' filepath='include/trace/hooks/binder.h' line='148' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_thread_read' mangled-name='__traceiter_android_vh_binder_thread_read' filepath='include/trace/hooks/binder.h' line='68' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_thread_read'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='68' column='1'/>
-        <parameter type-id='de160490' name='list' filepath='include/trace/hooks/binder.h' line='68' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='68' column='1'/>
-        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='68' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_special_task' mangled-name='__traceiter_android_vh_binder_special_task' filepath='include/trace/hooks/binder.h' line='124' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_special_task'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='124' column='1'/>
+        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='124' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='124' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='124' column='1'/>
+        <parameter type-id='b84e13c7' name='w' filepath='include/trace/hooks/binder.h' line='124' column='1'/>
+        <parameter type-id='e84b031a' name='head' filepath='include/trace/hooks/binder.h' line='124' column='1'/>
+        <parameter type-id='b50a4934' name='sync' filepath='include/trace/hooks/binder.h' line='124' column='1'/>
+        <parameter type-id='d8e6b335' name='special_task' filepath='include/trace/hooks/binder.h' line='124' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_thread_release' mangled-name='__traceiter_android_vh_binder_thread_release' filepath='include/trace/hooks/binder.h' line='75' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_thread_release'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='75' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='75' column='1'/>
-        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='75' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_thread_read' mangled-name='__traceiter_android_vh_binder_thread_read' filepath='include/trace/hooks/binder.h' line='72' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_thread_read'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='72' column='1'/>
+        <parameter type-id='de160490' name='list' filepath='include/trace/hooks/binder.h' line='72' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='72' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='72' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_trans' mangled-name='__traceiter_android_vh_binder_trans' filepath='include/trace/hooks/binder.h' line='91' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_trans'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='91' column='1'/>
-        <parameter type-id='d1cf113c' name='target_proc' filepath='include/trace/hooks/binder.h' line='91' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='91' column='1'/>
-        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='91' column='1'/>
-        <parameter type-id='55866c73' name='tr' filepath='include/trace/hooks/binder.h' line='91' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_thread_release' mangled-name='__traceiter_android_vh_binder_thread_release' filepath='include/trace/hooks/binder.h' line='79' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_thread_release'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='79' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='79' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='79' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_binder_trans' mangled-name='__traceiter_android_vh_binder_trans' filepath='include/trace/hooks/binder.h' line='95' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_trans'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='95' column='1'/>
+        <parameter type-id='d1cf113c' name='target_proc' filepath='include/trace/hooks/binder.h' line='95' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='95' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='95' column='1'/>
+        <parameter type-id='55866c73' name='tr' filepath='include/trace/hooks/binder.h' line='95' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_binder_transaction_init' mangled-name='__traceiter_android_vh_binder_transaction_init' filepath='include/trace/hooks/binder.h' line='27' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_transaction_init'>
@@ -132771,12 +132820,12 @@
         <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='27' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_binder_transaction_received' mangled-name='__traceiter_android_vh_binder_transaction_received' filepath='include/trace/hooks/binder.h' line='113' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_transaction_received'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='113' column='1'/>
-        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='113' column='1'/>
-        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='113' column='1'/>
-        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='113' column='1'/>
-        <parameter type-id='8f92235e' name='cmd' filepath='include/trace/hooks/binder.h' line='113' column='1'/>
+      <function-decl name='__traceiter_android_vh_binder_transaction_received' mangled-name='__traceiter_android_vh_binder_transaction_received' filepath='include/trace/hooks/binder.h' line='117' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_transaction_received'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='117' column='1'/>
+        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='117' column='1'/>
+        <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='117' column='1'/>
+        <parameter type-id='dd695fa4' name='thread' filepath='include/trace/hooks/binder.h' line='117' column='1'/>
+        <parameter type-id='8f92235e' name='cmd' filepath='include/trace/hooks/binder.h' line='117' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_binder_wait_for_work' mangled-name='__traceiter_android_vh_binder_wait_for_work' filepath='include/trace/hooks/binder.h' line='42' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_binder_wait_for_work'>
@@ -133204,9 +133253,9 @@
         <parameter type-id='d8e6b335' name='wake' filepath='include/trace/hooks/dtask.h' line='129' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='__traceiter_android_vh_free_oem_binder_struct' mangled-name='__traceiter_android_vh_free_oem_binder_struct' filepath='include/trace/hooks/binder.h' line='117' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_free_oem_binder_struct'>
-        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='117' column='1'/>
-        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='117' column='1'/>
+      <function-decl name='__traceiter_android_vh_free_oem_binder_struct' mangled-name='__traceiter_android_vh_free_oem_binder_struct' filepath='include/trace/hooks/binder.h' line='121' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_free_oem_binder_struct'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/binder.h' line='121' column='1'/>
+        <parameter type-id='f4c3bb4c' name='t' filepath='include/trace/hooks/binder.h' line='121' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_free_one_page_bypass' mangled-name='__traceiter_android_vh_free_one_page_bypass' filepath='include/trace/hooks/mm.h' line='204' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_free_one_page_bypass'>
@@ -135223,7 +135272,7 @@
       <var-decl name='__tracepoint_android_vh_aes_expandkey' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_aes_expandkey' visibility='default' filepath='include/trace/hooks/fips140.h' line='30' column='1' elf-symbol-id='__tracepoint_android_vh_aes_expandkey'/>
       <var-decl name='__tracepoint_android_vh_alloc_flags_cma_adjust' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_alloc_flags_cma_adjust' visibility='default' filepath='include/trace/hooks/mm.h' line='229' column='1' elf-symbol-id='__tracepoint_android_vh_alloc_flags_cma_adjust'/>
       <var-decl name='__tracepoint_android_vh_alloc_highpage_movable_gfp_adjust' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_alloc_highpage_movable_gfp_adjust' visibility='default' filepath='include/trace/hooks/mm.h' line='211' column='1' elf-symbol-id='__tracepoint_android_vh_alloc_highpage_movable_gfp_adjust'/>
-      <var-decl name='__tracepoint_android_vh_alloc_oem_binder_struct' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_alloc_oem_binder_struct' visibility='default' filepath='include/trace/hooks/binder.h' line='109' column='1' elf-symbol-id='__tracepoint_android_vh_alloc_oem_binder_struct'/>
+      <var-decl name='__tracepoint_android_vh_alloc_oem_binder_struct' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_alloc_oem_binder_struct' visibility='default' filepath='include/trace/hooks/binder.h' line='113' column='1' elf-symbol-id='__tracepoint_android_vh_alloc_oem_binder_struct'/>
       <var-decl name='__tracepoint_android_vh_alloc_pages_entry' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_alloc_pages_entry' visibility='default' filepath='include/trace/hooks/mm.h' line='258' column='1' elf-symbol-id='__tracepoint_android_vh_alloc_pages_entry'/>
       <var-decl name='__tracepoint_android_vh_alloc_pages_failure_bypass' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_alloc_pages_failure_bypass' visibility='default' filepath='include/trace/hooks/mm.h' line='179' column='1' elf-symbol-id='__tracepoint_android_vh_alloc_pages_failure_bypass'/>
       <var-decl name='__tracepoint_android_vh_alloc_pages_reclaim_bypass' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_alloc_pages_reclaim_bypass' visibility='default' filepath='include/trace/hooks/mm.h' line='175' column='1' elf-symbol-id='__tracepoint_android_vh_alloc_pages_reclaim_bypass'/>
@@ -135238,31 +135287,36 @@
       <var-decl name='__tracepoint_android_vh_audio_usb_offload_ep_action' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_audio_usb_offload_ep_action' visibility='default' filepath='include/trace/hooks/audio_usboffload.h' line='26' column='1' elf-symbol-id='__tracepoint_android_vh_audio_usb_offload_ep_action'/>
       <var-decl name='__tracepoint_android_vh_audio_usb_offload_suspend' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_audio_usb_offload_suspend' visibility='default' filepath='include/trace/hooks/audio_usboffload.h' line='42' column='1' elf-symbol-id='__tracepoint_android_vh_audio_usb_offload_suspend'/>
       <var-decl name='__tracepoint_android_vh_audio_usb_offload_synctype' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_audio_usb_offload_synctype' visibility='default' filepath='include/trace/hooks/audio_usboffload.h' line='30' column='1' elf-symbol-id='__tracepoint_android_vh_audio_usb_offload_synctype'/>
-      <var-decl name='__tracepoint_android_vh_binder_alloc_new_buf_locked' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_alloc_new_buf_locked' visibility='default' filepath='include/trace/hooks/binder.h' line='84' column='1' elf-symbol-id='__tracepoint_android_vh_binder_alloc_new_buf_locked'/>
-      <var-decl name='__tracepoint_android_vh_binder_buffer_release' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_buffer_release' visibility='default' filepath='include/trace/hooks/binder.h' line='129' column='1' elf-symbol-id='__tracepoint_android_vh_binder_buffer_release'/>
-      <var-decl name='__tracepoint_android_vh_binder_del_ref' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_del_ref' visibility='default' filepath='include/trace/hooks/binder.h' line='106' column='1' elf-symbol-id='__tracepoint_android_vh_binder_del_ref'/>
-      <var-decl name='__tracepoint_android_vh_binder_free_buf' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_free_buf' visibility='default' filepath='include/trace/hooks/binder.h' line='125' column='1' elf-symbol-id='__tracepoint_android_vh_binder_free_buf'/>
-      <var-decl name='__tracepoint_android_vh_binder_free_proc' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_free_proc' visibility='default' filepath='include/trace/hooks/binder.h' line='72' column='1' elf-symbol-id='__tracepoint_android_vh_binder_free_proc'/>
-      <var-decl name='__tracepoint_android_vh_binder_has_work_ilocked' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_has_work_ilocked' visibility='default' filepath='include/trace/hooks/binder.h' line='81' column='1' elf-symbol-id='__tracepoint_android_vh_binder_has_work_ilocked'/>
-      <var-decl name='__tracepoint_android_vh_binder_looper_state_registered' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_looper_state_registered' visibility='default' filepath='include/trace/hooks/binder.h' line='65' column='1' elf-symbol-id='__tracepoint_android_vh_binder_looper_state_registered'/>
-      <var-decl name='__tracepoint_android_vh_binder_new_ref' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_new_ref' visibility='default' filepath='include/trace/hooks/binder.h' line='103' column='1' elf-symbol-id='__tracepoint_android_vh_binder_new_ref'/>
-      <var-decl name='__tracepoint_android_vh_binder_preset' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_preset' visibility='default' filepath='include/trace/hooks/binder.h' line='95' column='1' elf-symbol-id='__tracepoint_android_vh_binder_preset'/>
-      <var-decl name='__tracepoint_android_vh_binder_print_transaction_info' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_print_transaction_info' visibility='default' filepath='include/trace/hooks/binder.h' line='61' column='1' elf-symbol-id='__tracepoint_android_vh_binder_print_transaction_info'/>
+      <var-decl name='__tracepoint_android_vh_binder_alloc_new_buf_locked' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_alloc_new_buf_locked' visibility='default' filepath='include/trace/hooks/binder.h' line='88' column='1' elf-symbol-id='__tracepoint_android_vh_binder_alloc_new_buf_locked'/>
+      <var-decl name='__tracepoint_android_vh_binder_buffer_release' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_buffer_release' visibility='default' filepath='include/trace/hooks/binder.h' line='133' column='1' elf-symbol-id='__tracepoint_android_vh_binder_buffer_release'/>
+      <var-decl name='__tracepoint_android_vh_binder_del_ref' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_del_ref' visibility='default' filepath='include/trace/hooks/binder.h' line='110' column='1' elf-symbol-id='__tracepoint_android_vh_binder_del_ref'/>
+      <var-decl name='__tracepoint_android_vh_binder_free_buf' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_free_buf' visibility='default' filepath='include/trace/hooks/binder.h' line='129' column='1' elf-symbol-id='__tracepoint_android_vh_binder_free_buf'/>
+      <var-decl name='__tracepoint_android_vh_binder_free_proc' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_free_proc' visibility='default' filepath='include/trace/hooks/binder.h' line='76' column='1' elf-symbol-id='__tracepoint_android_vh_binder_free_proc'/>
+      <var-decl name='__tracepoint_android_vh_binder_has_special_work_ilocked' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_has_special_work_ilocked' visibility='default' filepath='include/trace/hooks/binder.h' line='151' column='1' elf-symbol-id='__tracepoint_android_vh_binder_has_special_work_ilocked'/>
+      <var-decl name='__tracepoint_android_vh_binder_has_work_ilocked' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_has_work_ilocked' visibility='default' filepath='include/trace/hooks/binder.h' line='85' column='1' elf-symbol-id='__tracepoint_android_vh_binder_has_work_ilocked'/>
+      <var-decl name='__tracepoint_android_vh_binder_ioctl_end' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_ioctl_end' visibility='default' filepath='include/trace/hooks/binder.h' line='137' column='1' elf-symbol-id='__tracepoint_android_vh_binder_ioctl_end'/>
+      <var-decl name='__tracepoint_android_vh_binder_looper_exited' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_looper_exited' visibility='default' filepath='include/trace/hooks/binder.h' line='145' column='1' elf-symbol-id='__tracepoint_android_vh_binder_looper_exited'/>
+      <var-decl name='__tracepoint_android_vh_binder_looper_state_registered' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_looper_state_registered' visibility='default' filepath='include/trace/hooks/binder.h' line='69' column='1' elf-symbol-id='__tracepoint_android_vh_binder_looper_state_registered'/>
+      <var-decl name='__tracepoint_android_vh_binder_new_ref' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_new_ref' visibility='default' filepath='include/trace/hooks/binder.h' line='107' column='1' elf-symbol-id='__tracepoint_android_vh_binder_new_ref'/>
+      <var-decl name='__tracepoint_android_vh_binder_preset' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_preset' visibility='default' filepath='include/trace/hooks/binder.h' line='99' column='1' elf-symbol-id='__tracepoint_android_vh_binder_preset'/>
+      <var-decl name='__tracepoint_android_vh_binder_print_transaction_info' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_print_transaction_info' visibility='default' filepath='include/trace/hooks/binder.h' line='65' column='1' elf-symbol-id='__tracepoint_android_vh_binder_print_transaction_info'/>
       <var-decl name='__tracepoint_android_vh_binder_priority_skip' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_priority_skip' visibility='default' filepath='include/trace/hooks/binder.h' line='30' column='1' elf-symbol-id='__tracepoint_android_vh_binder_priority_skip'/>
-      <var-decl name='__tracepoint_android_vh_binder_proc_transaction' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_proc_transaction' visibility='default' filepath='include/trace/hooks/binder.h' line='98' column='1' elf-symbol-id='__tracepoint_android_vh_binder_proc_transaction'/>
+      <var-decl name='__tracepoint_android_vh_binder_proc_transaction' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_proc_transaction' visibility='default' filepath='include/trace/hooks/binder.h' line='102' column='1' elf-symbol-id='__tracepoint_android_vh_binder_proc_transaction'/>
       <var-decl name='__tracepoint_android_vh_binder_proc_transaction_entry' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_proc_transaction_entry' visibility='default' filepath='include/trace/hooks/binder.h' line='48' column='1' elf-symbol-id='__tracepoint_android_vh_binder_proc_transaction_entry'/>
-      <var-decl name='__tracepoint_android_vh_binder_proc_transaction_finish' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_proc_transaction_finish' visibility='default' filepath='include/trace/hooks/binder.h' line='57' column='1' elf-symbol-id='__tracepoint_android_vh_binder_proc_transaction_finish'/>
-      <var-decl name='__tracepoint_android_vh_binder_read_done' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_read_done' visibility='default' filepath='include/trace/hooks/binder.h' line='78' column='1' elf-symbol-id='__tracepoint_android_vh_binder_read_done'/>
-      <var-decl name='__tracepoint_android_vh_binder_reply' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_reply' visibility='default' filepath='include/trace/hooks/binder.h' line='87' column='1' elf-symbol-id='__tracepoint_android_vh_binder_reply'/>
+      <var-decl name='__tracepoint_android_vh_binder_proc_transaction_finish' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_proc_transaction_finish' visibility='default' filepath='include/trace/hooks/binder.h' line='61' column='1' elf-symbol-id='__tracepoint_android_vh_binder_proc_transaction_finish'/>
+      <var-decl name='__tracepoint_android_vh_binder_read_done' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_read_done' visibility='default' filepath='include/trace/hooks/binder.h' line='82' column='1' elf-symbol-id='__tracepoint_android_vh_binder_read_done'/>
+      <var-decl name='__tracepoint_android_vh_binder_reply' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_reply' visibility='default' filepath='include/trace/hooks/binder.h' line='91' column='1' elf-symbol-id='__tracepoint_android_vh_binder_reply'/>
       <var-decl name='__tracepoint_android_vh_binder_restore_priority' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_restore_priority' visibility='default' filepath='include/trace/hooks/binder.h' line='36' column='1' elf-symbol-id='__tracepoint_android_vh_binder_restore_priority'/>
+      <var-decl name='__tracepoint_android_vh_binder_select_special_worklist' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_select_special_worklist' visibility='default' filepath='include/trace/hooks/binder.h' line='57' column='1' elf-symbol-id='__tracepoint_android_vh_binder_select_special_worklist'/>
       <var-decl name='__tracepoint_android_vh_binder_select_worklist_ilocked' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_select_worklist_ilocked' visibility='default' filepath='include/trace/hooks/binder.h' line='53' column='1' elf-symbol-id='__tracepoint_android_vh_binder_select_worklist_ilocked'/>
       <var-decl name='__tracepoint_android_vh_binder_set_priority' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_set_priority' visibility='default' filepath='include/trace/hooks/binder.h' line='33' column='1' elf-symbol-id='__tracepoint_android_vh_binder_set_priority'/>
-      <var-decl name='__tracepoint_android_vh_binder_special_task' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_special_task' visibility='default' filepath='include/trace/hooks/binder.h' line='120' column='1' elf-symbol-id='__tracepoint_android_vh_binder_special_task'/>
-      <var-decl name='__tracepoint_android_vh_binder_thread_read' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_thread_read' visibility='default' filepath='include/trace/hooks/binder.h' line='68' column='1' elf-symbol-id='__tracepoint_android_vh_binder_thread_read'/>
-      <var-decl name='__tracepoint_android_vh_binder_thread_release' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_thread_release' visibility='default' filepath='include/trace/hooks/binder.h' line='75' column='1' elf-symbol-id='__tracepoint_android_vh_binder_thread_release'/>
-      <var-decl name='__tracepoint_android_vh_binder_trans' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_trans' visibility='default' filepath='include/trace/hooks/binder.h' line='91' column='1' elf-symbol-id='__tracepoint_android_vh_binder_trans'/>
+      <var-decl name='__tracepoint_android_vh_binder_spawn_new_thread' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_spawn_new_thread' visibility='default' filepath='include/trace/hooks/binder.h' line='148' column='1' elf-symbol-id='__tracepoint_android_vh_binder_spawn_new_thread'/>
+      <var-decl name='__tracepoint_android_vh_binder_special_task' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_special_task' visibility='default' filepath='include/trace/hooks/binder.h' line='124' column='1' elf-symbol-id='__tracepoint_android_vh_binder_special_task'/>
+      <var-decl name='__tracepoint_android_vh_binder_thread_read' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_thread_read' visibility='default' filepath='include/trace/hooks/binder.h' line='72' column='1' elf-symbol-id='__tracepoint_android_vh_binder_thread_read'/>
+      <var-decl name='__tracepoint_android_vh_binder_thread_release' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_thread_release' visibility='default' filepath='include/trace/hooks/binder.h' line='79' column='1' elf-symbol-id='__tracepoint_android_vh_binder_thread_release'/>
+      <var-decl name='__tracepoint_android_vh_binder_trans' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_trans' visibility='default' filepath='include/trace/hooks/binder.h' line='95' column='1' elf-symbol-id='__tracepoint_android_vh_binder_trans'/>
       <var-decl name='__tracepoint_android_vh_binder_transaction_init' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_transaction_init' visibility='default' filepath='include/trace/hooks/binder.h' line='27' column='1' elf-symbol-id='__tracepoint_android_vh_binder_transaction_init'/>
-      <var-decl name='__tracepoint_android_vh_binder_transaction_received' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_transaction_received' visibility='default' filepath='include/trace/hooks/binder.h' line='113' column='1' elf-symbol-id='__tracepoint_android_vh_binder_transaction_received'/>
+      <var-decl name='__tracepoint_android_vh_binder_transaction_received' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_transaction_received' visibility='default' filepath='include/trace/hooks/binder.h' line='117' column='1' elf-symbol-id='__tracepoint_android_vh_binder_transaction_received'/>
       <var-decl name='__tracepoint_android_vh_binder_wait_for_work' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_wait_for_work' visibility='default' filepath='include/trace/hooks/binder.h' line='42' column='1' elf-symbol-id='__tracepoint_android_vh_binder_wait_for_work'/>
       <var-decl name='__tracepoint_android_vh_binder_wakeup_ilocked' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_wakeup_ilocked' visibility='default' filepath='include/trace/hooks/binder.h' line='39' column='1' elf-symbol-id='__tracepoint_android_vh_binder_wakeup_ilocked'/>
       <var-decl name='__tracepoint_android_vh_blk_account_io_done' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_blk_account_io_done' visibility='default' filepath='include/trace/hooks/block.h' line='34' column='1' elf-symbol-id='__tracepoint_android_vh_blk_account_io_done'/>
@@ -135331,7 +135385,7 @@
       <var-decl name='__tracepoint_android_vh_exit_mm' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_exit_mm' visibility='default' filepath='include/trace/hooks/mm.h' line='55' column='1' elf-symbol-id='__tracepoint_android_vh_exit_mm'/>
       <var-decl name='__tracepoint_android_vh_exit_signal' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_exit_signal' visibility='default' filepath='include/trace/hooks/signal.h' line='18' column='1' elf-symbol-id='__tracepoint_android_vh_exit_signal'/>
       <var-decl name='__tracepoint_android_vh_exit_signal_whether_wake' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_exit_signal_whether_wake' visibility='default' filepath='include/trace/hooks/dtask.h' line='129' column='1' elf-symbol-id='__tracepoint_android_vh_exit_signal_whether_wake'/>
-      <var-decl name='__tracepoint_android_vh_free_oem_binder_struct' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_free_oem_binder_struct' visibility='default' filepath='include/trace/hooks/binder.h' line='117' column='1' elf-symbol-id='__tracepoint_android_vh_free_oem_binder_struct'/>
+      <var-decl name='__tracepoint_android_vh_free_oem_binder_struct' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_free_oem_binder_struct' visibility='default' filepath='include/trace/hooks/binder.h' line='121' column='1' elf-symbol-id='__tracepoint_android_vh_free_oem_binder_struct'/>
       <var-decl name='__tracepoint_android_vh_free_one_page_bypass' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_free_one_page_bypass' visibility='default' filepath='include/trace/hooks/mm.h' line='204' column='1' elf-symbol-id='__tracepoint_android_vh_free_one_page_bypass'/>
       <var-decl name='__tracepoint_android_vh_free_task' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_free_task' visibility='default' filepath='include/trace/hooks/sched.h' line='321' column='1' elf-symbol-id='__tracepoint_android_vh_free_task'/>
       <var-decl name='__tracepoint_android_vh_free_unref_page_bypass' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_free_unref_page_bypass' visibility='default' filepath='include/trace/hooks/mm.h' line='92' column='1' elf-symbol-id='__tracepoint_android_vh_free_unref_page_bypass'/>
@@ -169123,7 +169177,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
