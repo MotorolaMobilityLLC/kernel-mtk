@@ -721,6 +721,7 @@ ocp81375_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	pr_info("%s ocp81375_DEVICES_ID 0x%2x\n", __func__, dev_id);
 
 	if (dev_id != OCP81375_VER_DEVICES_ID) {
+		ocp81375_pinctrl_set(OCP81375_PINCTRL_PIN_HWEN, OCP81375_PINCTRL_PINSTATE_LOW);
 		pr_info("%s is not ocp81375 flashlight", __func__);
 		err = -ENODEV;
 		goto err_free;
@@ -776,6 +777,7 @@ static void ocp81375_i2c_shutdown(struct i2c_client *client)
 	ocp81375_i2c_write(ocp81375_i2c_client, OCP81375_REG_ENABLE,
 						OCP81375_CHIP_STANDBY);
 
+	ocp81375_pinctrl_set(OCP81375_PINCTRL_PIN_HWEN, OCP81375_PINCTRL_PINSTATE_LOW);
 	pr_info("ocp81375 shutdown done.\n");
 }
 
