@@ -1,0 +1,126 @@
+/*
+ * Copyright (c) 2021 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&pio {
+	sar_int_default: sar_int_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
+			input-enable;
+			drive-strength = <2>;
+			bias-pull-up;
+		};
+	};
+
+	sar_int_sleep: sar_int_sleep {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
+			input-enable;
+			drive-strength = <2>;
+			bias-pull-up;
+		};
+	};
+};
+
+&mt6363_vio18 {
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <2100000>;
+};
+
+&i2c0 {
+	status = "okay";
+
+	sx937x:sx937x@2c {
+		compatible = "Semtech,sx937x";
+		reg = <0x2c>;
+		pinctrl-names = "default","sleep";
+		pinctrl-0 = <&sar_int_default>;
+		pinctrl-1 = <&sar_int_sleep>;
+		interrupt-parent = <&pio>;
+		interrupts = <18 0x02>;
+		interrupt-names = "sx937x_irq";
+		Semtech,nirq-gpio = <&pio 18 0x02>;
+		cap_vdd-supply = <&mt6363_vio18>;
+		/*use PH4/5/6 as the reference sensor
+		set it to 0xff if the ref-phases-x is not used*/
+		Semtech,ref-phases-a = <5>;
+		Semtech,ref-phases-b = <6>;
+		Semtech,ref-phases-c = <0xff>;
+		Semtech,button-flag = <0x1f>;
+		Semtech,reg-num = <61>;
+		Semtech,reg-init = <
+			0x8024  0x7F7F
+			0x4004  0x74
+			0x4008  0x8
+			0x8020  0x32
+			0x8028  0x86F
+			0x8034  0x86F
+			0x8040  0x86F
+			0x804C  0x86F
+			0x8058  0x86F
+			0x8064  0x877
+			0x8070  0x877
+			0x807C  0x88E
+			0x8030  0x924925
+			0x803C  0xB24924
+			0x8048  0x925924
+			0x8054  0x92C924
+			0x8060  0x964924
+			0x806C  0x92492C
+			0x8078  0x924964
+			0x8084  0xFFF9FF
+			0x8098  0x5035
+			0x80B8  0x2525
+			0x80D8  0x593F
+			0x80F8  0x1414
+			0x8118  0x2A2A
+			0x8138  0x8E
+			0x8158  0x8E
+			0x8178  0x8E
+			0x80A0  0x20200001
+			0x80C0  0x20200002
+			0x80E0  0x28280002
+			0x8100  0x07070003
+			0x8120  0x0D0D0004
+			0x8188  0x8000015
+			0x818C  0x8000016
+			0x8190  0x8000015
+			0x8194  0x8000015
+			0x8090  0x54BC5000
+			0x80B0  0x54B85000
+			0x80D0  0x54B85000
+			0x80F0  0x28D87000
+			0x8110  0x64A45000
+			0x8130  0x5300
+			0x8150  0x5300
+			0x8170  0x5300
+			0x8088  0x300000
+			0x80A8  0x300000
+			0x80C8  0x300000
+			0x80E8  0x300000
+			0x8108  0x300000
+			0x8128  0x300000
+			0x8148  0x300000
+			0x8168  0x300000
+			0x808C  0x602000C0
+			0x80AC  0x602000C0
+			0x80CC  0x602000C0
+			0x80EC  0x6020000C
+			0x810C  0x602000C0
+			0x812C  0x60200030
+			0x814C  0x60200030
+			0x816C  0x60200030
+		>;
+
+		status = "okay";
+	};
+};
