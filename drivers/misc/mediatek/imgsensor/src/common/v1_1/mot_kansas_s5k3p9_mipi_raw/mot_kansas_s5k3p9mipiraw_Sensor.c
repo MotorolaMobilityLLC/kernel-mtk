@@ -42,7 +42,9 @@
 #if IS_ENABLED(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 #include "imgsensor_ca.h"
 #endif
-
+extern mot_calibration_status_t *KANSAS_S5K3P9_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *KANSAS_S5K3P9_eeprom_get_mnf_info(void);
+extern void KANSAS_S5K3P9_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 #ifdef VENDOR_EDIT
 	#undef VENDOR_EDIT
 #endif
@@ -4220,6 +4222,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					__func__, imgsensor.i2c_write_id, *sensor_id);
 				*sensor_id = MOT_KANSAS_S5K3P9_SENSOR_ID;
 				read_four_cell_from_eeprom(NULL);
+				KANSAS_S5K3P9_eeprom_format_calibration_data(&imgsensor);
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x\n",
@@ -4548,6 +4551,9 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SlimVideoDelayFrame =
 		imgsensor_info.slim_video_delay_frame;
 
+	/*Apply manufacture info*/
+	memcpy(&sensor_info->mnf_calibration, KANSAS_S5K3P9_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, KANSAS_S5K3P9_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
 	sensor_info->SensorMasterClockSwitch = 0;
 	/* not use */
 	sensor_info->SensorDrivingCurrent =

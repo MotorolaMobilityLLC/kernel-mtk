@@ -34,13 +34,8 @@ static  struct imgsensor_struct *imgsensor;
 
 #define KANSAS_S5KJNS_EEPROM_SLAVE_ADDR 0xA0
 #define KANSAS_S5KJNS_SENSOR_IIC_SLAVE_ADDR 0xAC
-#define KANSAS_S5KJNS_EEPROM_SIZE  0x015C
-//#define KANSAS_S5KJNS_EEPROM_CRC_MANUFACTURING_SIZE 37
-//#define KANSAS_S5KJNS_EEPROM_CRC_AF_CAL_SIZE 24
-//#define KANSAS_S5KJNS_EEPROM_CRC_AWB_CAL_SIZE 43
-//#define KANSAS_S5KJNS_EEPROM_CRC_LSC_SIZE 1868
-//#define KANSAS_S5KJNS_EEPROM_CRC_PDAF_OUTPUT1_SIZE 496
-//#define KANSAS_S5KJNS_EEPROM_CRC_PDAF_OUTPUT2_SIZE 1004
+#define KANSAS_S5KJNS_EEPROM_SIZE  0x0183
+#define KANSAS_S5KJNS_EEPROM_CRC_MANUFACTURING_SIZE 39
 #define KANSAS_S5KJNS_EEPROM_CRC_XTC_SIZE 346
 #define KANSAS_S5KJNS_EEPROM_CRC_XTC_WRITE_SIZE (KANSAS_S5KJNS_EEPROM_CRC_XTC_SIZE/2 + 2)
 
@@ -49,8 +44,8 @@ static kansas_xtc_cal_addr_data_t hw_ggc_data[KANSAS_S5KJNS_EEPROM_CRC_XTC_WRITE
 int xtc_data_valid = 0;
 
 static uint8_t KANSAS_S5KJNS_eeprom[KANSAS_S5KJNS_EEPROM_SIZE] = {0};
-//static mot_calibration_status_t calibration_status = {CRC_FAILURE};
-//static mot_calibration_mnf_t mnf_info = {0};
+static mot_calibration_status_t calibration_status = {CRC_FAILURE};
+static mot_calibration_mnf_t mnf_info = {0};
 
 extern kal_uint16 mot_kansas_s5kjns_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len);
 
@@ -64,13 +59,6 @@ static uint32_t convert_crc(uint8_t *crc_ptr)
 {
 	return (crc_ptr[0] << 8) | (crc_ptr[1]);
 }
-
-//static uint16_t to_uint16_swap(uint8_t *data)
-//{
-//	uint16_t converted;
-//	memcpy(&converted, data, sizeof(uint16_t));
-//	return ntohs(converted);
-//}
 
 static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
 {
@@ -137,7 +125,7 @@ static kal_uint16 KANSAS_S5KJNS_read_cmos_sensor_8(kal_uint16 addr)
 	return get_byte;
 }
 
-static void KANSAS_S5KJNS_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size)
+static void KANSAS_S5KJNS_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size, kal_uint8* eeprom_data)
 {
 	int i = 0;
 	spin_lock(&imgsensor_lock);
@@ -145,7 +133,7 @@ static void KANSAS_S5KJNS_read_data_from_eeprom(kal_uint8 slave, kal_uint32 star
 	spin_unlock(&imgsensor_lock);
 
 	for (i = 0; i < size; i ++) {
-		KANSAS_S5KJNS_eeprom[i] = KANSAS_S5KJNS_read_cmos_sensor_8(start_add);
+		eeprom_data[i] = KANSAS_S5KJNS_read_cmos_sensor_8(start_add);
 		start_add ++;
 	}
 
@@ -154,194 +142,17 @@ static void KANSAS_S5KJNS_read_data_from_eeprom(kal_uint8 slave, kal_uint32 star
 	spin_unlock(&imgsensor_lock);
 }
 
-#if 0
+
 static calibration_status_t KANSAS_S5KJNS_check_manufacturing_data(void *data)
 {
 	struct KANSAS_S5KJNS_eeprom_t *eeprom = (struct KANSAS_S5KJNS_eeprom_t*)data;
 	LOG_INF("Manufacturing eeprom->mpn = %s !",eeprom->mpn);
-	if (!eeprom_util_check_crc16(eeprom->eeprom_table_version, KANSAS_S5KJNS_EEPROM_CRC_MANUFACTURING_SIZE,
+	if (!eeprom_util_check_crc16(eeprom->eeprom_table_version, KANSAS_S5KJNS_EEPROM_CRC_MANUFACTURING_SIZE-2,
 		convert_crc(eeprom->manufacture_crc16))) {
 		LOG_ERROR("Manufacturing CRC Fails!");
 		return CRC_FAILURE;
 	}
 	LOG_INF("Manufacturing CRC Pass");
-	return NO_ERRORS;
-}
-
-static calibration_status_t KANSAS_S5KJNS_check_af_data(void *data)
-{
-	struct KANSAS_S5KJNS_eeprom_t *eeprom = (struct KANSAS_S5KJNS_eeprom_t*)data;
-
-	if (!eeprom_util_check_crc16(eeprom->af_data, KANSAS_S5KJNS_EEPROM_CRC_AF_CAL_SIZE,
-		convert_crc(eeprom->af_crc16))) {
-		LOG_ERROR("Autofocus CRC Fails!");
-		return CRC_FAILURE;
-	}
-	LOG_INF("Autofocus CRC Pass");
-	return NO_ERRORS;
-}
-
-static uint8_t mot_eeprom_util_calculate_awb_factors_limit(awb_t unit, awb_t golden,
-		awb_limit_t limit)
-{
-	uint32_t r_g;
-	uint32_t b_g;
-	uint32_t golden_rg, golden_bg;
-	uint32_t r_g_golden_min;
-	uint32_t r_g_golden_max;
-	uint32_t b_g_golden_min;
-	uint32_t b_g_golden_max;
-
-	r_g = unit.r_g * 1000;
-	b_g = unit.b_g*1000;
-
-	golden_rg = golden.r_g* 1000;
-	golden_bg = golden.b_g* 1000;
-
-	r_g_golden_min = limit.r_g_golden_min*16384;
-	r_g_golden_max = limit.r_g_golden_max*16384;
-	b_g_golden_min = limit.b_g_golden_min*16384;
-	b_g_golden_max = limit.b_g_golden_max*16384;
-	LOG_INF("rg = %d, bg=%d,rgmin=%d,bgmax =%d\n",r_g,b_g,r_g_golden_min,r_g_golden_max);
-	LOG_INF("grg = %d, gbg=%d,bgmin=%d,bgmax =%d\n",golden_rg,golden_bg,b_g_golden_min,b_g_golden_max);
-	if (r_g < (golden_rg - r_g_golden_min) || r_g > (golden_rg + r_g_golden_max)) {
-		LOG_INF("Final RG calibration factors out of range!");
-		return 1;
-	}
-
-	if (b_g < (golden_bg - b_g_golden_min) || b_g > (golden_bg + b_g_golden_max)) {
-		LOG_INF("Final BG calibration factors out of range!");
-		return 1;
-	}
-	return 0;
-}
-
-static uint8_t mot_eeprom_util_check_awb_limits(awb_t unit, awb_t golden)
-{
-	uint8_t result = 0;
-
-	if (unit.r < AWB_R_MIN || unit.r > AWB_R_MAX) {
-		LOG_INF("unit r out of range! MIN: %d, r: %d, MAX: %d",
-			AWB_R_MIN, unit.r, AWB_R_MAX);
-		result = 1;
-	}
-	if (unit.gr < AWB_GR_MIN || unit.gr > AWB_GR_MAX) {
-		LOG_INF("unit gr out of range! MIN: %d, gr: %d, MAX: %d",
-			AWB_GR_MIN, unit.gr, AWB_GR_MAX);
-		result = 1;
-	}
-	if (unit.gb < AWB_GB_MIN || unit.gb > AWB_GB_MAX) {
-		LOG_INF("unit gb out of range! MIN: %d, gb: %d, MAX: %d",
-			AWB_GB_MIN, unit.gb, AWB_GB_MAX);
-		result = 1;
-	}
-	if (unit.b < AWB_B_MIN || unit.b > AWB_B_MAX) {
-		LOG_INF("unit b out of range! MIN: %d, b: %d, MAX: %d",
-			AWB_B_MIN, unit.b, AWB_B_MAX);
-		result = 1;
-	}
-
-	if (golden.r < AWB_R_MIN || golden.r > AWB_R_MAX) {
-		LOG_INF("golden r out of range! MIN: %d, r: %d, MAX: %d",
-			AWB_R_MIN, golden.r, AWB_R_MAX);
-		result = 1;
-	}
-	if (golden.gr < AWB_GR_MIN || golden.gr > AWB_GR_MAX) {
-		LOG_INF("golden gr out of range! MIN: %d, gr: %d, MAX: %d",
-			AWB_GR_MIN, golden.gr, AWB_GR_MAX);
-		result = 1;
-	}
-	if (golden.gb < AWB_GB_MIN || golden.gb > AWB_GB_MAX) {
-		LOG_INF("golden gb out of range! MIN: %d, gb: %d, MAX: %d",
-			AWB_GB_MIN, golden.gb, AWB_GB_MAX);
-		result = 1;
-	}
-	if (golden.b < AWB_B_MIN || golden.b > AWB_B_MAX) {
-		LOG_INF("golden b out of range! MIN: %d, b: %d, MAX: %d",
-			AWB_B_MIN, golden.b, AWB_B_MAX);
-		result = 1;
-	}
-
-	return result;
-}
-
-static calibration_status_t KANSAS_S5KJNS_check_awb_data(void *data)
-{
-	struct KANSAS_S5KJNS_eeprom_t *eeprom = (struct KANSAS_S5KJNS_eeprom_t*)data;
-	awb_t unit;
-	awb_t golden;
-	awb_limit_t golden_limit;
-
-	if(!eeprom_util_check_crc16(eeprom->cie_src_1_ev,
-		KANSAS_S5KJNS_EEPROM_CRC_AWB_CAL_SIZE,
-		convert_crc(eeprom->awb_crc16))) {
-		LOG_ERROR("AWB CRC Fails!");
-		return CRC_FAILURE;
-	}
-
-	unit.r = to_uint16_swap(eeprom->awb_src_1_r)/64;
-	unit.gr = to_uint16_swap(eeprom->awb_src_1_gr)/64;
-	unit.gb = to_uint16_swap(eeprom->awb_src_1_gb)/64;
-	unit.b = to_uint16_swap(eeprom->awb_src_1_b)/64;
-	unit.r_g = to_uint16_swap(eeprom->awb_src_1_rg_ratio);
-	unit.b_g = to_uint16_swap(eeprom->awb_src_1_bg_ratio);
-	unit.gr_gb = to_uint16_swap(eeprom->awb_src_1_gr_gb_ratio);
-
-	golden.r = to_uint16_swap(eeprom->awb_src_1_golden_r)/64;
-	golden.gr = to_uint16_swap(eeprom->awb_src_1_golden_gr)/64;
-	golden.gb = to_uint16_swap(eeprom->awb_src_1_golden_gb)/64;
-	golden.b = to_uint16_swap(eeprom->awb_src_1_golden_b)/64;
-	golden.r_g = to_uint16_swap(eeprom->awb_src_1_golden_rg_ratio);
-	golden.b_g = to_uint16_swap(eeprom->awb_src_1_golden_bg_ratio);
-	golden.gr_gb = to_uint16_swap(eeprom->awb_src_1_golden_gr_gb_ratio);
-	if (mot_eeprom_util_check_awb_limits(unit, golden)) {
-		LOG_ERROR("AWB CRC limit Fails!");
-		return LIMIT_FAILURE;
-	}
-
-	golden_limit.r_g_golden_min = eeprom->awb_r_g_golden_min_limit[0];
-	golden_limit.r_g_golden_max = eeprom->awb_r_g_golden_max_limit[0];
-	golden_limit.b_g_golden_min = eeprom->awb_b_g_golden_min_limit[0];
-	golden_limit.b_g_golden_max = eeprom->awb_b_g_golden_max_limit[0];
-
-	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden,golden_limit)) {
-		LOG_ERROR("AWB CRC factor limit Fails!");
-		return LIMIT_FAILURE;
-	}
-	LOG_INF("AWB CRC Pass");
-	return NO_ERRORS;
-}
-
-static calibration_status_t KANSAS_S5KJNS_check_lsc_data_mtk(void *data)
-{
-	struct KANSAS_S5KJNS_eeprom_t *eeprom = (struct KANSAS_S5KJNS_eeprom_t*)data;
-
-	if (!eeprom_util_check_crc16(eeprom->lsc_data_mtk, KANSAS_S5KJNS_EEPROM_CRC_LSC_SIZE,
-		convert_crc(eeprom->lsc_crc16_mtk))) {
-		LOG_INF("LSC CRC Fails!");
-		return CRC_FAILURE;
-	}
-	LOG_INF("LSC CRC Pass");
-	return NO_ERRORS;
-}
-
-static calibration_status_t KANSAS_S5KJNS_check_pdaf_data(void *data)
-{
-	struct KANSAS_S5KJNS_eeprom_t *eeprom = (struct KANSAS_S5KJNS_eeprom_t*)data;
-
-	if (!eeprom_util_check_crc16(eeprom->pdaf_out1_data_mtk, KANSAS_S5KJNS_EEPROM_CRC_PDAF_OUTPUT1_SIZE,
-		convert_crc(eeprom->pdaf_out1_crc16_mtk))) {
-		LOG_ERROR("PDAF OUTPUT1 CRC Fails!");
-		return CRC_FAILURE;
-	}
-
-	if (!eeprom_util_check_crc16(eeprom->pdaf_out2_data_mtk, KANSAS_S5KJNS_EEPROM_CRC_PDAF_OUTPUT2_SIZE,
-		convert_crc(eeprom->pdaf_out2_crc16_mtk))) {
-		LOG_ERROR("PDAF OUTPUT2 CRC Fails!");
-		return CRC_FAILURE;
-	}
-
-	LOG_INF("PDAF CRC Pass");
 	return NO_ERRORS;
 }
 
@@ -436,7 +247,7 @@ static void KANSAS_S5KJNS_eeprom_get_mnf_data(void *data,
 		mnf->serial_number[0] = 0;
 	}
 }
-#endif
+
 
 int get_hw_ggc_data(void *data)
 {
@@ -471,32 +282,22 @@ int get_hw_ggc_data(void *data)
 void KANSAS_S5KJNS_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
 {
 	imgsensor = pImgsensor;
-	KANSAS_S5KJNS_read_data_from_eeprom(KANSAS_S5KJNS_EEPROM_SLAVE_ADDR, 0x191D, KANSAS_S5KJNS_EEPROM_SIZE);
-	//calibration_status.mnf = KANSAS_S5KJNS_check_manufacturing_data(KANSAS_S5KJNS_eeprom);
-	//calibration_status.af = KANSAS_S5KJNS_check_af_data(KANSAS_S5KJNS_eeprom);
-	//calibration_status.awb = KANSAS_S5KJNS_check_awb_data(KANSAS_S5KJNS_eeprom);
-	//calibration_status.lsc = KANSAS_S5KJNS_check_lsc_data_mtk(KANSAS_S5KJNS_eeprom);
-	//calibration_status.pdaf = KANSAS_S5KJNS_check_pdaf_data(KANSAS_S5KJNS_eeprom);
-	//calibration_status.dual = NO_ERRORS;
-
-	//KANSAS_S5KJNS_eeprom_get_mnf_data((void *)KANSAS_S5KJNS_eeprom, &mnf_info);
-
+	KANSAS_S5KJNS_read_data_from_eeprom(KANSAS_S5KJNS_EEPROM_SLAVE_ADDR, 0x0000, KANSAS_S5KJNS_EEPROM_CRC_MANUFACTURING_SIZE, KANSAS_S5KJNS_eeprom);
+	KANSAS_S5KJNS_read_data_from_eeprom(KANSAS_S5KJNS_EEPROM_SLAVE_ADDR, 0x191D, KANSAS_S5KJNS_EEPROM_CRC_XTC_SIZE+2, KANSAS_S5KJNS_eeprom+KANSAS_S5KJNS_EEPROM_CRC_MANUFACTURING_SIZE);
+	calibration_status.mnf = KANSAS_S5KJNS_check_manufacturing_data(KANSAS_S5KJNS_eeprom);
+	KANSAS_S5KJNS_eeprom_get_mnf_data((void *)KANSAS_S5KJNS_eeprom, &mnf_info);
 	get_hw_ggc_data(KANSAS_S5KJNS_eeprom);
-
-	//LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
-	//        calibration_status.mnf, calibration_status.af, calibration_status.awb,
-	//        calibration_status.lsc, calibration_status.pdaf, calibration_status.dual);
 }
 
-//mot_calibration_status_t *KANSAS_S5KJNS_eeprom_get_calibration_status(void)
-//{
-//	return &calibration_status;
-//}
+mot_calibration_status_t *KANSAS_S5KJNS_eeprom_get_calibration_status(void)
+{
+	return &calibration_status;
+}
 
-//mot_calibration_mnf_t *KANSAS_S5KJNS_eeprom_get_mnf_info(void)
-//{
-//	return &mnf_info;
-//}
+mot_calibration_mnf_t *KANSAS_S5KJNS_eeprom_get_mnf_info(void)
+{
+	return &mnf_info;
+}
 
 
 void write_xtc_data(void)
