@@ -833,6 +833,12 @@ config MOTO_CHG_FFC_THRESHOLD_1900
 	help
 		This is to enable MOTO 5V10W Charger FFC THRESHOLD 1900mA.
 
+config MOTO_CHG_FFC_10W_2A_SUPPORT
+	bool "Raise input current up to 2.5A as long as the charging step is in CC status"
+	default n
+	help
+		This is raise input current up to 2.5A the charging step is in CC status.
+
 config MOTO_SELECT_LOW_TMP_BATVOL
 	bool "Select low temperature battery voltage low bound"
 	default n
