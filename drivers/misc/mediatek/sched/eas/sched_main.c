@@ -20,6 +20,9 @@
 #include "common.h"
 #include "eas_plus.h"
 #include "sched_sys_common.h"
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+#include "eas/vip.h"
+#endif
 
 #define CREATE_TRACE_POINTS
 #include "eas_trace.h"
@@ -136,9 +139,17 @@ static int __init mtk_scheduler_init(void)
 {
 	int ret = 0;
 
+	/* compile time checks for vendor data size */
+	MTK_VENDOR_DATA_SIZE_TEST(struct mtk_task, struct task_struct);
+	MTK_VENDOR_DATA_SIZE_TEST(struct mtk_tg, struct task_group);
+
 	ret = init_sched_common_sysfs();
 	if (ret)
 		return ret;
+
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+	vip_init();
+#endif
 
 	mtk_static_power_init();
 

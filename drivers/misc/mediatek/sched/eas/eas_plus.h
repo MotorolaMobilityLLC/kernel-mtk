@@ -2,14 +2,15 @@
 /*
  * Copyright (c) 2021 MediaTek Inc.
  */
-#include <sched/pelt.h>
 
 #ifndef _EAS_PLUS_H
 #define _EAS_PLUS_H
+#include <sched/pelt.h>
 
 #define MIGR_IDLE_BALANCE               1
 #define MIGR_IDLE_PULL_MISFIT_RUNNING   2
 #define MIGR_TICK_PULL_MISFIT_RUNNING   3
+#define MIGR_IDLE_PULL_VIP_RUNNABLE     4
 
 DECLARE_PER_CPU(unsigned long, max_freq_scale);
 DECLARE_PER_CPU(unsigned long, min_freq);
@@ -29,6 +30,10 @@ DECLARE_PER_CPU(unsigned long, min_freq);
 #define LB_RT_IDLE      (0x4000)
 #define LB_RT_LOWEST_PRIO  (0x8000)
 
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+#define LB_BACKUP_VVIP 		(0x490)
+#define LB_VIP_BACKUP		(0x500)
+#endif
 #ifdef CONFIG_SMP
 /*
  * The margin used when comparing utilization with CPU capacity.
@@ -42,7 +47,7 @@ unsigned long capacity_of(int cpu);
 extern unsigned long cpu_util(int cpu);
 extern int mtk_static_power_init(void);
 extern int task_fits_capacity(struct task_struct *p, long capacity);
-
+extern struct task_struct *next_vvip_runable_in_cpu(struct rq *rq);
 #if IS_ENABLED(CONFIG_MTK_EAS)
 extern void mtk_find_busiest_group(void *data, struct sched_group *busiest,
 		struct rq *dst_rq, int *out_balance);

@@ -419,6 +419,131 @@ TRACE_EVENT(sched_headroom_interval_tick,
 		__entry->tick)
 );
 
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+TRACE_EVENT(sched_find_imbalanced_vvip_gear,
+	TP_PROTO(int cpu, int num_vvip_in_gear),
+
+	TP_ARGS(cpu, num_vvip_in_gear),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, num_vvip_in_gear)
+	),
+
+	TP_fast_assign(
+		__entry->cpu               = cpu;
+		__entry->num_vvip_in_gear  = num_vvip_in_gear;
+	),
+
+	TP_printk("cpu=%d num_vvip_in_gear=%d",
+		  __entry->cpu, __entry->num_vvip_in_gear)
+);
+
+extern int sched_cgroup_state(struct task_struct *p, int subsys_id);
+
+TRACE_EVENT(sched_get_vip_task_prio,
+	TP_PROTO(struct task_struct *p, int vip_prio, bool is_ls, unsigned int ls_vip_threshold,
+			unsigned int group_threshold, bool is_basic_vip),
+
+	TP_ARGS(p, vip_prio, is_ls, ls_vip_threshold, group_threshold, is_basic_vip),
+
+	TP_STRUCT__entry(
+		__field(int, pid)
+		__field(int, vip_prio)
+		__field(int, prio)
+		__field(bool, is_ls)
+		__field(unsigned int, ls_vip_threshold)
+		__field(int, cpuctl)
+		__field(unsigned int, group_threshold)
+		__field(bool, is_basic_vip)
+	),
+
+	TP_fast_assign(
+		__entry->pid               = p->pid;
+		__entry->vip_prio          = vip_prio;
+		__entry->prio              = p->prio;
+		__entry->is_ls             = is_ls;
+		__entry->ls_vip_threshold  = ls_vip_threshold;
+		__entry->cpuctl            = sched_cgroup_state(p, cpu_cgrp_id);
+		__entry->group_threshold   = group_threshold;
+		__entry->is_basic_vip      = is_basic_vip;
+	),
+
+	TP_printk("pid=%d vip_prio=%d prio=%d is_ls=%d ls_vip_threshold=%d cpuctl=%d group_threshold=%d is_basic_vip=%d",
+		  __entry->pid, __entry->vip_prio, __entry->prio, __entry->is_ls,
+		  __entry->ls_vip_threshold, __entry->cpuctl, __entry->group_threshold,
+		  __entry->is_basic_vip)
+);
+
+TRACE_EVENT(sched_insert_vip_task,
+	TP_PROTO(struct task_struct *p, int cpu, int num_vip, int vip_prio, bool at_front,
+			pid_t prev_pid, pid_t next_pid, bool requeue, bool is_first_entry),
+
+	TP_ARGS(p, cpu, num_vip, vip_prio, at_front, prev_pid, next_pid, requeue,
+		is_first_entry),
+
+	TP_STRUCT__entry(
+		__field(int, pid)
+		__field(int, cpu)
+		__field(int, num_vip)
+		__field(int, vip_prio)
+		__field(bool, at_front)
+		__field(int, prev_pid)
+		__field(int, next_pid)
+		__field(bool, requeue)
+		__field(bool, is_first_entry)
+		__field(int, prio)
+		__field(int, cpuctl)
+	),
+
+	TP_fast_assign(
+		__entry->pid       = p->pid;
+		__entry->cpu       = cpu;
+		__entry->num_vip   = num_vip;
+		__entry->vip_prio  = vip_prio;
+		__entry->at_front  = at_front;
+		__entry->prev_pid  = prev_pid;
+		__entry->next_pid  = next_pid;
+		__entry->requeue   = requeue;
+		__entry->is_first_entry = is_first_entry;
+		__entry->prio    = p->prio;
+		__entry->cpuctl  = sched_cgroup_state(p, cpu_cgrp_id);
+	),
+
+	TP_printk("pid=%d cpu=%d num_vip=%d vip_prio=%d at_front=%d prev_pid=%d next_pid=%d requeue=%d, is_first_entry=%d, prio=%d, cpuctl=%d",
+		  __entry->pid, __entry->cpu, __entry->num_vip, __entry->vip_prio, __entry->at_front,
+		  __entry->prev_pid, __entry->next_pid, __entry->requeue, __entry->is_first_entry,
+		__entry->prio, __entry->cpuctl)
+);
+
+TRACE_EVENT(sched_deactivate_vip_task,
+	TP_PROTO(pid_t pid, int cpu, int num_vip, pid_t prev_pid,
+			pid_t next_pid),
+
+	TP_ARGS(pid, cpu, num_vip, prev_pid, next_pid),
+
+	TP_STRUCT__entry(
+		__field(int, pid)
+		__field(int, cpu)
+		__field(int, num_vip)
+		__field(int, prev_pid)
+		__field(int, next_pid)
+	),
+
+	TP_fast_assign(
+		__entry->pid       = pid;
+		__entry->cpu       = cpu;
+		__entry->num_vip   = num_vip;
+		__entry->prev_pid  = prev_pid;
+		__entry->next_pid  = next_pid;
+	),
+
+	TP_printk("pid=%d cpu=%d num_vip=%d orig_prev_pid=%d orig_next_pid=%d",
+		  __entry->pid, __entry->cpu, __entry->num_vip, __entry->prev_pid,
+		  __entry->next_pid)
+);
+#endif /* CONFIG_MTK_SCHED_VIP_TASK */
+
 #endif /* _TRACE_SCHEDULER_H */
 
 #undef TRACE_INCLUDE_PATH

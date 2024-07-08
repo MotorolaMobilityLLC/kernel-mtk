@@ -13,6 +13,9 @@
 #if IS_ENABLED(CONFIG_MTK_THERMAL_INTERFACE)
 #include <thermal_interface.h>
 #endif
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+#include "eas/vip.h"
+#endif
 
 #define CREATE_TRACE_POINTS
 #include "sched_trace.h"
@@ -378,9 +381,42 @@ int mtk_find_idle_cpu(struct task_struct *p)
 	return target_cpu;
 }
 
+static inline bool is_target_max_spare_cpu(bool is_vip, unsigned int num_vip, unsigned int min_num_vip,
+			long spare_cap, long target_max_spare_cap,
+			int best_cpu, int new_cpu, const char *type)
+{
+	bool replace = true;
+
+	if (is_vip) {
+		if (num_vip > min_num_vip) {
+			replace = false;
+			goto out;
+		}
+
+		if (num_vip == min_num_vip &&
+				spare_cap <= target_max_spare_cap) {
+			replace = false;
+			goto out;
+		}
+	} else {
+		if (spare_cap <= target_max_spare_cap) {
+			replace = false;
+			goto out;
+		}
+	}
+
+out:
+	if (trace_sched_target_max_spare_cpu_enabled())
+		trace_sched_target_max_spare_cpu(type, best_cpu, new_cpu, replace,
+			is_vip, num_vip, min_num_vip, spare_cap, target_max_spare_cap);
+
+	return replace;
+}
+
 void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_cpu, int sync, int *new_cpu)
 {
 	unsigned long best_delta = ULONG_MAX;
+	cpumask_t cpus;
 	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
 	int best_idle_cpu = -1;
 	long sys_max_spare_cap = LONG_MIN, idle_max_spare_cap = LONG_MIN;
@@ -394,6 +430,32 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 	struct cpuidle_state *idle;
 	struct perf_domain *pd;
 	int select_reason = -1;
+	bool is_vip = false;
+	bool is_vvip = false;
+	unsigned int num_vip, prev_min_num_vip, min_num_vip;
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+	struct vip_task_struct *vts;
+	struct cpumask allowed_cpu_mask;
+	unsigned int (*num_vip_in_cpu_fn)(int cpu) = num_vip_in_cpu;
+	int target_balance_cluster;
+	int min_num_vvip_cpu = -1,ignore_cluster_num = 0,order_index = 2;
+	unsigned int num_vvip = 0, min_num_vvip_in_cpu = UINT_MAX;
+#endif
+
+	num_vip = prev_min_num_vip = min_num_vip = UINT_MAX;
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+	vts = &((struct mtk_task *) p->android_vendor_data1)->vip_task;
+	vts->vip_prio = get_vip_task_prio(p);
+	is_vip = task_is_vip(p, NOT_VIP);
+	is_vvip = task_is_vip(p, VVIP);
+	if (is_vvip) {
+		target_balance_cluster = find_imbalanced_vvip_gear();
+		if (target_balance_cluster != -1) {
+			order_index = target_balance_cluster;
+			num_vip_in_cpu_fn = num_vvip_in_cpu;
+		}
+	}
+#endif
 
 	rcu_read_lock();
 	if (!uclamp_min_ls)
@@ -408,6 +470,10 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 		select_reason = LB_FAIL;
 		goto fail;
 	}
+
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+	ignore_cluster_num = arch_get_nr_clusters() - order_index -1;
+#endif
 
 	cpu = smp_processor_id();
 	if (sync && cpu_rq(cpu)->nr_running == 1 &&
@@ -440,7 +506,12 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 #if IS_ENABLED(CONFIG_MTK_THERMAL_AWARE_SCHEDULING)
 		int cpu_order[NR_CPUS]  ____cacheline_aligned, cnt, i;
 #endif
-
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+		if (ignore_cluster_num > 0){
+                        ignore_cluster_num--;
+			continue;
+                }
+#endif
 #if IS_ENABLED(CONFIG_MTK_THERMAL_AWARE_SCHEDULING)
 		cnt = sort_thermal_headroom(perf_domain_span(pd), cpu_order);
 
@@ -461,7 +532,21 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 			spare_cap = cpu_cap;
 			lsub_positive(&spare_cap, util);
 
-			if (spare_cap > sys_max_spare_cap) {
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+			if (is_vip) {
+				num_vip = num_vip_in_cpu_fn(cpu);
+				if (!is_vvip && num_vvip_in_cpu(cpu))
+					continue;
+				if (num_vip > min_num_vip)
+					continue;
+
+				prev_min_num_vip = min_num_vip;
+				min_num_vip = num_vip;
+			}
+#endif
+			if (is_target_max_spare_cpu(is_vip, num_vip, prev_min_num_vip,
+					spare_cap, sys_max_spare_cap,
+					sys_max_spare_cap_cpu, cpu, "sys_max_spare")) {
 				sys_max_spare_cap = spare_cap;
 				sys_max_spare_cap_cpu = cpu;
 			}
@@ -473,7 +558,9 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 			 * of exit latency.
 			 */
 			if (latency_sensitive && idle_cpu(cpu) &&
-					spare_cap > idle_max_spare_cap) {
+					is_target_max_spare_cpu(is_vip, num_vip, prev_min_num_vip,
+					spare_cap, idle_max_spare_cap,
+					idle_max_spare_cap_cpu, cpu, "idle_max_spare")) {
 				idle_max_spare_cap = spare_cap;
 				idle_max_spare_cap_cpu = cpu;
 			}
@@ -493,7 +580,9 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 			 * Find the CPU with the maximum spare capacity in
 			 * the performance domain
 			 */
-			if (spare_cap > max_spare_cap) {
+			if (is_target_max_spare_cpu(is_vip, num_vip,
+					prev_min_num_vip, spare_cap, max_spare_cap,
+					max_spare_cap_cpu, cpu, "pd_max_spare")) {
 				max_spare_cap = spare_cap;
 				max_spare_cap_cpu = cpu;
 			}
@@ -514,7 +603,9 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 					continue;
 #endif
 
-				if (spare_cap < max_spare_cap_ls_idle)
+				if (!is_target_max_spare_cpu(is_vip, num_vip, prev_min_num_vip,
+					spare_cap, max_spare_cap_ls_idle,
+					max_spare_cap_cpu_ls_idle, cpu, "pd_max_spare_is_idle"))
 					continue;
 
 				if (idle)
@@ -579,9 +670,65 @@ unlock:
 
 
 fail:
-	rcu_read_unlock();
-
 	*new_cpu = -1;
+
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+	/* iterrate from biggest cpu, find CPU with minimum num VVIP.
+	 * if all CPU have the same num of VVIP, min_num_vvip_cpu = biggest_cpu.
+	 */
+	cpumask_and(&allowed_cpu_mask, p->cpus_ptr, cpu_active_mask);
+
+	if (task_is_vip(p, VVIP) && balance_vvip_overutilied && pd) {
+		for (; pd; pd = pd->next) {
+			cpumask_and(&cpus, perf_domain_span(pd), &allowed_cpu_mask);
+			for_each_cpu(cpu, &cpus) {
+				num_vvip = num_vvip_in_cpu(cpu);
+				if (min_num_vvip_in_cpu > num_vvip) {
+					min_num_vvip_cpu = cpu;
+					min_num_vvip_in_cpu = num_vvip;
+				}
+			}
+		}
+
+		if (min_num_vvip_cpu != -1) {
+			*new_cpu = min_num_vvip_cpu;
+			select_reason = LB_BACKUP_VVIP;
+			rcu_read_unlock();
+			goto done;
+		}
+	}
+	if (is_vip) {
+		long spare_cap;
+		/* find min num cpu with max spare cap. */
+		for (; pd; pd = pd->next) {
+			for_each_cpu_and(cpu, perf_domain_span(pd), cpu_active_mask) {
+				num_vip = num_vip_in_cpu(cpu);
+				if (num_vip > min_num_vip)
+					continue;
+
+				util = cpu_util_next(cpu, p, cpu);
+				cpu_cap = capacity_of(cpu);
+				spare_cap = cpu_cap;
+				lsub_positive(&spare_cap, util);
+				if (num_vip < min_num_vip) {
+					*new_cpu = cpu;
+					sys_max_spare_cap = spare_cap;
+					min_num_vip = num_vip;
+					select_reason = select_reason | LB_VIP_BACKUP;
+				} else if (num_vip == min_num_vip) {
+					if (spare_cap > sys_max_spare_cap) {
+						*new_cpu = cpu;
+						sys_max_spare_cap = spare_cap;
+						select_reason = select_reason | LB_VIP_BACKUP;
+					}
+				}
+			}
+		}
+		rcu_read_unlock();
+		goto done;
+	}
+#endif
+	rcu_read_unlock();
 done:
 	trace_sched_find_energy_efficient_cpu(best_delta, best_energy_cpu,
 			best_idle_cpu, idle_max_spare_cap_cpu, sys_max_spare_cap_cpu);
@@ -736,6 +883,66 @@ int migrate_running_task(int this_cpu, struct task_struct *p, struct rq *target,
 	return active_balance;
 }
 
+void try_to_pull_VVIP(int this_cpu, bool *had_pull_vvip, struct rq_flags *src_rf)
+{
+	struct root_domain *rd;
+	struct perf_domain *pd;
+	struct rq *src_rq, *this_rq;
+	struct task_struct *p;
+	int cpu;
+
+	if (!cpu_active(this_cpu))
+		return;
+
+	this_rq = cpu_rq(this_cpu);
+	rd = this_rq->rd;
+	rcu_read_lock();
+	pd = rcu_dereference(rd->pd);
+	if (!pd)
+		goto unlock;
+
+	for (; pd; pd = pd->next) {
+		for_each_cpu(cpu, perf_domain_span(pd)) {
+
+			if (!cpu_active(cpu))
+				continue;
+
+			if (cpu == this_cpu)
+				continue;
+
+			src_rq = cpu_rq(cpu);
+
+			if (num_vvip_in_cpu(cpu) < 1)
+				continue;
+
+			else if (num_vvip_in_cpu(cpu) == 1) {
+				/* the only one VVIP in cpu is running */
+				if (src_rq->curr && task_is_vip(src_rq->curr, VVIP))
+					continue;
+			}
+
+			/* There are runnables in cpu */
+			rq_lock_irqsave(src_rq, src_rf);
+			if (src_rq->curr)
+				update_rq_clock(src_rq);
+			p = next_vip_runnable_in_cpu(src_rq, VVIP);
+			if (p && cpumask_test_cpu(this_cpu, p->cpus_ptr)) {
+				deactivate_task(src_rq, p, DEQUEUE_NOCLOCK);
+				set_task_cpu(p, this_cpu);
+				rq_unlock_irqrestore(src_rq, src_rf);
+
+				trace_sched_force_migrate(p, this_cpu, MIGR_IDLE_PULL_VIP_RUNNABLE);
+				attach_one_task(this_rq, p);
+				*had_pull_vvip = true;
+				goto unlock;
+			}
+			rq_unlock_irqrestore(src_rq, src_rf);
+		}
+	}
+unlock:
+	rcu_read_unlock();
+}
+
 #if IS_ENABLED(CONFIG_MTK_EAS)
 static DEFINE_PER_CPU(u64, next_update_new_balance_time_ns);
 void mtk_sched_newidle_balance(void *data, struct rq *this_rq, struct rq_flags *rf,
@@ -747,6 +954,7 @@ void mtk_sched_newidle_balance(void *data, struct rq *this_rq, struct rq_flags *
 	struct rq_flags src_rf;
 	int this_cpu = this_rq->cpu;
 	unsigned long misfit_load = 0;
+	bool had_pull_vvip = false;
 	u64 now_ns;
 
 	/*
@@ -781,6 +989,10 @@ void mtk_sched_newidle_balance(void *data, struct rq *this_rq, struct rq_flags *
 	raw_spin_unlock(&this_rq->lock);
 
 	this_cpu = this_rq->cpu;
+	/* try to pull runnable VVIP if this_cpu is in big gear */
+	try_to_pull_VVIP(this_cpu, &had_pull_vvip, &src_rf);
+	if (had_pull_vvip)
+		goto out;
 	for_each_cpu(cpu, cpu_active_mask) {
 		if (cpu == this_cpu)
 			continue;
@@ -832,6 +1044,7 @@ void mtk_sched_newidle_balance(void *data, struct rq *this_rq, struct rq_flags *
 					misfit_task_rq, MIGR_IDLE_PULL_MISFIT_RUNNING);
 	if (best_running_task)
 		put_task_struct(best_running_task);
+out:
 	raw_spin_lock(&this_rq->lock);
 	/*
 	 * While browsing the domains, we released the rq lock, a task could

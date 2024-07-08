@@ -8,6 +8,7 @@ scheduler-y += common.o
 scheduler-y += fair.o
 scheduler-$(CONFIG_MTK_CORE_PAUSE)+= eas/core_pause.o
 scheduler-$(CONFIG_MTK_SCHED_BIG_TASK_ROTATE)+= eas/rotate.o
+scheduler-$(CONFIG_MTK_SCHED_VIP_TASK)+= eas/vip.o
 
 obj-$(CONFIG_MTK_CPUFREQ_SUGOV_EXT) += cpufreq_sugov_ext.o
 cpufreq_sugov_ext-y += sugov/cpufreq_sugov_main.o
