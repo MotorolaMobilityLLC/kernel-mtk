@@ -10,6 +10,7 @@
 #include <linux/string.h>
 #include <linux/types.h>
 #include <linux/tracepoint.h>
+#include "common.h"
 
 #if IS_ENABLED(CONFIG_MTK_SCHED_BIG_TASK_ROTATE)
 /*
@@ -448,6 +449,7 @@ TRACE_EVENT(sched_get_vip_task_prio,
 	TP_ARGS(p, vip_prio, is_ls, ls_vip_threshold, group_threshold, is_basic_vip),
 
 	TP_STRUCT__entry(
+		__array(char, comm, TASK_COMM_LEN)
 		__field(int, pid)
 		__field(int, vip_prio)
 		__field(int, prio)
@@ -459,6 +461,7 @@ TRACE_EVENT(sched_get_vip_task_prio,
 	),
 
 	TP_fast_assign(
+		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
 		__entry->pid               = p->pid;
 		__entry->vip_prio          = vip_prio;
 		__entry->prio              = p->prio;
@@ -469,8 +472,8 @@ TRACE_EVENT(sched_get_vip_task_prio,
 		__entry->is_basic_vip      = is_basic_vip;
 	),
 
-	TP_printk("pid=%d vip_prio=%d prio=%d is_ls=%d ls_vip_threshold=%d cpuctl=%d group_threshold=%d is_basic_vip=%d",
-		  __entry->pid, __entry->vip_prio, __entry->prio, __entry->is_ls,
+	TP_printk("comm=%s pid=%d vip_prio=%d prio=%d is_ls=%d ls_vip_threshold=%d cpuctl=%d group_threshold=%d is_basic_vip=%d",
+		  __entry->comm, __entry->pid, __entry->vip_prio, __entry->prio, __entry->is_ls,
 		  __entry->ls_vip_threshold, __entry->cpuctl, __entry->group_threshold,
 		  __entry->is_basic_vip)
 );
@@ -483,6 +486,7 @@ TRACE_EVENT(sched_insert_vip_task,
 		is_first_entry),
 
 	TP_STRUCT__entry(
+		__array(char, comm, TASK_COMM_LEN)
 		__field(int, pid)
 		__field(int, cpu)
 		__field(int, num_vip)
@@ -497,6 +501,7 @@ TRACE_EVENT(sched_insert_vip_task,
 	),
 
 	TP_fast_assign(
+		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
 		__entry->pid       = p->pid;
 		__entry->cpu       = cpu;
 		__entry->num_vip   = num_vip;
@@ -510,8 +515,8 @@ TRACE_EVENT(sched_insert_vip_task,
 		__entry->cpuctl  = sched_cgroup_state(p, cpu_cgrp_id);
 	),
 
-	TP_printk("pid=%d cpu=%d num_vip=%d vip_prio=%d at_front=%d prev_pid=%d next_pid=%d requeue=%d, is_first_entry=%d, prio=%d, cpuctl=%d",
-		  __entry->pid, __entry->cpu, __entry->num_vip, __entry->vip_prio, __entry->at_front,
+	TP_printk("comm=%s pid=%d cpu=%d num_vip=%d vip_prio=%d at_front=%d prev_pid=%d next_pid=%d requeue=%d, is_first_entry=%d, prio=%d, cpuctl=%d",
+		  __entry->comm, __entry->pid, __entry->cpu, __entry->num_vip, __entry->vip_prio, __entry->at_front,
 		  __entry->prev_pid, __entry->next_pid, __entry->requeue, __entry->is_first_entry,
 		__entry->prio, __entry->cpuctl)
 );
@@ -541,6 +546,37 @@ TRACE_EVENT(sched_deactivate_vip_task,
 	TP_printk("pid=%d cpu=%d num_vip=%d orig_prev_pid=%d orig_next_pid=%d",
 		  __entry->pid, __entry->cpu, __entry->num_vip, __entry->prev_pid,
 		  __entry->next_pid)
+);
+
+TRACE_EVENT(sched_vip_replace_next_task_fair,
+	TP_PROTO(struct task_struct *p, struct vip_task_struct *vts, unsigned int limit),
+
+	TP_ARGS(p, vts, limit),
+
+	TP_STRUCT__entry(
+		__array(char,		comm,	TASK_COMM_LEN)
+		__field(pid_t,		pid)
+		__field(int,		prio)
+		__field(int,		vip_prio)
+		__field(int,		cpu)
+		__field(u64,		exec)
+		__field(unsigned int,	limit)
+	),
+
+	TP_fast_assign(
+		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
+		__entry->pid		= p->pid;
+		__entry->prio		= p->prio;
+		__entry->vip_prio	= vts->vip_prio;
+		__entry->cpu		= task_cpu(p);
+		__entry->exec		= vts->total_exec;
+		__entry->limit		= limit;
+	),
+
+	TP_printk("comm=%s pid=%d prio=%d vip_prio=%d cpu=%d exec=%llu limit=%u",
+		__entry->comm, __entry->pid, __entry->prio,
+		__entry->vip_prio, __entry->cpu, __entry->exec,
+		__entry->limit)
 );
 #endif /* CONFIG_MTK_SCHED_VIP_TASK */
 

@@ -112,8 +112,10 @@ static unsigned int task_turbo_feats;
 static bool is_turbo_task(struct task_struct *p);
 static void set_load_weight(struct task_struct *p, bool update_load);
 static void rwsem_stop_turbo_inherit(struct rw_semaphore *sem);
+#if !IS_ENABLED(CONFIG_SCHED_MOTO_UNFAIR)
 static void rwsem_list_add(struct task_struct *task, struct list_head *entry,
 				struct list_head *head);
+#endif
 static bool binder_start_turbo_inherit(struct task_struct *from,
 					struct task_struct *to);
 static void binder_stop_turbo_inherit(struct task_struct *p);
@@ -271,6 +273,7 @@ static void probe_android_vh_rwsem_init(void *ignore, struct rw_semaphore *sem)
 	sem->android_vendor_data1 = 0;
 }
 
+#if !IS_ENABLED(CONFIG_SCHED_MOTO_UNFAIR)
 static void probe_android_vh_alter_rwsem_list_add(void *ignore, struct rwsem_waiter *waiter,
 							struct rw_semaphore *sem,
 							bool *already_on_list)
@@ -278,6 +281,7 @@ static void probe_android_vh_alter_rwsem_list_add(void *ignore, struct rwsem_wai
 	rwsem_list_add(waiter->task, &waiter->list, &sem->wait_list);
 	*already_on_list = true;
 }
+#endif
 
 static void probe_android_vh_rwsem_wake(void *ignore, struct rw_semaphore *sem)
 {
@@ -629,6 +633,7 @@ static void rwsem_stop_turbo_inherit(struct rw_semaphore *sem)
 	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
 }
 
+#if !IS_ENABLED(CONFIG_SCHED_MOTO_UNFAIR)
 static void rwsem_list_add(struct task_struct *task,
 			   struct list_head *entry,
 			   struct list_head *head)
@@ -655,6 +660,7 @@ static void rwsem_list_add(struct task_struct *task,
 	}
 	list_add_tail(entry, head);
 }
+#endif
 
 static void rwsem_start_turbo_inherit(struct rw_semaphore *sem)
 {
@@ -1415,12 +1421,14 @@ static int __init init_task_turbo(void)
 		goto failed;
 	}
 
+#if !IS_ENABLED(CONFIG_SCHED_MOTO_UNFAIR)
 	ret = register_trace_android_vh_alter_rwsem_list_add(
 			probe_android_vh_alter_rwsem_list_add, NULL);
 	if (ret) {
 		ret_erri_line = __LINE__;
 		goto failed;
 	}
+#endif
 
 	ret = register_trace_android_vh_alter_futex_plist_add(
 			probe_android_vh_alter_futex_plist_add, NULL);

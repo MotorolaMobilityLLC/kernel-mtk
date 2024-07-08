@@ -15,6 +15,7 @@ cpufreq_sugov_ext-y += sugov/cpufreq_sugov_main.o
 cpufreq_sugov_ext-y += sugov/nonlinear_opp_cap.o
 cpufreq_sugov_ext-y += common.o
 
+subdir-ccflags-y += -I$(srctree)/
 subdir-ccflags-y += -I$(srctree)/kernel/
 subdir-ccflags-y += -I$(srctree)/drivers/thermal/mediatek
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/sched/
