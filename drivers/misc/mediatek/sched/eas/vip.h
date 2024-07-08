@@ -9,10 +9,17 @@
 extern bool vip_enable;
 
 #define VIP_TIME_SLICE     3000000U
-#define VIP_TIME_LIMIT     (20 * VIP_TIME_SLICE)
+#define VIP_TIME_LIMIT     (4 * VIP_TIME_SLICE)
 
+
+#if IS_ENABLED(CONFIG_SCHED_MOTO_UNFAIR)
+#define WORKER_VIP         101
+#define VVIP               102
+#else
 #define WORKER_VIP         0
 #define VVIP               1
+#endif
+
 #define NOT_VIP           -1
 
 #define DEFAULT_VIP_PRIO_THRESHOLD  99

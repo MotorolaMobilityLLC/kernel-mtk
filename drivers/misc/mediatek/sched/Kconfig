@@ -116,3 +116,10 @@ config MTK_CORE_CTL
 	  utilizations from scheduler information automatically.
 	  If you are not sure about whether to enable it or not,
 	  please set n.
+
+config SCHED_MOTO_UNFAIR
+    tristate "Moto sched support for mtk vip task"
+    default n
+    help
+      This feature will allow the scheduler to maintain more detailed
+      mvp scheduling.

@@ -5,6 +5,8 @@
 #ifndef _SCHED_COMMON_H
 #define _SCHED_COMMON_H
 
+#include "sched_mtk.h"
+
 #define MTK_VENDOR_DATA_SIZE_TEST(mstruct, kstruct)		\
 	BUILD_BUG_ON(sizeof(mstruct) > (sizeof(u64) *		\
 		ARRAY_SIZE(((kstruct *)0)->android_vendor_data1)))
