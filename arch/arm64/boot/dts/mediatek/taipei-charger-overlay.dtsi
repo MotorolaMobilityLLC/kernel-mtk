@@ -78,8 +78,8 @@
 			<45 4530 965>,
 			<60 4200 243>;
 	mmi,enable-charging-limit;
-	mmi,upper-limit-capacity = <75>;
-	mmi,lower-limit-capacity = <70>;
+	mmi,upper-limit-capacity = <65>;
+	mmi,lower-limit-capacity = <60>;
 	mmi,min-cp-therm-current-ua = <1600000>;
 };
 
