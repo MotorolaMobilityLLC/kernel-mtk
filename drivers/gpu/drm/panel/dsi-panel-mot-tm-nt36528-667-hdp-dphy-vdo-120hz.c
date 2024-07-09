@@ -193,7 +193,7 @@ static void tm_nt36528_panel_init(struct tm_nt36528 *ctx)
 	tm_nt36528_dcs_write_seq_static(ctx, 0xFF, 0x10);
 	tm_nt36528_dcs_write_seq_static(ctx, 0xFB, 0x01);
 
-	tm_nt36528_dcs_write_seq_static(ctx, 0x51, 0x07, 0xFF);
+	tm_nt36528_dcs_write_seq_static(ctx, 0x51, 0x07, 0xE7);
 
 	pr_info("%s-\n", __func__);
 }
