@@ -31,6 +31,9 @@
 
 #define AW86006_DRIVER_VERSION		"v0.3.0.90"
 #define AW86006_FW_NAME			"mot_aw86006.prog"
+#define AW_FW_VERSION_MASK			(0x00FFFFFF)
+#define AW_FW_MODULE_FACTORY_FLAG		(1)
+#define AW_FW_TERMINAL_FLAG			(0)
 
 static bool centoron = false;
 const char fw_check_str[] = { 'A', 'W', 'I', 'N', 'I', 'C', 0, 0 };
@@ -127,6 +130,30 @@ static int aw86006_i2c_writes(struct cam_ois_ctrl_t *o_ctrl, uint32_t a_u4Addr,
 	return ret;
 }
 
+static int aw86006_check_app_version(uint32_t fw_app_version, uint32_t runtime_app_version)
+{
+	uint8_t fw_type = 0;
+	uint8_t ret = 0;
+	fw_type = fw_app_version >> AW_DATA_SHIFT_24_BIT;
+	AW_LOGI("fw_app_version = 0x%04x, runtime_app_version = 0x%04x", fw_app_version, runtime_app_version);
+	switch(fw_type) {
+		case AW_FW_TERMINAL_FLAG:
+			AW_LOGI("find terminal version fw, versions number will be compared");
+			if (fw_app_version != runtime_app_version)
+				ret = (fw_app_version & AW_FW_VERSION_MASK) > (runtime_app_version & AW_FW_VERSION_MASK);
+			break;
+		case AW_FW_MODULE_FACTORY_FLAG:
+			AW_LOGI("find module factory version fw, version numbers will not be compared");
+			ret = 0;
+			break;
+		default:
+			AW_LOGI("unsupport fw version type flag: %u", fw_type);
+			ret = 0;
+			break;
+	}
+	return ret;
+}
+
 static int aw86006_reset(struct cam_ois_ctrl_t *o_ctrl)
 {
 	int ret = OIS_ERROR;
@@ -204,7 +231,7 @@ static int aw86006_runtime_check(struct cam_ois_ctrl_t *o_ctrl)
 					reg_val[2], reg_val[1], reg_val[0]);
 
 	if ((chip_id != g_aw86006_info.fw.app_id) ||
-				(version != g_aw86006_info.fw.app_version)) {
+				aw86006_check_app_version(g_aw86006_info.fw.app_version, version)) {
 		AW_LOGI("Chip_ID or Version not match!");
 		return OIS_ERROR;
 	}
@@ -1356,8 +1383,7 @@ static int aw86006_mem_download(struct cam_ois_ctrl_t *o_ctrl,
 						return OIS_ERROR;
 					}
 					update_type = ALL_DATA;
-				} else if ((info_rd.app_version !=
-						g_aw86006_info.fw.app_version) ||
+				} else if (aw86006_check_app_version(g_aw86006_info.fw.app_version, info_rd.app_version) ||
 						(info_rd.app_id !=
 							g_aw86006_info.fw.app_id)) {
 					AW_LOGI("app not match, update app!");
