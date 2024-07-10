@@ -2,5 +2,6 @@
 # Copyright (C) 2020 MediaTek Inc.
 
 imgsensor_isp6s-objs += \
-	$(subdrv-rpath)/mot_vegas_ov08dmipiraw_Sensor.o
+	$(subdrv-rpath)/mot_vegas_ov08dmipiraw_Sensor.o \
+	$(subdrv-rpath)/mot_ov08d_eeprom.o
 
