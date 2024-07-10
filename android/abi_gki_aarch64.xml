@@ -4099,6 +4099,7 @@
       <elf-symbol name='mipi_dsi_dcs_enter_sleep_mode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb49a769b'/>
       <elf-symbol name='mipi_dsi_dcs_exit_sleep_mode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa55a5104'/>
       <elf-symbol name='mipi_dsi_dcs_get_display_brightness' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x81415fa0'/>
+      <elf-symbol name='mipi_dsi_dcs_nop' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x451ff6fd'/>
       <elf-symbol name='mipi_dsi_dcs_read' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc3531350'/>
       <elf-symbol name='mipi_dsi_dcs_set_column_address' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x357ce7e9'/>
       <elf-symbol name='mipi_dsi_dcs_set_display_brightness' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf954f104'/>
@@ -50177,7 +50178,7 @@
           <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='drivers/mmc/host/sdhci.h' line='679' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='gpio_desc' size-in-bits='320' is-struct='yes' visibility='default' filepath='drivers/pinctrl/../gpio/gpiolib.h' line='133' column='1' id='63b74212'>
+      <class-decl name='gpio_desc' size-in-bits='320' is-struct='yes' visibility='default' filepath='drivers/gpio/gpiolib.h' line='133' column='1' id='63b74212'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='gdev' type-id='fb7dc22d' visibility='default' filepath='drivers/pinctrl/../gpio/gpiolib.h' line='134' column='1'/>
         </data-member>
@@ -142793,16 +142794,16 @@
         <parameter type-id='a965a5b5' name='sem' filepath='kernel/locking/semaphore.c' line='103' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='down_read' mangled-name='down_read' filepath='kernel/locking/rwsem.c' line='1580' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_read'>
-        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1580' column='1'/>
+      <function-decl name='down_read' mangled-name='down_read' filepath='kernel/locking/rwsem.c' line='1582' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_read'>
+        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1582' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='down_read_killable' mangled-name='down_read_killable' filepath='kernel/locking/rwsem.c' line='1603' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_read_killable'>
-        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1603' column='1'/>
+      <function-decl name='down_read_killable' mangled-name='down_read_killable' filepath='kernel/locking/rwsem.c' line='1605' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_read_killable'>
+        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1605' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='down_read_trylock' mangled-name='down_read_trylock' filepath='kernel/locking/rwsem.c' line='1620' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_read_trylock'>
-        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1620' column='1'/>
+      <function-decl name='down_read_trylock' mangled-name='down_read_trylock' filepath='kernel/locking/rwsem.c' line='1622' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_read_trylock'>
+        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1622' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='down_timeout' mangled-name='down_timeout' filepath='kernel/locking/semaphore.c' line='158' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_timeout'>
@@ -142814,20 +142815,20 @@
         <parameter type-id='a965a5b5' name='sem' filepath='kernel/locking/semaphore.c' line='133' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='down_write' mangled-name='down_write' filepath='kernel/locking/rwsem.c' line='1633' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_write'>
-        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1633' column='1'/>
+      <function-decl name='down_write' mangled-name='down_write' filepath='kernel/locking/rwsem.c' line='1635' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_write'>
+        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1635' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='down_write_killable' mangled-name='down_write_killable' filepath='kernel/locking/rwsem.c' line='1644' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_write_killable'>
-        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1644' column='1'/>
+      <function-decl name='down_write_killable' mangled-name='down_write_killable' filepath='kernel/locking/rwsem.c' line='1646' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_write_killable'>
+        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1646' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='down_write_trylock' mangled-name='down_write_trylock' filepath='kernel/locking/rwsem.c' line='1662' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_write_trylock'>
-        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1662' column='1'/>
+      <function-decl name='down_write_trylock' mangled-name='down_write_trylock' filepath='kernel/locking/rwsem.c' line='1664' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='down_write_trylock'>
+        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1664' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='downgrade_write' mangled-name='downgrade_write' filepath='kernel/locking/rwsem.c' line='1697' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='downgrade_write'>
-        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1697' column='1'/>
+      <function-decl name='downgrade_write' mangled-name='downgrade_write' filepath='kernel/locking/rwsem.c' line='1699' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='downgrade_write'>
+        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1699' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='dput' mangled-name='dput' filepath='fs/dcache.c' line='870' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dput'>
@@ -152315,6 +152316,10 @@
       <function-decl name='mipi_dsi_dcs_get_display_brightness' mangled-name='mipi_dsi_dcs_get_display_brightness' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='1209' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mipi_dsi_dcs_get_display_brightness'>
         <parameter type-id='182be7cc' name='dsi' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='1209' column='1'/>
         <parameter type-id='26d4d46f' name='brightness' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='1210' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='mipi_dsi_dcs_nop' mangled-name='mipi_dsi_dcs_nop' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='889' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mipi_dsi_dcs_nop'>
+        <parameter type-id='182be7cc' name='dsi' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='889' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='mipi_dsi_dcs_read' mangled-name='mipi_dsi_dcs_read' filepath='drivers/gpu/drm/drm_mipi_dsi.c' line='867' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mipi_dsi_dcs_read'>
@@ -165495,12 +165500,12 @@
         <parameter type-id='a965a5b5' name='sem' filepath='kernel/locking/semaphore.c' line='182' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='up_read' mangled-name='up_read' filepath='kernel/locking/rwsem.c' line='1676' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='up_read'>
-        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1676' column='1'/>
+      <function-decl name='up_read' mangled-name='up_read' filepath='kernel/locking/rwsem.c' line='1678' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='up_read'>
+        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1678' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='up_write' mangled-name='up_write' filepath='kernel/locking/rwsem.c' line='1686' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='up_write'>
-        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1686' column='1'/>
+      <function-decl name='up_write' mangled-name='up_write' filepath='kernel/locking/rwsem.c' line='1688' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='up_write'>
+        <parameter type-id='9b58df93' name='sem' filepath='kernel/locking/rwsem.c' line='1688' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='update_devfreq' mangled-name='update_devfreq' filepath='drivers/devfreq/devfreq.c' line='445' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='update_devfreq'>
