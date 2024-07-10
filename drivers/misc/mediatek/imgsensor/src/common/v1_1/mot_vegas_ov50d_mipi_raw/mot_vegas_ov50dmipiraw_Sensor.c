@@ -55,8 +55,8 @@
 
 extern int aw86006_update_fw_sync(void);
 
-//extern mot_calibration_status_t *VEGAS_OV50D_eeprom_get_calibration_status(void);
-//extern mot_calibration_mnf_t *VEGAS_OV50D_eeprom_get_mnf_info(void);
+extern mot_calibration_status_t *VEGAS_OV50D_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *VEGAS_OV50D_eeprom_get_mnf_info(void);
 extern void VEGAS_OV50D_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
 extern void write_pdc_data(void);
@@ -1133,8 +1133,8 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->Custom1DelayFrame = imgsensor_info.custom1_delay_frame;
 
 	/*Apply calibration status and manufacture info*/
-	//memcpy(&sensor_info->calibration_status, VEGAS_OV50D_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
-	//memcpy(&sensor_info->mnf_calibration, VEGAS_OV50D_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, VEGAS_OV50D_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
+	memcpy(&sensor_info->mnf_calibration, VEGAS_OV50D_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;

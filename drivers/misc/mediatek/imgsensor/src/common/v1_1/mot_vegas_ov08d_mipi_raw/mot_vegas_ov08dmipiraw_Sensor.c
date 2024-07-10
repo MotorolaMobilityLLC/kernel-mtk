@@ -45,6 +45,10 @@
 
 #define Table_write 1
 
+extern mot_calibration_status_t *VEGAS_OV08D_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *VEGAS_OV08D_eeprom_get_mnf_info(void);
+extern void VEGAS_OV08D_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+
 #define _I2C_BUF_SIZE 4096
 // kal_uint16 ov08d_i2c_data[_I2C_BUF_SIZE];
 // unsigned int _size_to_write;
@@ -535,7 +539,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_info("[%s] i2c write id_v1-1: 0x%x, sensor id: 0x%x\n",
 					__func__, imgsensor.i2c_write_id, *sensor_id);
-
+				VEGAS_OV08D_eeprom_format_calibration_data(&imgsensor);
 				return ERROR_NONE;
 			}
 			retry--;
@@ -797,7 +801,9 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SlimVideoDelayFrame =
 		imgsensor_info.slim_video_delay_frame;
 
-
+	/*Apply manufacture info*/
+	memcpy(&sensor_info->mnf_calibration, VEGAS_OV08D_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, VEGAS_OV08D_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
 /* The frame of setting shutter default 0 for TG int */
