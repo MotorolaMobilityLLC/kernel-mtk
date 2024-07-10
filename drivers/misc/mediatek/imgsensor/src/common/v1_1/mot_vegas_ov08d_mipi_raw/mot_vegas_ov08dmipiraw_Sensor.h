@@ -155,6 +155,27 @@ struct imgsensor_info_struct {
 	kal_uint32 current_ae_effective_frame;
 };
 
+typedef enum {
+	NO_ERRORS,
+	CRC_FAILURE,
+	LIMIT_FAILURE
+} calibration_status_t;
+
+struct VEGAS_OV08D_eeprom_t{
+	uint8_t eeprom_table_version[1];
+	uint8_t cal_hw_ver[1];
+	uint8_t cal_sw_ver[1];
+	uint8_t mpn[8];
+	uint8_t actuator_id[1];
+	uint8_t lens_id[1];
+	uint8_t manufacturer_id[2];
+	uint8_t factory_id[2];
+	uint8_t manufacture_line[1];
+	uint8_t manufacture_date[3];
+	uint8_t serial_number[16];
+	uint8_t manufacture_crc16[2];
+};
+
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
 		u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iReadRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData,

@@ -148,6 +148,27 @@ struct imgsensor_info_struct {
 	kal_uint32 gain_type;
 };
 
+typedef enum {
+	NO_ERRORS,
+	CRC_FAILURE,
+	LIMIT_FAILURE
+} calibration_status_t;
+
+struct VEGAS_S5K3P9_eeprom_t{
+	uint8_t eeprom_table_version[1];
+	uint8_t cal_hw_ver[1];
+	uint8_t cal_sw_ver[1];
+	uint8_t mpn[8];
+	uint8_t actuator_id[1];
+	uint8_t lens_id[1];
+	uint8_t manufacturer_id[2];
+	uint8_t factory_id[2];
+	uint8_t manufacture_line[1];
+	uint8_t manufacture_date[3];
+	uint8_t serial_number[16];
+	uint8_t manufacture_crc16[2];
+};
+
 extern int iBurstWriteReg_multi(
 	u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing);
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,

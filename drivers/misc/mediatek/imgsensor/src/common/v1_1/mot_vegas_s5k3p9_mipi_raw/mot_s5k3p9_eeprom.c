@@ -14,16 +14,16 @@
 #include "kd_imgsensor_errcode.h"
 #include "imgsensor_ca.h"
 
-#include "mot_vegas_ov50dmipiraw_Sensor.h"
+#include "mot_vegas_s5k3p9mipiraw_Sensor.h"
 
 static int mot_sensor_debug = 1;
 
 typedef struct {
 	MUINT16 addr;
 	MUINT16 data;
-} vegas_ov_cal_addr_data_t;
+} vegas_xtc_cal_addr_data_t;
 
-#define PFX "MOT_VEGAS_OV50D"
+#define PFX "MOT_VEGAS_S5K3P9"
 #define LOG_INF(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
 #define LOG_ERR(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
 #define LOG_INF_N(format, args...)   pr_warn(PFX "[%s] " format, __func__, ##args)
@@ -32,22 +32,15 @@ typedef struct {
 static DEFINE_SPINLOCK(imgsensor_lock);
 static  struct imgsensor_struct *imgsensor;
 
-#define VEGAS_OV50D_EEPROM_SLAVE_ADDR 0xA0
-#define VEGAS_OV50D_SENSOR_IIC_SLAVE_ADDR 0x20
-#define VEGAS_OV50D_EEPROM_SIZE  0x1F3
-#define VEGAS_OV50D_EEPROM_CRC_MANUFACTURING_SIZE 39
-#define VEGAS_OV50D_EEPROM_CRC_PDC_SIZE 458
-#define VEGAS_OV50D_EEPROM_CRC_PDC_WRITE_SIZE 450
+#define VEGAS_S5K3P9_EEPROM_SLAVE_ADDR 0xA2
+#define VEGAS_S5K3P9_SENSOR_IIC_SLAVE_ADDR 0x20
+#define VEGAS_S5K3P9_EEPROM_SIZE  0x0027
+#define VEGAS_S5K3P9_EEPROM_CRC_MANUFACTURING_SIZE 37
 
-static vegas_ov_cal_addr_data_t ov_pdc_data[VEGAS_OV50D_EEPROM_CRC_PDC_WRITE_SIZE] = {{0}};
-
-int pdc_data_valid = 0;
-
-static uint8_t VEGAS_OV50D_eeprom[VEGAS_OV50D_EEPROM_SIZE] = {0};
+static uint8_t VEGAS_S5K3P9_eeprom[VEGAS_S5K3P9_EEPROM_SIZE] = {0};
 static mot_calibration_status_t calibration_status = {CRC_FAILURE};
 static mot_calibration_mnf_t mnf_info = {0};
 
-extern kal_uint16 mot_vegas_ov50d_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len);
 
 static uint8_t crc_reverse_byte(uint32_t data)
 {
@@ -109,7 +102,7 @@ static struct IMGSENSOR_I2C_CFG *get_i2c_cfg(void)
 		  (imgsensor->psensor_func->psensor_inst))->i2c_cfg);
 }
 
-static kal_uint16 VEGAS_OV50D_read_cmos_sensor_8(kal_uint16 addr)
+static kal_uint16 VEGAS_S5K3P9_read_cmos_sensor_8(kal_uint16 addr)
 {
 	kal_uint16 get_byte = 0;
 	char pusendcmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
@@ -125,7 +118,7 @@ static kal_uint16 VEGAS_OV50D_read_cmos_sensor_8(kal_uint16 addr)
 	return get_byte;
 }
 
-static void VEGAS_OV50D_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size, kal_uint8* eeprom_data)
+static void VEGAS_S5K3P9_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size)
 {
 	int i = 0;
 	spin_lock(&imgsensor_lock);
@@ -133,20 +126,21 @@ static void VEGAS_OV50D_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_
 	spin_unlock(&imgsensor_lock);
 
 	for (i = 0; i < size; i ++) {
-		eeprom_data[i] = VEGAS_OV50D_read_cmos_sensor_8(start_add);
+		VEGAS_S5K3P9_eeprom[i] = VEGAS_S5K3P9_read_cmos_sensor_8(start_add);
 		start_add ++;
 	}
 
 	spin_lock(&imgsensor_lock);
-	imgsensor->i2c_write_id = VEGAS_OV50D_SENSOR_IIC_SLAVE_ADDR;
+	imgsensor->i2c_write_id = VEGAS_S5K3P9_SENSOR_IIC_SLAVE_ADDR;
 	spin_unlock(&imgsensor_lock);
 }
 
-static calibration_status_t VEGAS_OV50D_check_manufacturing_data(void *data)
+
+static calibration_status_t VEGAS_S5K3P9_check_manufacturing_data(void *data)
 {
-	struct VEGAS_OV50D_eeprom_t *eeprom = (struct VEGAS_OV50D_eeprom_t*)data;
+	struct VEGAS_S5K3P9_eeprom_t *eeprom = (struct VEGAS_S5K3P9_eeprom_t*)data;
 	LOG_INF("Manufacturing eeprom->mpn = %.8s !",eeprom->mpn);
-	if (!eeprom_util_check_crc16(eeprom->eeprom_table_version, VEGAS_OV50D_EEPROM_CRC_MANUFACTURING_SIZE-2,
+	if (!eeprom_util_check_crc16(eeprom->eeprom_table_version, VEGAS_S5K3P9_EEPROM_CRC_MANUFACTURING_SIZE,
 		convert_crc(eeprom->manufacture_crc16))) {
 		LOG_ERROR("Manufacturing CRC Fails!");
 		return CRC_FAILURE;
@@ -155,11 +149,11 @@ static calibration_status_t VEGAS_OV50D_check_manufacturing_data(void *data)
 	return NO_ERRORS;
 }
 
-static void VEGAS_OV50D_eeprom_get_mnf_data(void *data,
+static void VEGAS_S5K3P9_eeprom_get_mnf_data(void *data,
 		mot_calibration_mnf_t *mnf)
 {
 	int ret;
-	struct VEGAS_OV50D_eeprom_t *eeprom = (struct VEGAS_OV50D_eeprom_t*)data;
+	struct VEGAS_S5K3P9_eeprom_t *eeprom = (struct VEGAS_S5K3P9_eeprom_t*)data;
 
 	ret = snprintf(mnf->table_revision, MAX_CALIBRATION_STRING, "0x%x",
 		eeprom->eeprom_table_version[0]);
@@ -185,8 +179,10 @@ static void VEGAS_OV50D_eeprom_get_mnf_data(void *data,
 		mnf->actuator_id[0] = 0;
 	}
 
-	if (eeprom->lens_id[0] == 0x80){
-		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "AAC 505265C01");
+	if (eeprom->lens_id[0] == 0xC1){
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "ZET ZE0085D4");
+	} else if (eeprom->lens_id[0] == 0x87){
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "AAC 165713A01-100");
 	} else {
 		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
 		LOG_INF("unknown lens_id");
@@ -197,12 +193,10 @@ static void VEGAS_OV50D_eeprom_get_mnf_data(void *data,
 		mnf->lens_id[0] = 0;
 	}
 
-	if (eeprom->manufacturer_id[0] == 'S' && eeprom->manufacturer_id[1] == 'U') {
-		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Sunny");
-	} else if (eeprom->manufacturer_id[0] == 'O' && eeprom->manufacturer_id[1] == 'F') {
-		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "OFilm");
-	} else if (eeprom->manufacturer_id[0] == 'Q' && eeprom->manufacturer_id[1] == 'T') {
+	if (eeprom->manufacturer_id[0] == 'Q' && eeprom->manufacturer_id[1] == 'T') {
 		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Qtech");
+	} else if (eeprom->manufacturer_id[0] == 'S' && eeprom->manufacturer_id[1] == 'W') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Sunwin");
 	} else {
 		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Unknown");
 		LOG_INF("unknown manufacturer_id");
@@ -252,62 +246,20 @@ static void VEGAS_OV50D_eeprom_get_mnf_data(void *data,
 	}
 }
 
-int get_ov_pdc_data(void *data)
-{
-	int i;
-	struct VEGAS_OV50D_eeprom_t *eeprom = (struct VEGAS_OV50D_eeprom_t*)data;
-	if (!eeprom_util_check_crc16(eeprom->ov_pdc_data, VEGAS_OV50D_EEPROM_CRC_PDC_SIZE,
-		convert_crc(eeprom->ov_pdc_crc)))
-	{
-		pr_debug("PDC Data CRC Fail!");
-		pdc_data_valid = 0;
-	}
-	else
-	{
-		pr_debug("PDC Data CRC Pass");
-		pdc_data_valid = 1;
-		for (i = 0; i < VEGAS_OV50D_EEPROM_CRC_PDC_WRITE_SIZE; i++)
-		{
-			ov_pdc_data[i].addr = 0x59F0 + i;
-			ov_pdc_data[i].data = eeprom->ov_pdc_data[8 + i];
-		}
-		pr_debug("X");
-
-	}
-	return 1;
-}
-
-void VEGAS_OV50D_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
+void VEGAS_S5K3P9_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
 {
 	imgsensor = pImgsensor;
-	VEGAS_OV50D_read_data_from_eeprom(VEGAS_OV50D_EEPROM_SLAVE_ADDR, 0x0000, VEGAS_OV50D_EEPROM_CRC_MANUFACTURING_SIZE, VEGAS_OV50D_eeprom);
-	VEGAS_OV50D_read_data_from_eeprom(VEGAS_OV50D_EEPROM_SLAVE_ADDR, 0x19ED, VEGAS_OV50D_EEPROM_CRC_PDC_SIZE+2, VEGAS_OV50D_eeprom+VEGAS_OV50D_EEPROM_CRC_MANUFACTURING_SIZE);
-	calibration_status.mnf = VEGAS_OV50D_check_manufacturing_data(VEGAS_OV50D_eeprom);
-	VEGAS_OV50D_eeprom_get_mnf_data((void *)VEGAS_OV50D_eeprom, &mnf_info);
-	get_ov_pdc_data(VEGAS_OV50D_eeprom);
+	VEGAS_S5K3P9_read_data_from_eeprom(VEGAS_S5K3P9_EEPROM_SLAVE_ADDR, 0x00, VEGAS_S5K3P9_EEPROM_SIZE);
+	calibration_status.mnf = VEGAS_S5K3P9_check_manufacturing_data(VEGAS_S5K3P9_eeprom);
+	VEGAS_S5K3P9_eeprom_get_mnf_data((void *)VEGAS_S5K3P9_eeprom, &mnf_info);
 }
 
-mot_calibration_status_t *VEGAS_OV50D_eeprom_get_calibration_status(void)
+mot_calibration_status_t *VEGAS_S5K3P9_eeprom_get_calibration_status(void)
 {
 	return &calibration_status;
 }
 
-mot_calibration_mnf_t *VEGAS_OV50D_eeprom_get_mnf_info(void)
+mot_calibration_mnf_t *VEGAS_S5K3P9_eeprom_get_mnf_info(void)
 {
 	return &mnf_info;
-}
-
-void write_pdc_data(void)
-{
-	uint16_t write_table[VEGAS_OV50D_EEPROM_CRC_PDC_WRITE_SIZE * 2] = {0};
-
-	pr_debug("E\n");
-
-	memcpy(write_table, &ov_pdc_data[0].addr, sizeof(write_table));
-
-	mot_vegas_ov50d_burst_write_cmos_sensor(write_table,
-		sizeof(write_table)/sizeof(uint16_t));
-
-	pr_debug("apply pdc calibration data success.");
-	pr_debug("X");
 }
