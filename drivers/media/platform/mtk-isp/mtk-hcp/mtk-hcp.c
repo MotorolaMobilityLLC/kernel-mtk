@@ -1131,6 +1131,7 @@ static void module_notify(struct mtk_hcp *hcp_dev,
 	struct swfrm_info_t *swfrm_info = NULL;
 	struct mtk_imgsys_request *req = NULL;
 	u64 *req_stat = NULL;
+	u64 gce_mem_sz = 0;
 
 	if (!user_data_addr) {
 		dev_info(hcp_dev->dev, "%s invalid null share buffer", __func__);
@@ -1147,10 +1148,12 @@ static void module_notify(struct mtk_hcp *hcp_dev,
 
 	swbuf_data = (struct img_sw_buffer *)user_data_addr->share_data;
 	if (swbuf_data && user_data_addr->id == HCP_IMGSYS_FRAME_ID) {
-		if (hcp_dev->data && hcp_dev->data->get_gce_virt)
+		if (hcp_dev->data && hcp_dev->data->get_gce_virt && hcp_dev->data->get_gce_mem_size) {
 			gce_buf = hcp_dev->data->get_gce_virt();
+			gce_mem_sz = hcp_dev->data->get_gce_mem_size();
+		}
 
-		if (gce_buf)
+		if (gce_buf && ((swbuf_data->offset + sizeof(struct swfrm_info_t)) <= gce_mem_sz))
 			swfrm_info = (struct swfrm_info_t *)(gce_buf + (swbuf_data->offset));
 
 		if (swfrm_info && swfrm_info->is_lastfrm)
@@ -1166,7 +1169,6 @@ static void module_notify(struct mtk_hcp *hcp_dev,
 			dev_dbg(hcp_dev->dev, "req:%d req_stat(%p):%llu\n",
 				req_fd, req_stat, *req_stat);
 		}
-
 	}
 	if (hcp_dev->hcp_desc_table[user_data_addr->id].handler) {
 		hcp_dev->hcp_desc_table[user_data_addr->id].handler(
