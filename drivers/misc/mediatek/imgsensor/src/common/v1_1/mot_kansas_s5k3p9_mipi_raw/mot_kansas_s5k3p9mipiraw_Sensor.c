@@ -118,14 +118,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 		},
 		.hs_video = {
 			.pclk = 560000000,
-			.linelength = 12960,
-			.framelength = 1440,
+			.linelength = 9200,
+			.framelength = 2024,
 			.startx = 0,
 			.starty = 0,
-			.grabwindow_width = 1920,
-			.grabwindow_height = 1080,
+			.grabwindow_width = 2320,
+			.grabwindow_height = 1740,
 			.mipi_data_lp2hs_settle_dc = 85,
-			.mipi_pixel_rate = 216666667,
+			.mipi_pixel_rate = 307200000,
 			.max_framerate = 300,
 		},
 		.slim_video = {
@@ -140,14 +140,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 			.mipi_pixel_rate = 307200000,
 			.max_framerate = 300,
 		},
-		.margin = 3,
+		.margin = 4,
 		.min_shutter = 3,
 		.min_gain = 64, /*1x gain*/
 		.max_gain = 1024, /*16x gain*/
 		.min_gain_iso = 100,
 		.gain_step = 2,
 		.gain_type = 2,
-		.max_frame_length = 0xfffc,//0xffff-3,
+		.max_frame_length = 0xffff,
 		.ae_shut_delay_frame = 0,
 		.ae_sensor_gain_delay_frame = 0,
 		.ae_ispGain_delay_frame = 2,
@@ -202,21 +202,21 @@ static struct imgsensor_struct imgsensor = {
 /* Sensor output window information */
 /*no mirror flip*/
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
-	{4640, 3488, 0000, 0000, 4640, 3488, 2320, 1744,
-	 0000, 0000, 2320, 1744, 0000, 0002, 2320, 1740},/* Preview */
+	{4640, 3488, 0000, 0004, 4640, 3480, 2320, 1740,
+	 0000, 0000, 2320, 1740, 0000, 0000, 2320, 1740},/* Preview */
 #if USE_REMOSAIC
 	{4640, 3488, 0000, 0000, 4640, 3488, 4640, 3488,
 	 0000, 0000, 4640, 3488, 0000, 0000, 4640, 3488},/* Capture Remosaic */
 #else
-	{4640, 3488, 0000, 0000, 4640, 3488, 2320, 1744,
-	 0000, 0000, 2320, 1744, 0000, 0002, 2320, 1740},/* Capture == Preview*/
+	{4640, 3488, 0000, 0004, 4640, 3480, 2320, 1740,
+	 0000, 0000, 2320, 1740, 0000, 0000, 2320, 1740},/* Capture == Preview*/
 #endif
 	{4640, 3488, 0000, 0436, 4640, 2616, 2320, 1308,
 	 0000, 0000, 2320, 1308, 0000, 0000, 2320, 1308},/* Video */
-	{4640, 3488, 0400, 0664, 3840, 2160, 1920, 1080,
-	 0000, 0000, 1920, 1080, 0000, 0000, 1920, 1080},/* hs_video == Video */
-	{4640, 3488, 0000, 0000, 4640, 3488, 2320, 1744,
-	 0000, 0000, 2320, 1744, 0000, 0002, 2320, 1740},/* slim_video == Preview */
+	{4640, 3488, 0000, 0004, 4640, 3480, 2320, 1740,
+	 0000, 0000, 2320, 1740, 0000, 0000, 2320, 1740},/* hs_video == Video */
+	{4640, 3488, 0000, 0004, 4640, 3480, 2320, 1740,
+	 0000, 0000, 2320, 1740, 0000, 0000, 2320, 1740},/* slim_video == Preview */
 };
 
 static struct IMGSENSOR_I2C_CFG *get_i2c_cfg(void)
@@ -3937,12 +3937,12 @@ static kal_uint16 addr_data_pair_hs_video[] = {
 	0x602A, 0x1758,
 	0x6F12, 0x0000,
 	0x6028, 0x4000,
-	0x0344, 0x0190,
-	0x0346, 0x02A0,
-	0x0348, 0x109F,
-	0x034A, 0x0B0F,
-	0x034C, 0x0780,
-	0x034E, 0x0438,
+	0x0344, 0x0000,
+	0x0346, 0x000C,
+	0x0348, 0x122F,
+	0x034A, 0x0DA3,
+	0x034C, 0x0910,
+	0x034E, 0x06CC,
 	0x0350, 0x0004,
 	0x0900, 0x0122,
 	0x0380, 0x0002,
@@ -3963,19 +3963,96 @@ static kal_uint16 addr_data_pair_hs_video[] = {
 	0x030A, 0x0001,
 	0x030C, 0x0000,
 	0x030E, 0x0004,
-	0x0310, 0x005A,
+	0x0310, 0x0080,
 	0x0312, 0x0001,
 	0x6028, 0x2000,
 	0x602A, 0x16A6,
 	0x6F12, 0x006C,
 	0x6028, 0x4000,
-	0x0340, 0x05A0,
-	0x0342, 0x32A0,
+	0x0340, 0x07E8,
+	0x0342, 0x23F0,
 	0x0202, 0x0100,
 	0x0200, 0x0100,
 	0x021E, 0x0000,
 	0x0D00, 0x0000,
 	0x0D02, 0x0001,
+	0x0112, 0x0A0A,
+};
+
+static kal_uint16 addr_data_pair_slim_video[] = {
+	0x6028, 0x4000,
+	0x6214, 0x7970,
+	0x6218, 0x7150,
+	0x6028, 0x2000,
+	0x602A, 0x0ED6,
+	0x6F12, 0x0000,
+	0x602A, 0x1CF0,
+	0x6F12, 0x0200,
+	0x602A, 0x0E58,
+	0x6F12, 0x0023,
+	0x602A, 0x1694,
+	0x6F12, 0x170F,
+	0x602A, 0x16AA,
+	0x6F12, 0x009D,
+	0x6F12, 0x000F,
+	0x602A, 0x1098,
+	0x6F12, 0x0012,
+	0x602A, 0x2690,
+	0x6F12, 0x0100,
+	0x6F12, 0x0000,
+	0x602A, 0x16A8,
+	0x6F12, 0x38C0,
+	0x602A, 0x108C,
+	0x6F12, 0x0002,
+	0x602A, 0x10CC,
+	0x6F12, 0x0001,
+	0x602A, 0x10D0,
+	0x6F12, 0x000F,
+	0x602A, 0x0F50,
+	0x6F12, 0x0200,
+	0x602A, 0x1758,
+	0x6F12, 0x0000,
+	0x6028, 0x4000,
+	0x0344, 0x0000,
+	0x0346, 0x000C,
+	0x0348, 0x122F,
+	0x034A, 0x0DA3,
+	0x034C, 0x0910,
+	0x034E, 0x06CC,
+	0x0350, 0x0004,
+	0x0900, 0x0122,
+	0x0380, 0x0002,
+	0x0382, 0x0002,
+	0x0384, 0x0002,
+	0x0386, 0x0002,
+	0x0404, 0x1000,
+	0x0402, 0x1010,
+	0x0400, 0x1010,
+	0x0114, 0x0300,
+	0x0110, 0x1002,
+	0x0136, 0x1800,
+	0x0300, 0x0007,
+	0x0302, 0x0001,
+	0x0304, 0x0006,
+	0x0306, 0x00F5,
+	0x0308, 0x0008,
+	0x030A, 0x0001,
+	0x030C, 0x0000,
+	0x030E, 0x0004,
+	0x0310, 0x0080,
+	0x0312, 0x0001,
+	0x6028, 0x2000,
+	0x602A, 0x16A6,
+	0x6F12, 0x006C,
+	0x6028, 0x4000,
+	0x0340, 0x07E8,
+	0x0342, 0x23F0,
+	0x0202, 0x0100,
+	0x0200, 0x0100,
+	0x021E, 0x0000,
+	0x0D00, 0x0000,
+	0x0D02, 0x0001,
+	0x0112, 0x0A0A,
 };
 
 static void sensor_init(void)
@@ -4159,7 +4236,8 @@ static void hs_video_setting(void)
 
 static void slim_video_setting(void)
 {
-	LOG_INF("E\n");
+	table_write_cmos_sensor(addr_data_pair_slim_video,
+		sizeof(addr_data_pair_slim_video) / sizeof(kal_uint16));
 }
 
 #define FOUR_CELL_SIZE 2048
