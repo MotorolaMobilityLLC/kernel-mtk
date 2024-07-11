@@ -284,6 +284,11 @@
 	tswchg_curlmt = <0 0 0 0 0 0 0 0 0>;
 };
 
+&charger_cooler {
+       mmi,thermal-mitigation = <(-1) 8000000 6000000 4000000 3000000
+                               2000000 1000000 500000 300000>;
+};
+
 &mtk_gauge {
 	charger = <&sc8989x_chg>;
 	R_FG_VALUE = <(5)>; /*R_sense resistance*/
