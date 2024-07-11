@@ -18,7 +18,7 @@
 #ifndef _MOT_VEGAS_OV50D_SENSOR_SETTING_H
 #define _MOT_VEGAS_OV50D_SENSOR_SETTING_H
 
-kal_uint16 addr_data_pair_init_mot_vegas_ov50d[] = {
+kal_uint16 addr_data_pair_init_mot_vegas_ov50d_part1[] = {
 0x0103, 0x01,
 0x0102, 0x01,
 0x0301, 0xc8,
@@ -811,6 +811,9 @@ kal_uint16 addr_data_pair_init_mot_vegas_ov50d[] = {
 0x55f7, 0x08,
 0x55f8, 0x09,
 0x55f9, 0x0a,
+};
+
+kal_uint16 addr_data_pair_init_mot_vegas_ov50d_part2[] = {
 0x59f0, 0x40,
 0x59f1, 0x40,
 0x59f2, 0x40,
@@ -1261,6 +1264,9 @@ kal_uint16 addr_data_pair_init_mot_vegas_ov50d[] = {
 0x5baf, 0xcd,
 0x5bb0, 0xcd,
 0x5bb1, 0xcd,
+};
+
+kal_uint16 addr_data_pair_init_mot_vegas_ov50d_part3[] = {
 0x8000, 0x00,
 0x8001, 0x08,
 0x8002, 0x0a,
@@ -1292,6 +1298,9 @@ kal_uint16 addr_data_pair_init_mot_vegas_ov50d[] = {
 0x8014, 0x46,
 0x801d, 0x9c,
 0x801a, 0x83,
+};
+
+kal_uint16 addr_data_pair_init_mot_vegas_ov50d_part4[] = {
 0x801e, 0x00,
 0x801f, 0x00,
 0x8020, 0x00,
@@ -1544,6 +1553,9 @@ kal_uint16 addr_data_pair_init_mot_vegas_ov50d[] = {
 0x8117, 0x6b,
 0x8118, 0x97,
 0x8119, 0x08,
+};
+
+kal_uint16 addr_data_pair_init_mot_vegas_ov50d_part5[] = {
 0x811b, 0x08,
 0x811c, 0x52,
 0x811d, 0x08,
@@ -1559,6 +1571,9 @@ kal_uint16 addr_data_pair_init_mot_vegas_ov50d[] = {
 0x8128, 0x52,
 0x811a, 0x51,
 0x8122, 0x52,
+};
+
+kal_uint16 addr_data_pair_init_mot_vegas_ov50d_part6[] = {
 0x8129, 0x08,
 0x812a, 0x54,
 0x812b, 0x00,
@@ -1647,6 +1662,9 @@ kal_uint16 addr_data_pair_init_mot_vegas_ov50d[] = {
 0x817e, 0x95,
 0x817f, 0xdf,
 0x8180, 0xe3,
+};
+
+kal_uint16 addr_data_pair_init_mot_vegas_ov50d_part7[] = {
 0x8056, 0x00,
 0x8057, 0x00,
 0x8058, 0x00,
