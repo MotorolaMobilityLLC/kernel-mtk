@@ -135,3 +135,9 @@ eint_cp: eint_cp {
 	mediatek,eye-term-host = <5>;
 	mediatek,rev6-host = <3>;
 };
+
+&therm_intf {
+        /*Vsensor name should be CASE DIFFERENT with the name in config file*/
+        mmi,temperature-names = "BACK_TEMP", "FRONT_TEMP";/*for "back_temp" in config file*/
+};
+
