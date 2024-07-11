@@ -186,7 +186,12 @@ static void KANSAS_S5KJNS_eeprom_get_mnf_data(void *data,
 		mnf->actuator_id[0] = 0;
 	}
 
-	ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->lens_id[0]);
+	if (eeprom->lens_id[0] == 0x80){
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "AAC 505265A02");
+	} else {
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
+		LOG_INF("unknown lens_id");
+	}
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
 		LOG_ERROR("snprintf of mnf->lens_id failed");
