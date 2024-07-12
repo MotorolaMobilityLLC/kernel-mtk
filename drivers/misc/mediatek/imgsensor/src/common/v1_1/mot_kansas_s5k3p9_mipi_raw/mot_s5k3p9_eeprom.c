@@ -139,7 +139,7 @@ static void KANSAS_S5K3P9_read_data_from_eeprom(kal_uint8 slave, kal_uint32 star
 static calibration_status_t KANSAS_S5K3P9_check_manufacturing_data(void *data)
 {
 	struct KANSAS_S5K3P9_eeprom_t *eeprom = (struct KANSAS_S5K3P9_eeprom_t*)data;
-	LOG_INF("Manufacturing eeprom->mpn = %s !",eeprom->mpn);
+	LOG_INF("Manufacturing eeprom->mpn = %.8s !",eeprom->mpn);
 	if (!eeprom_util_check_crc16(eeprom->eeprom_table_version, KANSAS_S5K3P9_EEPROM_CRC_MANUFACTURING_SIZE,
 		convert_crc(eeprom->manufacture_crc16))) {
 		LOG_ERROR("Manufacturing CRC Fails!");
