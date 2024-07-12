@@ -51,7 +51,6 @@
 
 #include "mot_kansas_s5kjnsmipiraw_Sensor.h"
 #include "mot_kansas_s5kjns_Sensor_setting.h"
-#include "mot_kansas_s5kjns_ana_gain_table.h"
 
 extern mot_calibration_status_t *KANSAS_S5KJNS_eeprom_get_calibration_status(void);
 extern mot_calibration_mnf_t *KANSAS_S5KJNS_eeprom_get_mnf_info(void);
@@ -1518,14 +1517,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*(feature_data + 2) = imgsensor_info.gain_type;
 		break;
 	case SENSOR_FEATURE_GET_ANA_GAIN_TABLE:
-		if ((*(feature_data + 0)) == 0) {
-			*(feature_data + 0) =
-				sizeof(mot_kansas_s5kjns_ana_gain_table);
-		} else {
-			memcpy((void *)(uintptr_t) (*(feature_data + 1)),
-			(void *)mot_kansas_s5kjns_ana_gain_table,
-			sizeof(mot_kansas_s5kjns_ana_gain_table));
-		}
 		break;
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
 
