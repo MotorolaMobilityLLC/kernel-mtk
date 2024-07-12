@@ -13,9 +13,9 @@
 
 serialnum_1 = "ATLRA50NVT";
 
-battery0_profile_t0_num = <100>;
-battery0_profile_t0_col = <3>;
-battery0_profile_t0 =
+battery1_profile_t0_num = <100>;
+battery1_profile_t0_col = <3>;
+battery1_profile_t0 =
 <
 0       44610   1375
 510     44610   1375
@@ -118,9 +118,9 @@ battery0_profile_t0 =
 49990   39317   1338
 50500   32380   975
 >;
-battery0_profile_t1_num = <100>;
-battery0_profile_t1_col = <3>;
-battery0_profile_t1 =
+battery1_profile_t1_num = <100>;
+battery1_profile_t1_col = <3>;
+battery1_profile_t1 =
 <
 0       44650   1825
 510     44645   1825
@@ -223,9 +223,9 @@ battery0_profile_t1 =
 49990   35191   4135
 50500   32500   1275
 >;
-battery0_profile_t2_num = <100>;
-battery0_profile_t2_col = <3>;
-battery0_profile_t2 =
+battery1_profile_t2_num = <100>;
+battery1_profile_t2_col = <3>;
+battery1_profile_t2 =
 <
 0       44650   2400
 510     44645   2400
@@ -328,9 +328,9 @@ battery0_profile_t2 =
 49990   35183   7560
 50500   33040   2625
 >;
-battery0_profile_t3_num = <100>;
-battery0_profile_t3_col = <3>;
-battery0_profile_t3 =
+battery1_profile_t3_num = <100>;
+battery1_profile_t3_col = <3>;
+battery1_profile_t3 =
 <
 0       44680   4150
 510     44674   4150
@@ -433,9 +433,9 @@ battery0_profile_t3 =
 49990   35800   9550
 50500   35800   9550
 >;
-battery0_profile_t4_num = <100>;
-battery0_profile_t4_col = <3>;
-battery0_profile_t4 =
+battery1_profile_t4_num = <100>;
+battery1_profile_t4_col = <3>;
+battery1_profile_t4 =
 <
 0       44700   7825
 510     44693   7825
