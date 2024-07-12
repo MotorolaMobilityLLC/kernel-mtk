@@ -3272,6 +3272,7 @@
       <elf-symbol name='gro_cells_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9f54ead7'/>
       <elf-symbol name='gro_cells_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3f534a5d'/>
       <elf-symbol name='gro_cells_receive' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf79afb17'/>
+      <elf-symbol name='groups_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x732dd326'/>
       <elf-symbol name='gs_alloc_req' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x43efdaa9'/>
       <elf-symbol name='gs_free_req' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x29b24be5'/>
       <elf-symbol name='gserial_alloc_line' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x33bfdca2'/>
@@ -50188,7 +50189,7 @@
           <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='drivers/mmc/host/sdhci.h' line='679' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='gpio_desc' size-in-bits='320' is-struct='yes' visibility='default' filepath='drivers/gpio/gpiolib.h' line='133' column='1' id='63b74212'>
+      <class-decl name='gpio_desc' size-in-bits='320' is-struct='yes' visibility='default' filepath='drivers/pinctrl/../gpio/gpiolib.h' line='133' column='1' id='63b74212'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='gdev' type-id='fb7dc22d' visibility='default' filepath='drivers/pinctrl/../gpio/gpiolib.h' line='134' column='1'/>
         </data-member>
@@ -148081,6 +148082,10 @@
         <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/gro_cells.c' line='12' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='groups_free' mangled-name='groups_free' filepath='kernel/groups.c' line='29' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='groups_free'>
+        <parameter type-id='383471a1' name='group_info' filepath='kernel/groups.c' line='29' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='gs_alloc_req' mangled-name='gs_alloc_req' filepath='drivers/usb/gadget/function/u_serial.c' line='165' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gs_alloc_req'>
         <parameter type-id='63a08bf7' name='ep' filepath='drivers/usb/gadget/function/u_serial.c' line='165' column='1'/>
         <parameter type-id='f0981eeb' name='len' filepath='drivers/usb/gadget/function/u_serial.c' line='165' column='1'/>
@@ -152921,28 +152926,28 @@
         <parameter type-id='91ce1af9' name='c' filepath='lib/math/div64.c' line='197' column='1'/>
         <return type-id='91ce1af9'/>
       </function-decl>
-      <function-decl name='mutex_is_locked' mangled-name='mutex_is_locked' filepath='kernel/locking/mutex.c' line='89' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_is_locked'>
-        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='89' column='1'/>
+      <function-decl name='mutex_is_locked' mangled-name='mutex_is_locked' filepath='kernel/locking/mutex.c' line='90' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_is_locked'>
+        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='90' column='1'/>
         <return type-id='b50a4934'/>
       </function-decl>
-      <function-decl name='mutex_lock' mangled-name='mutex_lock' filepath='kernel/locking/mutex.c' line='283' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_lock'>
-        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='283' column='1'/>
+      <function-decl name='mutex_lock' mangled-name='mutex_lock' filepath='kernel/locking/mutex.c' line='284' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_lock'>
+        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='284' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='mutex_lock_interruptible' mangled-name='mutex_lock_interruptible' filepath='kernel/locking/mutex.c' line='948' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_lock_interruptible'>
-        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='948' column='1'/>
+      <function-decl name='mutex_lock_interruptible' mangled-name='mutex_lock_interruptible' filepath='kernel/locking/mutex.c' line='949' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_lock_interruptible'>
+        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='949' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='mutex_lock_killable' mangled-name='mutex_lock_killable' filepath='kernel/locking/mutex.c' line='972' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_lock_killable'>
-        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='972' column='1'/>
+      <function-decl name='mutex_lock_killable' mangled-name='mutex_lock_killable' filepath='kernel/locking/mutex.c' line='973' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_lock_killable'>
+        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='973' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='mutex_trylock' mangled-name='mutex_trylock' filepath='kernel/locking/mutex.c' line='1052' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_trylock'>
-        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='1052' column='1'/>
+      <function-decl name='mutex_trylock' mangled-name='mutex_trylock' filepath='kernel/locking/mutex.c' line='1053' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_trylock'>
+        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='1053' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='mutex_unlock' mangled-name='mutex_unlock' filepath='kernel/locking/mutex.c' line='548' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_unlock'>
-        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='548' column='1'/>
+      <function-decl name='mutex_unlock' mangled-name='mutex_unlock' filepath='kernel/locking/mutex.c' line='549' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mutex_unlock'>
+        <parameter type-id='e0ea832a' name='lock' filepath='kernel/locking/mutex.c' line='549' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='n_tty_ioctl_helper' mangled-name='n_tty_ioctl_helper' filepath='drivers/tty/tty_ioctl.c' line='882' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='n_tty_ioctl_helper'>
@@ -168494,18 +168499,18 @@
         <parameter type-id='02f11ed4' name='page' filepath='mm/page-writeback.c' line='2396' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='ww_mutex_lock' mangled-name='ww_mutex_lock' filepath='kernel/locking/mutex.c' line='1070' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ww_mutex_lock'>
-        <parameter type-id='7533ba6f' name='lock' filepath='kernel/locking/mutex.c' line='1070' column='1'/>
-        <parameter type-id='c1d02a64' name='ctx' filepath='kernel/locking/mutex.c' line='1070' column='1'/>
+      <function-decl name='ww_mutex_lock' mangled-name='ww_mutex_lock' filepath='kernel/locking/mutex.c' line='1071' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ww_mutex_lock'>
+        <parameter type-id='7533ba6f' name='lock' filepath='kernel/locking/mutex.c' line='1071' column='1'/>
+        <parameter type-id='c1d02a64' name='ctx' filepath='kernel/locking/mutex.c' line='1071' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='ww_mutex_lock_interruptible' mangled-name='ww_mutex_lock_interruptible' filepath='kernel/locking/mutex.c' line='1085' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ww_mutex_lock_interruptible'>
-        <parameter type-id='7533ba6f' name='lock' filepath='kernel/locking/mutex.c' line='1085' column='1'/>
-        <parameter type-id='c1d02a64' name='ctx' filepath='kernel/locking/mutex.c' line='1085' column='1'/>
+      <function-decl name='ww_mutex_lock_interruptible' mangled-name='ww_mutex_lock_interruptible' filepath='kernel/locking/mutex.c' line='1086' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ww_mutex_lock_interruptible'>
+        <parameter type-id='7533ba6f' name='lock' filepath='kernel/locking/mutex.c' line='1086' column='1'/>
+        <parameter type-id='c1d02a64' name='ctx' filepath='kernel/locking/mutex.c' line='1086' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='ww_mutex_unlock' mangled-name='ww_mutex_unlock' filepath='kernel/locking/mutex.c' line='572' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ww_mutex_unlock'>
-        <parameter type-id='7533ba6f' name='lock' filepath='kernel/locking/mutex.c' line='572' column='1'/>
+      <function-decl name='ww_mutex_unlock' mangled-name='ww_mutex_unlock' filepath='kernel/locking/mutex.c' line='573' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ww_mutex_unlock'>
+        <parameter type-id='7533ba6f' name='lock' filepath='kernel/locking/mutex.c' line='573' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='xa_destroy' mangled-name='xa_destroy' filepath='lib/xarray.c' line='2204' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xa_destroy'>
