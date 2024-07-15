@@ -83,8 +83,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.checksum_value = 0x388c7147,
 	.pre = {
 		.pclk = 100000000,
-		.linelength = 425,
-		.framelength = 7840,
+		.linelength = 850,
+		.framelength = 3920,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
@@ -95,8 +95,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.cap = {
 		.pclk = 100000000,
-		.linelength = 425,
-		.framelength = 7840,
+		.linelength = 850,
+		.framelength = 3920,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
@@ -107,8 +107,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.normal_video = {
 		.pclk = 100000000,
-		.linelength = 425,
-		.framelength = 7840,
+		.linelength = 850,
+		.framelength = 3920,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
@@ -119,8 +119,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.hs_video = {
 		.pclk = 100000000,
-		.linelength = 325,
-		.framelength = 2564,
+		.linelength = 650,
+		.framelength = 1282,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2048,
@@ -131,8 +131,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.slim_video = {
 		.pclk = 100000000,
-		.linelength = 425,
-		.framelength = 7840,
+		.linelength = 850,
+		.framelength = 3920,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
@@ -143,8 +143,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.custom1 = {
 		.pclk = 100000000,
-		.linelength = 425,
-		.framelength = 7840,
+		.linelength = 850,
+		.framelength = 3920,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2048,
@@ -153,14 +153,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.mipi_pixel_rate = 760800000,
 	},
-	.margin = 31,					/* sensor framelength & shutter margin */
+	.margin = 16,					/* sensor framelength & shutter margin */
 	.min_shutter = 20,				/* min shutter */
 	.min_gain = BASEGAIN, /*1x gain*/
 	.max_gain = 3968, 				/*62 * 64*/
 	.max_gain_30fps = 3968,			/*62 * 64*/
 	.max_gain_120fps = 992,		    /*15.5 * 64*/
 	.min_gain_iso = 100,
-	.exp_step = 2,
+	.exp_step = 1,
 	.gain_step = 2, /*minimum step = 2 in 1x~2x gain*/
 	.gain_type = 4,/*to be modify,no gain table for sony*/
 	.max_frame_length = 0xffffff,     /* max framelength by sensor register's limitation */
@@ -322,12 +322,12 @@ static void set_dummy(void)
 {
 	pr_debug("dummyline = %d, dummypixels = %d\n", imgsensor.dummy_line, imgsensor.dummy_pixel);
 
-	write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
-	write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0xFF);
-	write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
+	write_cmos_sensor_8(0x3840, ((imgsensor.frame_length << 1) >> 16) & 0xFF);
+	write_cmos_sensor_8(0x380e, ((imgsensor.frame_length << 1) >> 8) & 0xFF);
+	write_cmos_sensor_8(0x380f, (imgsensor.frame_length << 1) & 0xFF);
 
-	write_cmos_sensor_8(0x380c, imgsensor.line_length >> 8);
-	write_cmos_sensor_8(0x380d, imgsensor.line_length & 0xFF);
+	write_cmos_sensor_8(0x380c, (imgsensor.line_length >> 1) >> 8);
+	write_cmos_sensor_8(0x380d, (imgsensor.line_length >> 1) & 0xFF);
 
 }	/*	set_dummy  */
 
@@ -378,11 +378,11 @@ static void write_shutter(kal_uint32 shutter)
 	if (shutter < imgsensor_info.min_shutter)
 		shutter = imgsensor_info.min_shutter;
 
-	if((imgsensor.frame_length >> 1 == imgsensor.last_shutter >> 1) ||
-		(imgsensor.frame_length >> 1 == (imgsensor.last_shutter >> 1) + 1) ||
-		(imgsensor.frame_length >> 1 == (imgsensor.last_shutter >> 1) + 2) ||
-		(imgsensor.frame_length >> 1 == (imgsensor.last_shutter >> 1) + 3)) {
-			imgsensor.frame_length += 8;
+	if(imgsensor.frame_length == imgsensor.last_shutter ||
+		(imgsensor.frame_length == imgsensor.last_shutter + 1) ||
+		(imgsensor.frame_length == imgsensor.last_shutter + 2) ||
+		(imgsensor.frame_length == imgsensor.last_shutter + 3)) {
+			imgsensor.frame_length += 4;
 			if (imgsensor.frame_length > imgsensor_info.max_frame_length)
 				imgsensor.frame_length = imgsensor_info.max_frame_length;
 	}
@@ -397,21 +397,21 @@ static void write_shutter(kal_uint32 shutter)
 			set_max_framerate(146, 0);
 		else {
 			/* Extend frame length */
-			write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
-			write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0xFF);
-			write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
+			write_cmos_sensor_8(0x3840, ((imgsensor.frame_length << 1) >> 16) & 0xFF);
+			write_cmos_sensor_8(0x380e, ((imgsensor.frame_length << 1) >> 8) & 0xFF);
+			write_cmos_sensor_8(0x380f, (imgsensor.frame_length << 1) & 0xFF);
 		}
 	} else {
 		/* Extend frame length*/
-		write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
-		write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0xFF);
-		write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
+		write_cmos_sensor_8(0x3840, ((imgsensor.frame_length << 1) >> 16) & 0xFF);
+		write_cmos_sensor_8(0x380e, ((imgsensor.frame_length << 1) >> 8) & 0xFF);
+		write_cmos_sensor_8(0x380f, (imgsensor.frame_length << 1) & 0xFF);
 	}
 
 	/* Update Shutter */
-	write_cmos_sensor_8(0x3500, (shutter >> 16) & 0xFF);
-	write_cmos_sensor_8(0x3501, (shutter >> 8) & 0xFF);
-	write_cmos_sensor_8(0x3502, shutter & 0xFF);
+	write_cmos_sensor_8(0x3500, ((shutter << 1) >> 16) & 0xFF);
+	write_cmos_sensor_8(0x3501, ((shutter << 1) >> 8) & 0xFF);
+	write_cmos_sensor_8(0x3502, (shutter << 1) & 0xFF);
 
 	pr_debug("frame_length = %d , shutter = %d \n", imgsensor.frame_length, shutter);
 
@@ -494,21 +494,21 @@ static void set_shutter_frame_length(kal_uint16 shutter,
 			set_max_framerate(146, 0);
 		else {
 			/* Extend frame length */
-			write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
-			write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0xFF);
-			write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
+			write_cmos_sensor_8(0x3840, ((imgsensor.frame_length << 1) >> 16) & 0xFF);
+			write_cmos_sensor_8(0x380e, ((imgsensor.frame_length << 1) >> 8) & 0xFF);
+			write_cmos_sensor_8(0x380f, (imgsensor.frame_length << 1) & 0xFF);
 		}
 	} else {
 		/* Extend frame length */
-		write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
-		write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0xFF);
-		write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
+		write_cmos_sensor_8(0x3840, ((imgsensor.frame_length << 1) >> 16) & 0xFF);
+		write_cmos_sensor_8(0x380e, ((imgsensor.frame_length << 1) >> 8) & 0xFF);
+		write_cmos_sensor_8(0x380f, (imgsensor.frame_length << 1) & 0xFF);
 	}
 
 	/* Update Shutter */
-	write_cmos_sensor_8(0x3500, (shutter >> 16) & 0xFF);
-	write_cmos_sensor_8(0x3501, (shutter >> 8) & 0xFF);
-	write_cmos_sensor_8(0x3502, shutter & 0xFF);
+	write_cmos_sensor_8(0x3500, ((shutter << 1) >> 16) & 0xFF);
+	write_cmos_sensor_8(0x3501, ((shutter << 1) >> 8) & 0xFF);
+	write_cmos_sensor_8(0x3502, (shutter << 1) & 0xFF);
 
     pr_debug("frame_length = %d , shutter = %d \n", imgsensor.frame_length, shutter);
 
