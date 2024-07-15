@@ -323,7 +323,21 @@ long MOT_VEGAS_AW86006AF_Ioctl(struct file *a_pstFile, uint32_t a_u4Command,
 /* Q1 : Try release multiple times. */
 int MOT_VEGAS_AW86006AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
+	int ret = 0;
+	uint8_t data[2] = {0x0, 0x1};
 	AW_LOGI("Start");
+
+	/*Before close camera,set ois off and close aux gyro*/
+	//set ois off
+	ret = aw86006_i2c_writes(0x0001, 2, &data[0], 1);
+	if(ret < 0) {
+		AW_LOGE("Set OIS OFF fail, ret = %d", ret);
+	}
+	//close aux gyro
+	ret = aw86006_i2c_writes(0x000e, 2, &data[1], 1);
+	if(ret < 0) {
+		AW_LOGE("close aux gyro fail, ret = %d", ret);
+	}
 
 	if (*g_pAF_Opened == 2) {
 		/* AF restore init position */
