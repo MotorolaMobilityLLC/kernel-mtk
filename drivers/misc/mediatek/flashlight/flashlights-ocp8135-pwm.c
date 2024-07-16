@@ -51,6 +51,8 @@
 #define OCP8135_LEVEL_NUM                26
 #define OCP8135_LEVEL_TORCH              7
 
+#define OCP8135_TIMEOUT 500 /* ms */
+
 enum ocp8135_flash_opcode {
     OCP8135_FLASH_OP_NULL,
     OCP8135_FLASH_OP_FIRELOW,
@@ -258,13 +260,13 @@ static int ocp8135_flashlight_set_pwm(int pwm_num, u32 flash_current, u32 flash_
  * ocp8135 pwm-flashlight operations
  *****************************************************************************/
 static const u32 ocp8135_torch_current[OCP8135_LEVEL_NUM] = {
-    10, 30, 50, 70, 90, 100, 115, 0, 0, 0, 0, 0, 0, 0,
+    10, 30, 50, 70, 80, 90, 100, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 static const u32 ocp8135_flash_current[OCP8135_LEVEL_NUM] = {
-    10, 30, 50, 70, 90, 100, 115, 150, 200, 250, 300,
+    10, 30, 50, 70, 80, 90, 100, 150, 200, 250, 300,
     350, 400, 450, 500, 550, 600, 650, 700, 750, 800,
-    850, 900, 950, 1000, 1100};
+    850, 900, 1000, 1150, 1300};
 
 static void os_mdelay(unsigned long ms)
 {
@@ -434,6 +436,9 @@ static int ocp8135_ioctl(unsigned int cmd, unsigned long arg)
                 channel, (int)fl_arg->arg);
         if (fl_arg->arg == 1) {
             if (ocp8135_timeout_ms) {
+                if(ocp8135_timeout_ms > OCP8135_TIMEOUT)
+                        ocp8135_timeout_ms = OCP8135_TIMEOUT;
+                pr_debug("ocp8135_timeout_ms(%d)\n", ocp8135_timeout_ms);
                 s = ocp8135_timeout_ms / 1000;
                 ns = ocp8135_timeout_ms % 1000 * 1000000;
                 ktime = ktime_set(s, ns);
