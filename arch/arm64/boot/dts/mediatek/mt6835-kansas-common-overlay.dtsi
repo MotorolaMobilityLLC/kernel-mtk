@@ -49,6 +49,11 @@ eint_cp: eint_cp {
         };
 };
 
+&u2port0 {
+	mediatek,eye-vrt = <6>;
+	mediatek,eye-vrt-host = <6>;
+};
+
 &swtp {
 	interrupt-parent = <&pio>;
 	interrupts = <6 IRQ_TYPE_LEVEL_HIGH 6 0>;
