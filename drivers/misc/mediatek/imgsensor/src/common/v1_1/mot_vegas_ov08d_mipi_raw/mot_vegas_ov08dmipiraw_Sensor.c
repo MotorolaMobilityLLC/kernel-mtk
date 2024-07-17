@@ -113,7 +113,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width  = 3264,
-		.grabwindow_height = 1836,
+		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
 		.mipi_pixel_rate = 288000000,
@@ -125,7 +125,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width  = 3264,
-		.grabwindow_height = 1836,
+		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
 		.mipi_pixel_rate = 288000000,
@@ -186,8 +186,8 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
     {3264, 2448,   0,   0, 3264, 2448, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448}, // Preview
     {3264, 2448,   0,   0, 3264, 2448, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448}, // capture
     {3264, 2448,   0, 306, 3264, 1836, 3264, 1836, 0, 0, 3264, 1836, 0, 0, 3264, 1836}, // video
-    {3264, 2448,   0, 306, 3264, 1836, 3264, 1836, 0, 0, 3264, 1836, 0, 0, 3264, 1836}, // hs_video
-    {3264, 2448,   0, 306, 3264, 1836, 3264, 1836, 0, 0, 3264, 1836, 0, 0, 3264, 1836}, // slim_video
+    {3264, 2448,   0,   0, 3264, 2448, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448}, // hs_video
+    {3264, 2448,   0,   0, 3264, 2448, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448}, // slim_video
 };
 
 
@@ -711,8 +711,8 @@ static kal_uint32 hs_video(
 	write_cmos_sensor(0xfd, 0x00);
 	write_cmos_sensor(0x20, 0x0e);
 	mdelay(3);
-	ov08d_table_write_cmos_sensor(addr_data_pair_normal_video_mot_vegas_ov08d,
-			sizeof(addr_data_pair_normal_video_mot_vegas_ov08d)/sizeof(kal_uint16));
+	ov08d_table_write_cmos_sensor(addr_data_pair_preview_mot_vegas_ov08d,
+			sizeof(addr_data_pair_preview_mot_vegas_ov08d)/sizeof(kal_uint16));
 	LOG_INF("%s X\n", __func__);
 	return ERROR_NONE;
 }
@@ -738,8 +738,8 @@ static kal_uint32 slim_video(
 	write_cmos_sensor(0xfd, 0x00);
 	write_cmos_sensor(0x20, 0x0e);
 	mdelay(3);
-	ov08d_table_write_cmos_sensor(addr_data_pair_normal_video_mot_vegas_ov08d,
-			sizeof(addr_data_pair_normal_video_mot_vegas_ov08d)/sizeof(kal_uint16));
+	ov08d_table_write_cmos_sensor(addr_data_pair_preview_mot_vegas_ov08d,
+			sizeof(addr_data_pair_preview_mot_vegas_ov08d)/sizeof(kal_uint16));
 	LOG_INF("%s X\n", __func__);
 	return ERROR_NONE;
 }
