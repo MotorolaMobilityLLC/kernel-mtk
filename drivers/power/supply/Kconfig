@@ -1077,5 +1077,10 @@ config MOTO_WLC_ALG_SUPPORT
 	help
 	  This is to enable MOTO supports of wlc charger INTERFACE.
 
+config MMI_WLS_FACTORY_MUX
+	tristate "moto wlc factory test use cp mux"
+        help
+          This is to enable cp mux open wireless close usb.
+
 endif # POWER_SUPPLY 
 
