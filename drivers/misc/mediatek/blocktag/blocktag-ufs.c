@@ -186,7 +186,11 @@ void mtk_btag_ufs_transfer_req_compl(__u16 task_id, unsigned long req_mask)
 	tsk->t[tsk_req_compl] = sched_clock();
 
 	if (tsk->cmd == READ_6 || tsk->cmd == READ_10 ||
-	    tsk->cmd == READ_16 || tsk->cmd == UFSHPB_READ) {
+	    tsk->cmd == READ_16
+#if defined(CONFIG_SCSI_UFS_HPB)
+	    || tsk->cmd == UFSHPB_READ
+#endif
+	    ) {
 		write = false;
 		tp = &ctx->throughput.r;
 	} else if (tsk->cmd == WRITE_6 || tsk->cmd == WRITE_10 ||
