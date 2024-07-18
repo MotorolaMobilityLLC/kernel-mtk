@@ -67,6 +67,7 @@
                 aw35615,src_pdo_cur = <1000>; /* set source pdo current mA*/
                 aw35615,snk_tog_time = <0x38>; /* set toggle sink time */
                 aw35615,src_tog_time = <0x24>; /* set toggle source time */
+                aw35615,sink_bist_reg = <0x54>; /* set MDAC reg 0x50*/
         };
 };
 
