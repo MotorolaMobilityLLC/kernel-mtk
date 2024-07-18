@@ -543,30 +543,6 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 }
 
 
-#if 1
-static void set_mirror_flip(kal_uint8 image_mirror)
-{
-	LOG_INF("image_mirror = %d\n", image_mirror);
-
-	switch (image_mirror) {
-		case IMAGE_NORMAL:
-			write_cmos_sensor(0x3221,0x00);
-			break;
-		case IMAGE_H_MIRROR:
-			write_cmos_sensor(0x3221,0x06);
-			break;
-		case IMAGE_V_MIRROR:
-			write_cmos_sensor(0x3221,0x60);
-			break;
-		case IMAGE_HV_MIRROR:
-			write_cmos_sensor(0x3221,0x66);
-			break;
-		default:
-			LOG_INF("Error image_mirror setting\n");
-	}
-
-}
-#endif
 
 /*************************************************************************
 * FUNCTION
@@ -593,7 +569,6 @@ static void sensor_init(void)
 {
 	LOG_INF("E");
 	write_cmos_sensor(0x0103,0x01);
-	mDELAY(10);
 	write_cmos_sensor(0x0100,0x00);
 	write_cmos_sensor(0x36e9,0x80);
 	write_cmos_sensor(0x36e9,0x24);
@@ -701,14 +676,11 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3e09,0x00);
 	write_cmos_sensor(0x4509,0x28);
 	write_cmos_sensor(0x450d,0x61);
-	write_cmos_sensor(0x0100,0x01);
 	write_cmos_sensor(0x3221,0x66);
 }	/*	sensor_init  */
 
 static void preview_setting(void)
 {
-	write_cmos_sensor(0x0100,0x00);
-	mdelay(10);
 	write_cmos_sensor(0x3200,0x00);
 	write_cmos_sensor(0x3201,0x00);
 	write_cmos_sensor(0x3202,0x00);
@@ -725,7 +697,6 @@ static void preview_setting(void)
 	write_cmos_sensor(0x3211,0x04);
 	write_cmos_sensor(0x3212,0x00);
 	write_cmos_sensor(0x3213,0x04);
-	write_cmos_sensor(0x0100,0x01);
 }    /*    preview_setting  */
 
 static void capture_setting(kal_uint16 currefps)
@@ -737,8 +708,6 @@ static void capture_setting(kal_uint16 currefps)
 static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n",currefps);
-	write_cmos_sensor(0x0100,0x00);
-	mdelay(10);
 	write_cmos_sensor(0x3200,0x00);
 	write_cmos_sensor(0x3201,0x00);
 	write_cmos_sensor(0x3202,0x00);
@@ -755,27 +724,27 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x3211,0x04);
 	write_cmos_sensor(0x3212,0x00);
 	write_cmos_sensor(0x3213,0x04);
-	write_cmos_sensor(0x0100,0x01);
 }
 
 static void hs_video_setting()
 {
-	LOG_INF("E! VGA 120fps\n");
+	LOG_INF("E! hs_video setting\n");
+	preview_setting();
+	/*    Reuse preview_setting  */
 }
 
 static void slim_video_setting()
 {
-	LOG_INF("E! HD 30fps\n");
+	LOG_INF("E! slim_video setting\n");
+	preview_setting();
+	/*    Reuse preview_setting  */
 }
 #if 1
 static void custom1_setting(void)
 {
-	write_cmos_sensor(0x0100,0x00);
-	mDELAY(10);
-	write_cmos_sensor(0x320e,0x06);
-	write_cmos_sensor(0x320f,0x1a);
-	write_cmos_sensor(0x0100,0x01);
 	LOG_INF("E! custom1_setting\n");
+	preview_setting();
+	/*    Reuse preview_setting  */
 }
 #endif
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
@@ -973,7 +942,6 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	preview_setting();
-	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }    /*    preview   */
 
@@ -1015,7 +983,6 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	}
 	spin_unlock(&imgsensor_drv_lock);
 	capture_setting(imgsensor.current_fps);
-	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }    /* capture() */
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
@@ -1032,7 +999,6 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	normal_video_setting(imgsensor.current_fps);
-	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }    /*    normal_video   */
 
@@ -1052,7 +1018,6 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	hs_video_setting();
-	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }    /*    hs_video   */
 
@@ -1071,7 +1036,6 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	slim_video_setting();
-	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }    /*    slim_video     */
 #if 1
