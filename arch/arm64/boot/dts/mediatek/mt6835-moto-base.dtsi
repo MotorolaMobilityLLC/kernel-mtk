@@ -17,6 +17,9 @@
 	swtp_2: swtp_2 {
 		compatible = "mediatek, swtp2-eint";
 	};
+	swtp_3: swtp_3 {
+		compatible = "mediatek, swtp3-eint";
+	};
 	tboard_thermistor5: thermal-ntc5 { };
 	tboard_thermistor6: thermal-ntc6 { };
 	tboard_thermistor7: thermal-ntc7 { };

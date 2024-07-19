@@ -51,42 +51,35 @@ eint_cp: eint_cp {
 };
 
 &swtp {
-	swtp: swtp {
-		compatible = "mediatek, swtp-eint";
-		interrupt-parent = <&pio>;
-		interrupts = <36 IRQ_TYPE_LEVEL_HIGH 36 0>;
-		deb-gpios = <&pio 36 0>;
-		debounce = <512>;
-		status = "okay";
-	};
-
-	swtp_1: swtp_1 {
-		compatible = "mediatek, swtp1-eint";
-		interrupt-parent = <&pio>;
-		interrupts = <37 IRQ_TYPE_LEVEL_HIGH 37 0>;
-		deb-gpios = <&pio 37 0>;
-		debounce = <512>;
-		status = "okay";
-	};
-
-	swtp_2: swtp_2 {
-		compatible = "mediatek, swtp2-eint";
-		interrupt-parent = <&pio>;
-		interrupts = <38 IRQ_TYPE_LEVEL_HIGH 38 0>;
-		deb-gpios = <&pio 38 0>;
-		debounce = <512>;
-		status = "okay";
-	};
-
-	swtp_3: swtp_3 {
-		compatible = "mediatek, swtp3-eint";
-		interrupt-parent = <&pio>;
-		interrupts = <39 IRQ_TYPE_LEVEL_HIGH 39 0>;
-		deb-gpios = <&pio 39 0>;
-		debounce = <512>;
-		status = "okay";
-	};
+	interrupt-parent = <&pio>;
+	interrupts = <36 IRQ_TYPE_LEVEL_HIGH 36 0>;
+	deb-gpios = <&pio 36 0>;
+	debounce = <512>;
+	status = "okay";
 };
+
+&swtp_1 {
+	interrupt-parent = <&pio>;
+	interrupts = <37 IRQ_TYPE_LEVEL_HIGH 37 0>;
+	deb-gpios = <&pio 37 0>;
+	debounce = <512>;
+	status = "okay";
+};
+&swtp_2 {
+	interrupt-parent = <&pio>;
+	interrupts = <38 IRQ_TYPE_LEVEL_HIGH 38 0>;
+	deb-gpios = <&pio 38 0>;
+	debounce = <512>;
+	status = "okay";
+};
+&swtp_3 {
+	interrupt-parent = <&pio>;
+	interrupts = <39 IRQ_TYPE_LEVEL_HIGH 39 0>;
+	deb-gpios = <&pio 39 0>;
+	debounce = <512>;
+	status = "okay";
+};
+
 
 &rt5133 {
 	status = "disabled";
