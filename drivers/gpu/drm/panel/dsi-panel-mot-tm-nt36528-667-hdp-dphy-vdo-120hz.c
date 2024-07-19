@@ -363,9 +363,13 @@ static struct mtk_panel_params ext_params_60hz = {
 		.panel_cellid_reg_seq = 1,
 		.panel_cellid_len = 23,
 		.panel_cellid_read_max = 1,
-		.panel_cellid_esd_dis = 1,
+		//.panel_cellid_esd_dis = 1,
 		.page_table = {
 			{0x15,0x02,0xFF,0x22},
+			{0x15,0x02,0xFB,0x01}
+		},
+		.page_post_table = {
+			{0x15,0x02,0xFF,0x10},
 			{0x15,0x02,0xFB,0x01}
 		},
 	},
@@ -407,9 +411,13 @@ static struct mtk_panel_params ext_params_90hz = {
 		.panel_cellid_reg_seq = 1,
 		.panel_cellid_len = 23,
 		.panel_cellid_read_max = 1,
-		.panel_cellid_esd_dis = 1,
+		//.panel_cellid_esd_dis = 1,
 		.page_table = {
 			{0x15,0x02,0xFF,0x22},
+			{0x15,0x02,0xFB,0x01}
+		},
+		.page_post_table = {
+			{0x15,0x02,0xFF,0x10},
 			{0x15,0x02,0xFB,0x01}
 		},
 	},
@@ -450,9 +458,13 @@ static struct mtk_panel_params ext_params_120hz = {
 		.panel_cellid_reg_seq = 1,
 		.panel_cellid_len = 23,
 		.panel_cellid_read_max = 1,
-		.panel_cellid_esd_dis = 1,
+		//.panel_cellid_esd_dis = 1,
 		.page_table = {
 			{0x15,0x02,0xFF,0x22},
+			{0x15,0x02,0xFB,0x01}
+		},
+		.page_post_table = {
+			{0x15,0x02,0xFF,0x10},
 			{0x15,0x02,0xFB,0x01}
 		},
 	},
