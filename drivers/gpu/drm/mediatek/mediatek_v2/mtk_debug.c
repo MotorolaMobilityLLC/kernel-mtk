@@ -5200,6 +5200,48 @@ int mtk_debug_update_esd_chk(struct drm_crtc *crtc, unsigned int esd_en)
 	return ret;
 }
 
+int mtk_debug_send_page_cmds(struct mtk_ddic_dsi_msg *cmd_msg, unsigned char (*p_table)[PAGE_CMDS_LEN]) {
+	int i, j, n;
+	int ret = 0;
+	u8 tx[10] = {0};
+	u8 tx_max;
+
+	for (n = 0 ; n < PAGE_MAX_NUM ; n++) {
+		if (p_table[n][0] == 0)
+			break;
+
+		cmd_msg->tx_cmd_num = 1;
+		cmd_msg->type[0] = p_table[n][0];
+		cmd_msg->tx_len[0] = p_table[n][1];
+
+		tx_max = sizeof(tx)/sizeof(tx[0]);
+		if (cmd_msg->tx_len[0] > tx_max) {
+			DDPMSG("page len %d exceed max len:%d\n", cmd_msg->tx_len[0], tx_max);
+			break;
+		}
+
+		strncpy(tx, &p_table[n][2], cmd_msg->tx_len[0]);
+		cmd_msg->tx_buf[0] = tx;
+
+		DDPMSG("send lcm tx_cmd_num:%d\n", (int)cmd_msg->tx_cmd_num);
+		for (i = 0; i < (int)cmd_msg->tx_cmd_num; i++) {
+			DDPMSG("send lcm tx_len[%d]=%d\n",
+				i, (int)cmd_msg->tx_len[i]);
+			for (j = 0; j < (int)cmd_msg->tx_len[i]; j++) {
+				DDPMSG(
+					"page: send lcm type[%d]=0x%x, tx_buf[%d]--byte:%d,val:0x%x\n",
+					i, cmd_msg->type[i], i, j,
+					*(char *)(cmd_msg->tx_buf[i] + j));
+			}
+		}
+
+		ret = mtk_ddic_dsi_send_cmd(cmd_msg, true);
+		mdelay(1);
+	}
+
+	return ret;
+}
+
 int mtk_debug_read_ddic_cellid(unsigned char *cellid, struct cellid_item *cellid_info)
 {
 	struct mtk_ddic_dsi_msg *cmd_msg =
@@ -5243,44 +5285,10 @@ int mtk_debug_read_ddic_cellid(unsigned char *cellid, struct cellid_item *cellid
 		if (cellid_info->page_table[0][0]) {
 			if (!k || cellid_info->page_cmd_always) {
 				//set page cmds
-				u8 tx_max;
-				int n;
-
-				tx_max = sizeof(tx)/sizeof(tx[0]);
-				//DDPMSG("page len %d, tx_max len:%d\n", cmd_msg->tx_len[0], tx_max);
-				for (n = 0 ; n < PAGE_MAX_NUM ; n++) {
-					if (cellid_info->page_table[n][0] == 0)
-						break;
-
-					cmd_msg->tx_cmd_num = 1;
-					cmd_msg->type[0] = cellid_info->page_table[n][0];
-					cmd_msg->tx_len[0] = cellid_info->page_table[n][1];
-
-					if (cmd_msg->tx_len[0] > tx_max) {
-						DDPMSG("page len %d exceed max len:%d\n", cmd_msg->tx_len[0], tx_max);
-						break;
-					}
-
-					strncpy(tx, &cellid_info->page_table[n][2], cmd_msg->tx_len[0]);
-					cmd_msg->tx_buf[0] = tx;
-
-					DDPMSG("send lcm tx_cmd_num:%d\n", (int)cmd_msg->tx_cmd_num);
-					for (i = 0; i < (int)cmd_msg->tx_cmd_num; i++) {
-						DDPMSG("send lcm tx_len[%d]=%d\n",
-							i, (int)cmd_msg->tx_len[i]);
-						for (j = 0; j < (int)cmd_msg->tx_len[i]; j++) {
-							DDPMSG(
-								"page: send lcm type[%d]=0x%x, tx_buf[%d]--byte:%d,val:0x%x\n",
-								i, cmd_msg->type[i], i, j,
-								*(char *)(cmd_msg->tx_buf[i] + j));
-						}
-					}
-
-					ret = mtk_ddic_dsi_send_cmd(cmd_msg, true);
-					if (ret != 0) {
-						DDPPR_ERR("mtk_ddic_dsi_send_cmd error\n");
-						goto  dsi_error;
-					}
+				ret = mtk_debug_send_page_cmds(cmd_msg, cellid_info->page_table);
+				if (ret != 0) {
+					DDPPR_ERR("mtk_ddic_dsi_send_cmd error\n");
+					goto  dsi_error;
 				}
 			}
 		}
@@ -5356,6 +5364,10 @@ int mtk_debug_read_ddic_cellid(unsigned char *cellid, struct cellid_item *cellid
 
 		len -= ret_dlen;
 		DDPMSG("round k:%d,len:%d \n", k, len);
+	}
+
+	if (cellid_info->page_post_table[0][0]) {
+		ret = mtk_debug_send_page_cmds(cmd_msg, cellid_info->page_post_table);
 	}
 
 dsi_error:
