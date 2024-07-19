@@ -465,6 +465,7 @@ enum panel_hbm_type {
 };
 
 #define PAGE_MAX_NUM   2
+#define PAGE_CMDS_LEN  6
 
 struct cellid_item {
 	int panel_cellid_reg;
@@ -474,7 +475,8 @@ struct cellid_item {
 	int panel_cellid_len;
 	int panel_cellid_read_max;
 	int panel_cellid_esd_dis;
-	unsigned char page_table[PAGE_MAX_NUM][10];
+	unsigned char page_table[PAGE_MAX_NUM][PAGE_CMDS_LEN];
+	unsigned char page_post_table[PAGE_MAX_NUM][PAGE_CMDS_LEN]; //switch page back after read
 	int page_cmd_always; //always set page when set cmd
 };
 
