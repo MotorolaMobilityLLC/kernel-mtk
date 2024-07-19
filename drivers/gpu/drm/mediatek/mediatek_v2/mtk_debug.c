@@ -163,6 +163,8 @@ static bool logger_enable = 1;
 static bool logger_enable;
 #endif
 
+static bool reading_cellid = false;
+
 static int draw_RGBA8888_buffer(char *va, int w, int h,
 		       char r, char g, char b, char a)
 {
@@ -449,6 +451,12 @@ int __mtkfb_set_backlight_level(unsigned int level, unsigned int panel_ext_param
 		DDPPR_ERR("%s failed to find crtc\n", __func__);
 		return -EINVAL;
 	}
+
+	if (reading_cellid) {
+		DDPMSG("%s: is reading cellid, skip backlight\n", __func__);
+		return 0;
+	}
+
 	if (group == true)
 		ret = mtk_drm_setbacklight_grp(crtc, level, panel_ext_param, cfg_flag);
 	else
@@ -5167,4 +5175,195 @@ void get_disp_dbg_buffer(unsigned long *addr, unsigned long *size,
 		*size = 0;
 		*start = 0;
 	}
+}
+
+int mtk_debug_update_esd_chk(struct drm_crtc *crtc, unsigned int esd_en)
+{
+	struct mtk_drm_crtc *mtk_crtc;
+	struct mtk_drm_esd_ctx *esd_ctx;
+	int ret = 0;
+
+	if (!crtc) {
+		DDPMSG("%s: crtc null, skip\n", __func__);
+		return 0;
+	}
+
+	mtk_crtc = to_mtk_crtc(crtc);
+	esd_ctx = mtk_crtc->esd_ctx;
+	if (esd_ctx != NULL) {
+		esd_ctx->chk_en = esd_en;
+		DDPMSG("%s: set esd_check_en to %d\n", __func__, esd_en);
+		ret = 1;
+	} else
+		DDPMSG("%s: esd_ctx null, skip\n", __func__);
+
+	return ret;
+}
+
+int mtk_debug_read_ddic_cellid(unsigned char *cellid, struct cellid_item *cellid_info)
+{
+	struct mtk_ddic_dsi_msg *cmd_msg =
+		vmalloc(sizeof(struct mtk_ddic_dsi_msg));
+	u8 tx[10] = {0};
+	int i,j,k = 0;
+	unsigned int ret_dlen = 0;
+	int ret=0;
+	int dsi_read_max = 8;	//MTK platform only support 10 byte each read.
+	int dsi_read_pkg;
+	int len = cellid_info->panel_cellid_len;
+
+	if (!cmd_msg) {
+		DDPPR_ERR("cmd msg is NULL\n");
+		return ret_dlen;
+	}
+
+	memset(cmd_msg, 0, sizeof(struct mtk_ddic_dsi_msg));
+
+	cmd_msg->rx_buf[0] = kmalloc(32 * sizeof(unsigned char),
+		GFP_ATOMIC);
+	if (!cmd_msg->rx_buf[0]) {
+		DDPPR_ERR("cmd msg rx_buf is NULL\n");
+		goto  done;
+	}
+
+	if (cellid_info->panel_cellid_read_max && cellid_info->panel_cellid_read_max < 8) {
+		dsi_read_max = cellid_info->panel_cellid_read_max;
+		DDPMSG("set lcm dsi_read_max:%d\n", dsi_read_max);
+	}
+	dsi_read_pkg = len/dsi_read_max;
+	if(len%dsi_read_max)
+		dsi_read_pkg += 1;
+
+	DDPMSG("len:%d, lcm dsi_read_max:%d, dsi_read_pkg:%d\n", len, dsi_read_max, dsi_read_pkg);
+	reading_cellid = true;
+	for(k = 0; k < dsi_read_pkg; k++) {
+		cmd_msg->channel = 0;
+		cmd_msg->flags |= MIPI_DSI_MSG_USE_LPM;
+
+		if (cellid_info->page_table[0][0]) {
+			if (!k || cellid_info->page_cmd_always) {
+				//set page cmds
+				u8 tx_max;
+				int n;
+
+				tx_max = sizeof(tx)/sizeof(tx[0]);
+				//DDPMSG("page len %d, tx_max len:%d\n", cmd_msg->tx_len[0], tx_max);
+				for (n = 0 ; n < PAGE_MAX_NUM ; n++) {
+					if (cellid_info->page_table[n][0] == 0)
+						break;
+
+					cmd_msg->tx_cmd_num = 1;
+					cmd_msg->type[0] = cellid_info->page_table[n][0];
+					cmd_msg->tx_len[0] = cellid_info->page_table[n][1];
+
+					if (cmd_msg->tx_len[0] > tx_max) {
+						DDPMSG("page len %d exceed max len:%d\n", cmd_msg->tx_len[0], tx_max);
+						break;
+					}
+
+					strncpy(tx, &cellid_info->page_table[n][2], cmd_msg->tx_len[0]);
+					cmd_msg->tx_buf[0] = tx;
+
+					DDPMSG("send lcm tx_cmd_num:%d\n", (int)cmd_msg->tx_cmd_num);
+					for (i = 0; i < (int)cmd_msg->tx_cmd_num; i++) {
+						DDPMSG("send lcm tx_len[%d]=%d\n",
+							i, (int)cmd_msg->tx_len[i]);
+						for (j = 0; j < (int)cmd_msg->tx_len[i]; j++) {
+							DDPMSG(
+								"page: send lcm type[%d]=0x%x, tx_buf[%d]--byte:%d,val:0x%x\n",
+								i, cmd_msg->type[i], i, j,
+								*(char *)(cmd_msg->tx_buf[i] + j));
+						}
+					}
+
+					ret = mtk_ddic_dsi_send_cmd(cmd_msg, true);
+					if (ret != 0) {
+						DDPPR_ERR("mtk_ddic_dsi_send_cmd error\n");
+						goto  dsi_error;
+					}
+				}
+			}
+		}
+		else if (cellid_info->panel_cellid_offset_reg) {
+			DDPMSG("panel_cellid_offset_reg case\n");
+			cmd_msg->tx_cmd_num = 1;
+			cmd_msg->type[0] = 0x15;
+			tx[0] = cellid_info->panel_cellid_offset_reg;
+			tx[1] = cellid_info->panel_cellid_offset + dsi_read_max*k;
+			cmd_msg->tx_buf[0] = tx;
+			cmd_msg->tx_len[0] = 2;
+
+			DDPMSG("send lcm tx_cmd_num:%d\n", (int)cmd_msg->tx_cmd_num);
+			for (i = 0; i < (int)cmd_msg->tx_cmd_num; i++) {
+				DDPMSG("send lcm tx_len[%d]=%d\n",
+					i, (int)cmd_msg->tx_len[i]);
+				for (j = 0; j < (int)cmd_msg->tx_len[i]; j++) {
+					DDPMSG(
+						"send lcm type[%d]=0x%x, tx_buf[%d]--byte:%d,val:0x%x\n",
+						i, cmd_msg->type[i], i, j,
+						*(char *)(cmd_msg->tx_buf[i] + j));
+				}
+			}
+
+			ret = mtk_ddic_dsi_send_cmd(cmd_msg, true);
+			if (ret != 0) {
+				DDPPR_ERR("mtk_ddic_dsi_send_cmd error\n");
+				goto  dsi_error;
+			}
+		}
+		else
+			DDPMSG("page_table offset_reg null\n");
+
+		/* Read 0x0A = 0x1C */
+		cmd_msg->channel = 0;
+		cmd_msg->flags = 0;
+		cmd_msg->tx_cmd_num = 1;
+		cmd_msg->type[0] = 0x06;
+		if (cellid_info->panel_cellid_reg_seq) {
+			tx[0] = cellid_info->panel_cellid_reg + cellid_info->panel_cellid_reg_seq*k;
+		}
+		else
+			tx[0] = cellid_info->panel_cellid_reg;
+
+		cmd_msg->tx_buf[0] = tx;
+		cmd_msg->tx_len[0] = 1;
+
+		cmd_msg->rx_cmd_num = 1;
+		if(len > dsi_read_max)
+			cmd_msg->rx_len[0] = dsi_read_max;
+		else
+			cmd_msg->rx_len[0] = len;
+
+
+		ret = mtk_ddic_dsi_read_cmd(cmd_msg);
+		if (ret != 0) {
+			DDPPR_ERR("%s error\n", __func__);
+			goto  dsi_error;
+		}
+
+		for (i = 0; i < cmd_msg->rx_cmd_num; i++) {
+			ret_dlen = cmd_msg->rx_len[i];
+			DDPMSG("read lcm addr:0x%x--dlen:%d--cmd_idx:%d\n",
+				*(char *)(cmd_msg->tx_buf[i]), ret_dlen, i);
+			for (j = 0; j < ret_dlen; j++) {
+				DDPMSG("read lcm addr:0x%x--byte:%d,val:0x%x\n",
+					*(char *)(cmd_msg->tx_buf[i]), j,
+					*(char *)(cmd_msg->rx_buf[i] + j));
+			}
+		}
+
+		memcpy(&cellid[dsi_read_max*k], cmd_msg->rx_buf[0], ret_dlen);
+
+		len -= ret_dlen;
+		DDPMSG("round k:%d,len:%d \n", k, len);
+	}
+
+dsi_error:
+	//DDPMSG("%s: round k:%d, dsi_error\n", __func__, k);
+	kfree(cmd_msg->rx_buf[0]);
+done:
+	vfree(cmd_msg);
+	reading_cellid = false;
+	DDPMSG("%s: end, round k:%d, return dlen:%d\n", __func__, k, ret_dlen);
+	return ret_dlen;
 }
