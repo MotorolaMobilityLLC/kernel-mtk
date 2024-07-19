@@ -334,6 +334,14 @@ static struct mtk_panel_params ext_params_60hz = {
 		.para_list[0] = 0x9C,
 	},
 
+	.lcm_cellid = {
+		.panel_cellid_reg = 0xF4,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 8,
+		//.panel_cellid_esd_dis = 1,
+		.page_table[0] = {0x15,0x02,0x00,0x00},
+	},
+
 	.panel_ver = 1,
 	//.panel_id = 0x15025892,
 	.panel_name = "boe_ft8057s_vid_667_720",
@@ -365,6 +373,15 @@ static struct mtk_panel_params ext_params_90hz = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+
+	.lcm_cellid = {
+		.panel_cellid_reg = 0xF4,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 8,
+		//.panel_cellid_esd_dis = 1,
+		.page_table[0] = {0x15,0x02,0x00,0x00},
+	},
+
 	.panel_ver = 1,
 	//.panel_id = 0x15025892,
 	.panel_name = "boe_ft8057s_vid_667_720",
@@ -395,6 +412,15 @@ static struct mtk_panel_params ext_params_120hz = {
 		.count = 1,
 		.para_list[0] = 0x9C,
 	},
+
+	.lcm_cellid = {
+		.panel_cellid_reg = 0xF4,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 8,
+		//.panel_cellid_esd_dis = 1,
+		.page_table[0] = {0x15,0x02,0x00,0x00},
+	},
+
 	.panel_ver = 1,
 	//.panel_id = 0x15025892,
 	.panel_name = "boe_ft8057s_vid_667_720",
