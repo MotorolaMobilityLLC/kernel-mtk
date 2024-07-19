@@ -4080,14 +4080,79 @@ static ssize_t panelSupplier_show(struct device *device,
 	return written;
 }
 
+extern int mtk_debug_update_esd_chk(struct drm_crtc *crtc, unsigned int esd_en);
+extern int mtk_debug_read_ddic_cellid(unsigned char *cellid, struct cellid_item *cellid_info);
+
+static ssize_t panelCellId_show(struct device *device,
+			struct device_attribute *attr,
+			char *buf)
+{
+	struct drm_connector *connector = dev_get_drvdata(device);
+	struct mtk_dsi *dsi = connector_to_dsi(connector);
+	static struct cellid_item id_info = {0};
+	static int reg_addr = 0;
+	static int len = 0;
+	int esd_recover = 0;
+
+	int written = 0, ret;
+	unsigned char cellid[32];
+
+	if (dsi && dsi->ext && dsi->ext->params) {
+		id_info = dsi->ext->params->lcm_cellid;
+
+		reg_addr = id_info.panel_cellid_reg;
+		len = id_info.panel_cellid_len;
+
+		if (id_info.panel_cellid_esd_dis && len) {
+			//disable esd check
+			DDPMSG("%s: cellid update_esd_chk 0 start\n", __func__);
+			if (mtk_debug_update_esd_chk(dsi->encoder.crtc, 0)) {
+				esd_recover = 1;
+			}
+		}
+
+		DDPMSG("%s: reg_addr 0x%x 0x%x len 0x%x\n", __func__, id_info.panel_cellid_reg, id_info.panel_cellid_len);
+	}
+	else {
+		DDPMSG("%s: dsi params null return\n", __func__);
+		return 0;
+	}
+
+	if(len && len<32) { //some project cellid reg is 0, don't check reg_addr.
+		memset(cellid, 0, 32);
+
+		ret = mtk_debug_read_ddic_cellid(cellid, &dsi->ext->params->lcm_cellid);
+		if(ret) {
+			written = snprintf(buf, PAGE_SIZE, "%s\n", cellid);
+		}
+		else
+			DDPMSG("%s: fail ret:%d\n", __func__, ret);
+
+	}
+	else {
+		DDPMSG("%s: reg_addr:0x%x len: 0x%x err return\n", __func__, reg_addr, len);
+		//written = 0;
+	}
+
+	if (esd_recover) {
+		//enable
+		mtk_debug_update_esd_chk(dsi->encoder.crtc, 1);
+		DDPMSG("%s: update_esd_chk 1 end\n", __func__);
+	}
+
+	return written;
+}
+
 static DEVICE_ATTR_RO(panelVer);
 static DEVICE_ATTR_RO(panelName);
 static DEVICE_ATTR_RO(panelSupplier);
+static DEVICE_ATTR_RO(panelCellId);
 
 static const struct attribute *conn_panel_attrs[] = {
 	&dev_attr_panelVer.attr,
 	&dev_attr_panelName.attr,
 	&dev_attr_panelSupplier.attr,
+	&dev_attr_panelCellId.attr,
 	NULL
 };
 

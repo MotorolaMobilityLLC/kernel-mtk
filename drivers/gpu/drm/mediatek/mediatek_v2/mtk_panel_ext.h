@@ -464,6 +464,20 @@ enum panel_hbm_type {
 	HBM_MODE_RAMPING,
 };
 
+#define PAGE_MAX_NUM   2
+
+struct cellid_item {
+	int panel_cellid_reg;
+	int panel_cellid_reg_seq; //support read multi regs in seq.
+	int panel_cellid_offset_reg;
+	int panel_cellid_offset;
+	int panel_cellid_len;
+	int panel_cellid_read_max;
+	int panel_cellid_esd_dis;
+	unsigned char page_table[PAGE_MAX_NUM][10];
+	int page_cmd_always; //always set page when set cmd
+};
+
 struct mtk_panel_params {
 	unsigned int pll_clk;
 	unsigned int data_rate;
@@ -537,7 +551,7 @@ struct mtk_panel_params {
 	u64 panel_ver;
 	char panel_name[DRM_DISPLAY_NAME_LEN];
 	char panel_supplier[DRM_DISPLAY_NAME_LEN];
-
+	struct cellid_item lcm_cellid;
 	bool check_panel_feature;
 };
 
