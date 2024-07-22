@@ -226,7 +226,7 @@
          /* common */
          battery_cv = <4500000>;
          max_charger_voltage = <15000000>;
-         min_charger_voltage = <4700000>;
+         min_charger_voltage = <4600000>;
          max_dmivr_charger_current = <3000000>;
 
          //enable_pe_plus;
@@ -260,18 +260,18 @@
 			<45 4400 5200 4000>,
 			<60 4200 4000 0>;
 
-	mmi,mmi-ffc-zones = <0 4200 487>,
-			<10 4500 487>,
-			<15 4500 487>,
+	mmi,mmi-ffc-zones = <0 4200 243>,
+			<10 4500 243>,
+			<15 4500 243>,
 			<25 4530 523>,
 			<35 4530 590>,
 			<45 4530 871>,
-			<60 4200 487>;
+			<60 4200 243>;
 
          mmi,enable-charging-limit;
          mmi,upper-limit-capacity = <65>;
          mmi,lower-limit-capacity = <60>;
-         mmi,vfloat-comp-uv = <0>;
+         mmi,vfloat-comp-uv = <4000>;
          mmi,enable-mux;
          fast_charging_indicator = <0x8010>;
 };
@@ -296,6 +296,18 @@
 	EMBEDDED_SEL = <(1)>;
 	CURR_MEASURE_20A = <(0)>;
 	UNIT_MULTIPLE = <(1)>;
+	/* battery prop */
+	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
+	g_FG_PSEUDO100 = <98 98 100 100
+		98 98 100 100
+		98 98 100 100
+		98 98 100 100
+		98 98 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100>;
 	df-serialnum = "ATLRW50NVT";
 	#include "bat_setting/vegas_alt_battery_table_ext.dtsi"
 	#include "bat_setting/vegas_cos_battery_table_ext.dtsi"
