@@ -5253,9 +5253,15 @@ int mtk_debug_read_ddic_cellid(unsigned char *cellid, struct cellid_item *cellid
 	int dsi_read_max = 8;	//MTK platform only support 10 byte each read.
 	int dsi_read_pkg;
 	int len = cellid_info->panel_cellid_len;
+	int len_sub = cellid_info->panel_cellid_len_sub;
 
 	if (!cmd_msg) {
 		DDPPR_ERR("cmd msg is NULL\n");
+		return ret_dlen;
+	}
+
+	if (len_sub && len_sub > len) {
+		DDPPR_ERR("len_sub:%d exceed max len:%d\n", len_sub, len);
 		return ret_dlen;
 	}
 
@@ -5328,7 +5334,17 @@ int mtk_debug_read_ddic_cellid(unsigned char *cellid, struct cellid_item *cellid
 		cmd_msg->tx_cmd_num = 1;
 		cmd_msg->type[0] = 0x06;
 		if (cellid_info->panel_cellid_reg_seq) {
-			tx[0] = cellid_info->panel_cellid_reg + cellid_info->panel_cellid_reg_seq*k;
+			if (len_sub > 1) {
+				int reg_diff = 0;
+				int len_read = dsi_read_max*k;
+
+				reg_diff = len_read/len_sub;
+				DDPMSG("check reg_diff, k:%d, len_read:%d, reg_diff:%d\n", k, len_read, reg_diff);
+				tx[0] = cellid_info->panel_cellid_reg + cellid_info->panel_cellid_reg_seq*reg_diff;
+			}
+			else {
+				tx[0] = cellid_info->panel_cellid_reg + cellid_info->panel_cellid_reg_seq*k;
+			}
 		}
 		else
 			tx[0] = cellid_info->panel_cellid_reg;

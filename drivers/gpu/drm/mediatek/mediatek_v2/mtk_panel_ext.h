@@ -473,6 +473,7 @@ struct cellid_item {
 	int panel_cellid_offset_reg;
 	int panel_cellid_offset;
 	int panel_cellid_len;
+	int panel_cellid_len_sub; //max length for each reg
 	int panel_cellid_read_max;
 	int panel_cellid_esd_dis;
 	unsigned char page_table[PAGE_MAX_NUM][PAGE_CMDS_LEN];

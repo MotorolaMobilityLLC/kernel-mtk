@@ -4134,7 +4134,7 @@ static ssize_t panelCellId_show(struct device *device,
 			}
 		}
 
-		DDPMSG("%s: reg_addr 0x%x 0x%x len 0x%x\n", __func__, id_info.panel_cellid_reg, id_info.panel_cellid_len);
+		DDPMSG("%s: reg_addr: 0x%x , len:%d\n", __func__, id_info.panel_cellid_reg, id_info.panel_cellid_len);
 	}
 	else {
 		DDPMSG("%s: dsi params null return\n", __func__);
