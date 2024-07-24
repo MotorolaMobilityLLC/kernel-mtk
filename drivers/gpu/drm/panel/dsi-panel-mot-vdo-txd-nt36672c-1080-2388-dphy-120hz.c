@@ -414,6 +414,22 @@ static struct mtk_panel_params ext_params_mode_60 = {
 		.count = 2,
 		.para_list[0] = 0x00,
 	},
+	.lcm_cellid = {
+		.panel_cellid_reg = 0xF1,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 8,
+		.panel_cellid_reg_seq = 1,
+		.panel_cellid_len_sub = 16,
+		//.panel_cellid_esd_dis = 1,
+		.page_table = {
+			{0x15,0x02,0xFF,0x21},
+			{0x15,0x02,0xFB,0x01}
+		},
+		.page_post_table = {
+			{0x15,0x02,0xFF,0x10},
+			{0x15,0x02,0xFB,0x01}
+		},
+	},
 	.panel_ver = 1,
 	//.panel_id = 0x01050791,
 	.panel_name = "txd_nt36672c_vdo_1080_2388",
@@ -482,6 +498,22 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.count = 2,
 		.para_list[0] = 0x00,
 	},
+	.lcm_cellid = {
+		.panel_cellid_reg = 0xF1,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 8,
+		.panel_cellid_reg_seq = 1,
+		.panel_cellid_len_sub = 16,
+		//.panel_cellid_esd_dis = 1,
+		.page_table = {
+			{0x15,0x02,0xFF,0x21},
+			{0x15,0x02,0xFB,0x01}
+		},
+		.page_post_table = {
+			{0x15,0x02,0xFF,0x10},
+			{0x15,0x02,0xFB,0x01}
+		},
+	},
 	.panel_ver = 1,
 	//.panel_id = 0x10050a91,
 	.panel_name = "txd_nt36672c_vdo_1080_2388",
@@ -548,6 +580,22 @@ static struct mtk_panel_params ext_params_mode_120 = {
 		.cmd = 0xAB,
 		.count = 2,
 		.para_list[0] = 0x00,
+	},
+	.lcm_cellid = {
+		.panel_cellid_reg = 0xF1,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 8,
+		.panel_cellid_reg_seq = 1,
+		.panel_cellid_len_sub = 16,
+		//.panel_cellid_esd_dis = 1,
+		.page_table = {
+			{0x15,0x02,0xFF,0x21},
+			{0x15,0x02,0xFB,0x01}
+		},
+		.page_post_table = {
+			{0x15,0x02,0xFF,0x10},
+			{0x15,0x02,0xFB,0x01}
+		},
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x10050a91,
