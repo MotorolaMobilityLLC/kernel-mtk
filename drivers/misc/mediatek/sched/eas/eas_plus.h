@@ -2,10 +2,10 @@
 /*
  * Copyright (c) 2021 MediaTek Inc.
  */
-#include <sched/pelt.h>
 
 #ifndef _EAS_PLUS_H
 #define _EAS_PLUS_H
+#include <sched/pelt.h>
 
 #define MIGR_IDLE_BALANCE               1
 #define MIGR_IDLE_PULL_MISFIT_RUNNING   2
@@ -29,6 +29,9 @@ DECLARE_PER_CPU(unsigned long, min_freq);
 #define LB_RT_IDLE      (0x4000)
 #define LB_RT_LOWEST_PRIO  (0x8000)
 
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+#define LB_VIP_BACKUP		(0x500)
+#endif
 #ifdef CONFIG_SMP
 /*
  * The margin used when comparing utilization with CPU capacity.

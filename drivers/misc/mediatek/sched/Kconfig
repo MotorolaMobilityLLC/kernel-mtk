@@ -36,6 +36,15 @@ config MTK_EAS
 	   3. Notify thermal ceiling to scheduler by reading thermal
 		ceiling in SRAM and updating thermal pressure.
 
+config MTK_SCHED_VIP_TASK
+	bool "vip task"
+	depends on MTK_SCHEDULER
+	help
+	  Add vip task for preempt normal cfs task.
+	  This feature can help to ease runnable problem.
+	  It allows partial latency sensitive tasks and certain task
+	  groups to preempt other tasks.
+
 config MTK_THERMAL_AWARE_SCHEDULING
 	bool "thermal aware scheduling"
 	depends on MTK_EAS && MTK_THERMAL_INTERFACE
