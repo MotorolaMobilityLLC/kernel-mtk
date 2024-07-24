@@ -71,7 +71,7 @@ struct tianma {
 	bool enabled;
 
 	int error;
-	unsigned int hbm_mode;
+	//unsigned int hbm_mode;
 	unsigned int cabc_mode;
 	//enum panel_version version;
 };
@@ -91,6 +91,7 @@ static struct mtk_panel_para_table panel_cabc_disable[] = {
 	{2, {0x55, 0x00}},
 };
 
+#if 0
 static struct mtk_panel_para_table panel_hbm_on[] = {
 	{4, {0xFF, 0x78, 0x07, 0x00}},
 	{3, {0x51, 0x07, 0xAC}},
@@ -100,6 +101,7 @@ static struct mtk_panel_para_table panel_hbm_off[] = {
 	{4, {0xFF, 0x78, 0x07, 0x00}},
 	{3, {0x51, 0x06, 0x23}},
 };
+#endif
 
 #define tianma_dcs_write_seq(ctx, seq...)                                     \
 	({                                                                     \
@@ -222,7 +224,7 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx,0xFF, 0x78,0x07,0x12);
 	tianma_dcs_write_seq_static(ctx,0x01, 0x11);
 	tianma_dcs_write_seq_static(ctx,0xFF, 0x78,0x07,0x00);
-	tianma_dcs_write_seq_static(ctx,0x51, 0x06,0x66);
+	tianma_dcs_write_seq_static(ctx,0x51, 0x07,0xFF);
 	tianma_dcs_write_seq_static(ctx,0x53, 0x24);
 	tianma_dcs_write_seq_static(ctx,0x35, 0x00);
 	tianma_dcs_write_seq_static(ctx,0x11, 0x00);
@@ -322,7 +324,7 @@ static int tianma_prepare(struct drm_panel *panel)
 #endif
 
 	tianma_panel_init(ctx);
-	ctx->hbm_mode = 0;
+	//ctx->hbm_mode = 0;
 	ctx->cabc_mode = 0;
 
 	ret = ctx->error;
@@ -429,7 +431,7 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	.panel_name = "tm_ili7807s_vdo_1080_2388",
 	.panel_supplier = "tm",
 	.lcm_index = 1,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
 	.lane_swap_en = 0,
@@ -507,7 +509,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	.panel_name = "tm_ili7807s_vdo_1080_2388",
 	.panel_supplier = "tm",
 	.lcm_index = 1,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
 	.lane_swap_en = 0,
@@ -584,7 +586,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	.panel_name = "tm_ili7807s_vdo_1080_2388",
 	.panel_supplier = "tm",
 	.lcm_index = 1,
-	.hbm_type = HBM_MODE_DCS_I2C,
+	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
 	.lane_swap_en = 0,
@@ -744,6 +746,7 @@ static int panel_cabc_set_cmdq(struct tianma *ctx, void *dsi, dcs_grp_write_gce 
 	return 0;
 }
 
+#if 0 // HBM RAMPING
 static int panel_hbm_set_cmdq(struct tianma *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
 	unsigned int para_count = 0;
@@ -777,6 +780,7 @@ static int panel_hbm_set_cmdq(struct tianma *ctx, void *dsi, dcs_grp_write_gce c
 
 	return 0;
 }
+#endif
 
 static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
@@ -806,14 +810,7 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
 			break;
 		case PARAM_HBM:
-			if (ctx->hbm_mode != param_info.value) {
-				ctx->hbm_mode = param_info.value;
-				panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
-				pr_debug("%s: set HBM to %d end\n", __func__, param_info.value);
-				ret = 0;
-			}
-			else
-				pr_info("%s: skip same HBM mode:%d\n", __func__, ctx->hbm_mode);
+				pr_info("%s: HBM ramping, skip HBM mode:%d\n", __func__, param_info.value);
 			break;
 		default:
 			pr_info("%s: skip unsupport feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
