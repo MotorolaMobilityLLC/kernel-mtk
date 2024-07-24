@@ -30,6 +30,9 @@ DECLARE_PER_CPU(unsigned long, min_freq);
 #define LB_IRQ_BACKUP_CURR         (0x480)
 #define LB_IRQ_BACKUP_PREV         (0x481)
 #define LB_IRQ_BACKUP_ALLOWED      (0x482)
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+#define LB_VIP_BACKUP		(0x500)
+#endif
 #define LB_RT_FAIL         (0x1000)
 #define LB_RT_FAIL_PD      (0x1001)
 #define LB_RT_FAIL_CPU     (0x1002)
@@ -168,5 +171,5 @@ extern int set_util_est_ctrl(bool enable);
 extern int set_task_idle_prefer(int pid, bool prefer);
 extern bool get_task_idle_prefer_by_pid(int pid);
 extern bool get_task_idle_prefer_by_task(struct task_struct *task);
-
+extern int sched_cgroup_state(struct task_struct *p, int subsys_id);
 #endif

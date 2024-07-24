@@ -17,6 +17,9 @@
 #if IS_ENABLED(CONFIG_MTK_THERMAL_INTERFACE)
 #include <thermal_interface.h>
 #endif
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+#include "vip.h"
+#endif
 
 MODULE_LICENSE("GPL");
 
@@ -789,6 +792,12 @@ void mtk_hook_after_enqueue_task(void *data, struct rq *rq,
 #if IS_ENABLED(CONFIG_MTK_SCHED_BIG_TASK_ROTATE)
 	rotat_after_enqueue_task(data, rq, p);
 #endif
+
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+	if (vip_fair_task(p))
+		vip_enqueue_task(rq, p);
+#endif
+
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 	ts[1] = sched_clock();
 #endif

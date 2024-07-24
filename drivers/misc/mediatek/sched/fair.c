@@ -20,6 +20,9 @@
 #if IS_ENABLED(CONFIG_MTK_THERMAL_INTERFACE)
 #include <thermal_interface.h>
 #endif
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+#include "eas/vip.h"
+#endif
 
 #define CREATE_TRACE_POINTS
 #include "sched_trace.h"
@@ -483,6 +486,38 @@ static inline bool task_can_skip_this_cpu(struct task_struct *p, unsigned long p
 	return 1;
 }
 
+static inline bool is_target_max_spare_cpu(bool is_vip, unsigned int num_vip, unsigned int min_num_vip,
+			long spare_cap, long target_max_spare_cap,
+			int best_cpu, int new_cpu, const char *type)
+{
+	bool replace = true;
+
+	if (is_vip) {
+		if (num_vip > min_num_vip) {
+			replace = false;
+			goto out;
+		}
+
+		if (num_vip == min_num_vip &&
+				spare_cap <= target_max_spare_cap) {
+			replace = false;
+			goto out;
+		}
+	} else {
+		if (spare_cap <= target_max_spare_cap) {
+			replace = false;
+			goto out;
+		}
+	}
+
+out:
+	if (trace_sched_target_max_spare_cpu_enabled())
+		trace_sched_target_max_spare_cpu(type, best_cpu, new_cpu, replace,
+			is_vip, num_vip, min_num_vip, spare_cap, target_max_spare_cap);
+
+	return replace;
+}
+
 int mtk_find_energy_efficient_cpu_in_interrupt(struct task_struct *p, bool latency_sensitive,
 		struct perf_domain *pd, unsigned long min_cap, unsigned long max_cap)
 {
@@ -506,10 +541,22 @@ int mtk_find_energy_efficient_cpu_in_interrupt(struct task_struct *p, bool laten
 	int prev_cpu = task_cpu(p);
 	int select_reason = -1;
 	struct cpumask allowed_cpu_mask;
+	bool is_vip = false;
+	unsigned int num_vip, prev_min_num_vip, min_num_vip;
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+	struct vip_task_struct *vts;
+#endif
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 	u64 ts[9] = {0};
 
 	ts[0] = sched_clock();
+#endif
+
+	num_vip = prev_min_num_vip = min_num_vip = UINT_MAX;
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+	vts = &((struct mtk_task *) p->android_vendor_data1)->vip_task;
+	vts->vip_prio = get_vip_task_prio(p);
+	is_vip = task_is_vip(p, NOT_VIP);
 #endif
 
 	for (; pd; pd = pd->next) {
@@ -546,8 +593,21 @@ int mtk_find_energy_efficient_cpu_in_interrupt(struct task_struct *p, bool laten
 			if (not_in_softmask)
 				continue;
 
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+			if (is_vip) {
+				num_vip = num_vip_in_cpu(cpu);
+				if (num_vip > min_num_vip)
+					continue;
+
+				prev_min_num_vip = min_num_vip;
+				min_num_vip = num_vip;
+			}
+#endif
+
 			/* record sys_max_spare_cap_cpu */
-			if (spare_cap > sys_max_spare_cap) {
+			if (is_target_max_spare_cpu(is_vip, num_vip, prev_min_num_vip,
+					spare_cap, sys_max_spare_cap,
+					sys_max_spare_cap_cpu, cpu, "sys_max_spare")) {
 				sys_max_spare_cap = spare_cap;
 				sys_max_spare_cap_cpu = cpu;
 			}
@@ -558,10 +618,13 @@ int mtk_find_energy_efficient_cpu_in_interrupt(struct task_struct *p, bool laten
 			 * Because this is just a backup option, we do not take care
 			 * of exit latency.
 			 */
-			if (latency_sensitive && idle_cpu(cpu) &&
-					spare_cap > idle_max_spare_cap) {
-				idle_max_spare_cap = spare_cap;
-				idle_max_spare_cap_cpu = cpu;
+			if (latency_sensitive && idle_cpu(cpu)) {
+				if (is_target_max_spare_cpu(is_vip, num_vip, prev_min_num_vip,
+					spare_cap, idle_max_spare_cap,
+					idle_max_spare_cap_cpu, cpu, "idle_max_spare")) {
+					idle_max_spare_cap = spare_cap;
+					idle_max_spare_cap_cpu = cpu;
+				}
 			}
 
 			/*
@@ -581,7 +644,9 @@ int mtk_find_energy_efficient_cpu_in_interrupt(struct task_struct *p, bool laten
 			 * Find the CPU with the maximum spare capacity in
 			 * the performance domain
 			 */
-			if (spare_cap > max_spare_cap_per_gear) {
+			if (!latency_sensitive && is_target_max_spare_cpu(is_vip, num_vip,
+					prev_min_num_vip, spare_cap, max_spare_cap_per_gear,
+					max_spare_cap_cpu_per_gear, cpu, "pd_max_spare")) {
 				max_spare_cap_per_gear = spare_cap;
 				max_spare_cap_cpu_per_gear = cpu;
 			}
@@ -779,6 +844,18 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 	int select_reason = -1;
 	unsigned long min_cap = uclamp_eff_value(p, UCLAMP_MIN);
 	unsigned long max_cap = uclamp_eff_value(p, UCLAMP_MAX);
+	bool is_vip = false;
+	unsigned int num_vip, prev_min_num_vip, min_num_vip;
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+	struct vip_task_struct *vts;
+#endif
+
+	num_vip = prev_min_num_vip = min_num_vip = UINT_MAX;
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+	vts = &((struct mtk_task *) p->android_vendor_data1)->vip_task;
+	vts->vip_prio = get_vip_task_prio(p);
+	is_vip = task_is_vip(p, NOT_VIP);
+#endif
 
 	rcu_read_lock();
 	if (!uclamp_min_ls)
@@ -855,14 +932,26 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 			spare_cap = cpu_cap;
 			lsub_positive(&spare_cap, util);
 
-			if ((spare_cap > sys_max_spare_cap) &&
-			    !(latency_sensitive && !cpumask_test_cpu(cpu, &system_cpumask))) {
+			if (latency_sensitive && !cpumask_test_cpu(cpu, &system_cpumask))
+				continue;
+
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+			if (is_vip) {
+				num_vip = num_vip_in_cpu(cpu);
+				if (num_vip > min_num_vip)
+					continue;
+
+				prev_min_num_vip = min_num_vip;
+				min_num_vip = num_vip;
+			}
+#endif
+
+			if (is_target_max_spare_cpu(is_vip, num_vip, prev_min_num_vip,
+					spare_cap, sys_max_spare_cap,
+					sys_max_spare_cap_cpu, cpu, "sys_max_spare")) {
 				sys_max_spare_cap = spare_cap;
 				sys_max_spare_cap_cpu = cpu;
 			}
-
-			if (latency_sensitive && !cpumask_test_cpu(cpu, &system_cpumask))
-				continue;
 
 			/*
 			 * if there is no best idle cpu, then select max spare cap
@@ -870,10 +959,13 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 			 * Because this is just a backup option, we do not take care
 			 * of exit latency.
 			 */
-			if (latency_sensitive && idle_cpu(cpu) &&
-					spare_cap > idle_max_spare_cap) {
-				idle_max_spare_cap = spare_cap;
-				idle_max_spare_cap_cpu = cpu;
+			if (latency_sensitive && idle_cpu(cpu)) {
+				if (is_target_max_spare_cpu(is_vip, num_vip, prev_min_num_vip,
+					spare_cap, idle_max_spare_cap,
+					idle_max_spare_cap_cpu, cpu, "idle_max_spare")) {
+					idle_max_spare_cap = spare_cap;
+					idle_max_spare_cap_cpu = cpu;
+				}
 			}
 
 			/*
@@ -891,7 +983,9 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 			 * Find the CPU with the maximum spare capacity in
 			 * the performance domain
 			 */
-			if (spare_cap > max_spare_cap) {
+			if (!latency_sensitive && is_target_max_spare_cpu(is_vip, num_vip,
+					prev_min_num_vip, spare_cap, max_spare_cap,
+					max_spare_cap_cpu, cpu, "pd_max_spare")) {
 				max_spare_cap = spare_cap;
 				max_spare_cap_cpu = cpu;
 			}
@@ -912,7 +1006,9 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 					continue;
 #endif
 
-				if (spare_cap < max_spare_cap_ls_idle)
+				if (!is_target_max_spare_cpu(is_vip, num_vip, prev_min_num_vip,
+					spare_cap, max_spare_cap_ls_idle,
+					max_spare_cap_cpu_ls_idle, cpu, "pd_max_spare_is_idle"))
 					continue;
 
 				if (idle)
@@ -978,9 +1074,42 @@ void mtk_find_energy_efficient_cpu(void *data, struct task_struct *p, int prev_c
 
 
 unlock:
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+	if (is_vip) {
+		long spare_cap;
+		/* find min num cpu with max spare cap. */
+		for (; pd; pd = pd->next) {
+			for_each_cpu_and(cpu, perf_domain_span(pd), cpu_active_mask) {
+				num_vip = num_vip_in_cpu(cpu);
+				if (num_vip > min_num_vip)
+					continue;
+
+				util = cpu_util_next(cpu, p, cpu);
+				cpu_cap = capacity_of(cpu);
+				spare_cap = cpu_cap;
+				lsub_positive(&spare_cap, util);
+				if (num_vip < min_num_vip) {
+					*new_cpu = cpu;
+					sys_max_spare_cap = spare_cap;
+					min_num_vip = num_vip;
+					select_reason = select_reason | LB_VIP_BACKUP;
+				} else if (num_vip == min_num_vip) {
+					if (spare_cap > sys_max_spare_cap) {
+						*new_cpu = cpu;
+						sys_max_spare_cap = spare_cap;
+						select_reason = select_reason | LB_VIP_BACKUP;
+					}
+				}
+			}
+		}
+		rcu_read_unlock();
+		goto done;
+	}
+#endif
 	rcu_read_unlock();
 
 	*new_cpu = -1;
+
 done:
 	if (trace_sched_find_energy_efficient_cpu_enabled())
 		trace_sched_find_energy_efficient_cpu(best_delta, best_energy_cpu,
