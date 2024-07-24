@@ -486,7 +486,22 @@ static int battery_psy_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
+#ifdef CONFIG_MTK_BATTERY_CHARGER_STATUS_SYNC
+		bs_data = &gm->bs_data;
+		if (IS_ERR_OR_NULL(bs_data->chg_psy)) {
+			bs_data->chg_psy = power_supply_get_by_name("primary_chg");
+		}
+		if (IS_ERR_OR_NULL(bs_data->chg_psy)) {
+			bm_err("%s Couldn't get chg_psy\n", __func__);
+		}else{
+			ret = power_supply_get_property(bs_data->chg_psy,
+				POWER_SUPPLY_PROP_STATUS, val);
+			if (ret < 0)
+				bm_err("get status property fail\n");
+		}
+#else
 		val->intval = bs_data->bat_status;
+#endif
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
 		bs_data->bat_health = mmi_batt_health_check();
