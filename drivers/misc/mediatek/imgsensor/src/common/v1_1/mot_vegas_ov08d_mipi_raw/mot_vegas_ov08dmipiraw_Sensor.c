@@ -353,11 +353,18 @@ static kal_uint32 streaming_control(kal_bool enable)
     pr_debug("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
     if (enable){
         write_cmos_sensor(0xfd, 0x00);
+        write_cmos_sensor(0x20, 0x0f);
+        write_cmos_sensor(0xe7, 0x03);
+        write_cmos_sensor(0xe7, 0x00);
+        write_cmos_sensor(0xfd, 0x01);
+        write_cmos_sensor(0x01, 0x03);
+        write_cmos_sensor(0xfd, 0x00);
         write_cmos_sensor(0xb6, 0x20);
         write_cmos_sensor(0xa0, 0x01);
         write_cmos_sensor(0xfd, 0x01);
     }else{
         write_cmos_sensor(0xfd, 0x00);
+        write_cmos_sensor(0x20, 0x0b);
         write_cmos_sensor(0xb6, 0x30);
         write_cmos_sensor(0xa0, 0x00);
         write_cmos_sensor(0xe7, 0x03);
