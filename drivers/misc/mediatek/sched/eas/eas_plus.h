@@ -10,6 +10,7 @@
 #define MIGR_IDLE_BALANCE               1
 #define MIGR_IDLE_PULL_MISFIT_RUNNING   2
 #define MIGR_TICK_PULL_MISFIT_RUNNING   3
+#define MIGR_IDLE_PULL_VIP_RUNNABLE     4
 
 DECLARE_PER_CPU(unsigned long, max_freq_scale);
 DECLARE_PER_CPU(unsigned long, min_freq);
@@ -31,6 +32,7 @@ DECLARE_PER_CPU(unsigned long, min_freq);
 #define LB_IRQ_BACKUP_PREV         (0x481)
 #define LB_IRQ_BACKUP_ALLOWED      (0x482)
 #if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+#define LB_BACKUP_VVIP (0x490)
 #define LB_VIP_BACKUP		(0x500)
 #endif
 #define LB_RT_FAIL         (0x1000)
@@ -97,7 +99,7 @@ extern void set_system_cpumask_int(unsigned int val);
 extern struct cpumask *get_system_cpumask(void);
 
 extern void get_most_powerful_pd_and_util_Th(void);
-
+extern struct task_struct *next_vvip_runable_in_cpu(struct rq *rq);
 #define EAS_SYNC_SET                            _IOW('g', 1,  unsigned int)
 #define EAS_SYNC_GET                            _IOW('g', 2,  unsigned int)
 #define EAS_PERTASK_LS_SET                      _IOW('g', 3,  unsigned int)
