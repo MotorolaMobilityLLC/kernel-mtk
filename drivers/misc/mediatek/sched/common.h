@@ -46,6 +46,7 @@ struct vip_task_struct {
 	int				vip_prio;
 	bool				basic_vip;
 	u64				throttle_time;
+	bool				vvip;
 };
 
 struct mtk_task {

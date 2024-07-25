@@ -420,6 +420,24 @@ TRACE_EVENT(sched_headroom_interval_tick,
 );
 
 #if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+TRACE_EVENT(sched_find_imbalanced_vvip_gear,
+	TP_PROTO(int cpu, int num_vvip_in_gear),
+
+	TP_ARGS(cpu, num_vvip_in_gear),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, num_vvip_in_gear)
+	),
+
+	TP_fast_assign(
+		__entry->cpu               = cpu;
+		__entry->num_vvip_in_gear  = num_vvip_in_gear;
+	),
+
+	TP_printk("cpu=%d num_vvip_in_gear=%d",
+		  __entry->cpu, __entry->num_vvip_in_gear)
+);
 
 extern int sched_cgroup_state(struct task_struct *p, int subsys_id);
 

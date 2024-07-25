@@ -7,6 +7,7 @@
 #include <sched/sched.h>
 #include <trace/hooks/sched.h>
 #include <trace/hooks/cgroup.h>
+#include <linux/arch_topology.h>
 #include "common.h"
 #include "vip.h"
 #include "eas_trace.h"
@@ -16,6 +17,13 @@ unsigned int ls_vip_threshold                   =  DEFAULT_VIP_PRIO_THRESHOLD;
 bool vip_enable;
 
 DEFINE_PER_CPU(struct vip_rq, vip_rq);
+
+inline unsigned int num_vvip_in_cpu(int cpu)
+{
+	struct vip_rq *vrq = &per_cpu(vip_rq, cpu);
+
+	return vrq->num_vvip_tasks;
+}
 
 inline unsigned int num_vip_in_cpu(int cpu)
 {
@@ -27,6 +35,81 @@ inline unsigned int num_vip_in_cpu(int cpu)
 static inline struct cfs_rq *cfs_rq_of(struct sched_entity *se)
 {
 	return se->cfs_rq;
+}
+
+bool balance_vvip_overutilied;
+void turn_on_vvip_balance_overutilized(void)
+{
+	balance_vvip_overutilied = true;
+}
+EXPORT_SYMBOL_GPL(turn_on_vvip_balance_overutilized);
+
+void turn_off_vvip_balance_overutilized(void)
+{
+	balance_vvip_overutilied = false;
+}
+EXPORT_SYMBOL_GPL(turn_off_vvip_balance_overutilized);
+
+int arch_get_nr_clusters(void)
+{
+	int __arch_nr_clusters = -1;
+	int max_id = 0;
+	unsigned int cpu;
+
+	/* assume socket id is monotonic increasing without gap. */
+	for_each_possible_cpu(cpu) {
+		struct cpu_topology *cpu_topo = &cpu_topology[cpu];
+		if (cpu_topo->package_id > max_id){
+			max_id = cpu_topo->package_id;
+		}
+	}
+	__arch_nr_clusters = max_id + 1;
+	return __arch_nr_clusters;
+}
+
+int find_imbalanced_vvip_gear(void)
+{
+	int gear = -1;
+	struct cpumask cpus;
+	int cpu;
+	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
+	struct perf_domain *pd;
+	int num_vvip_in_gear = 0;
+	int num_cpu = 0;
+	int num_sched_clusters = arch_get_nr_clusters();
+
+	rcu_read_lock();
+	pd = rcu_dereference(rd->pd);
+	if (!pd)
+		goto out;
+	for (gear = num_sched_clusters-1; gear >= 0 ; gear--) {
+		cpumask_and(&cpus, perf_domain_span(pd), cpu_active_mask);
+		for_each_cpu(cpu, &cpus) {
+			num_vvip_in_gear += num_vvip_in_cpu(cpu);
+			num_cpu += 1;
+			if (trace_sched_find_imbalanced_vvip_gear_enabled())
+				trace_sched_find_imbalanced_vvip_gear(cpu, num_vvip_in_gear);
+		}
+
+		/* Choice it since it's beggiest gaar without VVIP*/
+		if (num_vvip_in_gear == 0)
+			goto out;
+
+		/* Choice it since it's biggest imbalanced gear */
+		if (num_vvip_in_gear % num_cpu != 0)
+			goto out;
+
+		num_vvip_in_gear = 0;
+		num_cpu = 0;
+		pd = pd->next;
+	}
+
+	/* choice biggest gear when all gear balanced and have VVIP*/
+	gear = num_sched_clusters - 1;
+
+out:
+	rcu_read_unlock();
+	return gear;
 }
 
 struct task_struct *vts_to_ts(struct vip_task_struct *vts)
@@ -71,6 +154,9 @@ struct task_struct *next_vip_runnable_in_cpu(struct rq *rq, int type)
 bool task_is_vip(struct task_struct *p, int type)
 {
 	struct vip_task_struct *vts = &((struct mtk_task *) p->android_vendor_data1)->vip_task;
+	if (type == VVIP)
+		return (vts->vip_prio == VVIP);
+
 
 	return (vts->vip_prio != NOT_VIP);
 }
@@ -98,8 +184,11 @@ static void insert_vip_task(struct rq *rq, struct vip_task_struct *vts,
 		}
 	}
 	list_add(&vts->vip_list, pos->prev);
-	if (!requeue)
+	if (!requeue){
 		vrq->num_vip_tasks += 1;
+		if (vts->vip_prio == VVIP)
+			vrq->num_vvip_tasks += 1;
+	}
 
 	/* vip inserted trace event */
 	if (trace_sched_insert_vip_task_enabled()) {
@@ -287,6 +376,46 @@ bool is_VIP_latency_sensitive(struct task_struct *p)
 	return false;
 }
 
+int is_VVIP(struct task_struct *p)
+{
+	struct vip_task_struct *vts = &((struct mtk_task *) p->android_vendor_data1)->vip_task;
+	return vts->vvip;
+}
+
+void set_task_vvip(int pid)
+{
+	struct task_struct *p;
+	struct vip_task_struct *vts;
+
+	rcu_read_lock();
+	p = find_task_by_vpid(pid);
+	if (p) {
+		get_task_struct(p);
+		vts = &((struct mtk_task *) p->android_vendor_data1)->vip_task;
+		vts->vvip = true;
+		put_task_struct(p);
+	}
+	rcu_read_unlock();
+}
+EXPORT_SYMBOL_GPL(set_task_vvip);
+
+void unset_task_vvip(int pid)
+{
+	struct task_struct *p;
+	struct vip_task_struct *vts;
+
+	rcu_read_lock();
+	p = find_task_by_vpid(pid);
+	if (p) {
+		get_task_struct(p);
+		vts = &((struct mtk_task *) p->android_vendor_data1)->vip_task;
+		vts->vvip = false;
+		put_task_struct(p);
+	}
+	rcu_read_unlock();
+}
+EXPORT_SYMBOL_GPL(unset_task_vvip);
+
 /* basic vip interace */
 void set_task_basic_vip(int pid)
 {
@@ -333,11 +462,16 @@ bool is_VIP_basic(struct task_struct *p)
 inline int get_vip_task_prio(struct task_struct *p)
 {
 	int vip_prio = NOT_VIP;
+	/* prio = 1 */
+	if (is_VVIP(p)) {
+		vip_prio = VVIP;
+		goto out;
+	}
 
 	/* prio = 0 */
 	if (is_VIP_task_group(p) || is_VIP_latency_sensitive(p) || is_VIP_basic(p))
 		vip_prio = WORKER_VIP;
-
+out:
 	if (trace_sched_get_vip_task_prio_enabled()) {
 		trace_sched_get_vip_task_prio(p, vip_prio, is_task_latency_sensitive(p),
 			ls_vip_threshold, get_group_threshold(p), is_VIP_basic(p));
@@ -385,6 +519,8 @@ static void deactivate_vip_task(struct task_struct *p, struct rq *rq)
 	struct list_head *next = vts->vip_list.next;
 
 	list_del_init(&vts->vip_list);
+	if (vts->vip_prio == VVIP)
+		vrq->num_vvip_tasks -= 1;
 	vts->vip_prio = NOT_VIP;
 	vrq->num_vip_tasks -= 1;
 
@@ -552,6 +688,24 @@ void vip_scheduler_tick(void *unused, struct rq *rq)
 	vip_lb_tick(rq);
 }
 
+void check_vip_num(struct rq *rq)
+{
+	struct vip_rq *vrq = &per_cpu(vip_rq, cpu_of(rq));
+
+	/* temp patch for counter issue*/
+	if (list_empty(&vrq->vip_tasks)) {
+		if (vrq->num_vvip_tasks != 0 ) {
+			vrq->num_vvip_tasks = 0;
+			pr_info("cpu=%d error VVIP number\n", cpu_of(rq));
+		}
+		if (vrq->num_vip_tasks != 0) {
+			vrq->num_vip_tasks = 0;
+			pr_info("cpu=%d error VIP number\n", cpu_of(rq));
+		}
+	}
+	/* end of temp patch*/
+}
+
 void vip_replace_next_task_fair(void *unused, struct rq *rq, struct task_struct **p,
 				struct sched_entity **se, bool *repick, bool simple,
 				struct task_struct *prev)
@@ -590,6 +744,8 @@ void vip_dequeue_task(void *unused, struct rq *rq, struct task_struct *p)
 	if (!list_empty(&vts->vip_list) && vts->vip_list.next)
 		deactivate_vip_task(p, rq);
 
+	check_vip_num(rq);
+
 	/*
 	 * Reset the exec time during sleep so that it starts
 	 * from scratch upon next wakeup. total_exec should
@@ -615,6 +771,7 @@ void init_vip_task_struct(struct task_struct *p)
 	vts->total_exec = 0;
 	vts->vip_prio = NOT_VIP;
 	vts->basic_vip = false;
+	vts->vvip = false;
 	vts->throttle_time = VIP_TIME_LIMIT;
 }
 
@@ -684,6 +841,7 @@ void vip_init(void)
 	struct task_struct *g, *p;
 	int cpu;
 
+	balance_vvip_overutilied = false;
 	/* init vip related value to group*/
 	init_vip_group();
 
@@ -701,6 +859,7 @@ void vip_init(void)
 
 		INIT_LIST_HEAD(&vrq->vip_tasks);
 		vrq->num_vip_tasks = 0;
+		vrq->num_vvip_tasks = 0;
 
 		/*
 		 * init vip related value to idle thread.

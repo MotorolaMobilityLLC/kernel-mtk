@@ -12,6 +12,7 @@ extern bool vip_enable;
 #define VIP_TIME_LIMIT     (20 * VIP_TIME_SLICE)
 
 #define WORKER_VIP         0
+#define VVIP               1
 #define NOT_VIP           -1
 
 #define DEFAULT_VIP_PRIO_THRESHOLD  99
@@ -24,6 +25,7 @@ extern bool vip_enable;
 struct vip_rq {
 	struct list_head vip_tasks;
 	int num_vip_tasks;
+	int num_vvip_tasks;
 };
 
 enum vip_group {
@@ -46,7 +48,12 @@ extern bool task_is_vip(struct task_struct *p, int type);
 extern inline unsigned int num_vip_in_cpu(int cpu);
 extern inline bool is_task_latency_sensitive(struct task_struct *p);
 extern struct task_struct *next_vip_runnable_in_cpu(struct rq *rq, int type);
-
+extern void set_task_vvip(int pid);
+extern void unset_task_vvip(int pid);
+extern inline unsigned int num_vvip_in_cpu(int cpu);
+extern int arch_get_nr_clusters(void);
+extern int find_imbalanced_vvip_gear(void);
+extern bool balance_vvip_overutilied;
 extern void vip_enqueue_task(struct rq *rq, struct task_struct *p);
 
 extern void vip_init(void);
