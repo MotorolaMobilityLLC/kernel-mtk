@@ -222,13 +222,13 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx,0xFF, 0x78,0x07,0x07);
 	tianma_dcs_write_seq_static(ctx,0x29, 0xCF);
 	tianma_dcs_write_seq_static(ctx,0xFF, 0x78,0x07,0x12);
-	tianma_dcs_write_seq_static(ctx,0x01, 0x11);
+	tianma_dcs_write_seq_static(ctx,0x01, 0x22);
 	tianma_dcs_write_seq_static(ctx,0xFF, 0x78,0x07,0x00);
 	tianma_dcs_write_seq_static(ctx,0x51, 0x07,0xFF);
-	tianma_dcs_write_seq_static(ctx,0x53, 0x24);
+	tianma_dcs_write_seq_static(ctx,0x53, 0x2C);
 	tianma_dcs_write_seq_static(ctx,0x35, 0x00);
 	tianma_dcs_write_seq_static(ctx,0x11, 0x00);
-	msleep(120);
+	msleep(100);
 	tianma_dcs_write_seq_static(ctx,0x29, 0x00);
 	msleep(20);
 
@@ -274,7 +274,7 @@ static int tianma_unprepare(struct drm_panel *panel)
 	}
 	pr_info("%s\n", __func__);
 	printk("[%d  %s]_check_dsi !!\n",__LINE__, __FUNCTION__);
-
+	msleep(1);
 	tianma_dcs_write_seq_static(ctx, 0x28);
 	msleep(20);
 	tianma_dcs_write_seq_static(ctx, 0x10);
@@ -404,6 +404,7 @@ static const struct drm_display_mode performance_mode_90hz = {
 static struct mtk_panel_params ext_params_mode_60 = {
 	//.change_fps_by_vfp_send_cmd = 0,
 	//.vfp_low_power = 20,
+	.data_rate = DATA_RATE,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
