@@ -186,10 +186,12 @@ static void tongxd_panel_init(struct tongxd *ctx)
 		//return;
 	}
 	else {
+		gpiod_set_value(ctx->reset_gpio, 0);
+		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
 		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 0);
-		usleep_range(1 * 1000, 2 * 1000);
+		usleep_range(10 * 1000, 12 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
 		usleep_range(10 * 1000, 12 * 1000);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
@@ -223,7 +225,7 @@ static void tongxd_panel_init(struct tongxd *ctx)
 	tongxd_dcs_write_seq_static(ctx,0xC0, 0x03);
 	tongxd_dcs_write_seq_static(ctx,0xC1, 0x89,0x28,0x00,0x0C,0x02,0x00,0x02,0x0E,0x01,0x1F,0x00,0x07,0x08,0xBB,0x08,0x7A);
 	tongxd_dcs_write_seq_static(ctx,0x11, 0x00);
-	msleep(120);
+	msleep(100);
 	tongxd_dcs_write_seq_static(ctx,0x29, 0x00);
 	msleep(20);
 
@@ -399,12 +401,18 @@ static const struct drm_display_mode performance_mode_90hz = {
 static struct mtk_panel_params ext_params_mode_60 = {
 	//.change_fps_by_vfp_send_cmd = 0,
 	//.vfp_low_power = 20,
+	.data_rate = DATA_RATE,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
 		.para_list[0] = 0x9c,
+	},
+	.lcm_esd_check_table[1] = {
+		.cmd = 0xAB,
+		.count = 2,
+		.para_list[0] = 0x00,
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x01050791,
@@ -469,6 +477,11 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.lcm_esd_check_table[1] = {
+		.cmd = 0xAB,
+		.count = 2,
+		.para_list[0] = 0x00,
+	},
 	.panel_ver = 1,
 	//.panel_id = 0x10050a91,
 	.panel_name = "txd_nt36672c_vdo_1080_2388",
@@ -530,6 +543,11 @@ static struct mtk_panel_params ext_params_mode_120 = {
 		.cmd = 0x0a,
 		.count = 1,
 		.para_list[0] = 0x9c,
+	},
+	.lcm_esd_check_table[1] = {
+		.cmd = 0xAB,
+		.count = 2,
+		.para_list[0] = 0x00,
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x10050a91,
