@@ -3640,7 +3640,11 @@ EXPORT_SYMBOL(mmi_batt_health_check);
 
 #define WARM_TEMP 45
 #define COOL_TEMP 0
+#if IS_ENABLED(CONFIG_MMI_SGM41543D_CHARGER)
+#define HYST_STEP_MV 70
+#else
 #define HYST_STEP_MV 50
+#endif
 #define DEMO_MODE_HYS_SOC 5
 #define DEMO_MODE_VOLTAGE 4000
 static void mmi_charger_check_status(struct mtk_charger *info)
