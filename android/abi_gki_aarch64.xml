@@ -44837,23 +44837,7 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='538b7809' size-in-bits='64' id='5f0d472d'/>
-      <class-decl name='fsverity_operations' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/linux/fsverity.h' line='18' column='1' id='5f0d764c'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='begin_enable_verity' type-id='4da4101d' visibility='default' filepath='include/linux/fsverity.h' line='33' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='end_enable_verity' type-id='f3a5c46a' visibility='default' filepath='include/linux/fsverity.h' line='55' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='get_verity_descriptor' type-id='c60354f3' visibility='default' filepath='include/linux/fsverity.h' line='72' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='read_merkle_tree_page' type-id='68b31938' visibility='default' filepath='include/linux/fsverity.h' line='93' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='write_merkle_tree_block' type-id='c748f227' visibility='default' filepath='include/linux/fsverity.h' line='110' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='fsverity_operations' is-struct='yes' visibility='default' is-declaration-only='yes' id='5f0d764c'/>
       <pointer-type-def type-id='0caa7082' size-in-bits='64' id='5f29549c'/>
       <class-decl name='configfs_attribute' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/linux/configfs.h' line='117' column='1' id='5f2e9b8f'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -49252,7 +49236,6 @@
         <parameter type-id='5d6479ae'/>
         <return type-id='95e97e5e'/>
       </function-type>
-      <pointer-type-def type-id='e151e1f6' size-in-bits='64' id='68b31938'/>
       <class-decl name='module_layout' size-in-bits='640' is-struct='yes' visibility='default' filepath='include/linux/module.h' line='327' column='1' id='68b3d9a8'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='base' type-id='eaa32e2f' visibility='default' filepath='include/linux/module.h' line='329' column='1'/>
@@ -54236,13 +54219,6 @@
         <parameter type-id='8582e5ec'/>
         <parameter type-id='4db02c58'/>
         <return type-id='c91d1bf1'/>
-      </function-type>
-      <function-type size-in-bits='64' id='74fec388'>
-        <parameter type-id='77e79a4b'/>
-        <parameter type-id='eaa32e2f'/>
-        <parameter type-id='b59d7dce'/>
-        <parameter type-id='91ce1af9'/>
-        <return type-id='95e97e5e'/>
       </function-type>
       <function-type size-in-bits='64' id='7506f11b'>
         <parameter type-id='b7c1d7d5'/>
@@ -66927,13 +66903,6 @@
       <typedef-decl name='u64' type-id='d3130597' filepath='include/asm-generic/int-ll64.h' line='23' column='1' id='91ce1af9'/>
       <pointer-type-def type-id='d7c60ba9' size-in-bits='64' id='91d0de51'/>
       <pointer-type-def type-id='d0fea0bb' size-in-bits='64' id='91d6c443'/>
-      <function-type size-in-bits='64' id='91dc7ea3'>
-        <parameter type-id='7e666abe'/>
-        <parameter type-id='eaa32e2f'/>
-        <parameter type-id='91ce1af9'/>
-        <parameter type-id='95e97e5e'/>
-        <return type-id='95e97e5e'/>
-      </function-type>
       <function-type size-in-bits='64' id='91de15a8'>
         <parameter type-id='7e666abe'/>
         <parameter type-id='cd1b45ab'/>
@@ -91797,7 +91766,6 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='e9ec35ef' size-in-bits='64' id='c7432356'/>
-      <pointer-type-def type-id='91dc7ea3' size-in-bits='64' id='c748f227'/>
       <union-decl name='__anonymous_union__' size-in-bits='4096' is-anonymous='yes' visibility='default' filepath='include/uapi/sound/asound.h' line='1054' column='1' id='c74bfd7b'>
         <data-member access='public'>
           <var-decl name='value' type-id='1fd26250' visibility='default' filepath='include/uapi/sound/asound.h' line='1055' column='1'/>
@@ -103572,12 +103540,6 @@
           <var-decl name='first' type-id='08cbad52' visibility='default' filepath='include/linux/types.h' line='183' column='1'/>
         </data-member>
       </class-decl>
-      <function-type size-in-bits='64' id='e151e1f6'>
-        <parameter type-id='7e666abe'/>
-        <parameter type-id='7359adad'/>
-        <parameter type-id='7359adad'/>
-        <return type-id='02f11ed4'/>
-      </function-type>
       <pointer-type-def type-id='20b17040' size-in-bits='64' id='e153f6de'/>
       <pointer-type-def type-id='4d94804e' size-in-bits='64' id='e15671b8'/>
       <pointer-type-def type-id='59aa7dba' size-in-bits='64' id='e15aece4'/>
@@ -111852,7 +111814,6 @@
           <var-decl name='memsw' type-id='635c3685' visibility='default' filepath='include/linux/memcontrol.h' line='222' column='1'/>
         </data-member>
       </union-decl>
-      <pointer-type-def type-id='74fec388' size-in-bits='64' id='f3a5c46a'/>
       <class-decl name='rc_scancode_filter' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/media/rc-core.h' line='38' column='1' id='f3a6417e'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='data' type-id='19c2251e' visibility='default' filepath='include/media/rc-core.h' line='39' column='1'/>
