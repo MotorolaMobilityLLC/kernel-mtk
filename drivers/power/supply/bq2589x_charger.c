@@ -36,6 +36,7 @@
 #include "bq2589x_reg.h"
 #include "charger_class.h"
 #include "mtk_charger.h"
+#include <linux/iio/consumer.h>
 
 struct delayed_work plug_work;
 struct bq2589x *bq_ex;
@@ -47,6 +48,8 @@ int thub_plug_flag;
 bool pd_type;
 
 #define NULL ((void *)0)
+#define R_VBUS_CHARGER_1    330
+#define R_VBUS_CHARGER_2    39
 
 struct chg_para{
 	int vlim;
@@ -160,6 +163,7 @@ struct bq2589x {
 	int vbus_volt;
 	int vbat_volt;
 	int vbus_type;
+	struct iio_channel *vbus;
 };
 
 static const struct charger_properties bq2589x_chg_props = {
@@ -1816,6 +1820,8 @@ static int bq2589x_set_vchg(struct charger_device *chg_dev, u32 volt)
 	int ret = 0;
 	struct bq2589x *bq = dev_get_drvdata(&chg_dev->dev);
 
+	if(volt == 0)
+		return -EINVAL;
 	/* enable dynamic adjust battery voltage */
 	if (bq->enable_dynamic_adjust_batvol) {
 		dev_err(bq->dev, "%s:volt:%d, bq->final_cv = %d\n", __func__, volt, bq->final_cv);
@@ -1877,9 +1883,19 @@ static int bq2589x_get_icl(struct charger_device *chg_dev, u32 *curr)
 
 static int bq2589x_get_vbus(struct charger_device *chgdev, u32 *vbus)
 {
-	struct bq2589x *bq = dev_get_drvdata(&chgdev->dev);
+	struct bq2589x *bq = charger_get_data(chgdev);
+	int ret,value;
 
-	return bq2589x_adc_read_vbus_volt(bq, vbus);
+	ret = iio_read_channel_processed(bq->vbus,&value);
+	if(ret < 0){
+		dev_err(bq->dev,"get vbus voltage failed");
+		return -EINVAL;
+	}
+	*vbus = value + R_VBUS_CHARGER_1 * value / R_VBUS_CHARGER_2;
+	*vbus = *vbus * 1000;
+	dev_info(bq->dev,"vbus voltage: %d\n",*vbus);
+
+	return ret;
 }
 
 static int bq2589x_get_adc(struct charger_device *chg_dev, enum adc_channel chan, int *min, int *max)
@@ -2791,6 +2807,12 @@ static int bq2589x_charger_probe(struct i2c_client *client,
 	if (ret) {
 		pr_info("bq2589x Failed to init device\n");
 		return ret;
+	}
+
+	bq->vbus = devm_iio_channel_get(bq->dev,"pmic_vbus");
+	if(IS_ERR_OR_NULL(bq->vbus)){
+		dev_err(bq->dev,"bq2589x get vbus failed\n");
+		return -EINVAL;
 	}
 
 	bq2589x_irq = of_get_named_gpio(client->dev.of_node, "bq2589x_irq", 0);

@@ -22,7 +22,8 @@
                 bq2589x_irq = <&pio 7 0x0>;
 		pinctrl-names = "bq25890_int_n_name";
 		pinctrl-0 = <&bq25890_int_n>;
-
+		io-channels = <&pmic_auxadc AUXADC_VCDT>;
+		io-channel-names = "pmic_vbus";
 		ti,bq2589x,enable-auto-dpdm;
 		ti,bq2589x,enable-termination;
 		//ti,bq2589x,enable-ico;

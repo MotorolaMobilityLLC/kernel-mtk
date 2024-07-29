@@ -208,6 +208,8 @@ struct sgm_sysfs_field_info {
 
 static bool sgm4154x_dpdm_detect_is_done(struct sgm4154x_device * sgm);
 static int sgm4154x_run_ir_compensation(struct sgm4154x_device *sgm_chg, bool query, int *vbat_uV_out);
+static int sgm4151_force_dpdm(struct sgm4154x_device *sgm);
+
 /**********************************************************
  *
  *   [Global Variable]
@@ -573,6 +575,8 @@ static int sgm4154x_set_chrg_volt(struct charger_device *chg_dev, unsigned int c
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
 	static u32 old_volt = 0;
 
+	if(chrg_volt == 0)
+		return -EINVAL;
 	/* enable dynamic adjust battery voltage */
 	if (sgm->enable_dynamic_adjust_batvol) {
 		if (old_volt == chrg_volt) {
@@ -1107,6 +1111,9 @@ static int sgm4154x_get_state(struct sgm4154x_device *sgm,
 	u8 chrg_param_0,chrg_param_1,chrg_param_2;
 	int ret;
 
+	Charger_Detect_Init();
+	sgm4151_force_dpdm(sgm);
+
 	msleep(1); /*for  BC12*/
 	ret = mmi_sgm4154x_read_reg(sgm, SGM4154x_CHRG_STAT, &chrg_stat);
 	if (ret){
@@ -1122,6 +1129,10 @@ static int sgm4154x_get_state(struct sgm4154x_device *sgm,
 	state->online = !!(chrg_stat & SGM4154x_PG_STAT);
 	state->therm_stat = !!(chrg_stat & SGM4154x_THERM_STAT);
 	state->vsys_stat = !!(chrg_stat & SGM4154x_VSYS_STAT);
+
+	if(state->chrg_type != SGM4154x_USB_DCP){
+		Charger_Detect_Release();
+	}
 
 	pr_err("%s chrg_type =%d,chrg_stat =%d online = %d\n",__func__,state->chrg_type,state->chrg_stat,state->online);
 
@@ -2323,10 +2334,8 @@ static irqreturn_t sgm4154x_irq_handler_thread(int irq, void *private)
 
 	//lock wakelock
 	pr_err("%s entry\n",__func__);
-    
 	schedule_delayed_work(&sgm->charge_detect_delayed_work, 100);
 	//power_supply_changed(sgm->charger);
-	
 	return IRQ_HANDLED;
 }
 static char *sgm4154x_charger_supplied_to[] = {
