@@ -138,7 +138,7 @@ static struct imgsensor_info_struct imgsensor_info = {
     .min_gain_iso = 100,
     .gain_step = 1, /*minimum step = 4 in 1x~2x gain*/
     .gain_type = 4,    /*to be modify,no gain table for sony*/
-    .max_frame_length = 0x3FFFFF,     /* max framelength by sensor register's limitation */
+    .max_frame_length = 0x89C7,     /* max framelength by write VB 0x05&0x06 register's limitation */
     .ae_shut_delay_frame = 0,
     .ae_sensor_gain_delay_frame = 0,
     .ae_ispGain_delay_frame = 2,   /*isp gain delay frame for AE cycle*/
@@ -178,7 +178,7 @@ static struct imgsensor_struct imgsensor = {
     .i2c_write_id = 0x20,
     .vblank_convert = 2504, /* vts to vblank*/
     .current_ae_effective_frame = 2,
-    .max_shutter = 0x3FFFEB,
+    .max_shutter = 78260, //exposure time 1s: 0x026369, half line write need /2
 };
 
 /* Sensor output window information */
@@ -305,6 +305,12 @@ static void set_dummy(void)
     if (imgsensor.frame_length%2 != 0) {
         imgsensor.frame_length = imgsensor.frame_length - imgsensor.frame_length % 2;
     }
+
+    imgsensor.frame_length = ((imgsensor.frame_length + 3) >> 2) << 2;// need to set to  multi 4
+    if (imgsensor.frame_length > imgsensor_info.max_frame_length) {
+        imgsensor.frame_length = imgsensor_info.max_frame_length;
+    }
+
     pr_debug("imgsensor.frame_length = %d\n", imgsensor.frame_length);
     write_cmos_sensor(0xfd, 0x01);
     write_cmos_sensor(0x05, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2) & 0xFF00) >> 8);
@@ -433,7 +439,10 @@ static void write_shutter(kal_uint32 shutter)
     imgsensor.current_ae_effective_frame = 2;
 
     if(long_exposure_status == 0){
-        imgsensor.frame_length = (imgsensor.frame_length  >> 2) << 2;
+        imgsensor.frame_length = ((imgsensor.frame_length + 3) >> 2) << 2;// need to set to  multi 4
+        if (imgsensor.frame_length > imgsensor_info.max_frame_length) {
+	    imgsensor.frame_length = imgsensor_info.max_frame_length;
+        }
 	    write_cmos_sensor(0xfd, 0x01);
 	    write_cmos_sensor(0x05, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2) & 0xFF00) >> 8);
 	    write_cmos_sensor(0x06, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2)) & 0xFF);
