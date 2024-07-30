@@ -259,7 +259,7 @@
          charger = <&sc8989x_chg>;
          charger_configuration= <3>;
          /* common */
-         battery_cv = <4480000>;
+         battery_cv = <4500000>;
          max_charger_voltage = <15000000>;
          min_charger_voltage = <4700000>;
          max_dmivr_charger_current = <3000000>;
@@ -317,9 +317,9 @@
 	start_soc_max = <90>;
 	vbat_cv = <4530>;
 	start_vbat_max = <4500>;
-	tdvchg_curlmt = <(-1) (-1) (-1) 300 0 0 0 900 (-1)>;
-	tbat_curlmt = <(-1) (-1) (-1) 300 0 0 0 1050 (-1)>;
-	tta_curlmt = <0 0 0 0 0 0 0 900 (-1)>;
+	tdvchg_curlmt = <(-1) (-1) (-1) 0 0 0 0 0 (-1)>;
+	tbat_curlmt = <0 0 0 0 0 0 0 0 0>;
+	tta_curlmt = <0 0 0 0 0 0 0 0 0>;
 };
 
 &pe45 {
@@ -414,7 +414,7 @@
 	ACTIVE_TABLE = <(5)>;
 	R_FG_VALUE = <(5)>;
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
-	CAR_TUNE_VALUE = <(103)>;
+	CAR_TUNE_VALUE = <(101)>;
 
 	df-serialnum = "COSRA50COS";
 	#include "bat_setting/mt6835_battery_ra50_cos_5000mah.dtsi"
