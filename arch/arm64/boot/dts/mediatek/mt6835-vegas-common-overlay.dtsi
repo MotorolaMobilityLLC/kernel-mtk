@@ -20,7 +20,6 @@
 #include "mediatek/vegas-charger.dtsi"
 #include "mediatek/vegas-sensor.dtsi"
 #include "mediatek/vegas-msdc.dtsi"
-#include "mediatek/vegas-audio.dtsi"
 #include "mediatek/vegas-thermal.dtsi"
 #include "mediatek/cust_mt6835_camera_6377_v4l2.dtsi"
 / {
