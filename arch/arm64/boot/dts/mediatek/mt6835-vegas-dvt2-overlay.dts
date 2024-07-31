@@ -14,7 +14,7 @@
 /plugin/;
 
 #include "mediatek/mt6835-vegas-common-overlay.dtsi"
-#include "mediatek/vegas-audio-evb.dtsi"
+#include "mediatek/vegas-audio-dvt2.dtsi"
 
 /* Board match root node */
 / {
@@ -22,10 +22,10 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "vegas";
-			mot,board-id = <0x42 0xA100>;
+			mot,board-id = <0x42 0xB200>;
 		};
 	};
 };
 
-#include <vegas_evb/cust.dtsi>
+#include <vegas_dvt2/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
