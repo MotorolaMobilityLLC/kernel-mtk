@@ -11,6 +11,11 @@
  * GNU General Public License for more details.
  */
 #include <dt-bindings/iio/mt635x-auxadc.h>
+
+&mt6375 {
+	status = "disabled";
+};
+
 &i2c5 {
 	sgm4154x_chg: sgm41543D@0B {
 		status = "okay";
@@ -279,10 +284,27 @@
 &pe5 {
 	start_soc_max = <90>;
 	vbat_cv = <4530>;
+	start_vbat_max = <4500>;
 	tdvchg_curlmt = <0 0 0 0 0 0 0 0 0>;
 	tta_curlmt = <0 0 0 0 0 0 0 0 0>;
-	tbat_curlmt = <0 0 0 0 0 0 0 0 0>;
+	tbat_curlmt = <(-1) (-1) (-1) 0 0 0 0 0 (-1)>;
 	tswchg_curlmt = <0 0 0 0 0 0 0 0 0>;
+};
+
+&pe45 {
+	status = "disabled";
+};
+
+&pe2 {
+	status = "disabled";
+};
+
+&pdc {
+	status = "disabled";
+};
+
+&pe {
+	status = "disabled";
 };
 
 &charger_cooler {
