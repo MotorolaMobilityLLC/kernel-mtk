@@ -14,6 +14,7 @@
 /plugin/;
 
 #include "mediatek/mt6835-vegas-common-overlay.dtsi"
+#include "mediatek/vegas-audio-evb.dtsi"
 
 /* Board match root node */
 / {
