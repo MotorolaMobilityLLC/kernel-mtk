@@ -123,7 +123,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 			.startx = 0,
 			.starty = 0,
 			.grabwindow_width = 2320,
-			.grabwindow_height = 1308,
+			.grabwindow_height = 1740,
 			.mipi_data_lp2hs_settle_dc = 85,
 			.mipi_pixel_rate = 307200000,
 			.max_framerate = 300,
@@ -140,14 +140,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 			.mipi_pixel_rate = 307200000,
 			.max_framerate = 300,
 		},
-		.margin = 3,
+		.margin = 4,
 		.min_shutter = 3,
 		.min_gain = 64, /*1x gain*/
 		.max_gain = 1024, /*16x gain*/
 		.min_gain_iso = 100,
 		.gain_step = 2,
 		.gain_type = 2,
-		.max_frame_length = 0xfffc,//0xffff-3,
+		.max_frame_length = 0xffff,
 		.ae_shut_delay_frame = 0,
 		.ae_sensor_gain_delay_frame = 0,
 		.ae_ispGain_delay_frame = 2,
@@ -202,21 +202,21 @@ static struct imgsensor_struct imgsensor = {
 /* Sensor output window information */
 /*no mirror flip*/
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
-	{4640, 3488, 0000, 0000, 4640, 3488, 2320, 1744,
-	 0000, 0000, 2320, 1744, 0000, 0002, 2320, 1740},/* Preview */
+	{4640, 3488, 0000, 0004, 4640, 3480, 2320, 1740,
+	 0000, 0000, 2320, 1740, 0000, 0000, 2320, 1740},/* Preview */
 #if USE_REMOSAIC
 	{4640, 3488, 0000, 0000, 4640, 3488, 4640, 3488,
 	 0000, 0000, 4640, 3488, 0000, 0000, 4640, 3488},/* Capture Remosaic */
 #else
-	{4640, 3488, 0000, 0000, 4640, 3488, 2320, 1744,
-	 0000, 0000, 2320, 1744, 0000, 0002, 2320, 1740},/* Capture == Preview*/
+	{4640, 3488, 0000, 0004, 4640, 3480, 2320, 1740,
+	 0000, 0000, 2320, 1740, 0000, 0000, 2320, 1740},/* Capture == Preview*/
 #endif
 	{4640, 3488, 0000, 0436, 4640, 2616, 2320, 1308,
 	 0000, 0000, 2320, 1308, 0000, 0000, 2320, 1308},/* Video */
-	{4640, 3488, 0000, 0436, 4640, 2616, 2320, 1308,
-	 0000, 0000, 2320, 1308, 0000, 0000, 2320, 1308},/* hs_video == Video */
-	{4640, 3488, 0000, 0000, 4640, 3488, 2320, 1744,
-	 0000, 0000, 2320, 1744, 0000, 0002, 2320, 1740},/* slim_video == Preview */
+	{4640, 3488, 0000, 0004, 4640, 3480, 2320, 1740,
+	 0000, 0000, 2320, 1740, 0000, 0000, 2320, 1740},/* hs_video == Preview */
+	{4640, 3488, 0000, 0004, 4640, 3480, 2320, 1740,
+	 0000, 0000, 2320, 1740, 0000, 0000, 2320, 1740},/* slim_video == Preview */
 };
 
 static struct IMGSENSOR_I2C_CFG *get_i2c_cfg(void)
@@ -3942,11 +3942,11 @@ static kal_uint16 addr_data_pair_hs_video[] = {
 	0x6F12, 0x0000,
 	0x6028, 0x4000,
 	0x0344, 0x0000,
-	0x0346, 0x01BC,
+	0x0346, 0x000C,
 	0x0348, 0x122F,
-	0x034A, 0x0BF3,
+	0x034A, 0x0DA3,
 	0x034C, 0x0910,
-	0x034E, 0x051C,
+	0x034E, 0x06CC,
 	0x0350, 0x0004,
 	0x0900, 0x0122,
 	0x0380, 0x0002,
