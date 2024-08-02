@@ -33,7 +33,6 @@
 		novatek,psy-name = "battery";
 		novatek,report_gesture_key;
 		novatek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
-		novatek,cs_setup_time = <500>;
 
 		// 525
 		//novatek,swrst-n8-addr = <0x01F01A>;
