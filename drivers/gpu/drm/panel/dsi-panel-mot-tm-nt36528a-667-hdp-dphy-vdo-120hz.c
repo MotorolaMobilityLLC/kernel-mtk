@@ -378,7 +378,7 @@ static struct mtk_panel_params ext_params_60hz = {
 	//.panel_id = 0x01012891,
 	.panel_name = "tm_nt36528a_vid_667_720",
 	.panel_supplier = "tm",
-	.lcm_index = 0,
+	.lcm_index = 2,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 /*
@@ -425,7 +425,7 @@ static struct mtk_panel_params ext_params_90hz = {
 	//.panel_id = 0x01012891,
 	.panel_name = "tm_nt36528a_vid_667_720",
 	.panel_supplier = "tm",
-	.lcm_index = 0,
+	.lcm_index = 2,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 /*
@@ -471,7 +471,7 @@ static struct mtk_panel_params ext_params_120hz = {
 	//.panel_id = 0x01012891,
 	.panel_name = "tm_nt36528a_vid_667_720",
 	.panel_supplier = "tm",
-	.lcm_index = 0,
+	.lcm_index = 2,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 /*
