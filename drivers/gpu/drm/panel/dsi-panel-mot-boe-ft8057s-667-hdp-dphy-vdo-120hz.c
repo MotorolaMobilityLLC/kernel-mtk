@@ -346,7 +346,7 @@ static struct mtk_panel_params ext_params_60hz = {
 	//.panel_id = 0x15025892,
 	.panel_name = "boe_ft8057s_vid_667_720",
 	.panel_supplier = "boe",
-	.lcm_index = 0,
+	.lcm_index = 1,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 /*
@@ -386,7 +386,7 @@ static struct mtk_panel_params ext_params_90hz = {
 	//.panel_id = 0x15025892,
 	.panel_name = "boe_ft8057s_vid_667_720",
 	.panel_supplier = "boe",
-	.lcm_index = 0,
+	.lcm_index = 1,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 /*
@@ -425,7 +425,7 @@ static struct mtk_panel_params ext_params_120hz = {
 	//.panel_id = 0x15025892,
 	.panel_name = "boe_ft8057s_vid_667_720",
 	.panel_supplier = "boe",
-	.lcm_index = 0,
+	.lcm_index = 1,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 /*
