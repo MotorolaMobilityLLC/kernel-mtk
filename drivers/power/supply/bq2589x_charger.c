@@ -141,7 +141,7 @@ struct bq2589x {
 	bool sc_power_good;
 	bool slj_power_good;
 	bool float_type_flag;
-
+	bool mmi_charging_full;
 	struct bq2589x_platform_data *platform_data;
 	struct charger_device *chg_dev;
 	struct delayed_work read_byte_work;
@@ -1566,10 +1566,15 @@ static int bq2589x_do_event(struct charger_device *chgdev, u32 event, u32 args)
 {
 	struct bq2589x *bq = charger_get_data(chgdev);
 
+	pr_info("%s:event:%d\n", __func__, event);
 	switch (event) {
 	case EVENT_FULL:
+		bq->mmi_charging_full = true;
+		power_supply_changed(bq->psy);
+		break;
 	case EVENT_RECHARGE:
 	case EVENT_DISCHARGE:
+		bq->mmi_charging_full = false;
 		power_supply_changed(bq->psy);
 		break;
 	default:
@@ -2306,8 +2311,10 @@ static int bq2589x_chg_get_property(struct power_supply *psy,
 		if ((bq->part_no != pn_data[PN_SC89890H])) {
 			if (bq->power_good || tcpc_attach == TCPC_ATTACH_TYPE_TYPEC)
 				val->intval = 1;
-			else
+			else{
 				val->intval = 0;
+				bq->mmi_charging_full = false;
+			}
 		} else
 			val->intval = bq->power_good;
 		break;
@@ -2324,6 +2331,8 @@ static int bq2589x_chg_get_property(struct power_supply *psy,
 		} else {
 			val->intval = _val;
 		}
+		if (bq->mmi_charging_full == true)
+			val->intval = POWER_SUPPLY_STATUS_FULL;
 		break;
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
 			ret = bq2589x_adc_read_charge_current(bq, &val->intval);
