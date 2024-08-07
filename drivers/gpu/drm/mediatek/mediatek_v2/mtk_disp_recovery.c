@@ -42,6 +42,8 @@
 #define ESD_CHECK_PERIOD 2000 /* ms */
 #define esd_timer_to_mtk_crtc(x) container_of(x, struct mtk_drm_crtc, esd_timer)
 
+static int mtkfb_recovery_flg = 0;
+
 static DEFINE_MUTEX(pinctrl_lock);
 
 /* pinctrl implementation */
@@ -527,6 +529,12 @@ done:
 	return 0;
 }
 
+int mtkfb_esd_get_recovery_flag(void)
+{
+	return mtkfb_recovery_flg;
+}
+EXPORT_SYMBOL(mtkfb_esd_get_recovery_flag);
+
 int mtk_drm_esd_testing_process(struct mtk_drm_esd_ctx *esd_ctx, bool need_lock)
 {
 		struct mtk_drm_private *private = NULL;
@@ -575,6 +583,8 @@ int mtk_drm_esd_testing_process(struct mtk_drm_esd_ctx *esd_ctx, bool need_lock)
 			if (!ret) /* success */
 				break;
 
+			mtkfb_recovery_flg = 1;
+
 #ifdef CONFIG_DISP_ESD_NOTIFY_SUPPORT
 			mtk_disp_notifier_call_chain(MTK_ERALY_NOTIFY_TP_EVENT_BLANK, &data_suspend);
 #endif
@@ -599,6 +609,8 @@ int mtk_drm_esd_testing_process(struct mtk_drm_esd_ctx *esd_ctx, bool need_lock)
 		} else if (recovery_flg && ret == 0) {
 			DDPPR_ERR("[ESD%u] esd recovery success\n", crtc_idx);
 			recovery_flg = 0;
+			mtkfb_recovery_flg = 0;
+
 #ifdef CONFIG_DISP_ESD_NOTIFY_SUPPORT
 			mtk_disp_notifier_call_chain(MTK_NOTIFY_TP_EVENT_BLANK, &data_resume);
 #endif
