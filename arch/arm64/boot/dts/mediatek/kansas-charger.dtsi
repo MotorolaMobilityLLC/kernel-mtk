@@ -312,6 +312,7 @@
          mmi,upper-limit-capacity = <65>;
          mmi,lower-limit-capacity = <60>;
          mmi,vfloat-comp-uv = <0>;
+         mmi,min-cp-therm-current-ua = <1400000>;
 };
 
 &pe5 {
