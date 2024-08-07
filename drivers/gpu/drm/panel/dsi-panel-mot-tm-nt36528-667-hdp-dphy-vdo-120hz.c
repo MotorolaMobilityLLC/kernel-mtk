@@ -33,6 +33,7 @@
 
 extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
+extern int mtkfb_esd_get_recovery_flag(void);
 
 static int tp_gesture_flag = 0;
 
@@ -231,11 +232,10 @@ static int tm_nt36528_unprepare(struct drm_panel *panel)
 	tm_nt36528_dcs_write_seq_static(ctx, 0x28);
 	udelay(10 * 1000);
 	tm_nt36528_dcs_write_seq_static(ctx, 0x10);
-	udelay(10 * 1000);
+	msleep(60);
 
-
-	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
-	if(!tp_gesture_flag) {
+	pr_info("%s:disp: tp_gesture_flag:%d, esd_recovery_flg=%d \n",__func__, tp_gesture_flag, mtkfb_esd_get_recovery_flag());
+	if(!tp_gesture_flag || mtkfb_esd_get_recovery_flag()) {
 		ocp2138_BiasPower_disable(5);
 	}
 
