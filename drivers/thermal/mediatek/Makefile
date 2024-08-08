@@ -3,7 +3,8 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/sspm/v2 \
 	-I$(srctree)/drivers/misc/mediatek/mcupm/include \
 	-I$(srctree)/drivers/gpu/mediatek/gpufreq \
-	-I$(srctree)/drivers/misc/mediatek/connectivity/power_throttling
+	-I$(srctree)/drivers/misc/mediatek/connectivity/power_throttling \
+	-I$(srctree)/drivers/leds
 ifneq ($(CONFIG_MTK_TINYSYS_SCP_SUPPORT),)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/include
 endif
