@@ -267,6 +267,22 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4BlockNumY = 190,
 	.i4Crop = { {0, 0}, {0, 0}, {0, 384}, {0, 384}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
 };
+
+static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info_2binning = {
+	.i4OffsetX = 32,
+	.i4OffsetY = 8,
+	.i4PitchX  = 8,
+	.i4PitchY  = 8,
+	.i4PairNum  =8,
+	.i4SubBlkW  =4,
+	.i4SubBlkH  =2,
+	.i4PosL = {{35, 9},{39, 9},{33, 11},{37, 11},{35, 13},{39, 13},{33, 15},{37, 15}},
+	.i4PosR = {{34, 9},{38, 9},{32, 11},{36, 11},{34, 13},{38, 13},{32, 15},{36, 15}},
+	.iMirrorFlip = 0,
+	.i4BlockNumX = 248,
+	.i4BlockNumY = 190,
+	.i4Crop = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
+};
 #endif
 
 static struct IMGSENSOR_I2C_CFG *get_i2c_cfg(void)
@@ -1722,10 +1738,15 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 			case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			case MSDK_SCENARIO_ID_CUSTOM1:
 				imgsensor_pd_info.i4BlockNumX = 248;
 				imgsensor_pd_info.i4BlockNumY = 190;
 				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+					sizeof(struct SET_PD_BLOCK_INFO_T));
+				break;
+			case MSDK_SCENARIO_ID_CUSTOM1:
+				imgsensor_pd_info_2binning.i4BlockNumX = 248;
+				imgsensor_pd_info_2binning.i4BlockNumY = 190;
+				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info_2binning,
 					sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
