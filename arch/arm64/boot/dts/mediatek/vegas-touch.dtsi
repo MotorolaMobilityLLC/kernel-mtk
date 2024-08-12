@@ -94,4 +94,11 @@
 	};
 };
 
+&odm {
+	mmi_stow: mmi_stow {
+		compatible = "moto,mmi_stow";
+		mmi,stow-gpio = <&pio 6 0x0>;
+	};
+};
+
 /* TOUCH end */
