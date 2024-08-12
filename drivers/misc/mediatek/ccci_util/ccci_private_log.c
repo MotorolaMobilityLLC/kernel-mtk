@@ -56,7 +56,7 @@ int ccci_log_write(const char *fmt, ...)
 	if (unlikely(ccci_log_buf.buffer == NULL))
 		return -ENODEV;
 
-	temp_log = kmalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
+	temp_log = kvzalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
 	if (temp_log == NULL) {
 		/*pr_notice("[ccci0/util]alloc local buff fail p01\n");*/
 		return -ENODEV;
@@ -105,7 +105,7 @@ int ccci_log_write(const char *fmt, ...)
 	spin_unlock_irqrestore(&ccci_log_buf.write_lock, flags);
 	wake_up_all(&ccci_log_buf.log_wq);
 
-	kfree(temp_log);
+	kvfree(temp_log);
 	temp_log = NULL;
 
 	return write_len;
@@ -125,7 +125,7 @@ int ccci_log_write_raw(unsigned int set_flags, const char *fmt, ...)
 	if (unlikely(ccci_log_buf.buffer == NULL))
 		return -ENODEV;
 
-	temp_log = kmalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
+	temp_log = kvzalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
 	if (temp_log == NULL) {
 		/*pr_notice("[ccci0/util]alloc local buff fail p1\n");*/
 		return -ENODEV;
@@ -181,7 +181,7 @@ int ccci_log_write_raw(unsigned int set_flags, const char *fmt, ...)
 	spin_unlock_irqrestore(&ccci_log_buf.write_lock, flags);
 	wake_up_all(&ccci_log_buf.log_wq);
 
-	kfree(temp_log);
+	kvfree(temp_log);
 	temp_log = NULL;
 
 	return write_len;
@@ -412,7 +412,7 @@ int ccci_dump_write(unsigned int buf_type, unsigned int flag, const char *fmt, .
 			return -6; /* buffer full */
 	}
 
-	temp_log = kmalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
+	temp_log = kvzalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
 	if (temp_log == NULL) {
 		/*pr_notice("[ccci0/util]alloc local buff fail p2\n");*/
 		return -7;
@@ -520,7 +520,7 @@ int ccci_dump_write(unsigned int buf_type, unsigned int flag, const char *fmt, .
 	/* pr_notice("[ccci0/util][ccci_log] has write %d, %d\n",
 	 *		write_len, ptr->write_pos);
 	 */
-	kfree(temp_log);
+	kvfree(temp_log);
 
 	return write_len;
 }
@@ -751,7 +751,7 @@ static int ccci_dump_fops_open(struct inode *inode, struct file *file)
 	struct ccci_user_ctlb *user_info;
 	int i = 0;
 
-	user_info = kzalloc(sizeof(struct ccci_user_ctlb), GFP_KERNEL);
+	user_info = kvzalloc(sizeof(struct ccci_user_ctlb), GFP_KERNEL);
 	if (user_info == NULL) {
 		/*pr_notice("[ccci0/util]fail to alloc memory for ctlb\n"); */
 		return -1;
@@ -802,7 +802,7 @@ static int ccci_dump_fops_close(struct inode *inode, struct file *file)
 	} while (need_wait);
 
 	if (user_info != NULL)
-		kfree(user_info);
+		kvfree(user_info);
 
 	return 0;
 }
@@ -836,7 +836,7 @@ static void ccci_dump_buffer_init(void)
 		spin_lock_init(&ptr->lock);
 		if (node_ptr->init_size) {
 			/* allocate buffer */
-			ptr->buffer = kmalloc(node_ptr->init_size,
+			ptr->buffer = kvzalloc(node_ptr->init_size,
 					GFP_KERNEL);
 			if (ptr->buffer != NULL) {
 				ptr->buf_size = node_ptr->init_size;
@@ -1045,7 +1045,7 @@ int ccci_event_log(const char *fmt, ...)
 	if (ccci_event_buffer.buffer == NULL)
 		return 0;
 
-	temp_log = kmalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
+	temp_log = kvzalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
 	if (temp_log == NULL)
 		return 0;
 
@@ -1115,7 +1115,7 @@ int ccci_event_log(const char *fmt, ...)
 
 	spin_unlock_irqrestore(&ccci_event_buffer.lock, flags);
 
-	kfree(temp_log);
+	kvfree(temp_log);
 
 	return write_len;
 }
@@ -1169,7 +1169,7 @@ void ccci_log_init(void)
 		pr_notice("[ccci0/util]fail to create proc entry for log\n");
 		return;
 	}
-	ccci_log_buf.buffer = kmalloc(CCCI_LOG_BUF_SIZE, GFP_KERNEL);
+	ccci_log_buf.buffer = kvzalloc(CCCI_LOG_BUF_SIZE, GFP_KERNEL);
 	if (ccci_log_buf.buffer == NULL)
 		return;
 
