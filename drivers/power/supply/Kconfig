@@ -1096,4 +1096,9 @@ config MOTO_PE50_CV_LOWER_BOUND_GAP_OFF
 	help
 	  This is config charger pe5 cv lower bound gap
 
+config WLC_WO_BOOST
+	tristate "define vegas WLC_WO_BOOST"
+        help
+          This is to distinguish between vegas and other projects.
+
 endif # POWER_SUPPLY
