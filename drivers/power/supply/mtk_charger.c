@@ -5307,8 +5307,10 @@ int notify_adapter_event(struct notifier_block *notifier,
 		if (pinfo->water_detected == true) {
 			pinfo->notify_code |= CHG_TYPEC_WD_STATUS;
 			pinfo->record_water_detected = true;
-		} else
+		} else {
+			pinfo->record_water_detected = false;
 			pinfo->notify_code &= ~CHG_TYPEC_WD_STATUS;
+		}
 		mtk_chgstat_notify(pinfo);
 		mmi_notify_lpd_event(pinfo);
 		break;
