@@ -506,6 +506,23 @@ static void bat_update_work_func(struct work_struct *work)
 		struct tcpc_device, bat_update_work.work);
 	union power_supply_propval value;
 	int ret;
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+	uint32_t chip_vid;
+	int rv = 0;
+
+	rv = tcpci_get_chip_vid(tcpc,&chip_vid);
+	if (!rv && SOUTHCHIP_PD_VID == chip_vid) {
+		ret = tcpci_init(tcpc, true);
+		if (ret >= 0) {
+			tcpci_set_watchdog(tcpc, true);
+			tcpc_typec_disable(tcpc);
+			mdelay(100);
+			tcpc_typec_enable(tcpc);
+			tcpci_set_watchdog(tcpc, false);
+		}
+	}
+	pr_err("%s : tcpc sc2150 new patch\n", __func__);
+#endif /* CONFIG_TCPC_SC2150 */
 
 	ret = power_supply_get_property(
 			tcpc->bat_psy, POWER_SUPPLY_PROP_CAPACITY, &value);
