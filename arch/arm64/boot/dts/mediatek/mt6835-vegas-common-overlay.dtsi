@@ -149,3 +149,14 @@ eint_cp: eint_cp {
         mmi,temperature-names = "BACK_TEMP", "FRONT_TEMP";/*for "back_temp" in config file*/
 };
 
+&memory_ssmr_features {
+                compatible = "mediatek,memory-ssmr-features";
+                svp-region-based-size = <0 0x18000000>;
+                svp-page-based-size = <0 0>;
+                tui-size = <0 0>;
+                wfd-region-based-size = <0 0x4000000>;
+                wfd-page-based-size = <0 0x4000000>;
+                prot-region-based-size = <0 0>;
+                prot-page-based-size = <0 0>;
+                sapu-data-shm-size = <0 0>;
+};
