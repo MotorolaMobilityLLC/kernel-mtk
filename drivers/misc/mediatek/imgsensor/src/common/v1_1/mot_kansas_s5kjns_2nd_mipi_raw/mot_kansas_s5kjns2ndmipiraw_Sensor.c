@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *	 mot_kansas_s5kjnsmipi_Sensor.c
+ *	 mot_kansas_s5kjns2ndmipiraw_Sensor.c
  *
  * Project:
  * --------
@@ -30,7 +30,7 @@
  * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
  *============================================================================
  ****************************************************************************/
-#define PFX "MOT_KANSAS_S5KJNS_camera_sensor"
+#define PFX "MOT_KANSAS_S5KJNS_2ND_MIPI_RAW_camera_sensor"
 #define pr_fmt(fmt) PFX "[%s] " fmt, __func__
 
 
@@ -49,30 +49,30 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "mot_kansas_s5kjnsmipiraw_Sensor.h"
-#include "mot_kansas_s5kjns_Sensor_setting.h"
+#include "mot_kansas_s5kjns2ndmipiraw_Sensor.h"
+#include "mot_kansas_s5kjns_2nd_mipi_raw_Sensor_setting.h"
 
-extern mot_calibration_status_t *KANSAS_S5KJNS_eeprom_get_calibration_status(void);
-extern mot_calibration_mnf_t *KANSAS_S5KJNS_eeprom_get_mnf_info(void);
+extern mot_calibration_status_t *KANSAS_S5KJNS_2ND_MIPI_RAW_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *KANSAS_S5KJNS_2ND_MIPI_RAW_eeprom_get_mnf_info(void);
 //extern int aw86006_update_fw_sync(void);
-extern void KANSAS_S5KJNS_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+extern void KANSAS_S5KJNS_2ND_MIPI_RAW_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
-extern void write_xtc_data(void);
+extern void s5kjns_2nd_mipi_raw_write_xtc_data(void);
 
-extern int xtc_data_valid;
+extern int s5kjns_2nd_mipi_raw_xtc_data_valid;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-#define S5KJNS_BASEGAIN 128
+#define S5KJNS_2ND_MIPI_RAW_BASEGAIN 128
 
-#define S5KJNS_MAX_GAIN_BINNINGSIZE_PLATFORM 8192    /*64*128, 128 GAINBASE*/
-#define S5KJNS_MAX_GAIN_CUSTOM1_PLATFORM 2048           /*16*128, 128 GAINBASE*/
-#define S5KJNS_MAX_GAIN_120FPS_PLATFORM 2048          /*16*128, 128 GAINBASE*/
-#define S5KJNS_MAX_GAIN_SLIM_PLATFORM 8192          /*64*128, 128 GAINBASE*/
+#define S5KJNS_2ND_MIPI_RAW_MAX_GAIN_BINNINGSIZE_PLATFORM 8192    /*64*128, 128 GAINBASE*/
+#define S5KJNS_2ND_MIPI_RAW_MAX_GAIN_CUSTOM1_PLATFORM 2048           /*16*128, 128 GAINBASE*/
+#define S5KJNS_2ND_MIPI_RAW_MAX_GAIN_120FPS_PLATFORM 2048          /*16*128, 128 GAINBASE*/
+#define S5KJNS_2ND_MIPI_RAW_MAX_GAIN_SLIM_PLATFORM 8192          /*64*128, 128 GAINBASE*/
 
 #define FPT_PDAF_SUPPORT 1
 
-#define S5KJNS_EEPROM_SLAVE_ID 0xA0
+#define S5KJNS_2ND_MIPI_RAW_EEPROM_SLAVE_ID 0xA0
 #define EEPROM_ACTUATOR_ID_POSITION 12
 
 #define MULTI_WRITE 1
@@ -90,7 +90,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static int sensor_mode = 0;
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = MOT_KANSAS_S5KJNS_SENSOR_ID,
+	.sensor_id = MOT_KANSAS_S5KJNS_2ND_MIPI_RAW_SENSOR_ID,
 
 	.checksum_value =  0xdb9c043,
 	.pre = {
@@ -350,7 +350,7 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 }
 
 #if MULTI_WRITE
-kal_uint16 mot_kansas_s5kjns_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
+kal_uint16 mot_kansas_s5kjns_2nd_mipi_raw_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
 	kal_uint32 tosend, IDX;
@@ -393,33 +393,34 @@ static void set_dummy(void)
 	write_cmos_sensor(0x0342, imgsensor.line_length);
 }	/*	set_dummy  */
 
-static uint8_t mot_kansas_s5kjns_read_actuator_id_from_eeprom(kal_uint8 slave, kal_uint16 eeprom_addr)
+static uint8_t mot_kansas_s5kjns_2nd_mipi_raw_read_actuator_id_from_eeprom(kal_uint8 slave, kal_uint16 eeprom_addr)
 {
-	uint8_t actuator_id = 0;
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.i2c_write_id = slave;
-	spin_unlock(&imgsensor_drv_lock);
+       uint8_t actuator_id = 0;
+       spin_lock(&imgsensor_drv_lock);
+       imgsensor.i2c_write_id = slave;
+       spin_unlock(&imgsensor_drv_lock);
 
-	actuator_id = read_cmos_sensor_8(eeprom_addr -1); //eeprom data start is 0
+       actuator_id = read_cmos_sensor_8(eeprom_addr -1); //eeprom data start is 0
 
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.i2c_write_id = 0xac;
-	spin_unlock(&imgsensor_drv_lock);
+       spin_lock(&imgsensor_drv_lock);
+       imgsensor.i2c_write_id = 0xac;
+       spin_unlock(&imgsensor_drv_lock);
 
-	pr_debug("s5kjns eeprom actuator id =0x%x\n", actuator_id);
-	return actuator_id;
+       pr_debug("s5kjns eeprom actuator id =0x%x\n", actuator_id);
+       return actuator_id;
 }
 
 static kal_uint32 return_sensor_id(void)
 {
-	uint8_t actuator_id = 0;
-	actuator_id = mot_kansas_s5kjns_read_actuator_id_from_eeprom(S5KJNS_EEPROM_SLAVE_ID, EEPROM_ACTUATOR_ID_POSITION);
-	if(actuator_id == 0x30) {
-		return ((read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001));
-	} else {
-		pr_err("s5kjns actuator id 0x30 not match, sensor probe failed; maybe s5kjns_vcm_shicoh actuator id 0x31 can match.\n");
-		return 0;
-	}
+       uint8_t actuator_id = 0;
+       actuator_id = mot_kansas_s5kjns_2nd_mipi_raw_read_actuator_id_from_eeprom(S5KJNS_2ND_MIPI_RAW_EEPROM_SLAVE_ID, EEPROM_ACTUATOR_ID_POSITION);
+       if(actuator_id == 0x31) {
+               return ((read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001)) + 1;
+       } else {
+               pr_err("s5kjns actuator id 0x31 not match, sensor probe failed; maybe s5kjns actuator id 0x30 can match.\n");
+	       return 0;
+       }
+
 }
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
@@ -449,7 +450,7 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 	set_dummy();
 }	/*	set_max_framerate  */
 
-int bNeedSetNormalMode = 0;
+int s5kjns_2nd_mipi_raw_bNeedSetNormalMode = 0;
 /*************************************************************************
  * FUNCTION
  *	set_shutter
@@ -507,7 +508,7 @@ static void set_shutter(kal_uint32 shutter)
 
 	if (shutter > 0xFFF0) {
 
-		bNeedSetNormalMode = KAL_TRUE;
+		s5kjns_2nd_mipi_raw_bNeedSetNormalMode = KAL_TRUE;
 		if(shutter >= 4242424){
 			shutter = 4242424;
 		}
@@ -523,8 +524,8 @@ static void set_shutter(kal_uint32 shutter)
 		imgsensor.current_ae_effective_frame = 2;
 		pr_debug("download long shutter setting shutter = %d\n", shutter);
 	} else {
-		if (bNeedSetNormalMode == KAL_TRUE) {
-			bNeedSetNormalMode = KAL_FALSE;
+		if (s5kjns_2nd_mipi_raw_bNeedSetNormalMode == KAL_TRUE) {
+			s5kjns_2nd_mipi_raw_bNeedSetNormalMode = KAL_FALSE;
 			write_cmos_sensor(0x0702, 0x0000);
 			write_cmos_sensor(0x0704, 0x0000);
 		}
@@ -625,23 +626,23 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
-	kal_uint32 max_gain = S5KJNS_MAX_GAIN_BINNINGSIZE_PLATFORM;
+	kal_uint32 max_gain = S5KJNS_2ND_MIPI_RAW_MAX_GAIN_BINNINGSIZE_PLATFORM;
 
 	if(sensor_mode == CUSTOM1_MODE) {
-		max_gain = S5KJNS_MAX_GAIN_CUSTOM1_PLATFORM;
+		max_gain = S5KJNS_2ND_MIPI_RAW_MAX_GAIN_CUSTOM1_PLATFORM;
 	}
 	if(sensor_mode == FPS120_MODE) {
-		max_gain = S5KJNS_MAX_GAIN_120FPS_PLATFORM;
+		max_gain = S5KJNS_2ND_MIPI_RAW_MAX_GAIN_120FPS_PLATFORM;
 	}
 	if(sensor_mode == SLIM_MODE) {
-		max_gain = S5KJNS_MAX_GAIN_SLIM_PLATFORM;
+		max_gain = S5KJNS_2ND_MIPI_RAW_MAX_GAIN_SLIM_PLATFORM;
 	}
 
-	if (gain < S5KJNS_BASEGAIN || gain > max_gain) {
+	if (gain < S5KJNS_2ND_MIPI_RAW_BASEGAIN || gain > max_gain) {
 		pr_debug("Error gain setting");
 
-		if (gain < S5KJNS_BASEGAIN)
-			gain = S5KJNS_BASEGAIN;
+		if (gain < S5KJNS_2ND_MIPI_RAW_BASEGAIN)
+			gain = S5KJNS_2ND_MIPI_RAW_BASEGAIN;
 		else if (gain > max_gain)
 			gain = max_gain;
 	}
@@ -712,7 +713,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 
 static void sensor_init(void)
 {
-	pr_debug("MOT KANSAS S5KJNS init start\n");
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW init start\n");
 	write_cmos_sensor(0x6028,0x4000);
 	write_cmos_sensor(0x0000,0x0003);
 	write_cmos_sensor(0x0000,0x38E1);
@@ -721,72 +722,72 @@ static void sensor_init(void)
 	write_cmos_sensor(0x6010,0x0001);
 	mdelay(13);
 	write_cmos_sensor(0x6226, 0x0001);
-	mot_kansas_s5kjns_table_write_cmos_sensor(addr_data_pair_init_mot_kansas_s5kjns,
-		sizeof(addr_data_pair_init_mot_kansas_s5kjns)/sizeof(kal_uint16));
+	mot_kansas_s5kjns_2nd_mipi_raw_table_write_cmos_sensor(addr_data_pair_init_mot_kansas_s5kjns_2nd_mipi_raw,
+		sizeof(addr_data_pair_init_mot_kansas_s5kjns_2nd_mipi_raw)/sizeof(kal_uint16));
 
-	if (xtc_data_valid == 1)
-		write_xtc_data();
-	pr_debug("MOT KANSAS S5KJNS init end\n");
+	if (s5kjns_2nd_mipi_raw_xtc_data_valid == 1)
+		s5kjns_2nd_mipi_raw_write_xtc_data();
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW init end\n");
 
 }	/*	  sensor_init  */
 
 static void preview_setting(void)
 {
-	pr_debug("MOT KANSAS S5KJNS preview_setting start\n");
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW preview_setting start\n");
 
-	mot_kansas_s5kjns_table_write_cmos_sensor(addr_data_pair_preview_mot_kansas_s5kjns,
-		sizeof(addr_data_pair_preview_mot_kansas_s5kjns)/sizeof(kal_uint16));
+	mot_kansas_s5kjns_2nd_mipi_raw_table_write_cmos_sensor(addr_data_pair_preview_mot_kansas_s5kjns_2nd_mipi_raw,
+		sizeof(addr_data_pair_preview_mot_kansas_s5kjns_2nd_mipi_raw)/sizeof(kal_uint16));
 
-	pr_debug("MOT KANSAS S5KJNS preview_setting end\n");
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW preview_setting end\n");
 
 } /* preview_setting */
 
 
 static void capture_setting(kal_uint16 currefps)
 {
-	pr_debug("MOT KANSAS S5KJNS capture_setting start\n");
-	mot_kansas_s5kjns_table_write_cmos_sensor(addr_data_pair_preview_mot_kansas_s5kjns,
-		sizeof(addr_data_pair_preview_mot_kansas_s5kjns)/sizeof(kal_uint16));
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW capture_setting start\n");
+	mot_kansas_s5kjns_2nd_mipi_raw_table_write_cmos_sensor(addr_data_pair_preview_mot_kansas_s5kjns_2nd_mipi_raw,
+		sizeof(addr_data_pair_preview_mot_kansas_s5kjns_2nd_mipi_raw)/sizeof(kal_uint16));
 
-	pr_debug("MOT KANSAS S5KJNS capture_setting end\n");
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW capture_setting end\n");
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	pr_debug("MOT KANSAS S5KJNS normal_video_setting start\n");
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW normal_video_setting start\n");
 
-	mot_kansas_s5kjns_table_write_cmos_sensor(addr_data_pair_normal_video_mot_kansas_s5kjns,
-		sizeof(addr_data_pair_normal_video_mot_kansas_s5kjns)/sizeof(kal_uint16));
+	mot_kansas_s5kjns_2nd_mipi_raw_table_write_cmos_sensor(addr_data_pair_normal_video_mot_kansas_s5kjns_2nd_mipi_raw,
+		sizeof(addr_data_pair_normal_video_mot_kansas_s5kjns_2nd_mipi_raw)/sizeof(kal_uint16));
 
-	pr_debug("MOT KANSAS S5KJNS normal_video_setting end\n");
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW normal_video_setting end\n");
 }
 
 static void hs_video_setting(void)
 {
-	pr_debug("MOT KANSAS S5KJNS hs_video_setting start\n");
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW hs_video_setting start\n");
 
-	mot_kansas_s5kjns_table_write_cmos_sensor(addr_data_pair_120fps_s5kjns,
-		sizeof(addr_data_pair_120fps_s5kjns)/sizeof(kal_uint16));
+	mot_kansas_s5kjns_2nd_mipi_raw_table_write_cmos_sensor(addr_data_pair_120fps_s5kjns_2nd_mipi_raw,
+		sizeof(addr_data_pair_120fps_s5kjns_2nd_mipi_raw)/sizeof(kal_uint16));
 
-	pr_debug("MOT KANSAS S5KJNS hs_video_setting end\n");
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW hs_video_setting end\n");
 }
 
 static void slim_video_setting(void)
 {
-	pr_debug("MOT KANSAS S5KJNS slim_video_setting start\n");
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW slim_video_setting start\n");
 
-	mot_kansas_s5kjns_table_write_cmos_sensor(addr_data_pair_slim_video_mot_kansas_s5kjns,
-		sizeof(addr_data_pair_slim_video_mot_kansas_s5kjns)/sizeof(kal_uint16));
+	mot_kansas_s5kjns_2nd_mipi_raw_table_write_cmos_sensor(addr_data_pair_slim_video_mot_kansas_s5kjns_2nd_mipi_raw,
+		sizeof(addr_data_pair_slim_video_mot_kansas_s5kjns_2nd_mipi_raw)/sizeof(kal_uint16));
 
-	pr_debug("MOT KANSAS S5KJNS slim_video_setting end\n");
+	pr_debug("MOT KANSAS S5KJNS 2ND MIPI RAW slim_video_setting end\n");
 }
 
 static void custom1_setting(void)
 {
-	pr_debug("S5KJNS custom1_setting start\n");
-	mot_kansas_s5kjns_table_write_cmos_sensor(addr_data_pair_custom1_s5kjns,
-		sizeof(addr_data_pair_custom1_s5kjns)/sizeof(kal_uint16));
-	pr_debug("S5KJNS custom1_setting end\n");
+	pr_debug("S5KJNS 2ND MIPI RAW custom1_setting start\n");
+	mot_kansas_s5kjns_2nd_mipi_raw_table_write_cmos_sensor(addr_data_pair_custom1_s5kjns_2nd_mipi_raw,
+		sizeof(addr_data_pair_custom1_s5kjns_2nd_mipi_raw)/sizeof(kal_uint16));
+	pr_debug("S5KJNS 2ND MIPI RAW custom1_setting end\n");
 }
 
 /*************************************************************************
@@ -818,7 +819,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-				KANSAS_S5KJNS_eeprom_format_calibration_data(&imgsensor);
+				KANSAS_S5KJNS_2ND_MIPI_RAW_eeprom_format_calibration_data(&imgsensor);
 				//aw86006_update_fw_sync();
 				return ERROR_NONE;
 			}
@@ -1161,8 +1162,8 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->Custom1DelayFrame = imgsensor_info.custom1_delay_frame;
 
 	/*Apply calibration status and manufacture info*/
-	memcpy(&sensor_info->calibration_status, KANSAS_S5KJNS_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
-	memcpy(&sensor_info->mnf_calibration, KANSAS_S5KJNS_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, KANSAS_S5KJNS_2ND_MIPI_RAW_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
+	memcpy(&sensor_info->mnf_calibration, KANSAS_S5KJNS_2ND_MIPI_RAW_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
@@ -1933,7 +1934,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 MOT_KANSAS_S5KJNS_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 MOT_KANSAS_S5KJNS_2ND_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	sensor_func.arch = IMGSENSOR_ARCH_V2;
@@ -1942,4 +1943,4 @@ UINT32 MOT_KANSAS_S5KJNS_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfF
 	if (imgsensor.psensor_func == NULL)
 		imgsensor.psensor_func = &sensor_func;
 	return ERROR_NONE;
-} /* MOT_KANSAS_S5KJNS_MIPI_RAW_SensorInit */
+} /* MOT_KANSAS_S5KJNS_2ND_MIPI_RAW_SensorInit */
