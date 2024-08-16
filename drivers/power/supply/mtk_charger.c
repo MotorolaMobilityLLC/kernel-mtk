@@ -3271,6 +3271,8 @@ static bool mmi_has_current_tapered(struct mtk_charger *info,
 
 #define WEAK_CHRG_THRSH 450
 #define TURBO_CHRG_THRSH 2500
+#define WLS_RX_CAP_15W 15
+#define WLS_RX_CAP_5W 5
 void mmi_charge_rate_check(struct mtk_charger *info)
 {
 	int icl, rc;
@@ -3279,6 +3281,25 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 
 	if (info == NULL)
 		return;
+	if (!info->wl_psy) {
+                info->wl_psy = power_supply_get_by_name("wireless");
+        }
+        if (info->wl_psy) {
+                rc = power_supply_get_property(info->wl_psy,
+                                POWER_SUPPLY_PROP_ONLINE, &val);
+                if (val.intval) {
+                        rc = power_supply_get_property(info->wl_psy,
+                                POWER_SUPPLY_PROP_POWER_NOW, &val);
+                        if (val.intval >= WLS_RX_CAP_15W) {
+                                info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+                        } else if (val.intval >= WLS_RX_CAP_5W) {
+                                info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
+                        } else {
+                                info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
+                        }
+                        goto end_rate_check;
+                }
+        }
 
 	icl = get_charger_input_current(info, info->chg1_dev) / 1000;
 
