@@ -375,6 +375,23 @@ extern int MOT_KANSAS_GT9764AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 extern int MOT_KANSAS_GT9764AF_GetFileName(unsigned char *pFileName);
 //End
 
+//Begin: Add lens driver interface for Kansas
+#define MOT_KANSAS_GT9764VCMSHICOH_SetI2CClient MOT_KANSAS_GT9764VCMSHICOHAF_SetI2Cclient
+#define MOT_KANSAS_GT9764VCMSHICOH_Ioctl MOT_KANSAS_GT9764VCMSHICOHAF_Ioctl
+#define MOT_KANSAS_GT9764VCMSHICOH_Release MOT_KANSAS_GT9764VCMSHICOHAF_Release
+#define MOT_KANSAS_GT9764VCMSHICOH_PowerDown MOT_KANSAS_GT9764VCMSHICOHAF_PowerDown
+#define MOT_KANSAS_GT9764VCMSHICOH_GetFileName MOT_KANSAS_GT9764VCMSHICOHAF_GetFileName
+extern int MOT_KANSAS_GT9764VCMSHICOHAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_KANSAS_GT9764VCMSHICOHAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+				unsigned long a_u4Param);
+extern int MOT_KANSAS_GT9764VCMSHICOHAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_KANSAS_GT9764VCMSHICOHAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int MOT_KANSAS_GT9764VCMSHICOHAF_GetFileName(unsigned char *pFileName);
+//End
+
+
 //Begin: Add lens driver interface for VEGAS
 #define MOT_VEGAS_AW86006_SetI2Cclient MOT_VEGAS_AW86006AF_SetI2Cclient
 #define MOT_VEGAS_AW86006_Ioctl MOT_VEGAS_AW86006AF_Ioctl

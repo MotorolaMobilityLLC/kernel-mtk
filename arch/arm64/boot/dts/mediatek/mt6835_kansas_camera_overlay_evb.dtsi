@@ -318,7 +318,7 @@
 	//cam2_pin_vcama1 = "regulator";
 	//cam2_pin_vcamaf = "regulator";
 
-	cam0_enable_sensor = "mot_kansas_s5kjns_mipi_raw";
+	cam0_enable_sensor = "mot_kansas_s5kjns_mipi_raw mot_kansas_s5kjns_2nd_mipi_raw";
 	cam1_enable_sensor = "mot_kansas_s5k3p9_mipi_raw";
 	cam2_enable_sensor = "mot_kansas_sc202acs_mipi_raw";
 	status = "okay";
@@ -459,7 +459,7 @@
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_kansas_s5kjns_mipi_raw mot_kansas_sc202acs_mipi_raw mot_kansas_s5k3p9_mipi_raw";
+       cust-sensor = "mot_kansas_s5kjns_mipi_raw mot_kansas_s5kjns_2nd_mipi_raw mot_kansas_sc202acs_mipi_raw mot_kansas_s5k3p9_mipi_raw";
 };
 
 &pio {

@@ -72,6 +72,9 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 #define FPT_PDAF_SUPPORT 1
 
+#define S5KJNS_EEPROM_SLAVE_ID 0xA0
+#define EEPROM_ACTUATOR_ID_POSITION 12
+
 #define MULTI_WRITE 1
 
 #if MULTI_WRITE
@@ -390,9 +393,33 @@ static void set_dummy(void)
 	write_cmos_sensor(0x0342, imgsensor.line_length);
 }	/*	set_dummy  */
 
+static uint8_t mot_kansas_s5kjns_read_actuator_id_from_eeprom(kal_uint8 slave, kal_uint16 eeprom_addr)
+{
+	uint8_t actuator_id = 0;
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = slave;
+	spin_unlock(&imgsensor_drv_lock);
+
+	actuator_id = read_cmos_sensor_8(eeprom_addr -1); //eeprom data start is 0
+
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = 0xac;
+	spin_unlock(&imgsensor_drv_lock);
+
+	pr_debug("s5kjns eeprom actuator id =0x%x\n", actuator_id);
+	return actuator_id;
+}
+
 static kal_uint32 return_sensor_id(void)
 {
-	return ((read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001));
+	uint8_t actuator_id = 0;
+	actuator_id = mot_kansas_s5kjns_read_actuator_id_from_eeprom(S5KJNS_EEPROM_SLAVE_ID, EEPROM_ACTUATOR_ID_POSITION);
+	if(actuator_id == 0x30) {
+		return ((read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001));
+	} else {
+		pr_err("s5kjns actuator id 0x30 not match, sensor probe failed; maybe s5kjns_vcm_shicoh actuator id 0x31 can match.\n");
+		return 0;
+	}
 }
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
