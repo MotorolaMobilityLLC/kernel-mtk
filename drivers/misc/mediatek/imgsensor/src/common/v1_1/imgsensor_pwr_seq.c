@@ -69,6 +69,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(MOT_KANSAS_S5KJNS_2ND_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_KANSAS_S5KJNS_2ND_MIPI_RAW,
+		{
+			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
+			{DOVDD, Vol_1800, 0},
+			{DVDD, Vol_High, 1},
+			{AVDD, Vol_High, 1},
+			{RST, Vol_High, 14},
+		},
+	},
+#endif
 #if defined(MOT_KANSAS_SC202ACS_MIPI_RAW)
     {
         SENSOR_DRVNAME_MOT_KANSAS_SC202ACS_MIPI_RAW,
