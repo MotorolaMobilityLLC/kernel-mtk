@@ -89,13 +89,27 @@ eint_cp: eint_cp {
 	status = "disabled";
 };
 
+&pio {
+	vibrator_irq_input: vibrator_irq_input {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
+			slew-rate = <0>;
+			input-enable;
+			bias-pull-up;
+		};
+	};
+};
+
 &i2c11 {
+        clock-frequency = <400000>;
 	haptic_nv@5A{
 		compatible = "awinic,haptic_nv";
 		reg = < 0x5A >;
 		aw862xx_i2c_addr = < 0x58 >;
 		reset-gpio = <&pio 59 0>;
 		irq-gpio = <&pio 11 0>;
+		pinctrl-names = "irq_active";
+		pinctrl-0 = <&vibrator_irq_input>;
 		aw8622x_vib_lk_f0_cali = < 0 >;
 		aw8622x_vib_mode = < 2 >; /* mode: RAM -> 2; CONT -> 3 */
 		aw8622x_vib_f0_pre = < 2050 >;
@@ -116,6 +130,7 @@ eint_cp: eint_cp {
 					    0 0 0 1 0 2 0
 					    0 0 0 1 0 2 0 >;
 		aw8622x_vib_duration_time = < 34 67 100 >;
+		aw8622x_vib_is_enabled_auto_brk;
 		status = "okay";
 	};
 };
