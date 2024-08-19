@@ -1211,6 +1211,8 @@ int bq2589x_get_usb_type(struct bq2589x *bq, int *type)
 		bq->psy_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
 		usb_type = POWER_SUPPLY_USB_TYPE_DCP;
 		pr_info("BQ2589X charger type: DCP\n");
+		if (prev_pg)
+			Charger_Detect_Release();
 		break;
 	case BQ2589X_VBUS_TYPE_HVDCP:
 		bq->psy_desc.type = POWER_SUPPLY_TYPE_USB_PD; //hvdcp
