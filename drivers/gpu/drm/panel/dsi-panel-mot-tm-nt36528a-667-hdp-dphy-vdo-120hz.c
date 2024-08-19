@@ -187,7 +187,7 @@ static void tm_nt36528a_panel_init(struct tm_nt36528a *ctx)
 	tm_nt36528a_dcs_write_seq_static(ctx, 0xFF, 0x10);
 	tm_nt36528a_dcs_write_seq_static(ctx, 0xFB, 0x01);
 
-	tm_nt36528a_dcs_write_seq_static(ctx, 0x51, 0x07, 0xE7);
+	tm_nt36528a_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
 	tm_nt36528a_dcs_write_seq_static(ctx, 0x53, 0x24);
 	tm_nt36528a_dcs_write_seq_static(ctx, 0x55, 0x00);
 
@@ -195,6 +195,11 @@ static void tm_nt36528a_panel_init(struct tm_nt36528a *ctx)
 	msleep(100);
 	tm_nt36528a_dcs_write_seq_static(ctx, 0x29);
 	msleep(10);
+
+	tm_nt36528a_dcs_write_seq_static(ctx, 0xFF, 0x10);
+	tm_nt36528a_dcs_write_seq_static(ctx, 0xFB, 0x01);
+
+	tm_nt36528a_dcs_write_seq_static(ctx, 0x51, 0x07, 0xE7);
 
 	pr_info("%s-\n", __func__);
 }
@@ -311,7 +316,7 @@ static int tm_nt36528a_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode performance_mode_60hz = {
-	.clock		= 189671,
+	.clock		= 188471,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -323,7 +328,7 @@ static const struct drm_display_mode performance_mode_60hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 190503,
+	.clock		= 188446,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -335,7 +340,7 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 static const struct drm_display_mode performance_mode_120hz = {
-	.clock		= 189475,
+	.clock		= 188471,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
