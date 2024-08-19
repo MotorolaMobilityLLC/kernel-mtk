@@ -96,7 +96,7 @@ struct mtk_pe {
 	int charging_current_limit;
 	int input_current;
 	int charging_current;
-
+	int mmi_fcc;
 /* dual charger */
 	int pe_slave_mivr_diff;
 

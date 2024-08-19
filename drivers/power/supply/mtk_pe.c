@@ -382,6 +382,10 @@ int mtk_pe_set_charging_current(struct chg_alg_device *alg)
 		pe->input_current)
 		pe->input_current = pe->input_current_limit;
 
+	/* Add thermal current limit */
+	pe->charging_current = pe->charging_current < pe->mmi_fcc?
+		pe->charging_current : pe->mmi_fcc;
+
 	pe_hal_set_charging_current(alg,
 		CHG1, pe->charging_current);
 	pe_hal_set_input_current(alg,
@@ -389,13 +393,14 @@ int mtk_pe_set_charging_current(struct chg_alg_device *alg)
 	pe_hal_set_cv(alg,
 		CHG1, pe->cv);
 
-	pe_dbg("%s cv:%d icl:%d cc:%d chr_org:%d chr_after:%d\n",
+	pe_dbg("%s cv:%d icl:%d cc:%d chr_org:%d chr_after:%d mmi_fcc = %d\n",
 		__func__,
 		pe->cv,
 		pe->input_current,
 		pe->charging_current,
 		pe->ta_vchr_org / 1000,
-		chr_volt / 1000);
+		chr_volt / 1000,
+		pe->mmi_fcc);
 
 	return ret;
 }
@@ -608,16 +613,18 @@ int _pe_set_setting(struct chg_alg_device *alg_dev,
 {
 	struct mtk_pe *pe;
 
-	pe_dbg("%s cv:%d icl:%d cc:%d\n",
+	pe_dbg("%s cv:%d icl:%d cc:%d mmi_ffc:%d\n",
 		__func__,
 		setting->cv,
 		setting->input_current_limit1,
-		setting->charging_current_limit1);
+		setting->charging_current_limit1,
+		setting->mmi_fcc_limit);
 	pe = dev_get_drvdata(&alg_dev->dev);
 	pe->cv = setting->cv;
 	pe->input_current_limit = setting->input_current_limit1;
 	pe->charging_current_limit = setting->charging_current_limit1;
-
+	/* Add thermal current limit */
+	pe->mmi_fcc = setting->mmi_fcc_limit;
 	return 0;
 }
 
