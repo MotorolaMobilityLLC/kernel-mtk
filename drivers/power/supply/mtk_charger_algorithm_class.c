@@ -138,6 +138,19 @@ int chg_alg_set_current_limit(struct chg_alg_device *alg_dev,
 }
 EXPORT_SYMBOL(chg_alg_set_current_limit);
 
+#ifdef MTK_PE_AND_FFC_DETACH
+int chg_alg_pe_get_connect(struct chg_alg_device *alg_dev)
+{
+	pr_notice("%s\n", __func__);
+	if (alg_dev != NULL && alg_dev->ops != NULL &&
+	    alg_dev->ops->get_pe_cable_connect)
+		return alg_dev->ops->get_pe_cable_connect(alg_dev);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(chg_alg_pe_get_connect);
+#endif
+
 char *chg_alg_state_to_str(int state)
 {
 	switch (state) {

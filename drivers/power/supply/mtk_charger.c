@@ -4078,7 +4078,10 @@ static int mmi_charger_check_dcp_ffc_status(struct mtk_charger *info, int batt_s
 	union power_supply_propval val;
 	unsigned long target_timestamp;
 	int chr_type;
-
+#ifdef MTK_PE_AND_FFC_DETACH
+	static struct chg_alg_device *pe_cable =  NULL;
+	pe_cable = get_chg_alg_by_name("pe");
+#endif
 	do {
 
 		chr_type = get_charger_type(info);
@@ -4094,6 +4097,8 @@ static int mmi_charger_check_dcp_ffc_status(struct mtk_charger *info, int batt_s
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT)
 					!(info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO
 						|| (m_chg_type == 0x09) || (m_chg_type == 0x08)))) {
+#elif defined(MTK_PE_AND_FFC_DETACH)
+					!((info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) || (chg_alg_pe_get_connect(pe_cable) == true)))) {
 #else
 					!(info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO))) {
 #endif
@@ -4353,7 +4358,10 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 	int max_fv_mv = -EINVAL;
 	int target_fcc = -EINVAL;
 	int target_fv = -EINVAL;
-
+#ifdef MTK_PE_AND_FFC_DETACH
+	static struct chg_alg_device *pe_conect =  NULL;
+	pe_conect = get_chg_alg_by_name("pe");
+#endif
 	/* Collect Current Information */
 
 	rc = mmi_get_prop_from_battery(info,
@@ -4476,7 +4484,17 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 				mmi_set_batt_cv_to_fg(max_fv_mv * 1000);
 		}
 	}
-
+#ifdef MTK_PE_AND_FFC_DETACH
+	pr_info("[%s]mtk pe connect: %d\n",__func__,chg_alg_pe_get_connect(pe_conect));
+	if (chg_alg_pe_get_connect(pe_conect)) {
+		max_fv_mv = mmi_get_ffc_fv(info, batt_temp);
+		if (max_fv_mv == 0)
+			max_fv_mv = mmi->base_fv_mv;
+	} else {
+		max_fv_mv = mmi->base_fv_mv;
+		info->mmi.chrg_iterm = info->mmi.back_chrg_iterm;
+	}
+#endif
 	/* Determine Next State */
 	prev_step = info->mmi.pres_chrg_step;
 

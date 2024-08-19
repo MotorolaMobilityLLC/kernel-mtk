@@ -1196,6 +1196,12 @@ config MTK_BATTERY_CHARGER_STATUS_SYNC
 	help
 	  Battery and Charger status sync
 
+config MTK_PE_AND_FFC_DETACH
+	bool "PE and FFC logical detach"
+        default n
+	help
+	  PE and FFC logical detach
+
 config DISABLED_HIZ_MODE
 	bool "This is config disabled sgm41543d hiz mode"
         default n
