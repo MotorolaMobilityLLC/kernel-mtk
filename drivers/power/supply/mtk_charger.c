@@ -3281,6 +3281,8 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 
 	if (info == NULL)
 		return;
+
+	icl = get_charger_input_current(info, info->chg1_dev) / 1000;
 	if (!info->wl_psy) {
                 info->wl_psy = power_supply_get_by_name("wireless");
         }
@@ -3300,8 +3302,6 @@ void mmi_charge_rate_check(struct mtk_charger *info)
                         goto end_rate_check;
                 }
         }
-
-	icl = get_charger_input_current(info, info->chg1_dev) / 1000;
 
 	rc = mmi_get_prop_from_charger(info, POWER_SUPPLY_PROP_ONLINE, &val);
 	if (rc < 0) {
