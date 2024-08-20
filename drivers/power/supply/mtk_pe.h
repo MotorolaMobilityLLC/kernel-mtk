@@ -97,7 +97,7 @@ struct mtk_pe {
 	int input_current;
 	int charging_current;
 	int mmi_fcc;
-#ifdef MTK_PE_AND_FFC_DETACH
+#ifdef CONFIG_MTK_PE_AND_FFC_DETACH
 	bool is_pe_cable_connect;
 #endif
 /* dual charger */
@@ -134,7 +134,7 @@ extern int pe_hal_set_charging_current(struct chg_alg_device *alg,
 extern int pe_hal_set_input_current(struct chg_alg_device *alg,
 	enum chg_idx chgidx, u32 ua);
 extern int pe_hal_get_log_level(struct chg_alg_device *alg);
-#ifdef MTK_PE_AND_FFC_DETACH
+#ifdef CONFIG_MTK_PE_AND_FFC_DETACH
 extern int _pe_set_is_cable_out_occur(struct chg_alg_device *alg, bool out);
 #endif
 #endif /* __MTK_PE_INTF_H */

@@ -138,7 +138,7 @@ int chg_alg_set_current_limit(struct chg_alg_device *alg_dev,
 }
 EXPORT_SYMBOL(chg_alg_set_current_limit);
 
-#ifdef MTK_PE_AND_FFC_DETACH
+#ifdef CONFIG_MTK_PE_AND_FFC_DETACH
 int chg_alg_pe_get_connect(struct chg_alg_device *alg_dev)
 {
 	pr_notice("%s\n", __func__);

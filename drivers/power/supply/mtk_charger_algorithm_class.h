@@ -137,7 +137,7 @@ struct chg_alg_ops {
 		enum chg_alg_props s, int value);
 	int (*set_current_limit)(struct chg_alg_device *alg_dev,
 		struct chg_limit_setting *setting);
-#ifdef MTK_PE_AND_FFC_DETACH
+#ifdef CONFIG_MTK_PE_AND_FFC_DETACH
 	bool (*get_pe_cable_connect)(struct chg_alg_device *alg_dev);
 #endif
 };
@@ -197,7 +197,7 @@ extern int chg_alg_notifier_call(struct chg_alg_device *alg_dev,
 extern char *chg_alg_state_to_str(int state);
 extern const char *const
 chg_alg_notify_evt_tostring(enum chg_alg_notifier_events evt);
-#ifdef MTK_PE_AND_FFC_DETACH
+#ifdef CONFIG_MTK_PE_AND_FFC_DETACH
 extern int chg_alg_pe_get_connect(struct chg_alg_device *alg_dev);
 #endif
 #endif /* __MTK_CHARGER_ALGORITHM_CLASS_H__ */

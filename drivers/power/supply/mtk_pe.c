@@ -226,7 +226,7 @@ static int pe_detect_ta(struct chg_alg_device *alg)
 	ret = pe_increase_ta_vchr(alg, 7000000); /* uv */
 
 	if (ret == 0) {
-#ifdef MTK_PE_AND_FFC_DETACH
+#ifdef CONFIG_MTK_PE_AND_FFC_DETACH
 		pe->is_pe_cable_connect = true; /* ffc enable */
 #endif
 		pe_dbg("%s: OK\n", __func__);
@@ -320,10 +320,11 @@ int __pe_check_charger(struct chg_alg_device *alg)
 	}
 
 	if (pe->is_cable_out_occur){
-	#ifdef MTK_PE_AND_FFC_DETACH
+	#ifdef CONFIG_MTK_PE_AND_FFC_DETACH
 		_pe_set_is_cable_out_occur(alg,false);
-	#endif
+	#else
 		goto out;
+	#endif
 	}
 
 	/* Reset/Init/Detect TA */
@@ -547,7 +548,7 @@ static int _pe_notifier_call(struct chg_alg_device *alg,
 	switch (notify->evt) {
 	case EVT_PLUG_OUT:
 		pe_plugout_reset(alg);
-#ifdef MTK_PE_AND_FFC_DETACH
+#ifdef CONFIG_MTK_PE_AND_FFC_DETACH
 		_pe_set_is_cable_out_occur(alg,true);
 #endif
 		break;
@@ -649,10 +650,11 @@ static int __pe_run(struct chg_alg_device *alg)
 	pe_dbg("%s: starts\n", __func__);
 
 	if (pe->is_cable_out_occur){
-	#ifdef MTK_PE_AND_FFC_DETACH
+	#ifdef CONFIG_MTK_PE_AND_FFC_DETACH
 		_pe_set_is_cable_out_occur(alg,false);
-	#endif
+	#else
 		goto _out;
+	#endif
 	}
 
 	chr_volt = pe_hal_get_vbus(alg);
@@ -852,7 +854,7 @@ int _pe_start_algo(struct chg_alg_device *alg)
 	return ret;
 }
 
-#ifdef MTK_PE_AND_FFC_DETACH
+#ifdef CONFIG_MTK_PE_AND_FFC_DETACH
 int _pe_set_is_cable_out_occur(struct chg_alg_device *alg, bool out)
 {
 	struct mtk_pe *pe;
@@ -870,7 +872,7 @@ bool _pe_get_cable_connect(struct chg_alg_device *alg)
 	pe = dev_get_drvdata(&alg->dev);
 	pe_info("cable_out_occur:%d\n", pe->is_cable_out_occur);
 	if(pe->is_cable_out_occur)
-		return pe->is_pe_cable_connect = false;
+		pe->is_pe_cable_connect = false;
 	return pe->is_pe_cable_connect;
 }
 #endif
@@ -885,7 +887,7 @@ static struct chg_alg_ops pe_alg_ops = {
 	.get_prop = _pe_get_status,
 	.set_prop = _pe_set_prop,
 	.set_current_limit = _pe_set_setting,
-#ifdef MTK_PE_AND_FFC_DETACH
+#ifdef CONFIG_MTK_PE_AND_FFC_DETACH
 	.get_pe_cable_connect = _pe_get_cable_connect,
 #endif
 };
