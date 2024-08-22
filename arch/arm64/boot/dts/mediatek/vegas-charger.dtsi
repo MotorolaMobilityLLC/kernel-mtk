@@ -231,8 +231,10 @@
          /* common */
          battery_cv = <4500000>;
          max_charger_voltage = <15000000>;
-         min_charger_voltage = <4600000>;
+         min_charger_voltage = <4700000>;
          max_dmivr_charger_current = <3000000>;
+         min_charger_voltage_1 = <4500000>;
+         min_charger_voltage_2 = <4500000>;
 
          //enable_pe_plus;
          //enable_sw_jeita;
