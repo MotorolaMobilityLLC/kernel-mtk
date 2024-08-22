@@ -142,16 +142,20 @@ static void boe_ft8057s_panel_init(struct boe_ft8057s *ctx)
 {
 	pr_info("disp: %s+\n", __func__);
 
-	ocp2138_BiasPower_enable(20,20,5);
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
 		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
 			__func__, PTR_ERR(ctx->reset_gpio));
+
+		ocp2138_BiasPower_enable(20,20,5);
 		//return;
 	}
 	else {
 		gpiod_set_value(ctx->reset_gpio, 0);
 		udelay(10 * 1000);
+
+		ocp2138_BiasPower_enable(20,20,5);
+
 		gpiod_set_value(ctx->reset_gpio, 1);
 		udelay(10 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 0);
@@ -218,7 +222,7 @@ static int boe_ft8057s_unprepare(struct drm_panel *panel)
 	boe_ft8057s_dcs_write_seq_static(ctx, 0x28);
 	udelay(10 * 1000);
 	boe_ft8057s_dcs_write_seq_static(ctx, 0x10);
-	udelay(10 * 1000);
+	msleep(60);
 
 
 	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
