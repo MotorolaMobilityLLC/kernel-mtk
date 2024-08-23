@@ -131,6 +131,7 @@ eint_cp: eint_cp {
 					    0 0 0 1 0 2 0 >;
 		aw8622x_vib_duration_time = < 34 67 100 >;
 		aw8622x_vib_is_enabled_auto_brk;
+		aw8622x_gain_bypass = <1>;
 		status = "okay";
 	};
 };
