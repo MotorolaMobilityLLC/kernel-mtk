@@ -263,7 +263,7 @@
 			<0 4200 1000  0>,
 			<10 4250 3000 1000>,
 			<15 0 3000 3000>,
-			<45 4300 6000 5200>,
+			<45 4304 5800 5200>,
 			<45 4400 5200 4000>,
 			<60 4200 4000 0>;
 
@@ -278,7 +278,7 @@
          mmi,enable-charging-limit;
          mmi,upper-limit-capacity = <65>;
          mmi,lower-limit-capacity = <60>;
-         mmi,vfloat-comp-uv = <4000>;
+         mmi,vfloat-comp-uv = <0>;
          mmi,enable-mux;
          fast_charging_indicator = <0x8010>;
 };
