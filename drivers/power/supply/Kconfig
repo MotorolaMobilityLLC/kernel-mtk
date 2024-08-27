@@ -1101,4 +1101,10 @@ config WLC_WO_BOOST
         help
           This is to distinguish between vegas and other projects.
 
+config MOTO_PE50_IBUSOCP_RATIO_UPDATE
+	bool "This is config charger pe5 ibusocp update "
+	default n
+	help
+	   This is config charger pe5 ibusocp update
+
 endif # POWER_SUPPLY
