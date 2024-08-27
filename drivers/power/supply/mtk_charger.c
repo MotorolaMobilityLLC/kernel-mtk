@@ -3869,7 +3869,8 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 			mmi->pres_chrg_step = STEP_FULL;
 		}
 	} else if (mmi->pres_chrg_step == STEP_FULL) {
-		if (batt_mv < (max_fv_mv - HYST_STEP_MV * 2)) {
+		//if (batt_mv < (max_fv_mv - HYST_STEP_MV * 2)) {
+		if (batt_soc <=95) {
 			mmi->chrg_taper_cnt = 0;
 			mmi->pres_chrg_step = STEP_NORM;
 		}
