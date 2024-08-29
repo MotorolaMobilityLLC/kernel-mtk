@@ -81,5 +81,5 @@ eint_cp: eint_cp {
 
 &therm_intf {
  	/*Vsensor name should be CASE DIFFERENT with the name in config file*/
- 	mmi,temperature-names = "BACK_TEMP", "FRONT_TEMP";/*for "back_temp" in config file*/
+ 	mmi,temperature-names = "BACK_TEMP", "FRONT_TEMP", "SAFETY_TEMP";/*for "back_temp" in config file*/
 };
