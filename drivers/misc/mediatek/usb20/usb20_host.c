@@ -466,7 +466,6 @@ static void do_host_work(struct work_struct *data)
 			usb_hcd_resume_root_hub(musb_to_hcd(mtk_musb));
 			musb_root_disconnect(mtk_musb);
 		}
-		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 
 		DBG(1, "devctl is %x\n",
 				musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
@@ -479,6 +478,8 @@ static void do_host_work(struct work_struct *data)
 		set_usb_phy_mode(PHY_MODE_INVALID);
 
 		musb_stop(mtk_musb);
+		DBG(0, "musb stopped\n");
+		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 
 		if (!typec_control && !host_plug_test_triggered)
 			switch_int_to_host(mtk_musb);
