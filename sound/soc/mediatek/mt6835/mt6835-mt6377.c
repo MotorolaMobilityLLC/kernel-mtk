@@ -10,7 +10,7 @@
 #include <linux/pm_runtime.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
-
+#include <linux/of.h>
 #include "../common/mtk-afe-platform-driver.h"
 #include "mt6835-afe-common.h"
 #include "mt6835-afe-clk.h"
@@ -576,6 +576,11 @@ SND_SOC_DAILINK_DEFS(i2s0,
 	DAILINK_COMP_ARRAY(COMP_CODEC("aw883xx_smartpa.6-0034", "aw883xx-aif-6-34"),
 	                   COMP_CODEC("aw883xx_smartpa.6-0035", "aw883xx-aif-6-35")),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+static struct snd_soc_dai_link_component i2s0_hasHAC_codecs[] = {
+                { .name = "aw883xx_smartpa.6-0034", .dai_name = "aw883xx-aif-6-34", },
+                { .name = "aw883xx_smartpa.6-0035", .dai_name = "aw883xx-aif-6-35", },
+                { .name = "aw883xx_smartpa.6-0037", .dai_name = "aw883xx-aif-6-37", }
+        };
 #else
 SND_SOC_DAILINK_DEFS(i2s0,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S0")),
@@ -608,6 +613,11 @@ SND_SOC_DAILINK_DEFS(i2s3,
 	DAILINK_COMP_ARRAY(COMP_CODEC("aw883xx_smartpa.6-0034", "aw883xx-aif-6-34"),
 	                   COMP_CODEC("aw883xx_smartpa.6-0035", "aw883xx-aif-6-35")),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+static struct snd_soc_dai_link_component i2s3_hasHAC_codecs[] = {
+                { .name = "aw883xx_smartpa.6-0034", .dai_name = "aw883xx-aif-6-34", },
+                { .name = "aw883xx_smartpa.6-0035", .dai_name = "aw883xx-aif-6-35", },
+                { .name = "aw883xx_smartpa.6-0037", .dai_name = "aw883xx-aif-6-37", }
+        };
 #else
 SND_SOC_DAILINK_DEFS(i2s3,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S3")),
@@ -1343,12 +1353,39 @@ static int mt6835_mt6377_dev_probe(struct platform_device *pdev)
 	struct device_node *platform_node, *spk_node;
 	int ret, i;
 	struct snd_soc_dai_link *dai_link;
+#ifdef CONFIG_SND_SOC_VEGAS_AUDIO
+        uint32_t smartpa_hac_flag_value = 0;
+        struct device_node *np = pdev->dev.of_node;
+#endif
 #if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
 	struct device_node *scp_audio_node;
 #endif
 
 	dev_info(&pdev->dev, "%s()\n", __func__);
-
+#ifdef CONFIG_SND_SOC_VEGAS_AUDIO
+        /*get smartpa-hac-flag value*/
+        ret = of_property_read_u32(np, "smartpa-hac-flag", &smartpa_hac_flag_value);
+        if (ret) {
+                dev_err(&pdev->dev, "%s(), get smartpa-hac-flag value error\n",
+                        __func__);
+                return -EINVAL;
+        }
+        if (smartpa_hac_flag_value) {
+            for_each_card_prelinks(card, i, dai_link) {
+                if (strcmp(dai_link->name, "I2S0") == 0) {
+                        if (strcmp(dai_link->name, "I2S0") == 0) {
+                                dai_link->codecs = i2s0_hasHAC_codecs;
+                                dai_link->num_codecs = ARRAY_SIZE(i2s0_hasHAC_codecs);
+                                dev_info(&pdev->dev, "update I2S0 for vegas hasHAC\n");
+                        } else if (strcmp(dai_link->name, "I2S3") == 0) {
+                                dai_link->codecs = i2s3_hasHAC_codecs;
+                                dai_link->num_codecs = ARRAY_SIZE(i2s3_hasHAC_codecs);
+                                dev_info(&pdev->dev, "update I2S3 for vegas hasHAC\n");
+                        }
+                }
+            }
+        }
+#endif
 	/* update speaker type */
 	ret = mtk_spk_update_info(card, pdev);
 	if (ret) {
