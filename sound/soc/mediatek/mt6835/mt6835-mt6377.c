@@ -10,7 +10,6 @@
 #include <linux/pm_runtime.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
-#include <linux/of.h>
 #include "../common/mtk-afe-platform-driver.h"
 #include "mt6835-afe-common.h"
 #include "mt6835-afe-clk.h"
@@ -1355,7 +1354,6 @@ static int mt6835_mt6377_dev_probe(struct platform_device *pdev)
 	struct snd_soc_dai_link *dai_link;
 #ifdef CONFIG_SND_SOC_VEGAS_AUDIO
         uint32_t smartpa_hac_flag_value = 0;
-        struct device_node *np = pdev->dev.of_node;
 #endif
 #if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
 	struct device_node *scp_audio_node;
@@ -1364,9 +1362,9 @@ static int mt6835_mt6377_dev_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "%s()\n", __func__);
 #ifdef CONFIG_SND_SOC_VEGAS_AUDIO
         /*get smartpa-hac-flag value*/
-        ret = of_property_read_u32(np, "smartpa-hac-flag", &smartpa_hac_flag_value);
+        ret = of_property_read_u32(pdev->dev.of_node, "smartpa-hac-flag", &smartpa_hac_flag_value);
         if (ret) {
-                dev_err(&pdev->dev, "%s(), get smartpa-hac-flag value error\n",
+                dev_err(&pdev->dev, "%s(), please config smartpa-hac-flag value is 0\n",
                         __func__);
                 return -EINVAL;
         }
