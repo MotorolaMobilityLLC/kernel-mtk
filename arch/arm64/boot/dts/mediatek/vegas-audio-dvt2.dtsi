@@ -37,7 +37,7 @@
 		compatible = "awinic,aw883xx_smartpa";
 		#sound-dai-cells = <0>;
 		reg = <0x37>;
-		reset-gpio = <&pio 9 0x0>;
+		reset-gpio = <&pio 52 0x0>;
 		/*irq-gpio = <&pio 37 0x0>;*/
 		sync-load = <1>;
 		sound-channel = <2>;
