@@ -779,32 +779,9 @@ int hal_tx_dma_irq_handler(struct _MTK_DMA_INFO_STR_ *p_dma_info)
 	left_len = BTIF_READ32(TX_DMA_VFF_LEFT_SIZE(base));
 	if (flush_irq_counter == 0)
 		btif_do_gettimeofday(&start_timer);
+	flush_irq_counter++;
 	if ((valid_size > 0) && (valid_size < 8)) {
 		i_ret = _tx_dma_flush(p_dma_info);
-		flush_irq_counter++;
-		if (flush_irq_counter >= MAX_CONTINUOUS_TIMES) {
-			btif_do_gettimeofday(&end_timer);
-/*
- * when btif tx fifo cannot accept any data and counts of bytes left
- * in tx vfifo < 8 for a while
- * we assume that btif cannot send data for a long time
- * in order not to generate interrupt continuously,
- * which may effect system's performance.
- * we clear tx flag and disable btif tx interrupt
- */
-/*clear interrupt flag*/
-			BTIF_CLR_BIT(TX_DMA_INT_FLAG(base),
-				     TX_DMA_INT_FLAG_MASK);
-/*vFIFO data has been read by DMA controller, just disable tx dma's irq*/
-			i_ret = hal_btif_dma_ier_ctrl(p_dma_info, false);
-			BTIF_ERR_FUNC
-			    ("*************ERROR, ERROR, ERROR************\n");
-			BTIF_ERR_FUNC(
-			     "Tx happened %d times, between %ld.%ld and %ld.%ld\n",
-			     MAX_CONTINUOUS_TIMES, start_timer.tv_sec,
-			     start_timer.tv_nsec, end_timer.tv_sec,
-			     end_timer.tv_nsec);
-		}
 	} else if (vff_len == left_len) {
 		flush_irq_counter = 0;
 /*clear interrupt flag*/
@@ -817,6 +794,28 @@ int hal_tx_dma_irq_handler(struct _MTK_DMA_INFO_STR_ *p_dma_info)
 		     vff_len, valid_size, left_len);
 	}
 
+	if (flush_irq_counter >= MAX_CONTINUOUS_TIMES) {
+		btif_do_gettimeofday(&end_timer);
+/*
+ * when btif tx fifo cannot accept any data and counts for a while
+ * we assume that btif cannot send data for a long time
+ * in order not to generate interrupt continuously,
+ * which may effect system's performance.
+ * we clear tx flag and disable btif tx interrupt
+ */
+/*clear interrupt flag*/
+		BTIF_CLR_BIT(TX_DMA_INT_FLAG(base),
+			     TX_DMA_INT_FLAG_MASK);
+/*vFIFO data has been read by DMA controller, just disable tx dma's irq*/
+		i_ret = hal_btif_dma_ier_ctrl(p_dma_info, false);
+		BTIF_ERR_FUNC
+		    ("*************ERROR, ERROR, ERROR************\n");
+		BTIF_ERR_FUNC(
+		     "Tx happened %d times, between %ld.%ld and %ld.%ld\n",
+		     MAX_CONTINUOUS_TIMES, start_timer.tv_sec,
+		     start_timer.tv_nsec, end_timer.tv_sec,
+		     end_timer.tv_nsec);
+	}
 	spin_unlock_irqrestore(&(g_clk_cg_spinlock), flag);
 
 	return i_ret;
