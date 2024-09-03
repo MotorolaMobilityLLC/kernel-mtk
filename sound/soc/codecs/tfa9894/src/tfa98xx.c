@@ -3188,10 +3188,9 @@ static int tfa98xx_mute(struct snd_soc_dai *dai, int mute, int stream)
 		else
 			tfa98xx->cstream = 0;
 
-#ifndef CONFIG_MTK_PLATFORM
 		if (tfa98xx->pstream != 0)
 			return 0;
-#endif
+
 		mutex_lock(&tfa98xx_mutex);
 		tfa98xx_sync_count = 0;
 		mutex_unlock(&tfa98xx_mutex);
