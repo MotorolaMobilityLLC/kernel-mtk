@@ -316,7 +316,7 @@ static int tm_nt36528a_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode performance_mode_60hz = {
-	.clock		= 188471,
+	.clock		= 186144,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -328,7 +328,7 @@ static const struct drm_display_mode performance_mode_60hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 188446,
+	.clock		= 186120,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -340,7 +340,7 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 static const struct drm_display_mode performance_mode_120hz = {
-	.clock		= 188471,
+	.clock		= 186144,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
@@ -353,7 +353,7 @@ static const struct drm_display_mode performance_mode_120hz = {
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 static struct mtk_panel_params ext_params_60hz = {
-	.pll_clk = 634,
+	.pll_clk = 627,
 	//.data_rate = DATA_RATE,
 	//.vfp_low_power = 880,
 	.cust_esd_check = 1,
@@ -386,6 +386,13 @@ static struct mtk_panel_params ext_params_60hz = {
 	.lcm_index = 2,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
+
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 620,
+		.hfp = 30,
+	},
+
 /*
 
 	//.ssc_enable = 0,
@@ -433,6 +440,13 @@ static struct mtk_panel_params ext_params_90hz = {
 	.lcm_index = 2,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
+
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 620,
+		.hfp = 30,
+	},
+
 /*
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
@@ -479,6 +493,13 @@ static struct mtk_panel_params ext_params_120hz = {
 	.lcm_index = 2,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
+
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 620,
+		.hfp = 30,
+	},
+
 /*
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
