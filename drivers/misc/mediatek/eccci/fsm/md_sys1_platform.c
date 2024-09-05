@@ -163,7 +163,7 @@ void md_cd_lock_modem_clock_src(int locked)
 		else if (res.a0 == 0 && res.a1 > 0 && res.a1 < 10)
 			settle = res.a1; /* TF-A */
 		else {
-			settle = 3;
+			settle = 20;
 			CCCI_ERROR_LOG(-1, TAG,
 				"md source settle fail (0x%lX, 0x%lX) set = %d\n",
 				res.a0, res.a1, settle);
