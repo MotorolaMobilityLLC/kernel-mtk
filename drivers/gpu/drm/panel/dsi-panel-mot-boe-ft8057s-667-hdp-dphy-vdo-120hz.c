@@ -290,7 +290,7 @@ static int boe_ft8057s_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode performance_mode_60hz = {
-	.clock		= 186451,
+	.clock		= 186346,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -302,7 +302,7 @@ static const struct drm_display_mode performance_mode_60hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 186662,
+	.clock		= 186183,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -314,7 +314,7 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 static const struct drm_display_mode performance_mode_120hz = {
-	.clock		= 186826,
+	.clock		= 186346,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
@@ -353,6 +353,13 @@ static struct mtk_panel_params ext_params_60hz = {
 	.lcm_index = 1,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
+
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 620,
+		.hfp = 26,
+	},
+
 /*
 
 	//.ssc_enable = 0,
@@ -393,6 +400,13 @@ static struct mtk_panel_params ext_params_90hz = {
 	.lcm_index = 1,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
+
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 620,
+		.hfp = 26,
+	},
+
 /*
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
@@ -432,6 +446,13 @@ static struct mtk_panel_params ext_params_120hz = {
 	.lcm_index = 1,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
+
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 620,
+		.hfp = 26,
+	},
+
 /*
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
