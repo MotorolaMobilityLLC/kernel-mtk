@@ -2886,7 +2886,13 @@ static int aw883xx_i2c_probe(struct i2c_client *i2c,
 	/*add device to total list*/
 	mutex_lock(&g_aw883xx_lock);
 	g_aw883xx_dev_cnt++;
+#ifdef CONFIG_SND_SOC_VEGAS_AUDIO
+        if (aw883xx->aw_pa->channel != 2) {
+            aw883xx_dev_add_dev_list(aw883xx->aw_pa);
+        }
+#else
 	aw883xx_dev_add_dev_list(aw883xx->aw_pa);
+#endif
 	mutex_unlock(&g_aw883xx_lock);
 
 	aw_dev_info(&i2c->dev, "dev_cnt %d probe completed successfully",
