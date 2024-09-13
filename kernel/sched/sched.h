@@ -3278,4 +3278,12 @@ static inline void update_current_exec_runtime(struct task_struct *curr,
 }
 
 extern bool cpu_busy_with_softirqs(int cpu);
+
+static inline void *android_task_vendor_data(struct task_struct *p)
+{
+	if (p == &init_task)
+		return &vendor_data_pad[0];
+
+	return p + 1;
+}
 #endif /* _KERNEL_SCHED_SCHED_H */
