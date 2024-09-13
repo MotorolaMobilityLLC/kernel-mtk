@@ -1370,17 +1370,15 @@ static int mt6835_mt6377_dev_probe(struct platform_device *pdev)
         }
         if (smartpa_hac_flag_value) {
             for_each_card_prelinks(card, i, dai_link) {
-                if (strcmp(dai_link->name, "I2S0") == 0) {
-                        if (strcmp(dai_link->name, "I2S0") == 0) {
-                                dai_link->codecs = i2s0_hasHAC_codecs;
-                                dai_link->num_codecs = ARRAY_SIZE(i2s0_hasHAC_codecs);
-                                dev_info(&pdev->dev, "update I2S0 for vegas hasHAC\n");
-                        } else if (strcmp(dai_link->name, "I2S3") == 0) {
-                                dai_link->codecs = i2s3_hasHAC_codecs;
-                                dai_link->num_codecs = ARRAY_SIZE(i2s3_hasHAC_codecs);
-                                dev_info(&pdev->dev, "update I2S3 for vegas hasHAC\n");
-                        }
-                }
+                  if (strcmp(dai_link->name, "I2S0") == 0) {
+                          dai_link->codecs = i2s0_hasHAC_codecs;
+                          dai_link->num_codecs = ARRAY_SIZE(i2s0_hasHAC_codecs);
+                          dev_info(&pdev->dev, "update I2S0 for vegas hasHAC\n");
+                  } else if (strcmp(dai_link->name, "I2S3") == 0) {
+                          dai_link->codecs = i2s3_hasHAC_codecs;
+                          dai_link->num_codecs = ARRAY_SIZE(i2s3_hasHAC_codecs);
+                          dev_info(&pdev->dev, "update I2S3 for vegas hasHAC\n");
+                  }
             }
         }
 #endif
