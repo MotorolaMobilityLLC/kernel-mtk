@@ -365,6 +365,9 @@ static int wlc_sc_set_charger(struct chg_alg_device *alg)
 				wlc->charging_current_limit1 / 1000;
 			input_thermal_limit *= VBUS_DEFAULT_MV;
 			input_thermal_limit /= vbus;
+#if IS_ENABLED(CONFIG_WLC_WO_BOOST)
+			input_thermal_limit += 200;
+#endif
 			input_thermal_limit *= 1000;
 		} else {
 			wlc->charging_current1 = charging_current;
