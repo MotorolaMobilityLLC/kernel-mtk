@@ -856,8 +856,8 @@ static irqreturn_t mtk_spi_interrupt(int irq, void *dev_id)
 			if (remainder > 0) {
 				reg_val = 0;
 				memcpy(&reg_val,
-				trans->tx_buf + (cnt * 4) + mdata->num_xfered,
-				remainder);
+					trans->tx_buf + (cnt * 4) + mdata->num_xfered,
+					remainder);
 				writel(reg_val, mdata->base + SPI_TX_DATA_REG);
 			}
 		}

@@ -614,6 +614,8 @@ static int __maybe_unused imx_mu_suspend_noirq(struct device *dev)
 	if (!priv->clk)
 		priv->xcr = imx_mu_read(priv, priv->dcfg->xCR);
 
+	priv->suspend = true;
+
 	return 0;
 }
 
@@ -631,6 +633,8 @@ static int __maybe_unused imx_mu_resume_noirq(struct device *dev)
 	 */
 	if (!imx_mu_read(priv, priv->dcfg->xCR) && !priv->clk)
 		imx_mu_write(priv, priv->xcr, priv->dcfg->xCR);
+
+	priv->suspend = false;
 
 	return 0;
 }
