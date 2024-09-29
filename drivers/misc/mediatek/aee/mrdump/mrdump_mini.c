@@ -94,6 +94,9 @@ static void fill_ko_list(unsigned int idx, struct module *mod)
 	if (idx >= MAX_KO_NUM)
 		return;
 
+	if (mod->sect_attrs == NULL)
+		return;
+
 	search_nm = 2;
 	for (i = 0; i < mod->sect_attrs->nsections; i++) {
 		if (!strcmp(mod->sect_attrs->attrs[i].battr.attr.name,
