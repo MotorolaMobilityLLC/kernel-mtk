@@ -481,6 +481,8 @@ enum CCCI_CH {
 	CCCI_TCHE_TX			= 182,
 	CCCI_DISP_RX			= 183,
 	CCCI_DISP_TX			= 184,
+        CCCI_CIQ_RX                     = 185,
+        CCCI_CIQ_TX                     = 186,
 	CCCI_WIFI_RX			= 187,
 	CCCI_WIFI_TX			= 188,
 	CCCI_VTS_RX			= 189,
