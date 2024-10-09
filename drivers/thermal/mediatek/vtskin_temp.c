@@ -277,6 +277,54 @@ static struct vtskin_data mt6985_vtskin_data = {
 	.params = mt6985_vtskin_params,
 };
 
+enum mt6835_vtskin_sensor_enum {
+	MT6835_VTSKIN_MAX,
+	MT6835_VTSKIN_1,
+	MT6835_VTSKIN_2,
+	MT6835_VTSKIN_3,
+	MT6835_VTSKIN_4,
+	MT6835_VTSKIN_5,
+	MT6835_VTSKIN_6,
+	MT6835_VTSKIN_NUM,
+};
+
+struct vtskin_tz_param mt6835_vtskin_params[] = {
+	[MT6835_VTSKIN_MAX] = {
+		.ref_num = 0,
+		.operation = OP_MAX,
+	},
+	[MT6835_VTSKIN_1] = {
+		.ref_num = 0,
+		.operation = OP_COEF,
+	},
+	[MT6835_VTSKIN_2] = {
+		.ref_num = 0,
+		.operation = OP_COEF,
+	},
+	[MT6835_VTSKIN_3] = {
+		.ref_num = 0,
+		.operation = OP_COEF,
+	},
+	[MT6835_VTSKIN_4] = {
+		.ref_num = 0,
+		.operation = OP_COEF,
+	},
+	[MT6835_VTSKIN_5] = {
+		.ref_num = 0,
+		.operation = OP_COEF,
+	},
+	[MT6835_VTSKIN_6] = {
+		.ref_num = 0,
+		.operation = OP_COEF,
+	}
+};
+
+static struct vtskin_data mt6835_vtskin_data = {
+	.num_sensor = MT6835_VTSKIN_NUM,
+	.params = mt6835_vtskin_params,
+};
+
+
 static const struct of_device_id vtskin_of_match[] = {
 	{
 		.compatible = "mediatek,mt6983-virtual-tskin",
@@ -285,6 +333,10 @@ static const struct of_device_id vtskin_of_match[] = {
 	{
 		.compatible = "mediatek,mt6985-virtual-tskin",
 		.data = (void *)&mt6985_vtskin_data,
+	},
+	{
+		.compatible = "mediatek,mt6835-virtual-tskin",
+		.data = (void *)&mt6835_vtskin_data,
 	},
 	{},
 };
