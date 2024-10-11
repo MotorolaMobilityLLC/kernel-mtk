@@ -223,6 +223,8 @@ static int boe_ft8057s_unprepare(struct drm_panel *panel)
 	udelay(10 * 1000);
 	boe_ft8057s_dcs_write_seq_static(ctx, 0x10);
 	msleep(60);
+	boe_ft8057s_dcs_write_seq_static(ctx, 0x00, 0x00);
+	boe_ft8057s_dcs_write_seq_static(ctx, 0xf7, 0x5a, 0xa5, 0x95, 0x27);
 
 
 	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
