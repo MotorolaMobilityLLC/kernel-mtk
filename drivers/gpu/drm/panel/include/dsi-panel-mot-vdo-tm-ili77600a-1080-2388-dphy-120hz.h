@@ -3,8 +3,8 @@
  * Copyright (c) 2023 MediaTek Inc.
  */
 
-#ifndef PANEL_MOT_VDO_TM_ILI7807S_1080_2388_DPHY_120HZ
-#define PANEL_MOT_VDO_TM_ILI7807S_1080_2388_DPHY_120HZ
+#ifndef PANEL_MOT_VDO_TM_ILI77600A_1080_2388_DPHY_120HZ
+#define PANEL_MOT_VDO_TM_ILI77600A_1080_2388_DPHY_120HZ
 
 #define PANEL_ESD_RECOVERY_NOFLASH   0x01
 #define PANEL_ESD_RECOVERY_VDD       0x02
@@ -20,9 +20,9 @@
 #define PHYSICAL_WIDTH              72756
 #define PHYSICAL_HEIGHT             160142
 
-#define DATA_RATE                   842
+#define DATA_RATE                   844
 #define HSA                         4
-#define HBP                         20
+#define HBP                         17
 #define VSA                         4
 #define VBP                         40
 
@@ -31,7 +31,7 @@
 #define MODE_120_VFP                36
 #define MODE_120_HFP                24
 
-#define MODE_120_DATA_RATE          842
+#define MODE_120_DATA_RATE          844
 /*Parameter setting for mode 3 End*/
 
 //Parameter setting for mode 0 Start
@@ -39,14 +39,14 @@
 #define MODE_60_VFP                 2500
 #define MODE_60_HFP                 24
 
-#define MODE_0_DATA_RATE            842
+#define MODE_0_DATA_RATE            844
 //Parameter setting for mode 0 End
 //Parameter setting for mode 2 Start
 #define MODE_90_FPS                 90
 #define MODE_90_VFP                 860
 #define MODE_90_HFP                 24
 
-#define MODE_90_DATA_RATE           842
+#define MODE_90_DATA_RATE           844
 //Parameter setting for mode 2 End
 
 #define LFR_EN                      1
