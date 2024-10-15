@@ -497,6 +497,13 @@ DECLARE_HOOK(android_vh_oom_swapmem_gather_init,
 DECLARE_HOOK(android_vh_oom_swapmem_gather_finish,
 	TP_PROTO(struct mm_struct *mm),
 	TP_ARGS(mm));
+DECLARE_HOOK(android_vh_mem_cgroup_charge,
+	TP_PROTO(struct folio *folio, struct mem_cgroup **memcg),
+	TP_ARGS(folio, memcg));
+DECLARE_HOOK(android_vh_filemap_add_folio,
+	TP_PROTO(struct address_space *mapping, struct folio *folio,
+		pgoff_t index),
+	TP_ARGS(mapping, folio, index));
 #endif /* _TRACE_HOOK_MM_H */
 
 /* This part must be outside protection */
