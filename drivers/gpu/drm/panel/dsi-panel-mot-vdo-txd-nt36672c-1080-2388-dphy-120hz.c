@@ -282,17 +282,6 @@ static int tongxd_unprepare(struct drm_panel *panel)
 		ocp2138_BiasPower_disable(5);
 #endif
 	}
-        ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->reset_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
-			__func__, PTR_ERR(ctx->reset_gpio));
-	}
-    else {
-		gpiod_set_value(ctx->reset_gpio, 1);
-		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-		usleep_range(3 * 1000, 8 * 1000);
-   }
-
 
 	ctx->error = 0;
 	return 0;
@@ -1049,6 +1038,18 @@ static int tongxd_remove(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
+static void lcm_shutdown(struct mipi_dsi_device *dsi)
+{
+
+        pr_info("%s\n", __func__);
+
+#ifdef BIAS_OCP2138
+                pr_info("%s: ocp2138_BiasPower_disable\n", __func__);
+                ocp2138_BiasPower_disable(5);
+#endif
+
+}
+
 static const struct of_device_id tongxd_of_match[] = {
 	{
 		.compatible = "txd,nt36672c,vdo,120hz",
@@ -1061,6 +1062,7 @@ MODULE_DEVICE_TABLE(of, tongxd_of_match);
 static struct mipi_dsi_driver tongxd_driver = {
 	.probe = tongxd_probe,
 	.remove = tongxd_remove,
+	.shutdown = lcm_shutdown,
 	.driver = {
 		.name = "txd_nt36672c_vdo_1080_2388",
 		.owner = THIS_MODULE,

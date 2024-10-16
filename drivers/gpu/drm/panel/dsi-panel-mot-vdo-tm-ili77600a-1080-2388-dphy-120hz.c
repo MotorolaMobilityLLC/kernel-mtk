@@ -203,13 +203,13 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx,0x83, 0xC8);
 	tianma_dcs_write_seq_static(ctx,0x84, 0x04);
 	tianma_dcs_write_seq_static(ctx,0xFF, 0x5A,0xA5,0x00);
-	tianma_dcs_write_seq_static(ctx,0x51, 0x07,0xFF);
 	tianma_dcs_write_seq_static(ctx,0x53, 0x2C);
 	tianma_dcs_write_seq_static(ctx,0x55, 0x01);
 	tianma_dcs_write_seq_static(ctx,0x35, 0x00);
 	tianma_dcs_write_seq_static(ctx,0x11, 0x00);
-	msleep(100);
+	msleep(65);
 	tianma_dcs_write_seq_static(ctx,0x29, 0x00);
+	tianma_dcs_write_seq_static(ctx,0x51, 0x07,0xFF);
 	msleep(20);
 
 	pr_info("disp:init code %s, data_rate=%d end!\n", __func__, DATA_RATE);
@@ -269,17 +269,6 @@ static int tianma_unprepare(struct drm_panel *panel)
 		ocp2138_BiasPower_disable(5);
 #endif
 	}
-	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->reset_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
-			__func__, PTR_ERR(ctx->reset_gpio));
-	}
-    else {
-		gpiod_set_value(ctx->reset_gpio, 1);
-		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-		usleep_range(3 * 1000, 8 * 1000);
-   }
-
 
 	ctx->error = 0;
 	return 0;
@@ -1014,6 +1003,17 @@ static int tianma_remove(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
+static void lcm_shutdown(struct mipi_dsi_device *dsi)
+{
+
+        pr_info("%s\n", __func__);
+
+#ifdef BIAS_OCP2138
+                pr_info("%s: ocp2138_BiasPower_disable\n", __func__);
+                ocp2138_BiasPower_disable(5);
+#endif
+}
+
 static const struct of_device_id tianma_of_match[] = {
 	{
 		.compatible = "tm,ili77600a,vdo,120hz",
@@ -1026,6 +1026,7 @@ MODULE_DEVICE_TABLE(of, tianma_of_match);
 static struct mipi_dsi_driver tianma_driver = {
 	.probe = tianma_probe,
 	.remove = tianma_remove,
+	.shutdown = lcm_shutdown,
 	.driver = {
 		.name = "tm_ili77600a_vdo_1080_2388",
 		.owner = THIS_MODULE,
