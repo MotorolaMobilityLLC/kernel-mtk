@@ -3279,6 +3279,7 @@ static inline void update_current_exec_runtime(struct task_struct *curr,
 
 extern bool cpu_busy_with_softirqs(int cpu);
 
+#ifdef CONFIG_GKI_DYNAMIC_TASK_STRUCT_SIZE
 static inline void *android_task_vendor_data(struct task_struct *p)
 {
 	if (p == &init_task)
@@ -3286,4 +3287,5 @@ static inline void *android_task_vendor_data(struct task_struct *p)
 
 	return p + 1;
 }
+#endif
 #endif /* _KERNEL_SCHED_SCHED_H */
