@@ -56,6 +56,7 @@
 		aw99703,work-mode = <1>; /* backlight */
 		aw99703,default-brightness = <889>;
 		aw99703,init-seq-enable = <1>;
+		aw99703,init-seq-delay-pre = <40>;
 		aw99703,init-seq = <0x02 0x00>,
 				<0x03 0xD7>,
 				<0x04 0x2E>,
@@ -84,6 +85,7 @@
                 ktd,map-type = <0>; /* 0 exponential, 1 linear */
                 ktd,current-align-type = <0x03>; /* 0-none,  1-450nit,  2-1000nit align aw99703,  3-gamma1.5 1000nit align aw99703 */
                 ktd3136,init-seq-enable = <1>;
+                ktd3136,init-seq-delay-pre = <40>;
                 ktd3136,init-seq = <0x02 0xD1>,
 				<0x03 0x68>,
 				<0x06 0x1F>,
