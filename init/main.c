@@ -947,11 +947,29 @@ static void __init print_unknown_bootoptions(void)
 	memblock_free(unknown_options, len);
 }
 
-#ifdef CONFIG_ARCH_WANTS_DYNAMIC_TASK_STRUCT
+#ifdef CONFIG_GKI_DYNAMIC_TASK_STRUCT_SIZE
 static void __init setup_arch_task_struct_size(void)
 {
 	arch_task_struct_size = sizeof(struct task_struct);
 }
+
+static int __init task_struct_vendor_size_setup(char *str)
+{
+	u64 size;
+
+	if (!str)
+		return -EINVAL;
+
+	size = memparse(str, &str);
+
+	if (size < 0 || size > CONFIG_GKI_TASK_STRUCT_VENDOR_SIZE_MAX)
+		return -EINVAL;
+
+	arch_task_struct_size = sizeof(struct task_struct) + size;
+
+	return 0;
+}
+early_param("android_arch_task_struct_size", task_struct_vendor_size_setup);
 #endif
 
 asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
@@ -976,7 +994,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	boot_cpu_init();
 	page_address_init();
 	pr_notice("%s", linux_banner);
-#ifdef CONFIG_ARCH_WANTS_DYNAMIC_TASK_STRUCT
+#ifdef CONFIG_GKI_DYNAMIC_TASK_STRUCT_SIZE
 	setup_arch_task_struct_size();
 #endif
 	early_security_init();
