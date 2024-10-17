@@ -1523,6 +1523,7 @@
       <elf-symbol name='clk_restore_context' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6259d291'/>
       <elf-symbol name='clk_round_rate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x43f81957'/>
       <elf-symbol name='clk_save_context' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa531471e'/>
+      <elf-symbol name='clk_set_duty_cycle' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x665e92a0'/>
       <elf-symbol name='clk_set_max_rate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe0b1c103'/>
       <elf-symbol name='clk_set_min_rate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x25379e73'/>
       <elf-symbol name='clk_set_parent' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2396c7f0'/>
@@ -139506,6 +139507,12 @@
       <function-decl name='clk_save_context' mangled-name='clk_save_context' filepath='drivers/clk/clk.c' line='1227' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='clk_save_context'>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='clk_set_duty_cycle' mangled-name='clk_set_duty_cycle' filepath='drivers/clk/clk.c' line='3035' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='clk_set_duty_cycle'>
+        <parameter type-id='7d0bc0eb' name='clk' filepath='drivers/clk/clk.c' line='3035' column='1'/>
+        <parameter type-id='f0981eeb' name='num' filepath='drivers/clk/clk.c' line='3035' column='1'/>
+        <parameter type-id='f0981eeb' name='den' filepath='drivers/clk/clk.c' line='3035' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='clk_set_max_rate' mangled-name='clk_set_max_rate' filepath='drivers/clk/clk.c' line='2618' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='clk_set_max_rate'>
         <parameter type-id='7d0bc0eb' name='clk' filepath='drivers/clk/clk.c' line='2618' column='1'/>
         <parameter type-id='7359adad' name='rate' filepath='drivers/clk/clk.c' line='2618' column='1'/>
@@ -170711,6 +170718,7 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
+
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
