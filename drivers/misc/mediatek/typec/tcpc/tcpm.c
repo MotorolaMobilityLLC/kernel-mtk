@@ -429,6 +429,7 @@ EXPORT_SYMBOL(tcpm_check_pd_attached);
 
 int tcpm_shutdown(struct tcpc_device *tcpc)
 {
+	tcpci_lock_typec(tcpc);
 #if CONFIG_TCPC_SHUTDOWN_VBUS_DISABLE
 	if (tcpc->typec_power_ctrl)
 		tcpci_disable_vbus_control(tcpc);
@@ -436,6 +437,7 @@ int tcpm_shutdown(struct tcpc_device *tcpc)
 
 	if (tcpc->ops->deinit)
 		tcpc->ops->deinit(tcpc);
+	tcpci_unlock_typec(tcpc);
 
 	return 0;
 }
