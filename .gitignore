@@ -157,3 +157,5 @@ x509.genkey
 
 # Documentation toolchain
 sphinx_*/
+
+kernel/configs/moto_extra.config
