@@ -283,8 +283,8 @@
 			<60 4200 243>;
 
          mmi,enable-charging-limit;
-         mmi,upper-limit-capacity = <30>;
-         mmi,lower-limit-capacity = <25>;
+         mmi,upper-limit-capacity = <65>;
+         mmi,lower-limit-capacity = <60>;
          mmi,vfloat-comp-uv = <0>;
          mmi,enable-mux;
          fast_charging_indicator = <0x8010>;
