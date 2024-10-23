@@ -221,13 +221,17 @@ static int tcpci_alert_recv_msg(struct tcpc_device *tcpc)
 #if IS_ENABLED(CONFIG_TCPC_SC2150)
 	int rv1 = 0;
 	uint32_t chip_pid = 0;
+	uint32_t chip_vid = 0;
+	uint32_t chip_id = 0;
 
 	bool in_bist_mode = (tcpc->pd_bist_mode != PD_BIST_MODE_DISABLE);
 
 	rv1 = tcpci_get_chip_pid(tcpc, &chip_pid);
-	if (!rv1 && (SC2150_PID == chip_pid) &&
-						!in_bist_mode) {
-		tcpci_set_rx_enable(tcpc, PD_RX_CAP_PE_STARTUP);
+	rv1 |= tcpci_get_chip_vid(tcpc, &chip_vid);
+	rv1 |= tcpci_get_chip_id(tcpc, &chip_id);
+	if (!rv1 && (SC2150A_DID == chip_id) &&
+		(SOUTHCHIP_PD_VID == chip_vid) &&!in_bist_mode) {
+			tcpci_set_rx_enable(tcpc, PD_RX_CAP_PE_STARTUP);
 	}
 #endif /* CONFIG_TCPC_SC2150 */
 
@@ -251,7 +255,7 @@ out:
 #if IS_ENABLED(CONFIG_TCPC_SC2150)
 	if (!in_bist_mode) {
 		TCPC_INFO("recv msg cnt = %d\n", tcpc->recv_msg_cnt);
-		if (!rv1 && (SC2150_PID == chip_pid)) {
+		if (!rv1 && (SC2150A_DID == chip_id)) {
 			tcpci_set_rx_enable(tcpc, tcpc->pd_port.rx_cap);
 		}
 	}
