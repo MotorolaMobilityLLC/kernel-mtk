@@ -29,6 +29,7 @@
 #if IS_ENABLED(CONFIG_MTK_GPUFREQ_V2)
 #include <mtk_gpufreq.h>
 #endif
+#include "vtskin_temp.h"
 #include "thermal_interface.h"
 #if IS_ENABLED(CONFIG_LEDS_MTK_MODULE)
 #define CONFIG_LEDS_BRIGHTNESS_CHANGED
@@ -89,6 +90,8 @@ void __iomem *thermal_apu_mbox_base;
 EXPORT_SYMBOL(thermal_apu_mbox_base);
 struct frs_info frs_data;
 EXPORT_SYMBOL(frs_data);
+struct vtskin_data *plat_vtskin_info;
+EXPORT_SYMBOL(plat_vtskin_info);
 
 static struct md_info md_info_data;
 static struct pid_info pid_info_data;
@@ -1070,6 +1073,136 @@ static ssize_t sports_mode_store(struct kobject *kobj,
 	return count;
 }
 
+static ssize_t vtskin_info_show(struct kobject *kobj,
+	struct kobj_attribute *attr, char *buf)
+{
+	int len = 0, i, j;
+	struct vtskin_tz_param *param;
+
+	if (!plat_vtskin_info) {
+		len += snprintf(buf + len, PAGE_SIZE - len, "vtskin info NULL\n");
+		return len;
+	}
+
+	len += snprintf(buf + len, PAGE_SIZE - len, "vtskin sensor total num=%d\n",
+			plat_vtskin_info->num_sensor);
+
+	for (i = 0; i < plat_vtskin_info->num_sensor; i++) {
+		param = &plat_vtskin_info->params[i];
+		len += snprintf(buf + len, PAGE_SIZE - len,
+			"   vtskin id=%d, name=%s, ref_num=%d op=%d\n",
+			i, param->tz_name, param->ref_num, param->operation);
+		for (j = 0; j < param->ref_num; j++) {
+			len += snprintf(buf + len, PAGE_SIZE - len,
+				"      %20s, %10lld\n", param->vtskin_ref[j].sensor_name,
+				param->vtskin_ref[j].sensor_coef);
+		}
+		len += snprintf(buf + len, PAGE_SIZE - len, "\n");
+	}
+
+	return len;
+}
+
+static ssize_t vtskin_info_store(struct kobject *kobj,
+	struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int len = 0, ref_num = 0, op;
+	char skin_name[THERMAL_NAME_LENGTH + 1], ref_name[THERMAL_NAME_LENGTH + 1];
+	long long ref_coef;
+	unsigned int skin_id, i;
+	struct thermal_zone_device *tzd;
+	struct vtskin_tz_param *param;
+	struct vtskin_coef coef[MAX_VTSKIN_REF_NUM];
+
+	if (!plat_vtskin_info) {
+		pr_info("plat_vtskin_info is NULL\n");
+		return -ENODATA;
+	}
+
+	if (sscanf(buf, "%20s %d %d%n", skin_name, &op, &ref_num, &len) != 3) {
+		pr_info("wrong skin_name, op, or ref_num %s\n", buf);
+		return -EINVAL;
+	}
+	buf += len;
+
+	for (skin_id = 0; skin_id < plat_vtskin_info->num_sensor; skin_id++) {
+		if (!strcmp(skin_name, plat_vtskin_info->params[skin_id].tz_name))
+			break;
+	}
+
+	if (skin_id >= plat_vtskin_info->num_sensor) {
+		pr_info("skin name:%s not match any actual vtskin name\n", skin_name);
+		return -EINVAL;
+	}
+
+	if (op < 0 || op >= OP_NUM) {
+		pr_info("wrong operation %d\n", op);
+		return -EINVAL;
+	}
+
+	if (ref_num < 0 || ref_num > MAX_VTSKIN_REF_NUM) {
+		pr_info("wrong ref number %d\n", ref_num);
+		return -EINVAL;
+	}
+
+	memset(&coef[0], 0, sizeof(struct vtskin_coef) * MAX_VTSKIN_REF_NUM);
+
+	for (i = 0; i < ref_num; i++) {
+		if (sscanf(buf, "%20s %lld%n", ref_name, &ref_coef, &len) != 2) {
+			pr_info("wrong scan vtskin ref sensor:%s\n", buf);
+			return -EINVAL;
+		}
+		buf += len;
+
+		tzd = thermal_zone_get_zone_by_name(ref_name);
+		if (IS_ERR_OR_NULL(tzd)) {
+			pr_info("get %s for thermal zone fail\n", ref_name);
+			return -EINVAL;
+		}
+
+		strncpy(coef[i].sensor_name, ref_name, strlen(ref_name));
+		coef[i].sensor_coef = ref_coef;
+	}
+
+	param = &plat_vtskin_info->params[skin_id];
+	param->operation = op;
+	param->ref_num = (unsigned int)ref_num;
+	memcpy(&param->vtskin_ref[0], &coef[0], sizeof(struct vtskin_coef) * MAX_VTSKIN_REF_NUM);
+
+	return count;
+}
+
+static ssize_t vtskin_temp_show(struct kobject *kobj,
+	struct kobj_attribute *attr, char *buf)
+{
+	int len = 0;
+
+	len = snprintf(buf, PAGE_SIZE, "%d\n", therm_intf_read_csram_s32(VTSKIN));
+	if (len < 0 || len >= sizeof(buf))
+		pr_info("%s: snprintf return negative and buf %s\n", __func__, buf);
+
+	return len;
+}
+
+static ssize_t vtskin_temp_store(struct kobject *kobj,
+	struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	char cmd[10];
+	int temp;
+
+	if (sscanf(buf, "%7s %d", cmd, &temp) == 2) {
+		if (strncmp(cmd, "VTSKIN", 6) == 0) {
+			therm_intf_write_csram(temp, VTSKIN);
+
+			return count;
+		}
+	}
+
+	pr_info("[thermal_vtskin_temp] invalid input\n");
+
+	return -EINVAL;
+}
+
 static ssize_t pid_info_show(struct kobject *kobj,
 	struct kobj_attribute *attr, char *buf)
 {
@@ -1352,6 +1485,8 @@ static struct kobj_attribute min_ttj_attr = __ATTR_RW(min_ttj);
 static struct kobj_attribute min_throttle_freq_attr =
 	__ATTR_RW(min_throttle_freq);
 static struct kobj_attribute sports_mode_attr = __ATTR_RW(sports_mode);
+static struct kobj_attribute vtskin_info_attr = __ATTR_RW(vtskin_info);
+static struct kobj_attribute vtskin_temp_attr = __ATTR_RW(vtskin_temp);
 static struct kobj_attribute pid_info_attr = __ATTR_RW(pid_info);
 static struct kobj_attribute user_vsensor0_attr = __ATTR_RW(user_vsensor0);
 static struct kobj_attribute user_vsensor1_attr = __ATTR_RW(user_vsensor1);
@@ -1381,6 +1516,8 @@ static struct attribute *thermal_attrs[] = {
 	&utc_count_attr.attr,
 	&min_throttle_freq_attr.attr,
 	&sports_mode_attr.attr,
+	&vtskin_info_attr.attr,
+	&vtskin_temp_attr.attr,
 	&pid_info_attr.attr,
 	&user_vsensor0_attr.attr,
 	&user_vsensor1_attr.attr,
