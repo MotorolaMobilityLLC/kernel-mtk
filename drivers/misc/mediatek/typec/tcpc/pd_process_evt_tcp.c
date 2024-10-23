@@ -42,6 +42,9 @@ static inline int pd_handle_tcp_event_dr_swap(
 	if (!pd_check_pe_state_ready(pd_port))
 		return TCP_DPM_RET_DENIED_NOT_READY;
 
+	if (pd_port->pe_data.modal_operation)
+		return TCP_DPM_RET_DENIED_IN_MODAL_OPERATION;
+
 	pd_port->pe_data.during_swap = false;
 	pd_port->state_machine = PE_STATE_MACHINE_DR_SWAP;
 
@@ -57,14 +60,22 @@ static inline int pd_handle_tcp_event_dr_swap(
 static inline int pd_handle_tcp_event_vconn_swap(
 	struct pd_port *pd_port, uint8_t new_role)
 {
-	uint8_t old_role = pd_port->vconn_role ? 1 : 0;
+	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
+	uint8_t old_role = tcpm_inquire_pd_vconn_role(tcpc) ? 1 : 0;
 
 	if (old_role == new_role)
 		return TCP_DPM_RET_DENIED_SAME_ROLE;
 
-	if ((!pd_port->vconn_role) &&
-		(!(pd_port->dpm_caps & DPM_CAP_LOCAL_VCONN_SUPPLY)))
-		return TCP_DPM_RET_DENIED_LOCAL_CAP;
+	if (!old_role) {
+		if (tcpc->tcpc_vconn_supply == TCPC_VCONN_SUPPLY_NEVER)
+			return TCP_DPM_RET_DENIED_LOCAL_CAP;
+#if CONFIG_USB_PD_VCONN_SAFE5V_ONLY
+		if (pd_port->pe_data.vconn_highv_prot) {
+			PE_DBG("VC_OVER5V\n");
+			return TCP_DPM_RET_DENIED_IN_VCONN_HIGHV_PROT;
+		}
+#endif	/* CONFIG_USB_PD_VCONN_SAFE5V_ONLY */
+	}
 
 	if (!pd_check_pe_state_ready(pd_port))
 		return TCP_DPM_RET_DENIED_NOT_READY;
@@ -98,26 +109,17 @@ static inline int pd_handle_tcp_event_softreset(struct pd_port *pd_port)
 	return TCP_DPM_RET_SENT;
 }
 
-#if CONFIG_PD_DFP_RESET_CABLE
 static inline int pd_handle_tcp_event_cable_softreset(struct pd_port *pd_port)
 {
-	bool role_check;
-
 	if (!pd_check_pe_state_ready(pd_port))
 		return TCP_DPM_RET_DENIED_NOT_READY;
 
-	role_check = pd_port->data_role == PD_ROLE_DFP;
-
-	if (pd_check_rev30(pd_port))
-		role_check = pd_port->vconn_role;
-
-	if (!role_check)
-		return TCP_DPM_RET_DENIED_WRONG_DATA_ROLE;
+	if (!pd_is_cable_communication_available(pd_port))
+		return TCP_DPM_RET_DENIED_WRONG_ROLE;
 
 	PE_TRANSIT_STATE(pd_port, PE_DFP_CBL_SEND_SOFT_RESET);
 	return TCP_DPM_RET_SENT;
 }
-#endif	/* CONFIG_PD_DFP_RESET_CABLE */
 
 static inline int pd_handle_tcp_event_get_source_cap(struct pd_port *pd_port)
 {
@@ -203,6 +205,15 @@ static inline int pd_handle_tcp_event_bist_cm2(struct pd_port *pd_port)
 	return TCP_DPM_RET_SENT;
 }
 
+static inline int pd_handle_tcp_event_source_cap(struct pd_port *pd_port)
+{
+	if (pd_port->pe_state_curr != PE_SRC_READY)
+		return TCP_DPM_RET_DENIED_NOT_READY;
+
+	PE_TRANSIT_STATE(pd_port, PE_SRC_SEND_CAPABILITIES);
+	return TCP_DPM_RET_SENT;
+}
+
 #if CONFIG_USB_PD_REV30
 
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
@@ -228,6 +239,27 @@ static inline int pd_handle_tcp_event_get_source_cap_ext(
 	return TCP_DPM_RET_DENIED_NOT_READY;
 }
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
+
+static inline int pd_handle_tcp_event_get_sink_cap_ext(struct pd_port *pd_port)
+{
+	switch (pd_port->pe_state_curr) {
+	case PE_SRC_READY:
+		PE_TRANSIT_STATE(pd_port, PE_SRC_GET_SINK_CAP_EXT);
+		return TCP_DPM_RET_SENT;
+
+#if CONFIG_USB_PD_PR_SWAP
+	case PE_SNK_READY:
+		if (pd_port->dpm_caps & DPM_CAP_LOCAL_DR_POWER) {
+			PE_TRANSIT_STATE(pd_port,
+				PE_DR_SNK_GET_SINK_CAP_EXT);
+			return TCP_DPM_RET_SENT;
+		}
+#endif	/* CONFIG_USB_PD_PR_SWAP */
+		return TCP_DPM_RET_DENIED_LOCAL_CAP;
+	}
+
+	return TCP_DPM_RET_DENIED_NOT_READY;
+}
 
 #if CONFIG_USB_PD_REV30_PPS_SINK
 static inline int pd_handle_tcp_event_get_pps_status(struct pd_port *pd_port)
@@ -340,7 +372,7 @@ static inline int pd_handle_tcp_dpm_event(
 
 	case TCP_DPM_EVT_GOTOMIN:
 #if CONFIG_USB_PD_PE_SOURCE
-		ret =  pd_handle_tcp_event_gotomin(pd_port);
+		ret = pd_handle_tcp_event_gotomin(pd_port);
 #endif	/* CONFIG_USB_PD_PE_SOURCE */
 		break;
 	case TCP_DPM_EVT_SOFTRESET:
@@ -348,9 +380,7 @@ static inline int pd_handle_tcp_dpm_event(
 		break;
 
 	case TCP_DPM_EVT_CABLE_SOFTRESET:
-#if CONFIG_PD_DFP_RESET_CABLE
 		ret = pd_handle_tcp_event_cable_softreset(pd_port);
-#endif	/* CONFIG_PD_DFP_RESET_CABLE */
 		break;
 
 	case TCP_DPM_EVT_GET_SOURCE_CAP:
@@ -358,18 +388,20 @@ static inline int pd_handle_tcp_dpm_event(
 		break;
 
 	case TCP_DPM_EVT_GET_SINK_CAP:
-		ret =  pd_handle_tcp_event_get_sink_cap(pd_port);
+		ret = pd_handle_tcp_event_get_sink_cap(pd_port);
 		break;
+
+#if CONFIG_USB_PD_PE_SOURCE
+	case TCP_DPM_EVT_SOURCE_CAP:
+		ret = pd_handle_tcp_event_source_cap(pd_port);
+		break;
+#endif	/* CONFIG_USB_PD_PE_SOURCE */
 
 #if CONFIG_USB_PD_PE_SINK
 	case TCP_DPM_EVT_REQUEST:
-		ret = pd_handle_tcp_event_request(pd_port);
-		break;
 	case TCP_DPM_EVT_REQUEST_EX:
-		ret = pd_handle_tcp_event_request(pd_port);
-		break;
 	case TCP_DPM_EVT_REQUEST_AGAIN:
-		ret =  pd_handle_tcp_event_request(pd_port);
+		ret = pd_handle_tcp_event_request(pd_port);
 		break;
 #endif	/* CONFIG_USB_PD_PE_SINK */
 
@@ -383,6 +415,10 @@ static inline int pd_handle_tcp_dpm_event(
 		ret = pd_handle_tcp_event_get_source_cap_ext(pd_port);
 		break;
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
+
+	case TCP_DPM_EVT_GET_SINK_CAP_EXT:
+		ret = pd_handle_tcp_event_get_sink_cap_ext(pd_port);
+		break;
 
 #if CONFIG_USB_PD_REV30_STATUS_REMOTE
 	case TCP_DPM_EVT_GET_STATUS:
@@ -437,6 +473,11 @@ static inline int pd_handle_tcp_dpm_event(
 			pd_port, PE_GET_MANUFACTURER_INFO);
 		break;
 #endif	/* CONFIG_USB_PD_REV30_MFRS_INFO_REMOTE */
+
+	case TCP_DPM_EVT_GET_REVISION:
+		ret = pd_make_tcp_event_transit_ready(
+			pd_port, PE_GET_REVISION);
+		break;
 #endif /* CONFIG_USB_PD_REV30 */
 
 	case TCP_DPM_EVT_HARD_RESET:
@@ -458,4 +499,3 @@ bool pd_process_event_tcp(struct pd_port *pd_port, struct pd_event *pd_event)
 	pd_notify_tcp_event_1st_result(pd_port, ret);
 	return ret == TCP_DPM_RET_SENT;
 }
-

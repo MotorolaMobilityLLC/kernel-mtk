@@ -124,7 +124,7 @@ static bool mmi_uvdm_ack(struct pd_port *pd_port,
                                     struct svdm_svid_data *svid_data)
 {
     uint16_t vid = svid_data->svid;
-    uint32_t data = pd_port->uvdm_data[0];
+    uint32_t data = pd_port->cvdm_data[0];
     if ((data >> 16) != vid) {
         return false;
     }
@@ -145,48 +145,48 @@ static void mmi_adapter_set_state(struct pd_port *pd_port,uint8_t state) {
 static void mmi_adapter_cap_request(struct pd_port *pd_port,
                                     struct svdm_svid_data *svid_data)
 {
-    pd_port->uvdm_cnt = 1;
-	pd_port->uvdm_wait_resp = true;
-	pd_port->uvdm_data[0] = MMI_UVDM_CMD(svid_data->svid,
+    pd_port->cvdm_cnt = 1;
+	pd_port->cvdm_wait_resp = true;
+	pd_port->cvdm_data[0] = MMI_UVDM_CMD(svid_data->svid,
                         CMD_HEADER_REQUEST,CMD_CHARGER_CAPACITY);
-    pd_put_tcp_vdm_event(pd_port,TCP_DPM_EVT_UVDM);
+    pd_put_tcp_vdm_event(pd_port,TCP_DPM_EVT_CVDM);
 }
 
 static void mmi_adapter_encrypt(struct pd_port *pd_port,
                                     struct svdm_svid_data *svid_data)
 {
     uint8_t index = 0;
-    pd_port->uvdm_cnt = 1 + SHA256_NUM;
-    pd_port->uvdm_wait_resp = true;
+    pd_port->cvdm_cnt = 1 + SHA256_NUM;
+    pd_port->cvdm_wait_resp = true;
 
-    pd_port->uvdm_data[0] = MMI_UVDM_CMD(svid_data->svid,
+    pd_port->cvdm_data[0] = MMI_UVDM_CMD(svid_data->svid,
                         CMD_HEADER_REQUEST,CMD_CHARGER_AUTHENTICATION);
     for (index = 0;index < SHA256_NUM;index++) {
         get_random_bytes(&(random_num[index]),sizeof(*random_num));
         //random_num[index] = index + 1;
-        pd_port->uvdm_data[index+1] = random_num[index];
+        pd_port->cvdm_data[index+1] = random_num[index];
     }
-    pd_put_tcp_vdm_event(pd_port, TCP_DPM_EVT_UVDM);
+    pd_put_tcp_vdm_event(pd_port, TCP_DPM_EVT_CVDM);
 }
 
 static void mmi_adapter_req_temp(struct pd_port *pd_port,
                                     struct svdm_svid_data *svid_data)
 {
-    pd_port->uvdm_cnt = 1;
-	pd_port->uvdm_wait_resp = true;
-	pd_port->uvdm_data[0] = MMI_UVDM_CMD(svid_data->svid,
+    pd_port->cvdm_cnt = 1;
+	pd_port->cvdm_wait_resp = true;
+	pd_port->cvdm_data[0] = MMI_UVDM_CMD(svid_data->svid,
                         CMD_HEADER_REQUEST,CMD_CHARGER_TEMPERATURE);
-    pd_put_tcp_vdm_event(pd_port,TCP_DPM_EVT_UVDM);
+    pd_put_tcp_vdm_event(pd_port,TCP_DPM_EVT_CVDM);
 }
 
 static void mmi_adapter_verify(struct pd_port *pd_port,
                                     struct svdm_svid_data *svid_data)
 {
-    pd_port->uvdm_cnt = 1;
-	pd_port->uvdm_wait_resp = true;
-	pd_port->uvdm_data[0] = MMI_UVDM_CMD(svid_data->svid,
+    pd_port->cvdm_cnt = 1;
+	pd_port->cvdm_wait_resp = true;
+	pd_port->cvdm_data[0] = MMI_UVDM_CMD(svid_data->svid,
                         CMD_HEADER_ACK,CMD_CHARGER_VERIFY);
-    pd_put_tcp_vdm_event(pd_port,TCP_DPM_EVT_UVDM);
+    pd_put_tcp_vdm_event(pd_port,TCP_DPM_EVT_CVDM);
 }
 
 bool mmi_dfp_notify_pe_startup(
@@ -216,8 +216,8 @@ bool mmi_dfp_notify_uvdm(struct pd_port *pd_port,
     switch(pd_port->mmi_adapter_state) {
     case MMI_REQUEST_CAP:
         if (mmi_uvdm_ack(pd_port,svid_data) &&
-                    pd_port->uvdm_data[1] == CONFIG_MOTO_ADAPTER &&
-                    pd_port->uvdm_data[2] == CONFIG_ADAPTER_68W) {
+                    pd_port->cvdm_data[1] == CONFIG_MOTO_ADAPTER &&
+                    pd_port->cvdm_data[2] == CONFIG_ADAPTER_68W) {
 #ifdef CONFIG_SUPPORT_MMI_ADAPTER_GET_TEMP
             mmi_adapter_set_state(pd_port,MMI_REQUEST_TEMP);
 #else
@@ -228,7 +228,7 @@ bool mmi_dfp_notify_uvdm(struct pd_port *pd_port,
         break;
     case MMI_REQUEST_TEMP:
         if (mmi_uvdm_ack(pd_port,svid_data)) {
-            MMI_INFO("now adapter temp = %d\n",pd_port->uvdm_data[1]);
+            MMI_INFO("now adapter temp = %d\n",pd_port->cvdm_data[1]);
             mmi_adapter_set_state(pd_port,MMI_ENCRYPT);
             return true;
         }
@@ -237,12 +237,12 @@ bool mmi_dfp_notify_uvdm(struct pd_port *pd_port,
         if (mmi_uvdm_ack(pd_port,svid_data)) {
             /**
              * todo hmac-sha256 check
-             * src data : pd_port->uvdm_data[1-4]
+             * src data : pd_port->cvdm_data[1-4]
              * random   : random_num
              */
             mmi_hmac_sha256(key,sizeof(key)-1,random_num,SHA256_NUM,out);
             for (i = 0;i < SHA256_NUM;i++) {
-                if (pd_port->uvdm_data[i+1] != out[i])
+                if (pd_port->cvdm_data[i+1] != out[i])
                     goto out;
             }
             mmi_adapter_set_state(pd_port,MMI_VERIFY);
@@ -251,7 +251,7 @@ bool mmi_dfp_notify_uvdm(struct pd_port *pd_port,
         break;
     case MMI_VERIFY:
         if (mmi_uvdm_ack(pd_port,svid_data) &&
-                       pd_port->uvdm_data[1] == 0x01) {
+                       pd_port->cvdm_data[1] == 0x01) {
             mmi_adapter_set_state(pd_port,MMI_READY);
             dpm_reaction_set(pd_port, DPM_REACTION_GET_SOURCE_CAP);
             return true;
@@ -265,7 +265,7 @@ out:
     return true;
 }
 
-int mmi_notify_pe_ready(struct pd_port *pd_port,
+bool mmi_notify_pe_ready(struct pd_port *pd_port,
 		struct svdm_svid_data *svid_data)
 {
     switch(pd_port->mmi_adapter_state) {
@@ -287,7 +287,7 @@ int mmi_notify_pe_ready(struct pd_port *pd_port,
     default:
         break;
     }
-    return 0;
+    return false;
 }
 
 #endif /* CONFIG_SUPPORT_MMI_ADAPTER */

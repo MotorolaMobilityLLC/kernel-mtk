@@ -83,7 +83,6 @@ enum mt6360_id_rupsel {
 
 #define MT6360_REG_VBUS_DISC_CTRL			(0xB5)
 #define MT6360_REG_CTD_CTRL1				(0xBD)
-#define MT6360_REG_WATCHDOG_CTRL			(0xBE)
 #define MT6360_REG_I2CRST_CTRL				(0xBF)
 
 #define MT6360_REG_WD_DET_CTRL1				(0xC0)
@@ -201,6 +200,7 @@ enum mt6360_id_rupsel {
  * MT6360_REG_MT_MASK1				(0x91)
  */
 
+#define MT6360_M_VBUS_VALID			BIT(5)
 #define MT6360_M_VCONN_SHT_GND			BIT(3)
 #define MT6360_M_VBUS_SAFE0V			BIT(1)
 #define MT6360_M_WAKEUP				BIT(0)
@@ -253,6 +253,7 @@ enum mt6360_id_rupsel {
  * MT6360_REG_MT_ST1				(0x9B)
  */
 
+#define MT6360_ST_VBUS_VALID			BIT(5)
 #define MT6360_ST_VCONN_SHT_GND			BIT(3)
 #define MT6360_ST_VBUS_SAFE0V			BIT(1)
 
@@ -286,16 +287,6 @@ enum mt6360_id_rupsel {
 	(MT6360_ST_HIDET_CC2 | MT6360_ST_HIDET_CC1)
 #define MT6360_ST_LODET_CC \
 	(MT6360_ST_LODET_CC2 | MT6360_ST_LODET_CC1)
-
-/*
- * MT6360_REG_WATCHDOG_CTRL			(0xBE)
- */
-
-#define MT6360_WATCHDOG_SEL			0x0F
-
-/* timeout = (tout+1) * 0.4sec */
-#define MT6360_REG_WATCHDOG_CTRL_SET(tout) \
-	(tout & MT6360_WATCHDOG_SEL)
 
 /*
  * MT6360_REG_I2CRST_CTRL			(0xBF)

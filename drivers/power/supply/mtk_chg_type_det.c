@@ -57,16 +57,6 @@ enum {
 };
 
 #define FAST_CHG_WATT 7500000 /* mW */
-/* map with charger.c */
-enum attach_type {
-	ATTACH_TYPE_NONE,
-	ATTACH_TYPE_PWR_RDY,
-	ATTACH_TYPE_TYPEC,
-	ATTACH_TYPE_PD,
-	ATTACH_TYPE_PD_SDP,
-	ATTACH_TYPE_PD_DCP,
-	ATTACH_TYPE_PD_NONSTD,
-};
 
 static int mtk_ext_get_charger_type(struct mtk_ctd_info *mci, int attach)
 {
@@ -192,7 +182,7 @@ static void handle_pd_rdy_attach(struct mtk_ctd_info *mci, struct tcp_notify *no
 		mci->pd_rdy = true;
 		mutex_unlock(&mci->attach_lock);
 
-		usb_comm = tcpm_is_comm_capable(mci->tcpc_dev);
+		usb_comm = tcpm_inquire_usb_comm(mci->tcpc_dev);
 		tcpm_get_remote_power_cap(mci->tcpc_dev, &cap);
 		watt = cap.max_mv[0] * cap.ma[0];
 		dev_info(mci->dev, "%s: mv:%d, ma:%d, watt: %d\n",
