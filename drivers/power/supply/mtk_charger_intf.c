@@ -385,7 +385,7 @@ int get_charger_type(struct mtk_charger *info)
 		return prop_wls.intval;
 	if (POWER_SUPPLY_TYPE_UNKNOWN != prop2.intval)
 		return prop2.intval;
-	else if(POWER_SUPPLY_TYPE_UNKNOWN != prop_wls.intval)
+	else if( info->wireless_online && (POWER_SUPPLY_TYPE_UNKNOWN != prop_wls.intval))
 		return prop_wls.intval;
 	else
 		return POWER_SUPPLY_TYPE_UNKNOWN;
