@@ -1369,8 +1369,8 @@ static int tfa98xx_set_profile(struct snd_kcontrol *kcontrol,
 			tfa98xx->rate, profile, new_profile);
 		return 0;
 	}
-	pr_debug("selected container profile [%d -> %d]\n", cur_prof_idx, prof_idx);
-	pr_debug("switch profile [%s -> %s]\n",
+	pr_info("selected container profile [%d -> %d]\n", cur_prof_idx, prof_idx);
+	pr_info("switch profile [%s -> %s]\n",
 		tfa_cont_profile_name(tfa98xx, cur_prof_idx),
 		tfa_cont_profile_name(tfa98xx, prof_idx));
 
@@ -3132,24 +3132,30 @@ static int tfa98xx_hw_params(struct snd_pcm_substream *substream,
 	rate = params_rate(params);
 	tfa98xx->tfa->bitwidth = params_width(params);
 	tfa98xx->tfa->dynamicTDMmode = pcm_sample_format;
-	pr_debug("Requested rate: %d, sample size: %d, physical size: %d\n",
+	pr_info("Requested rate: %d, sample size: %d, physical size: %d\n",
 		rate, snd_pcm_format_width(params_format(params)),
 		snd_pcm_format_physical_width(params_format(params)));
 
 	if (no_start != 0)
 		return 0;
 	/* set TDM bit width */
-	pr_debug("%s: Requested width: %d\n", __func__,
+	pr_info("%s: Requested width: %d\n", __func__,
 			params_width(params));
 	if ((tfa98xx->tfa->dynamicTDMmode == 3) && tfa_dev_set_tdm_bitwidth(tfa98xx->tfa,tfa98xx->tfa->bitwidth))
 		return -EINVAL;
+
+	if (substream->stream != SNDRV_PCM_STREAM_PLAYBACK) {
+		pr_info("%s: stream type is %d, return!\n", __func__, substream->stream);
+		return 0;
+	}
+
 	/* check if samplerate is supported for this mixer profile */
 	prof_idx = get_profile_id_for_sr(tfa98xx_mixer_profile, rate);
 	if (prof_idx < 0) {
 		pr_err("tfa98xx: invalid sample rate %d.\n", rate);
 		return -EINVAL;
 	}
-	pr_debug("mixer profile:container profile = [%d:%d]\n", tfa98xx_mixer_profile, prof_idx);
+	pr_info("mixer profile:container profile = [%d:%d]\n", tfa98xx_mixer_profile, prof_idx);
 
 
 	/* update 'real' profile (container profile) */
