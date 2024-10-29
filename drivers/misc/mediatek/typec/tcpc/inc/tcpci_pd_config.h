@@ -161,7 +161,12 @@
 #define CONFIG_USB_PD_IGNORE_PS_RDY_AFTER_PR_SWAP	1
 
 /* S/W patch for delayed ps_change related to PS_RDY during PR_SWAP */
+#if IS_ENABLED(CONFIG_TCPC_SC2150)
+#define CONFIG_USB_PD_VBUS_DETECTION_DURING_PR_SWAP	0
+#else
 #define CONFIG_USB_PD_VBUS_DETECTION_DURING_PR_SWAP	1
+#endif
+
 
 /*
  * S/W patch for INT handler was stuck by other task (system busy)
