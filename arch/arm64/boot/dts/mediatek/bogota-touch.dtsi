@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2020 MediaTek Inc.
+ */
+
+/* TOUCH start */
+
+&spi3 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	mediatek,pad-select = <0>, <1>, <2>;
+	pinctrl-names = "default", "ft8725_spi_mode";
+        pinctrl-0 = <&ctp_ft8725_pins_default>;
+        pinctrl-1 = <&ctp_ft8725_spi_mode>;
+
+	novatek@0{
+		compatible = "novatek,NVT-ts-spi";
+		reg = <0>; //Same as CS ID
+		status = "ok";
+
+		spi-max-frequency = <9600000>;	//4800000,9600000,15000000,19200000
+		novatek,reset-gpio = <&pio 3 0x00>;
+		novatek,irq-gpio = <&pio 22 0x2001>;
+		novatek,usb_charger;
+		novatek,report_gesture_key;
+		novatek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
+		novatek,psy-name = "battery";
+
+		// 525
+		//novatek,swrst-n8-addr = <0x01F01A>;
+
+		// 672A, 525B, 675, 526, 672C, 523
+		novatek,swrst-n8-addr = <0x03F0FE>;
+		novatek,spi-rd-fast-addr = <0x03F310>;
+	};
+
+	ilitek@1{
+                compatible = "tchip,ilitek";
+                reg = <1>; //Same as CS ID
+                status = "ok";
+                touch,reset-gpio = <&pio 3 0x0>;
+                touch,irq-gpio = <&pio 22 0x0>;
+                touch,psy-name = "battery";
+                ilitek,report_gesture_key;
+                ilitek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
+        };
+
+	focaltech@2{
+		compatible = "focaltech,fts";
+                reg = <2>; //Same as CS ID
+                status = "ok";
+		spi-max-frequency = <6000000>;
+                focaltech,reset-gpio = <&pio 3 0x0>;
+                focaltech,irq-gpio = <&pio 22 0x0>;
+                focaltech,max-touch-number = <10>;
+                focaltech,display-coords = <0 0 1080 2400>;
+                focaltech,report_gesture_key = <59>;
+                focaltech,supported_gesture_type = <0x06>;
+                focaltech,panel-supplier = "csot_ft8725";
+                focaltech,touch-charger-detect-psy-name = "battery";
+                focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
+	};
+};
+
+&pio {
+        ctp_ft8725_pins_default: pins_default {
+        };
+        ctp_ft8725_spi_mode: spimode_default {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO73__FUNC_SPI3_CLK>,
+                                <PINMUX_GPIO74__FUNC_SPI3_CSB>,
+                                <PINMUX_GPIO75__FUNC_SPI3_MO>,
+                                <PINMUX_GPIO76__FUNC_SPI3_MI>;
+                        drive-strength = <2>;
+                };
+        };
+};
+
+/* TOUCH end */
