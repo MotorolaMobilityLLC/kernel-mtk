@@ -2149,7 +2149,7 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 	}
 
 	if (m_chg_type != 0x09) {
-		mt6375_chg_field_set(ddata, F_IAICR, 3000);
+		mt6375_chg_field_set(ddata, F_IAICR, 2000);
 	} else {
 		mt6375_chg_field_set(ddata, F_IAICR, 500);
 	}
