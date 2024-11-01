@@ -104,18 +104,6 @@ static bool dpm_select_pdo_from_vsafe5v(
 }
 
 /*
- * Select PDO from Custom
- */
-
-static bool dpm_select_pdo_from_custom(
-	struct dpm_select_info_t *select_info,
-	struct dpm_pdo_info_t *sink, struct dpm_pdo_info_t *source)
-{
-	/* TODO */
-	return dpm_select_pdo_from_vsafe5v(select_info, sink, source);
-}
-
-/*
  * Select PDO from Max Power
  */
 
@@ -251,7 +239,11 @@ bool dpm_find_match_req_info(struct pd_port *pd_port,
 		break;
 
 	case DPM_CHARGING_POLICY_CUSTOM:
-		select_pdo_fun = dpm_select_pdo_from_custom;
+		if (pd_port->pe_data.explicit_contract) {
+			select.policy = DPM_CHARGING_POLICY_MAX_POWER_LVIC;
+			select_pdo_fun = dpm_select_pdo_from_max_power;
+		} else
+			select_pdo_fun = dpm_select_pdo_from_vsafe5v;
 		break;
 
 #if CONFIG_USB_PD_REV30_PPS_SINK

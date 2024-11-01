@@ -461,12 +461,12 @@ static inline bool pd_process_timer_msg(
 
 #if CONFIG_USB_PD_REV30
 	case PD_TIMER_SINK_TX:
-		if (pd_port->pe_data.pd_traffic_control == PD_SINK_TX_NG)
-			pd_port->pe_data.pd_traffic_control = PD_SOURCE_TX_OK;
 #if CONFIG_USB_PD_REV30_SRC_FLOW_DELAY_STARTUP
 		if (pd_port->pe_data.pd_traffic_control == PD_SOURCE_TX_START)
 			pd_port->pe_data.pd_traffic_control = PD_SINK_TX_OK;
 #endif	/* CONFIG_USB_PD_REV30_SRC_FLOW_DELAY_STARTUP */
+		if (pd_port->pe_data.pd_traffic_control == PD_SINK_TX_NG)
+			pd_port->pe_data.pd_traffic_control = PD_SOURCE_TX_OK;
 		dpm_reaction_set_ready_once(pd_port);
 		break;
 

@@ -74,7 +74,7 @@ static void pd_dpm_update_pdos_flags(struct pd_port *pd_port, uint32_t pdo,
 		& ~DPM_FLAGS_RESET_PARTNER_MASK;
 
 	/* Only update PDO flags if pdo's type is fixed */
-	if ((pdo & PDO_TYPE_MASK) == PDO_TYPE_FIXED) {
+	if (PDO_TYPE(pdo) == PDO_TYPE_FIXED) {
 		if (pdo & PDO_FIXED_DUAL_ROLE_POWER)
 			dpm_flags |= DPM_FLAGS_PARTNER_DR_POWER;
 
@@ -276,7 +276,7 @@ void pd_dpm_start_pps_request(struct pd_port *pd_port, bool en)
 {
 	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
 
-	DPM_INFO("pps (%s)\n", en ? "start" : "end");
+	DPM_INFO2("pps (%s)\n", en ? "start" : "end");
 	if (en) {
 		pm_stay_awake(&tcpc->dev);
 		pd_restart_timer(pd_port, PD_TIMER_PPS_REQUEST);
@@ -426,7 +426,6 @@ static inline void dpm_update_request_not_bat(struct pd_port *pd_port,
 
 #if CONFIG_USB_PD_REV30_PPS_SINK
 	if (req_info->type == DPM_PDO_TYPE_APDO) {
-		pd_port->request_apdo = true;
 		pd_port->last_rdo = RDO_APDO(
 				req_info->pos, req_info->vmin,
 				req_info->oper_ma, flags);
@@ -445,10 +444,7 @@ static inline void dpm_update_request(
 	uint32_t flags = 0;
 	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
 	const bool rejected = pd_port->pe_data.request_rejected;
-
-#if CONFIG_USB_PD_REV30_PPS_SINK
-	pd_port->request_apdo = false;
-#endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+	struct pd_port_power_caps *src_cap = &pd_port->pe_data.remote_src_cap;
 
 	if (pd_port->dpm_caps & DPM_CAP_LOCAL_GIVE_BACK)
 		flags |= RDO_GIVE_BACK;
@@ -475,6 +471,8 @@ static inline void dpm_update_request(
 		dpm_update_request_bat(pd_port, req_info, flags);
 	else
 		dpm_update_request_not_bat(pd_port, req_info, flags);
+	pd_port->prev_src_pdo = pd_port->last_src_pdo;
+	pd_port->last_src_pdo = src_cap->pdos[req_info->pos-1];
 
 #if CONFIG_USB_PD_DIRECT_CHARGE
 	pd_notify_pe_direct_charge(pd_port,
@@ -613,22 +611,13 @@ void pd_dpm_snk_evaluate_caps(struct pd_port *pd_port)
 
 void pd_dpm_snk_standby_power(struct pd_port *pd_port)
 {
-#if CONFIG_USB_PD_SNK_STANDBY_POWER
 	/*
-	 * pSnkStdby :
-	 *   Maximum power consumption while in Sink Standby. (2.5W)
-	 * I1 = (pSnkStdby/VBUS)
-	 * I2 = (pSnkStdby/VBUS) + cSnkBulkPd(DVBUS/Dt)
-	 * STANDBY_UP = I1 < I2, STANDBY_DOWN = I1 > I2
-	 *
-	 * tSnkNewPower (t1):
-	 *   Maximum transition time between power levels. (15ms)
+	 * iSnkStdby :
+	 *   Maximum current during voltage transition. (500mA)
 	 */
-
 	uint8_t type;
 	int ma = -1;
-	int standby_curr = 2500000 / max(pd_port->request_v,
-					 pd_port->request_v_new);
+	const int standby_curr = 500;
 
 #if CONFIG_USB_PD_VCONN_SAFE5V_ONLY
 	struct tcpc_device *tcpc = pd_port->tcpc;
@@ -647,41 +636,32 @@ void pd_dpm_snk_standby_power(struct pd_port *pd_port)
 #if CONFIG_USB_PD_REV30_PPS_SINK
 	/*
 	 * A Sink is not required to transition to Sink Standby
-	 *	when operating with a Programmable Power Supply
-	 *	(Check it later, against new spec)
+	 * when operating within the negotiated PPS APDO.
+	 * If the Sink negotiates for a new PPS APDO,
+	 * then the Sink Shall transition to Sink Standby
+	 * while changing between PPS APDOs.
 	 */
-	if (pd_port->request_apdo)
+	if (pd_port->last_src_pdo == pd_port->prev_src_pdo &&
+	    pd_port->request_apdo)
 		return;
 #endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
 
-	if (pd_port->request_v_new > pd_port->request_v) {
-		/* Case2 Increasing the Voltage */
-		/* Case3 Increasing the Voltage and Current */
-		/* Case4 Increasing the Voltage and Decreasing the Curren */
-		ma = standby_curr;
-		type = TCP_VBUS_CTRL_STANDBY_UP;
-	} else if (pd_port->request_v_new < pd_port->request_v) {
-		/* Case5 Decreasing the Voltage and Increasing the Current */
-		/* Case7 Decreasing the Voltage */
-		/* Case8 Decreasing the Voltage and the Current*/
-		ma = standby_curr;
-		type = TCP_VBUS_CTRL_STANDBY_DOWN;
-	} else if (pd_port->request_i_new < pd_port->request_i) {
-		/* Case6 Decreasing the Current, t1 i = new */
-		ma = pd_port->request_i_new;
-		type = TCP_VBUS_CTRL_STANDBY;
-	}
-
-	if (ma >= 0) {
+	if (pd_port->request_v_new == pd_port->request_v &&
+	    pd_port->request_i_new == pd_port->request_i)
+		return;
+	else if (pd_port->request_i > standby_curr ||
+		 pd_port->request_i > pd_port->request_i_new) {
+		ma = (standby_curr > pd_port->request_i_new) ?
+		      pd_port->request_i_new : standby_curr;
+		if (pd_port->request_v_new > pd_port->request_v)
+			type = TCP_VBUS_CTRL_STANDBY_UP;
+		else if (pd_port->request_v_new < pd_port->request_v)
+			type = TCP_VBUS_CTRL_STANDBY_DOWN;
+		else
+			type = TCP_VBUS_CTRL_STANDBY;
 		tcpci_sink_vbus(
 			pd_port->tcpc, type, pd_port->request_v_new, ma);
 	}
-#else
-#if CONFIG_USB_PD_SNK_GOTOMIN
-	tcpci_sink_vbus(pd_port->tcpc, TCP_VBUS_CTRL_REQUEST,
-		pd_port->request_v, pd_port->request_i_new);
-#endif	/* CONFIG_USB_PD_SNK_GOTOMIN */
-#endif	/* CONFIG_USB_PD_SNK_STANDBY_POWER */
 }
 
 void pd_dpm_snk_transition_power(struct pd_port *pd_port)
@@ -693,6 +673,8 @@ void pd_dpm_snk_transition_power(struct pd_port *pd_port)
 	pd_port->request_i = pd_port->request_i_new;
 
 #if CONFIG_USB_PD_REV30_PPS_SINK
+	pd_port->request_apdo =
+		PDO_TYPE(pd_port->last_src_pdo) == PDO_TYPE_APDO;
 	pd_dpm_start_pps_request(pd_port, pd_port->request_apdo);
 #endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
 }
@@ -766,7 +748,7 @@ static inline bool dpm_evaluate_request(
 	sink_v = src_info.vmin;
 
 #if CONFIG_USB_PD_REV30_PPS_SOURCE
-	if ((pdo & PDO_TYPE_MASK) == PDO_TYPE_APDO) {
+	if (PDO_TYPE(pdo) == PDO_TYPE_APDO) {
 		sink_v = RDO_APDO_EXTRACT_OP_MV(rdo);
 
 		if ((sink_v < src_info.vmin) || (sink_v > src_info.vmax)) {
@@ -834,7 +816,7 @@ void pd_dpm_src_transition_power(struct pd_port *pd_port)
 #if CONFIG_USB_PD_SRC_HIGHCAP_POWER
 	if (pd_port->request_v > pd_port->request_v_new) {
 		mutex_lock(&pd_port->tcpc->access_lock);
-		tcpci_enable_force_discharge(
+		tcpci_enable_discharge(
 			pd_port->tcpc, true, pd_port->request_v_new);
 		mutex_unlock(&pd_port->tcpc->access_lock);
 	}
@@ -950,7 +932,7 @@ static int dpm_vdm_ufp_response_id(struct pd_port *pd_port)
 		rev30 ? pd_port->id_vdo_nr : 3, pd_port->id_vdos);
 }
 
-static int dpm_ufp_response_svids(struct pd_port *pd_port)
+static int dpm_vdm_ufp_response_svids(struct pd_port *pd_port)
 {
 	struct svdm_svid_data *svid_data;
 	uint16_t svid_list[2];
@@ -1019,7 +1001,7 @@ void pd_dpm_ufp_request_svid_info(struct pd_port *pd_port)
 		return;
 	}
 
-	dpm_ufp_response_svids(pd_port);
+	dpm_vdm_ufp_response_svids(pd_port);
 }
 
 void pd_dpm_ufp_request_mode_info(struct pd_port *pd_port)
@@ -1334,15 +1316,13 @@ void pd_dpm_ufp_recv_cvdm(struct pd_port *pd_port)
 	if (svid_data) {
 		if (svid_data->ops->ufp_notify_cvdm)
 			svid_data->ops->ufp_notify_cvdm(pd_port, svid_data);
-		else
-			VDM_STATE_DPM_INFORMED(pd_port);
 
 		tcpci_notify_cvdm(pd_port->tcpc, true);
 	} else {
 		pd_put_dpm_event(pd_port, cable ? PD_DPM_CABLE_NOT_SUPPORT :
 						  PD_DPM_NOT_SUPPORT);
-		VDM_STATE_DPM_INFORMED(pd_port);
 	}
+	VDM_STATE_DPM_INFORMED(pd_port);
 }
 
 void pd_dpm_dfp_send_cvdm(struct pd_port *pd_port)
@@ -1539,19 +1519,10 @@ void pd_dpm_prs_evaluate_swap(struct pd_port *pd_port, uint8_t role)
 {
 	int good_power;
 	bool sink, accept = true;
-
 	bool check_src = (pd_port->dpm_caps & DPM_CAP_PR_SWAP_CHECK_GP_SRC) ?
 		true : false;
 	bool check_snk = (pd_port->dpm_caps & DPM_CAP_PR_SWAP_CHECK_GP_SNK) ?
 		true : false;
-
-#if CONFIG_USB_PD_SRC_REJECT_PR_SWAP_IF_GOOD_PW
-	bool check_ext =
-		(pd_port->dpm_caps & DPM_CAP_CHECK_EXT_POWER) ? true : false;
-
-	if (check_ext)
-		check_src = true;
-#endif	/* CONFIG_USB_PD_SRC_REJECT_PR_SWAP_IF_GOOD_PW */
 
 	if (check_src || check_snk) {
 		sink = pd_port->power_role == PD_ROLE_SINK;
@@ -2030,7 +2001,7 @@ void pd_dpm_inform_pps_status(struct pd_port *pd_port)
 
 	if (dpm_check_ext_msg_event(pd_port, PD_EXT_PPS_STATUS)) {
 		ppssdb = pd_get_msg_data_payload(pd_port);
-		DPM_INFO2("mv=%d, ma=%d\n",
+		DPM_INFO("mv=%d, ma=%d\n",
 			PD_PPS_GET_OUTPUT_MV(ppssdb->output_vol_raw),
 			PD_PPS_GET_OUTPUT_MA(ppssdb->output_curr_raw));
 	}
@@ -2081,7 +2052,7 @@ void pd_dpm_dynamic_enable_vconn(struct pd_port *pd_port)
 		return;
 
 	if (pd_port->vconn_role == PD_ROLE_VCONN_DYNAMIC_OFF) {
-		DPM_INFO2("DynamicVCEn\n");
+		DPM_INFO("DynamicVCEn\n");
 		pd_set_vconn(pd_port, PD_ROLE_VCONN_DYNAMIC_ON);
 	}
 }
@@ -2113,7 +2084,7 @@ void pd_dpm_dynamic_disable_vconn(struct pd_port *pd_port)
 		return;
 
 	if (pd_port->vconn_role != PD_ROLE_VCONN_DYNAMIC_OFF) {
-		DPM_INFO2("DynamicVCDis\n");
+		DPM_INFO("DynamicVCDis\n");
 		pd_set_vconn(pd_port, PD_ROLE_VCONN_DYNAMIC_OFF);
 	}
 }
@@ -2169,8 +2140,10 @@ int pd_dpm_notify_pe_startup(struct pd_port *pd_port)
 			reactions |= DPM_REACTION_ATTEMPT_GET_FLAG;
 	}
 
-	if (pd_port->dpm_caps & DPM_CAP_ATTEMPT_DISCOVER_CABLE)
+	if (pd_port->dpm_caps & DPM_CAP_ATTEMPT_DISCOVER_CABLE) {
+		pd_port->dp_v21 = false;
 		reactions |= DPM_REACTION_DISCOVER_CABLE_FLOW;
+	}
 
 	if (pd_port->dpm_caps & DPM_CAP_ATTEMPT_ENTER_DP_MODE &&
 	    pd_port->data_role == PD_ROLE_DFP)

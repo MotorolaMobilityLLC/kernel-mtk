@@ -20,17 +20,21 @@ static inline void *pd_get_tcp_event_data_object(struct pd_port *pd_port)
 
 static void pe_idle_reset_data(struct pd_port *pd_port)
 {
+	struct pe_data *pe_data = &pd_port->pe_data;
+
 	pd_reset_pe_timer(pd_port);
 	pd_reset_svid_data(pd_port);
 
-	pd_port->pe_data.pd_prev_connected = false;
-	pd_port->state_machine = PE_STATE_MACHINE_IDLE;
+	pe_data->pd_prev_connected = false;
+	pe_data->pd_connected = false;
+	pe_data->explicit_contract = false;
+	pe_data->pe_ready = false;
 
-	pd_enable_bist_test_mode(pd_port, false);
-#if !CONFIG_USB_PD_TRANSMIT_BIST2
-	pd_disable_bist_mode2(pd_port);
-#endif	/* CONFIG_USB_PD_TRANSMIT_BIST2 */
-	pd_noitfy_pe_bist_mode(pd_port, PD_BIST_MODE_DISABLE);
+	pd_notify_pe_bist_mode(pd_port, PD_BIST_MODE_DISABLE);
+
+	pd_port->state_machine = PE_STATE_MACHINE_IDLE;
+	pd_port->last_src_pdo = 0;
+	pd_port->dp_v21 = false;
 
 	pd_enable_timer(pd_port, PD_TIMER_PE_IDLE_TOUT);
 }
@@ -94,27 +98,23 @@ void pe_bist_test_data_entry(struct pd_port *pd_port)
 {
 	PE_STATE_IGNORE_UNKNOWN_EVENT(pd_port);
 
-	pd_noitfy_pe_bist_mode(pd_port, PD_BIST_MODE_TEST_DATA);
-	pd_enable_bist_test_mode(pd_port, true);
+	pd_notify_pe_bist_mode(pd_port, PD_BIST_MODE_TEST_DATA);
 }
 
 void pe_bist_test_data_exit(struct pd_port *pd_port)
 {
-	pd_enable_bist_test_mode(pd_port, false);
-	pd_noitfy_pe_bist_mode(pd_port, PD_BIST_MODE_DISABLE);
+	pd_notify_pe_bist_mode(pd_port, PD_BIST_MODE_DISABLE);
 }
 
 void pe_bist_carrier_mode_2_entry(struct pd_port *pd_port)
 {
-	pd_noitfy_pe_bist_mode(pd_port, PD_BIST_MODE_CARRIER_2);
-	pd_send_bist_mode2(pd_port);
+	pd_notify_pe_bist_mode(pd_port, PD_BIST_MODE_CARRIER_2);
 	pd_enable_pe_state_timer(pd_port, PD_TIMER_BIST_CONT_MODE);
 }
 
 void pe_bist_carrier_mode_2_exit(struct pd_port *pd_port)
 {
-	pd_disable_bist_mode2(pd_port);
-	pd_noitfy_pe_bist_mode(pd_port, PD_BIST_MODE_DISABLE);
+	pd_notify_pe_bist_mode(pd_port, PD_BIST_MODE_DISABLE);
 }
 
 #if CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG
@@ -159,28 +159,8 @@ void pe_send_soft_reset_standby_entry(struct pd_port *pd_port)
  * Policy Engine Share State Activity
  */
 
-static inline uint8_t pe20_power_ready_entry(struct pd_port *pd_port)
-{
-	if (pd_is_cable_communication_available(pd_port))
-		return PD_RX_CAP_PE_READY_DFP;
-	else
-		return PD_RX_CAP_PE_READY_UFP;
-}
-
-#if CONFIG_USB_PD_REV30
-static inline uint8_t pe30_power_ready_entry(struct pd_port *pd_port)
-{
-	dpm_reaction_clear(pd_port,
-		DPM_REACTION_DFP_FLOW_DELAY |
-		DPM_REACTION_UFP_FLOW_DELAY);
-
-	return pe20_power_ready_entry(pd_port);
-}
-#endif	/* CONFIG_USB_PD_REV30 */
-
 void pe_power_ready_entry(struct pd_port *pd_port)
 {
-	uint8_t rx_cap;
 	struct pe_data *pe_data = &pd_port->pe_data;
 
 	pd_port->state_machine = PE_STATE_MACHINE_NORMAL;
@@ -198,12 +178,11 @@ void pe_power_ready_entry(struct pd_port *pd_port)
 
 #if CONFIG_USB_PD_REV30
 	if (pd_check_rev30(pd_port))
-		rx_cap = pe30_power_ready_entry(pd_port);
-	else
+		dpm_reaction_clear(pd_port, DPM_REACTION_DFP_FLOW_DELAY |
+					    DPM_REACTION_UFP_FLOW_DELAY);
 #endif	/* CONFIG_USB_PD_REV30 */
-		rx_cap = pe20_power_ready_entry(pd_port);
 
-	pd_set_rx_enable(pd_port, rx_cap);
+	pd_set_rx_enable(pd_port, PD_RX_CAP_PE_READY);
 
 	dpm_reaction_set(pd_port, DPM_REACTION_CAP_READY_ONCE);
 	pd_notify_tcp_event_2nd_result(pd_port, TCP_DPM_RET_SUCCESS);
@@ -393,6 +372,9 @@ void pe_vdm_not_supported_entry(struct pd_port *pd_port)
 	bool cable = pd_event->msg == PD_DPM_CABLE_NOT_SUPPORT;
 
 	PE_STATE_WAIT_TX_SUCCESS(pd_port);
+
+	if (cable)
+		pd_set_rx_enable(pd_port, PD_RX_CAP_PE_READY_CABLE);
 
 	(cable ? pd_send_sop_prime_ctrl_msg :
 		 pd_send_sop_ctrl_msg)(pd_port, PD_CTRL_NOT_SUPPORTED);

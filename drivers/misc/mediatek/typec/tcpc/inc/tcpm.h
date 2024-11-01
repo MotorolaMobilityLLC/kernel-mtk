@@ -147,7 +147,8 @@ enum {
 	TCP_NOTIFY_WD0_STATE,
 	TCP_NOTIFY_PS_CHANGE,
 	TCP_NOTIFY_CC_HI,
-	TCP_NOTIFY_MISC_END = TCP_NOTIFY_CC_HI,
+	TCP_NOTIFY_ALERT_RATELIMITED,
+	TCP_NOTIFY_MISC_END = TCP_NOTIFY_ALERT_RATELIMITED,
 	/*mmi pd vdm verify*/
 	TCP_NOTIFY_PD_VDM_VERIFY,
 };
@@ -353,6 +354,7 @@ struct tcp_notify {
 		struct tcp_ny_wd0_state wd0_state;
 		int vbus_level;
 		int cc_hi;
+		bool alert_ratelimited;
 	};
 };
 
@@ -1348,12 +1350,6 @@ static inline uint8_t tcpm_inquire_typec_local_rp(struct tcpc_device *tcpc)
 static inline void tcpm_inquire_sink_vbus(struct tcpc_device *tcpc,
 					  int *mv, int *ma, uint8_t *type)
 {
-}
-
-static inline int tcpm_typec_set_wake_lock(
-	struct tcpc_device *tcpc, bool user_lock)
-{
-	return TCPM_ERROR_NO_IMPLEMENT;
 }
 
 static inline int tcpm_typec_set_usb_sink_curr(

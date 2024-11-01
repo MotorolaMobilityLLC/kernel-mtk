@@ -423,7 +423,7 @@ static inline bool pd_process_timer_msg(
 	case PD_TIMER_HARD_RESET_SAFE0V:
 	case PD_TIMER_HARD_RESET_SAFE5V:
 #endif /* !CONFIG_USB_PD_RETRY_HRESET */
-		PE_INFO("SRC NoResp\n");
+		PE_DBG("SRC NoResp\n");
 		if (pd_port->request_v == TCPC_VBUS_SINK_5V) {
 			pd_report_typec_only_charger(pd_port);
 		} else {
@@ -457,8 +457,7 @@ static inline bool pd_process_timer_msg(
 		if (pd_port->request_apdo) {
 			pd_put_deferred_tcp_event(tcpc, &tcp_event);
 			pd_restart_timer(pd_port, PD_TIMER_PPS_REQUEST);
-		} else
-			pm_relax(&tcpc->dev);
+		}
 		break;
 #endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
 #endif	/* CONFIG_USB_PD_REV30 */

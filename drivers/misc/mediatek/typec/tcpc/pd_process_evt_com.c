@@ -573,9 +573,6 @@ static inline bool pd_check_rx_pending(struct pd_port *pd_port)
 	if (mutex_is_locked(&tcpc->rxbuf_lock)) {
 		PE_INFO("rx_pending\n");
 		pending = true;
-	} else if (!pd_is_msg_empty(tcpc)) {
-		PE_INFO("rx_pending2\n");
-		pending = true;
 	}
 
 	if (pending)

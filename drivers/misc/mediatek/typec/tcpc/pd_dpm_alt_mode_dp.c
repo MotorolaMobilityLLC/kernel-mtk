@@ -113,7 +113,7 @@ bool dp_dfp_u_notify_pe_ready(
 	struct dp_data *dp_data = pd_get_dp_data(pd_port);
 	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
 
-	DPM_DBG("%s\n", __func__);
+	DP_INFO("%s\n", __func__);
 
 	if (pd_port->data_role != PD_ROLE_DFP)
 		return false;
@@ -297,12 +297,12 @@ static inline uint8_t dp_dfp_u_select_mode(struct pd_port *pd_port,
 		}
 	}
 
-#if DP_INFO_ENABLE
+#if DP_DBG_ENABLE
 	for (i = 0; i < remote->mode_cnt; i++)
-		DP_INFO("Mode%d=0x%08x\n", i, remote->mode_vdo[i]);
+		DP_DBG("Mode%d=0x%08x\n", i, remote->mode_vdo[i]);
 
-	DP_INFO("SelectMode:%d\n", remote_index);
-#endif	/* DP_INFO_ENABLE */
+	DP_DBG("SelectMode:%d\n", remote_index);
+#endif	/* DP_DBG_ENABLE */
 
 	return remote_index + 1;
 }
@@ -332,7 +332,7 @@ bool dp_dfp_u_notify_discover_modes(
 		pd_port, dp_data, svid_data);
 
 	if (pd_port->mode_obj_pos == 0) {
-		DPM_DBG("Can't find match mode\n");
+		DP_DBG("Can't find match mode\n");
 		dp_dfp_u_set_state(pd_port, DP_DFP_U_ERR_DISCOVER_MODES_CAP);
 		return false;
 	}
@@ -349,6 +349,7 @@ bool dp_dfp_u_notify_discover_modes(
 		pd_port->pe_data.discover_cable_id_counter = 0;
 		pd_port->pe_data.cable_discovered_state = CABLE_DISCOVERED_NONE;
 		dp_dfp_u_set_state(pd_port, DP_DFP_U_DISCOVER_CABLE);
+		pd_port->dp_v21 = true;
 		dpm_reaction_set(pd_port, DPM_REACTION_DISCOVER_CABLE_FLOW);
 	} else {
 		dp_dfp_u_set_state(pd_port, DP_DFP_U_ENTER_MODE);
@@ -447,8 +448,8 @@ static inline bool dp_dfp_u_select_pin_mode(struct pd_port *pd_port)
 		return false;
 	}
 
-	PE_DBG("modes=0x%x 0x%x\n", dp_mode[0], dp_mode[1]);
-	PE_DBG("pins=0x%x 0x%x\n", pin_cap[0], pin_cap[1]);
+	DP_DBG("modes=0x%x 0x%x\n", dp_mode[0], dp_mode[1]);
+	DP_DBG("pins=0x%x 0x%x\n", pin_cap[0], pin_cap[1]);
 
 	pin_caps = pin_cap[0] & pin_cap[1];
 
@@ -543,7 +544,7 @@ static inline bool dp_dfp_u_update_dp_connected(struct pd_port *pd_port)
 			pd_port, dp_local_connected, false);
 
 		if (!valid_connected) {
-			DP_INFO("BOTH_SEL_ONE\n");
+			DP_DBG("BOTH_SEL_ONE\n");
 			pd_put_tcp_vdm_event(pd_port,
 				TCP_DPM_EVT_DP_STATUS_UPDATE);
 		}
@@ -867,14 +868,14 @@ next_state:
 
 /* DP : UFP_U */
 
-#if DPM_DBG_ENABLE
+#if DP_DBG_ENABLE
 static const char * const dp_ufp_u_state_name[] = {
 	"dp_ufp_u_none",
 	"dp_ufp_u_startup",
 	"dp_ufp_u_wait",
 	"dp_ufp_u_operation",
 };
-#endif /* DPM_DBG_ENABLE */
+#endif /* DP_DBG_ENABLE */
 
 static void dp_ufp_u_set_state(struct pd_port *pd_port, uint8_t state)
 {
@@ -884,9 +885,9 @@ static void dp_ufp_u_set_state(struct pd_port *pd_port, uint8_t state)
 	dp_data->ufp_u_state = state;
 
 	if (dp_data->ufp_u_state < DP_UFP_U_STATE_NR)
-		DPM_DBG("%s\n", dp_ufp_u_state_name[state]);
+		DP_DBG("%s\n", dp_ufp_u_state_name[state]);
 	else
-		DPM_DBG("dp_ufp_u_stop\n");
+		DP_DBG("dp_ufp_u_stop\n");
 }
 
 bool dp_ufp_u_request_enter_mode(
@@ -917,7 +918,7 @@ bool dp_ufp_u_request_exit_mode(
 
 static inline void dp_ufp_u_update_dp_connected(struct pd_port *pd_port)
 {
-	bool valid_connected = false;
+	bool __maybe_unused valid_connected = false;
 	uint32_t dp_connected, dp_local_connected;
 	struct dp_data *dp_data = pd_get_dp_data(pd_port);
 
@@ -1037,7 +1038,7 @@ static inline int dp_ufp_u_request_dp_config(struct pd_port *pd_port)
 		dp_config = 0;
 	else
 		dp_config = payload[0];
-	DPM_DBG("dp_config: 0x%x\n", dp_config);
+	DP_DBG("dp_config: 0x%x\n", dp_config);
 
 	switch (dp_data->ufp_u_state) {
 	case DP_UFP_U_STARTUP:

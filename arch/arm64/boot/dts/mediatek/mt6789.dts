@@ -6362,20 +6362,20 @@
 				pd,sink-pdo-data = <0x000190c8>;
 
 				/*
-				 * No DP, host + device
-+				 *	pd,id-vdo-size = <6>;
-+				 *	pd,id-vdo-data = <0xd14029cf 0x0 0x63750000
-+							  0x61000000 0x0 0x41000000>;
-+				 * With DP Sink capability
-+				 *	pd,id-vdo-size = <6>;
-+				 *	pd,id-vdo-data = <0xd54029cf 0x0 0x63750000
-+							  0x61000000 0x0 0x41000000>;
+				 * No DP Sink capability
+				 *	pd,id-vdo-size = <6>;
+				 *	pd,id-vdo-data = <0xd14029cf 0x0 0x63750000
+							  0x61000000 0x0 0x41000000>;
+				 * With DP Sink capability
+				 *	pd,id-vdo-size = <6>;
+				 *	pd,id-vdo-data = <0xd54029cf 0x0 0x63750000
+							  0x61000000 0x0 0x41000000>;
 				 */
-+
-+				pd,id-vdo-size = <6>;
-+				pd,id-vdo-data = <0xd14029cf 0x0 0x63750000
-+						  0x61000000 0x0 0x41000000>;
-+
+
+				pd,id-vdo-size = <6>;
+				pd,id-vdo-data = <0xd14029cf 0x0 0x63750000
+						  0x61000000 0x0 0x41000000>;
+
 				bat,nr = <1>;
 
 				bat-info0 {

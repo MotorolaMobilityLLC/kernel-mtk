@@ -5,6 +5,7 @@
 config TCPC_CLASS
 	tristate "TypeC Port Controller Device Class"
 	select MTK_USB_TYPEC
+	select OF
 	select RT_REGMAP
 	select TYPEC
 	help
@@ -16,7 +17,6 @@ config TCPC_CLASS
 config USB_POWER_DELIVERY
 	tristate "Support USB power delivery Function"
 	depends on TCPC_CLASS
-	default n
 	help
 	  Say Y to enable
 	  USB
@@ -36,7 +36,6 @@ config TCPC_WUSB3801
 config TCPC_RT1711H
 	tristate "Richtek RT1711H TypeC port Controller Driver"
 	depends on TCPC_CLASS
-	default n
 	help
 	  Say Y to enable
 	  Richtek RT1711H
@@ -76,7 +75,6 @@ config TCPC_MT6362
 config TCPC_MT6370
 	tristate "MediaTek MT6370 TypeC port Controller Driver"
 	depends on TCPC_CLASS
-	default n
 	help
 	  Say Y to enable MediaTek MT6370
 	  TypeC port Controller
@@ -99,6 +97,15 @@ config DISABLE_SUPPORT_MMI_ADAPTER
         help
           Say Yes to disable MMI pd protocl.
           It is mainly used as pd charger
+
+config TCPC_RT1718S
+	tristate "Richtek RT1718S TypeC port Controller Driver"
+	depends on TCPC_CLASS
+	help
+	  Say Y to enable
+	  Richtek RT1718S
+	  TypeC port Controller
+	  Driver
 
 config USB_PD_VBUS_STABLE_TOUT
 	int "PD VBUS Stable Timeout"

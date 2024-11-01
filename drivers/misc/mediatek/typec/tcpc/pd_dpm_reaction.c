@@ -137,6 +137,11 @@ static uint8_t dpm_reaction_request_dr_swap(struct pd_port *pd_port)
 		&& prefer_role == DPM_CAP_DR_CHECK_PREFER_DFP)
 		return TCP_DPM_EVT_DR_SWAP_AS_DFP;
 
+	if (pd_port->data_role == PD_ROLE_UFP &&
+	    dpm_reaction_check(pd_port, DPM_REACTION_DISCOVER_CABLE) &&
+	    !pd_check_rev30(pd_port))
+		return TCP_DPM_EVT_DR_SWAP_AS_DFP;
+
 	return 0;
 }
 #endif	/* CONFIG_USB_PD_DR_SWAP */
@@ -174,9 +179,6 @@ static uint8_t dpm_reaction_request_vconn_source(struct pd_port *pd_port)
 		break;
 	}
 
-	if (pd_check_rev30(pd_port))
-		return_vconn = false;
-
 	if (return_vconn)
 		dpm_reaction_set(pd_port, DPM_REACTION_RETURN_VCONN_SRC);
 
@@ -201,12 +203,10 @@ static uint8_t pd_dpm_reaction_discover_cable(struct pd_port *pd_port)
 		pd_restart_timer(pd_port, PD_TIMER_DISCOVER_ID);
 		return DPM_READY_REACTION_BUSY;
 	case CABLE_DISCOVERED_ID:
-		return TCP_DPM_EVT_DISCOVER_CABLE_SVIDS;
+		return pd_port->dp_v21 ? TCP_DPM_EVT_DISCOVER_CABLE_SVIDS : 0;
 	case CABLE_DISCOVERED_SVIDS:
-		if (pd_port->cable_svid_to_discover)
-			return TCP_DPM_EVT_DISCOVER_CABLE_MODES;
-		else
-			return 0;
+		return pd_port->cable_svid_to_discover ?
+		       TCP_DPM_EVT_DISCOVER_CABLE_MODES : 0;
 	case CABLE_DISCOVERED_MODES:
 	default:
 		return 0;

@@ -10,7 +10,7 @@
 #include "pd_dbg_info.h"
 
 /*show debug message or not */
-#define ENABLE_RT1711_DBG	0
+#define ENABLE_RT1711_DBG				0
 
 /* RT1711H Private RegMap */
 
@@ -31,7 +31,7 @@
 #define RT1711H_REG_RT_MASK					(0x99)
 
 #define RT1711H_REG_IDLE_CTRL				(0x9B)
-#define RT1711H_REG_I2CRST_CTRL				(0X9E)
+#define RT1711H_REG_I2CRST_CTRL				(0x9E)
 
 #define RT1711H_REG_SWRESET				(0xA0)
 #define RT1711H_REG_TTCPC_FILTER			(0xA1)

@@ -268,7 +268,7 @@ static inline void print_event(
 		break;
 
 	case PD_EVT_TIMER_MSG:
-		PE_EVT_INFO("timer\n");
+		PE_EVT_INFO("timer, %u\n", pd_event->msg);
 		break;
 
 	case PD_EVT_TCP_MSG:
@@ -424,21 +424,6 @@ bool pd_process_protocol_error(
 		fallthrough;
 	case PE_SRC_TRANSITION_SUPPLY2:
 		power_change = true;
-		if (pd_event_msg_match(pd_event,
-				PD_EVT_CTRL_MSG, PD_CTRL_PING)) {
-			PE_INFO("Ignore Ping\n");
-			goto out;
-		}
-		break;
-
-#if CONFIG_USB_PD_PR_SWAP
-	case PE_PRS_SRC_SNK_WAIT_SOURCE_ON:
-#endif	/* CONFIG_USB_PD_PR_SWAP */
-		if (pd_event_msg_match(pd_event,
-				PD_EVT_CTRL_MSG, PD_CTRL_PING)) {
-			PE_INFO("Ignore Ping\n");
-			goto out;
-		}
 		break;
 
 	case PE_SNK_READY:

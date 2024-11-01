@@ -9982,7 +9982,7 @@ cpuqos_mode,dnth0,dnth1,upth0,upth1";
 				pd,sink-pdo-data = <0x000190c8>;
 
 				/*
-				 * No DP, host + device
+				 * No DP Sink capability
 				 *	pd,id-vdo-size = <6>;
 				 *	pd,id-vdo-data = <0xd14029cf 0x0 0x63750000
 							  0x61000000 0x0 0x41000000>;

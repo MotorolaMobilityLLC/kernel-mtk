@@ -612,7 +612,7 @@ void pd_extract_rdo_power(uint32_t rdo, uint32_t pdo,
 {
 	uint32_t op_power, max_power, vmin;
 
-	switch (pdo & PDO_TYPE_MASK) {
+	switch (PDO_TYPE(pdo)) {
 	case PDO_TYPE_FIXED:
 	case PDO_TYPE_VARIABLE:
 		*op_curr = RDO_FIXED_VAR_EXTRACT_OP_CURR(rdo);
@@ -646,7 +646,7 @@ uint32_t pd_reset_pdo_power(struct tcpc_device *tcpc,
 {
 	uint32_t ioper, poper, pmax;
 
-	switch (pdo & PDO_TYPE_MASK) {
+	switch (PDO_TYPE(pdo)) {
 	case PDO_TYPE_FIXED:
 		ioper = PDO_FIXED_EXTRACT_CURR(pdo);
 		if (ioper > imax)
@@ -962,14 +962,14 @@ int pd_reset_local_hw(struct pd_port *pd_port)
 	struct pe_data *pe_data = &pd_port->pe_data;
 	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
 
+	pe_data->pd_connected = false;
+	pe_data->explicit_contract = false;
+	pe_data->pe_ready = false;
+
 	pd_notify_pe_transit_to_default(pd_port);
 
 	pd_reset_pe_timer(pd_port);
 	pd_set_rx_enable(pd_port, PD_RX_CAP_PE_HARDRESET);
-
-	pe_data->pd_connected = false;
-	pe_data->explicit_contract = false;
-	pe_data->pe_ready = false;
 
 #if CONFIG_USB_PD_REV30
 	pe_data->pd_traffic_idle = false;
@@ -1180,7 +1180,6 @@ int pd_send_hard_reset(struct pd_port *pd_port)
 	PE_STATE_ER_IF_TX_FAILED(pd_port);
 
 	PE_DBG("Send HARD Reset\n");
-	__pm_wakeup_event(tcpc->attach_wake_lock, 6000);
 
 	pd_notify_pe_send_hard_reset(pd_port);
 	pd_port->pe_data.hard_reset_counter++;
@@ -1189,29 +1188,12 @@ int pd_send_hard_reset(struct pd_port *pd_port)
 
 int pd_send_bist_mode2(struct pd_port *pd_port)
 {
-	int ret = 0;
 	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
 
 	pd_notify_tcp_event_buf_reset(pd_port, TCP_DPM_RET_DROP_SEND_BIST);
 
-#if CONFIG_USB_PD_TRANSMIT_BIST2
-	TCPC_DBG("BIST_MODE_2\n");
-	ret = tcpci_transmit(tcpc, TCPC_TX_BIST_MODE_2, 0, NULL);
-#else
-	ret = tcpci_set_bist_carrier_mode(tcpc, 1 << 2);
-#endif
-
-	return ret;
-}
-
-int pd_disable_bist_mode2(struct pd_port *pd_port)
-{
-#if !CONFIG_USB_PD_TRANSMIT_BIST2
-	return tcpci_set_bist_carrier_mode(
-		pd_port->tcpc, 0);
-#else
-	return 0;
-#endif
+	PE_DBG("BIST_MODE_2\n");
+	return tcpci_transmit(tcpc, TCPC_TX_BIST_MODE_2, 0, NULL);
 }
 
 /* ---- Send / Reply VDM Command ----*/
@@ -1310,8 +1292,10 @@ void pd_reset_pe_timer(struct pd_port *pd_port)
 	tcpc_reset_pe_timer(pd_port->tcpc);
 
 #if CONFIG_USB_PD_REV30_PPS_SINK
-	pd_port->request_apdo = false;
-	pd_dpm_start_pps_request(pd_port, false);
+	if (pd_port->request_apdo) {
+		pd_port->request_apdo = false;
+		pd_dpm_start_pps_request(pd_port, false);
+	}
 #endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
 }
 

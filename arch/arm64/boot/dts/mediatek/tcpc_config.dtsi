@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (c) 2022 MediaTek Inc.
+ * Copyright (c) 2024 MediaTek Inc.
  */
 
 &i2c4 {
@@ -61,7 +61,7 @@
 			pd,sink-pdo-data = <0x000190c8>;
 
 			/*
-			 * No DP, host + device
+			 * No DP Sink capability
 			 *	pd,id-vdo-size = <6>;
 			 *	pd,id-vdo-data = <0xd14029cf 0x0 0x17110000
 						  0x61000000 0x0 0x41000000>;
@@ -76,11 +76,136 @@
 					  0x61000000 0x0 0x41000000>;
 
 			bat,nr = <1>;
-			pd,country_nr = <0>;
-
 			bat-info0 {
 				bat,vid = <0x29cf>;
 				bat,pid = <0x1711>;
+				bat,mfrs = "bat1";
+				bat,design_cap = <3000>;
+			};
+		};
+		dpm_caps {
+			local_dr_power;
+			local_dr_data;
+			// local_ext_power;
+			local_usb_comm;
+			// local_usb_suspend;
+			// local_high_cap;
+			// local_give_back;
+			local_no_suspend;
+
+			/* With DP Source capability */
+			// attempt_enter_dp_mode;
+			// attempt_discover_cable;
+			// attempt_discover_id;
+			// attempt_discover_svids;
+
+			/* 0: disable, 1: prefer_snk, 2: prefer_src */
+			pr_check = <0>;
+			// pr_reject_as_source;
+			// pr_reject_as_sink;
+			// pr_check_gp_source;
+			// pr_check_gp_sink;
+
+			/* 0: disable, 1: prefer_ufp, 2: prefer_dfp */
+			dr_check = <0>;
+			// dr_reject_as_dfp;
+			// dr_reject_as_ufp;
+		};
+		displayport {
+			/* connection type = "both", "ufp_d", "dfp_d" */
+			1st_connection = "dfp_d";
+			2nd_connection = "dfp_d";
+			// usbr20_not_used;
+			typec,receptacle;
+			ufp_d {
+				// pin_assignment,mode_c;
+				// pin_assignment,mode_d;
+				// pin_assignment,mode_e;
+			};
+			dfp_d {
+				pin_assignment,mode_c;
+				pin_assignment,mode_d;
+				pin_assignment,mode_e;
+			};
+		};
+	};
+
+	rt1718s_typec: rt1718s@40 {
+		compatible = "richtek,rt1718s";
+		reg = <0x40>;
+		wakeup-source;
+		status = "okay";
+		tcpc,name = "type_c_port0"; /* tcpc_device's name */
+		tcpc,role-def = <5>; /* 0: Unknown, 1: SNK, 2: SRC */
+				     /* 3: DRP, 4: Try.SRC, 5: Try.SNK */
+		tcpc,rp-level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
+		tcpc,vconn-supply = <1>;  /* 0: Never, 1: Always, */
+					  /* 2: EMarkOnly, 3: StartOnly */
+		interrupts-extended = <&pio 42 IRQ_TYPE_LEVEL_LOW>;
+		// tcpc,en-fod;
+		tcpc,en-ctd;
+		pd-data {
+			pd,vid = <0x29cf>;
+			pd,pid = <0x1718>;
+			pd,source-cap-ext = /bits/ 8 <0xcf 0x29 0x18 0x17
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x01 0x02
+						      0x00>;
+			pd,sink-cap-ext = /bits/ 8 <0xcf 0x29 0x18 0x17
+						    0x00 0x00 0x00 0x00
+						    0x00 0x00 0x01 0x00
+						    0x00 0x00 0x00 0x00
+						    0x01 0x0b 0x01 0x0a
+						    0x0a 0x00 0x00 0x00>;
+			pd,mfrs = "RichtekTCPC";
+
+			/*
+			 *	VSAFE5V = 0, MAX_POWER = 1, CUSTOM = 2,
+			 *	MAX_POWER_LV = 0x21, MAX_POWER_LVIC = 0x31
+			 *	MAX_POWER_HV = 0x41, MAX_POWER_HVIC = 0x51
+			 */
+			pd,charging_policy = <0x31>;
+
+			/*
+			 * Fixed 5V, 500 mA <0x00019032>
+			 * Fixed 5V, 1A <0x00019064>
+			 * Fixed 5V, 2A <0x000190c8>
+			 * Fixed 5V, 3A <0x0001912c>
+			 * Fixed 9V, 500 mA <0x0002d032>
+			 * Fixed 9V, 1A <0x0002d064>
+			 * Fixed 9V, 2A <0x0002d0c8>
+			 * Fixed 9V, 3A <0x0002d12c>
+			 * Variable 5-9V, 1A <0x8642d064>
+			 * Variable 5-9V, 2A <0x8642d0c8>
+			 * Variable 5-9V, 3A <0x8642d12c>
+			 */
+			pd,source-pdo-size = <1>;
+			pd,source-pdo-data = <0x00019032>;
+			pd,sink-pdo-size = <1>;
+			pd,sink-pdo-data = <0x000190c8>;
+
+			/*
+			 * No DP Sink capability
+			 *	pd,id-vdo-size = <6>;
+			 *	pd,id-vdo-data = <0xd14029cf 0x0 0x17180000
+						  0x61000000 0x0 0x41000000>;
+			 * With DP Sink capability
+			 *	pd,id-vdo-size = <6>;
+			 *	pd,id-vdo-data = <0xd54029cf 0x0 0x17180000
+						  0x61000000 0x0 0x41000000>;
+			 */
+
+			pd,id-vdo-size = <6>;
+			pd,id-vdo-data = <0xd14029cf 0x0 0x17180000
+					  0x61000000 0x0 0x41000000>;
+
+			bat,nr = <1>;
+			bat-info0 {
+				bat,vid = <0x29cf>;
+				bat,pid = <0x1718>;
 				bat,mfrs = "bat1";
 				bat,design_cap = <3000>;
 			};

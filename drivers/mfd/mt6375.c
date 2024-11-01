@@ -247,7 +247,9 @@ static irqreturn_t mt6375_irq_thread(int irq, void *data)
 	struct mt6375_data *ddata = data;
 	u8 evt[MT6375_IRQ_REGS] = {0};
 	bool handled = false;
-	int i, j, ret;
+	unsigned long evt_bitmap = 0;
+	int i, j, ret, start, end;
+	size_t evt_count;
 
 	ret = regmap_bulk_read(ddata->rmap, MT6375_REG_CHG_IRQ0, evt,
 			       MT6375_IRQ_REGS);
@@ -257,10 +259,20 @@ static irqreturn_t mt6375_irq_thread(int irq, void *data)
 	}
 
 	/* ignore masked irq and ack */
-	for (i = 0; i < MT6375_IRQ_REGS; i++)
+	for (i = 0; i < MT6375_IRQ_REGS; i++) {
 		evt[i] &= ~ddata->mask_buf[i];
-	ret = regmap_bulk_write(ddata->rmap, MT6375_REG_CHG_IRQ0, evt,
-				MT6375_IRQ_REGS);
+		if (evt[i])
+			set_bit(i, &evt_bitmap);
+	}
+	if (!evt_bitmap)
+		return IRQ_NONE;
+	start = ffs(evt_bitmap) - 1;
+	end = fls(evt_bitmap) - 1;
+	evt_count = end - start + 1;
+	if (start + evt_count > MT6375_IRQ_REGS)
+		evt_count = MT6375_IRQ_REGS - start;
+	ret = regmap_bulk_write(ddata->rmap, MT6375_REG_CHG_IRQ0 + start, evt + start,
+				evt_count);
 	if (ret < 0)
 		dev_err(ddata->dev, "failed to ack irq status\n");
 

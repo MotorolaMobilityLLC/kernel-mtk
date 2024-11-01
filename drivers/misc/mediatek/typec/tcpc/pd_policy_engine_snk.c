@@ -102,12 +102,10 @@ void pe_snk_transition_sink_entry(struct pd_port *pd_port)
 {
 	pd_enable_pe_state_timer(pd_port, PD_TIMER_PS_TRANSITION);
 
-#if CONFIG_USB_PD_SNK_GOTOMIN
 	if (pd_check_ctrl_msg_event(pd_port, PD_CTRL_GOTO_MIN)) {
 		if (pd_port->dpm_caps & DPM_CAP_LOCAL_GIVE_BACK)
 			pd_port->request_i_new = pd_port->request_i_op;
 	}
-#endif	/* CONFIG_USB_PD_SNK_GOTOMIN */
 
 	pd_dpm_snk_standby_power(pd_port);
 }

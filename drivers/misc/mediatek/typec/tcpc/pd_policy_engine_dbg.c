@@ -24,12 +24,11 @@ void pe_dbg_ready_entry(struct pd_port *pd_port)
 	if (pd_port->data_role == PD_ROLE_UFP) {
 		PE_INFO("Custom_DBGACC : UFP\n");
 		state = PD_CONNECT_PE_READY_DBGACC_UFP;
-		pd_set_rx_enable(pd_port, PD_RX_CAP_PE_READY_UFP);
 	} else {
 		PE_INFO("Custom_DBGACC : DFP\n");
 		state = PD_CONNECT_PE_READY_DBGACC_DFP;
-		pd_set_rx_enable(pd_port, PD_RX_CAP_PE_READY_DFP);
 	}
+	pd_set_rx_enable(pd_port, PD_RX_CAP_PE_READY);
 
 	pd_update_connect_state(pd_port, state);
 }

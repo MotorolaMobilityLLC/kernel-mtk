@@ -32,7 +32,7 @@ enum mt6360_id_rupsel {
 };
 
 /*show debug message or not */
-#define ENABLE_MT6360_DBG	1
+#define ENABLE_MT6360_DBG				0
 
 /* MT6360 Private RegMap */
 

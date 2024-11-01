@@ -11,7 +11,7 @@
 
 /* ---- Policy Engine State ---- */
 
-#if PE_DBG_ENABLE | PE_STATE_INFO_ENABLE
+#if PE_DBG_ENABLE || PE_STATE_INFO_ENABLE
 #if PE_STATE_FULL_NAME
 
 static const char *const pe_state_name[] = {
@@ -541,14 +541,10 @@ static const char *const pe_state_name[] = {
 	"IDLE2",
 };
 #endif	/* PE_STATE_FULL_NAME */
-#endif /* PE_DBG_ENABLE | PE_STATE_INFO_ENABLE */
+#endif /* PE_DBG_ENABLE || PE_STATE_INFO_ENABLE */
 
 struct pe_state_actions {
-	void (*entry_action)
-		(struct pd_port *pd_port);
-	/* const void (*exit_action)
-	 * (struct pd_port *pd_port, struct pd_event *pd_event);
-	 */
+	void (*entry_action)(struct pd_port *pd_port);
 };
 
 #define PE_STATE_ACTIONS(state) { .entry_action = state##_entry, }
@@ -956,16 +952,11 @@ static inline void print_state(
 	bool __maybe_unused vdm_evt = pd_curr_is_vdm_evt(pd_port);
 	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
 
-#if PE_DBG_ENABLE
-	PE_DBG("%s -> %s (%c%c%c)\n",
+	PE_STATE_INFO("%s -> %s (%c%c%c)\n",
 		vdm_evt ? "VDM" : "PD", pe_state_name[state],
 		pd_port->power_role ? 'P' : 'C',
 		pd_port->data_role ? 'D' : 'U',
 		pd_port->vconn_role ? 'Y' : 'N');
-#else
-	PE_STATE_INFO("%s-> %s\n",
-		vdm_evt ? "VDM" : "PD", pe_state_name[state]);
-#endif	/* PE_DBG_ENABLE */
 }
 
 static inline void pe_reset_vdm_state_variable(
@@ -1030,10 +1021,6 @@ static inline void pd_pe_state_change(
 		pd_port->pe_pd_state = new_state;
 
 	pd_port->pe_state_curr = new_state;
-
-	/* Change RX cap first for compliance */
-	if (pd_port->state_machine > PE_STATE_MACHINE_NORMAL)
-		pd_set_rx_enable(pd_port, PD_RX_CAP_PE_SWAP);
 }
 
 static int pd_handle_event(
@@ -1241,7 +1228,9 @@ static inline uint8_t pd_try_get_active_event(
 	uint8_t ret;
 	uint8_t from_pe = PD_TCP_FROM_PE;
 	struct pd_port *pd_port = &tcpc->pd_port;
+#if CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG || DPM_DBG_ENABLE
 	struct pe_data *pe_data = &pd_port->pe_data;
+#endif	/* CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG || DPM_DBG_ENABLE */
 
 	if (!pd_check_tx_ready(pd_port))
 		return PE_NEW_EVT_NULL;
@@ -1282,7 +1271,8 @@ static inline uint8_t pd_try_get_active_event(
 		return PE_NEW_EVT_VDM;
 
 #if CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG
-	pe_data->pd_sent_ams_init_cmd = false;
+	if (ret != TCP_DPM_EVT_DUMMY)
+		pe_data->pd_sent_ams_init_cmd = false;
 #endif	/* CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG */
 
 	return PE_NEW_EVT_PD;

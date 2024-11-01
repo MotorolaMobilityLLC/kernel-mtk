@@ -68,13 +68,13 @@ struct tcpc_timer_desc {
 static const struct tcpc_timer_desc tcpc_timer_desc[PD_TIMER_NR] = {
 #if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_DISCOVER_ID, 40, 50),
-DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_BIST_CONT_MODE, 30, 60),
+DECL_TCPC_TIMEOUT(PD_TIMER_BIST_CONT_MODE, 60),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_NO_RESPONSE, 4500, 5500),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_PS_HARD_RESET, 25, 35),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_PS_SOURCE_OFF, 750, 920),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_PS_SOURCE_ON, 390, 480),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_PS_TRANSITION, 450, 550),
-DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_SENDER_RESPONSE, 27, 30),
+DECL_TCPC_TIMEOUT(PD_TIMER_SENDER_RESPONSE, 24),
 DECL_TCPC_TIMEOUT(PD_TIMER_SINK_REQUEST, 100),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_SINK_WAIT_CAP, 310, 620),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_SOURCE_CAPABILITY, 100, 200),
@@ -85,13 +85,13 @@ DECL_TCPC_TIMEOUT(PD_TIMER_VCONN_STABLE, 50),
 #endif	/* CONFIG_USB_PD_VCONN_STABLE_DELAY */
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_VDM_MODE_ENTRY, 40, 50),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_VDM_MODE_EXIT, 40, 50),
-DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_VDM_RESPONSE, 24, 30),
+DECL_TCPC_TIMEOUT(PD_TIMER_VDM_RESPONSE, 24),
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_SOURCE_TRANSITION, 25, 35),
 DECL_TCPC_TIMEOUT(PD_TIMER_SOURCE_SWAP_STANDBY, 650),
 DECL_TCPC_TIMEOUT(PD_TIMER_SRC_RECOVER, 900 - CONFIG_USB_PD_SAFE0V_DELAY),
 #if CONFIG_USB_PD_REV30
 DECL_TCPC_TIMEOUT(PD_TIMER_CK_NOT_SUPPORTED, 40),
-DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_SINK_TX, 16, 20),
+DECL_TCPC_TIMEOUT(PD_TIMER_SINK_TX, 20),
 #if CONFIG_USB_PD_REV30_PPS_SOURCE
 DECL_TCPC_TIMEOUT_RANGE(PD_TIMER_SOURCE_PPS_TOUT, 12000, 15000),
 #endif	/* CONFIG_USB_PD_REV30_PPS_SOURCE */
@@ -121,7 +121,7 @@ DECL_TCPC_TIMEOUT(PD_TIMER_CVDM_RESPONSE, CONFIG_USB_PD_CUSTOM_VDM_TOUT),
 DECL_TCPC_TIMEOUT(PD_TIMER_DFP_FLOW_DELAY, CONFIG_USB_PD_DFP_FLOW_DLY),
 DECL_TCPC_TIMEOUT(PD_TIMER_UFP_FLOW_DELAY, CONFIG_USB_PD_UFP_FLOW_DLY),
 DECL_TCPC_TIMEOUT(PD_TIMER_VCONN_READY, CONFIG_USB_PD_VCONN_READY_TOUT),
-DECL_TCPC_TIMEOUT(PD_PE_VDM_POSTPONE, 3),
+DECL_TCPC_TIMEOUT(PD_PE_VDM_POSTPONE, 1),
 #if CONFIG_USB_PD_REV30
 DECL_TCPC_TIMEOUT(PD_TIMER_DEFERRED_EVT, 5000),
 #if CONFIG_USB_PD_REV30_SNK_FLOW_DELAY_STARTUP
@@ -267,24 +267,22 @@ void tcpc_enable_lpm_timer(struct tcpc_device *tcpc, bool en)
 {
 	struct alarm *alarm =
 		&tcpc->tcpc_timer[TYPEC_RT_TIMER_LOW_POWER_MODE].alarm;
-	uint32_t r = 0, mod = 0, tout =
-		tcpc_timer_desc[TYPEC_RT_TIMER_LOW_POWER_MODE].tout;
-
-	TCPC_TIMER_DBG("%s en = %d\n", __func__, en);
+	uint32_t r = 0, mod = 0, tout = tcpc->typec_lpm_tout;
 
 	mutex_lock(&tcpc->timer_lock);
 
 	if (en) {
-		tout += tcpc->typec_lpm_tout;
-		if (tout > 300 * USEC_PER_SEC)
-			tout = 300 * USEC_PER_SEC;
-		tcpc->typec_lpm_tout = tout;
 		TCPC_TIMER_DBG("%s tout = %dms\n", __func__,
 						   tout / USEC_PER_MSEC);
 		r = tout / USEC_PER_SEC;
 		mod = tout % USEC_PER_SEC;
 		alarm_start_relative(alarm, ktime_set(r, mod * NSEC_PER_USEC));
+		tout += tcpc_timer_desc[TYPEC_RT_TIMER_LOW_POWER_MODE].tout;
+		if (tout > 300 * USEC_PER_SEC)
+			tout = 300 * USEC_PER_SEC;
+		tcpc->typec_lpm_tout = tout;
 	} else {
+		TCPC_TIMER_DBG("%s dis\n", __func__);
 		alarm_try_to_cancel(alarm);
 		tcpc->typec_lpm_tout = 0;
 	}
@@ -325,6 +323,7 @@ void tcpc_enable_timer(struct tcpc_device *tcpc, uint32_t timer_id)
 	uint32_t r, mod, tout;
 #if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
 	int locked = 0;
+	struct pd_port *pd_port = &tcpc->pd_port;
 #endif	/* CONFIG_USB_POWER_DELIVERY */
 
 	if (timer_id >= PD_TIMER_NR) {
@@ -332,18 +331,32 @@ void tcpc_enable_timer(struct tcpc_device *tcpc, uint32_t timer_id)
 		return;
 	}
 
-	TCPC_TIMER_DBG("Enable %s\n", tcpc_timer_desc[timer_id].name);
-
 	tout = tcpc_timer_desc[timer_id].tout;
+
+	TCPC_TIMER_DBG("Enable %s tout = %dms\n",
+		        tcpc_timer_desc[timer_id].name,
+			tout / USEC_PER_MSEC);
+
 #if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
 	locked = mutex_trylock(&tcpc->access_lock);
-	if (timer_id == PD_TIMER_SENDER_RESPONSE ||
-	    timer_id == PD_TIMER_VDM_RESPONSE) {
+	switch (timer_id) {
+	case PD_TIMER_SENDER_RESPONSE:
+		/* tSenderResponse:
+		 *	PD2.0: 24ms~30ms
+		 *	PD3.2: 27ms~33ms
+		 */
+		if (pd_check_rev30(pd_port))
+			tout += 3000;
+		fallthrough;
+	case PD_TIMER_VDM_RESPONSE:
 		if (tout > tcpc->io_time_diff)
 			tout -= tcpc->io_time_diff;
 		else
 			tout = 0;
 		tcpc->io_time_diff = 0;
+		break;
+	default:
+		break;
 	}
 	if (locked)
 		mutex_unlock(&tcpc->access_lock);

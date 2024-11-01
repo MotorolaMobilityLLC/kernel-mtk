@@ -84,14 +84,8 @@ int tcpm_shutdown(struct tcpc_device *tcpc)
 }
 EXPORT_SYMBOL(tcpm_shutdown);
 
-int tcpm_suspend(struct tcpc_device *tcpc)
+static int tcpm_check_suspend_pending(struct tcpc_device *tcpc)
 {
-	int ret = 0;
-
-	/*
-	 * the following 3 if statements are lockless solutions
-	 * for preventing some race conditions
-	 */
 	if (atomic_read(&tcpc->suspend_pending) > 0)
 		return -EBUSY;
 
@@ -99,21 +93,39 @@ int tcpm_suspend(struct tcpc_device *tcpc)
 	    tcpc_get_timer_tick(tcpc))
 		return -EBUSY;
 
-	if (atomic_read(&tcpc->suspend_pending) > 0)
-		return -EBUSY;
+	return 0;
+}
+
+int tcpm_suspend(struct tcpc_device *tcpc)
+{
+	int ret = 0;
+
+	ret = tcpm_check_suspend_pending(tcpc);
+	if (ret)
+		return ret;
 
 #if CONFIG_TYPEC_SNK_ONLY_WHEN_SUSPEND
 	tcpci_lock_typec(tcpc);
 	ret = tcpc_typec_suspend(tcpc);
 	tcpci_unlock_typec(tcpc);
+	if (ret)
+		return ret;
 #endif	/* CONFIG_TYPEC_SNK_ONLY_WHEN_SUSPEND */
 
+	atomic_set(&tcpc->is_suspended, true);
+
+	ret = tcpm_check_suspend_pending(tcpc);
+	if (ret)
+		tcpm_resume(tcpc);
 	return ret;
 }
 EXPORT_SYMBOL(tcpm_suspend);
 
 void tcpm_resume(struct tcpc_device *tcpc)
 {
+	atomic_set(&tcpc->is_suspended, false);
+	wake_up_all(&tcpc->resume_wait_que);
+
 #if CONFIG_TYPEC_SNK_ONLY_WHEN_SUSPEND
 	tcpci_lock_typec(tcpc);
 	tcpc_typec_resume(tcpc);

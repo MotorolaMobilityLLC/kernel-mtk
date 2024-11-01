@@ -114,7 +114,7 @@
 			tcpc,role-def = <5>;
 			tcpc,rp-level = <1>; /* 0: Default, 1: 1.5, 2: 3.0 */
 			/* 0: Never, 1: Always, 2: EMarkOnly, 3: StartOnly */
-			tcpc,vconn-supply = <1>;
+			tcpc,vconn-supply = <0>;
 			charger = <&mt6370_chg>;
 			pd-data {
 				pd,vid = <0x29cf>;
@@ -160,7 +160,7 @@
 				pd,sink-pdo-data = <0x000190c8>;
 
 				/*
-				 * No DP, host + device
+				 * No DP Sink capability
 				 *	pd,id-vdo-size = <6>;
 				 *	pd,id-vdo-data = <0xd14029cf 0x0 0x50810000
 							  0x61000000 0x0 0x41000000>;
@@ -175,8 +175,6 @@
 						  0x61000000 0x0 0x41000000>;
 
 				bat,nr = <1>;
-				pd,country_nr = <0>;
-
 				bat-info0 {
 					bat,vid = <0x29cf>;
 					bat,pid = <0x5081>;

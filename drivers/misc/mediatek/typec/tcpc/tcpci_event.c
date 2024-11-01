@@ -50,6 +50,8 @@ static struct pd_msg *__pd_alloc_msg(struct tcpc_device *tcpc)
 	for (i = 0, mask = 1; i < PD_MSG_BUF_SIZE; i++, mask <<= 1) {
 		if ((mask & tcpc->pd_msg_buffer_allocated) == 0) {
 			tcpc->pd_msg_buffer_allocated |= mask;
+			memset(tcpc->pd_msg_buffer + i, 0,
+			       sizeof(struct pd_msg));
 			return tcpc->pd_msg_buffer + i;
 		}
 	}
@@ -87,16 +89,6 @@ static void __pd_free_event(
 		__pd_free_msg(tcpc, pd_event->pd_msg);
 		pd_event->pd_msg = NULL;
 	}
-}
-
-bool pd_is_msg_empty(struct tcpc_device *tcpc)
-{
-	bool empty;
-
-	mutex_lock(&tcpc->access_lock);
-	empty = !tcpc->pd_msg_buffer_allocated;
-	mutex_unlock(&tcpc->access_lock);
-	return empty;
 }
 
 void pd_free_msg(struct tcpc_device *tcpc, struct pd_msg *pd_msg)
@@ -729,8 +721,6 @@ void pd_put_cc_detached_event(struct tcpc_device *tcpc)
 	tcpc->pd_wait_pr_swap_complete = false;
 	tcpc->pd_hard_reset_event_pending = false;
 	tcpc->pd_wait_vbus_once = PD_WAIT_VBUS_DISABLE;
-	tcpc->pd_bist_mode = PD_BIST_MODE_DISABLE;
-	tcpc->pd_ping_event_pending = false;
 
 #if CONFIG_USB_PD_DIRECT_CHARGE
 	tcpc->pd_during_direct_charge = false;
@@ -758,9 +748,7 @@ void pd_put_recv_hard_reset_event(struct tcpc_device *tcpc)
 	if (!tcpc->pd_hard_reset_event_pending) {
 		__pd_event_buf_reset(tcpc, TCP_DPM_RET_DROP_RECV_HRESET);
 		__pd_put_hw_event(tcpc, PD_HW_RECV_HARD_RESET);
-		tcpc->pd_bist_mode = PD_BIST_MODE_DISABLE;
 		tcpc->pd_hard_reset_event_pending = true;
-		tcpc->pd_ping_event_pending = false;
 
 #if CONFIG_USB_PD_DIRECT_CHARGE
 		tcpc->pd_during_direct_charge = false;
@@ -818,8 +806,8 @@ bool pd_put_pd_msg_event(struct tcpc_device *tcpc, struct pd_msg *pd_msg)
 		discard_pending = true;
 		tcpc->pd_discard_pending = false;
 
-		if ((cmd == PD_CTRL_GOOD_CRC) && (cnt == 0)) {
-			TCPC_DBG2("RETRANSMIT\n");
+		if (cnt == 0 && cmd == PD_CTRL_GOOD_CRC) {
+			TCPC_INFO("RETRANSMIT\n");
 			__pd_free_event(tcpc, &evt);
 			mutex_unlock(&tcpc->access_lock);
 
@@ -830,20 +818,12 @@ bool pd_put_pd_msg_event(struct tcpc_device *tcpc, struct pd_msg *pd_msg)
 	}
 #endif	/* CONFIG_USB_PD_RETRY_CRC_DISCARD */
 
-#if CONFIG_USB_PD_DROP_REPEAT_PING
 	if (cnt == 0 && cmd == PD_CTRL_PING) {
-		/* reset ping_test_mode only if cc_detached */
-		if (!tcpc->pd_ping_event_pending) {
-			TCPC_INFO("ping_test_mode\n");
-			tcpc->pd_ping_event_pending = true;
-			tcpci_set_bist_test_mode(tcpc, true);
-		} else {
-			__pd_free_event(tcpc, &evt);
-			mutex_unlock(&tcpc->access_lock);
-			return 0;
-		}
+		TCPC_DBG2("Drop PING\n");
+		__pd_free_event(tcpc, &evt);
+		mutex_unlock(&tcpc->access_lock);
+		return 0;
 	}
-#endif	/* CONFIG_USB_PD_DROP_REPEAT_PING */
 
 	if (cnt != 0 && cmd == PD_DATA_BIST && extend == 0)
 		tcpc->pd_bist_mode = PD_BIST_MODE_EVENT_PENDING;
@@ -851,10 +831,8 @@ bool pd_put_pd_msg_event(struct tcpc_device *tcpc, struct pd_msg *pd_msg)
 	mutex_unlock(&tcpc->access_lock);
 
 #if CONFIG_USB_PD_RETRY_CRC_DISCARD
-	if (discard_pending) {
+	if (discard_pending)
 		tcpc_disable_timer(tcpc, PD_TIMER_DISCARD);
-		pd_put_hw_event(tcpc, PD_HW_TX_DISCARD);
-	}
 #endif	/* CONFIG_USB_PD_RETRY_CRC_DISCARD */
 
 	if (cnt != 0 && cmd == PD_DATA_VENDOR_DEF && extend == 0)
@@ -908,7 +886,7 @@ void pd_put_vbus_safe0v_event(struct tcpc_device *tcpc, bool safe0v)
 
 	mutex_lock(&tcpc->access_lock);
 #if CONFIG_USB_PD_SAFE0V_TOUT
-	tcpci_enable_force_discharge(tcpc, false, 0);
+	tcpci_enable_discharge(tcpc, false, 0);
 #endif	/* CONFIG_USB_PD_SAFE0V_TOUT */
 	if (tcpc->pd_wait_vbus_once == PD_WAIT_VBUS_SAFE0V_ONCE && safe0v) {
 		tcpc->pd_wait_vbus_once = PD_WAIT_VBUS_DISABLE;
@@ -923,7 +901,7 @@ void pd_put_vbus_stable_event(struct tcpc_device *tcpc)
 	if (tcpc->pd_wait_vbus_once == PD_WAIT_VBUS_STABLE_ONCE) {
 		tcpc->pd_wait_vbus_once = PD_WAIT_VBUS_DISABLE;
 #if CONFIG_USB_PD_SRC_HIGHCAP_POWER
-		tcpci_enable_force_discharge(tcpc, false, 0);
+		tcpci_enable_discharge(tcpc, false, 0);
 #endif	/* CONFIG_USB_PD_SRC_HIGHCAP_POWER */
 		__pd_put_hw_event(tcpc, PD_HW_VBUS_STABLE);
 	}
@@ -987,7 +965,7 @@ void pd_notify_pe_wait_vbus_once(struct pd_port *pd_port, int wait_evt)
 #if CONFIG_USB_PD_SAFE0V_TOUT
 		if (!as_sink) {
 			mutex_lock(&tcpc->access_lock);
-			tcpci_enable_force_discharge(tcpc, true, 0);
+			tcpci_enable_discharge(tcpc, true, 0);
 			mutex_unlock(&tcpc->access_lock);
 		}
 		tcpc_enable_timer(tcpc, PD_TIMER_VSAFE0V_TOUT);
@@ -1024,12 +1002,11 @@ void pd_notify_pe_transit_to_default(struct pd_port *pd_port)
 	mutex_lock(&tcpc->access_lock);
 	tcpc->pd_hard_reset_event_pending = false;
 	tcpc->pd_wait_pr_swap_complete = false;
-	tcpc->pd_bist_mode = PD_BIST_MODE_DISABLE;
-
 #if CONFIG_USB_PD_DIRECT_CHARGE
 	tcpc->pd_during_direct_charge = false;
 #endif	/* CONFIG_USB_PD_DIRECT_CHARGE */
 	mutex_unlock(&tcpc->access_lock);
+	pd_notify_pe_bist_mode(pd_port, PD_BIST_MODE_DISABLE);
 }
 
 void pd_notify_pe_hard_reset_completed(struct pd_port *pd_port)
@@ -1098,27 +1075,36 @@ void pd_notify_pe_cancel_pr_swap(struct pd_port *pd_port)
 	}
 }
 
-void pd_noitfy_pe_bist_mode(struct pd_port *pd_port, uint8_t mode)
+void pd_notify_pe_bist_mode(struct pd_port *pd_port, uint8_t mode)
 {
 	struct tcpc_device *tcpc = pd_port->tcpc;
+	uint8_t old_mode = PD_BIST_MODE_DISABLE;
 	bool noti = false;
 
 	mutex_lock(&tcpc->access_lock);
 	if (tcpc->pd_bist_mode != mode) {
-		tcpc->pd_bist_mode = mode;
 		noti = true;
+		old_mode = tcpc->pd_bist_mode;
+		tcpc->pd_bist_mode = mode;
 	}
 	mutex_unlock(&tcpc->access_lock);
 
 	if (!noti)
 		return;
 
-	if (mode == PD_BIST_MODE_DISABLE)
-		tcpci_sink_vbus(tcpc, TCP_VBUS_CTRL_REQUEST, pd_port->request_v,
-				pd_port->request_i);
-	else
-		tcpci_sink_vbus(tcpc, TCP_VBUS_CTRL_REQUEST, TCPC_VBUS_SINK_0V,
-				0);
+	if (old_mode == PD_BIST_MODE_TEST_DATA)
+		pd_enable_bist_test_mode(pd_port, false);
+
+	switch (mode) {
+	case PD_BIST_MODE_TEST_DATA:
+		pd_enable_bist_test_mode(pd_port, true);
+		break;
+	case PD_BIST_MODE_CARRIER_2:
+		pd_send_bist_mode2(pd_port);
+		break;
+	default:
+		break;
+	}
 }
 
 bool pd_is_pe_wait_pd_transmit_done(struct pd_port *pd_port)

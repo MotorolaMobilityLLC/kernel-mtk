@@ -820,6 +820,8 @@ struct pd_port {
 
 	struct dpm_pdo_info_t last_sink_pdo_info;
 	uint32_t last_rdo;
+	uint32_t last_src_pdo;
+	uint32_t prev_src_pdo;
 
 	uint8_t id_vdo_nr;
 	uint32_t id_vdos[VDO_MAX_NR];
@@ -854,6 +856,7 @@ struct pd_port {
 	uint16_t cable_mode_svid;
 	uint8_t cable_mode_obj_pos;
 	uint16_t cable_svid_to_discover;
+	bool dp_v21;
 
 	uint32_t dpm_caps;
 
@@ -1065,7 +1068,7 @@ static inline int pd_is_support_modal_operation(struct pd_port *pd_port)
 	return pd_port->svid_data_cnt > 0;
 }
 
-static inline int pd_is_source_support_apdo(struct pd_port *pd_port)
+static inline bool pd_is_source_support_apdo(struct pd_port *pd_port)
 {
 #if CONFIG_USB_PD_REV30_PPS_SINK
 	uint8_t i;
@@ -1087,15 +1090,13 @@ static inline int pd_is_source_support_apdo(struct pd_port *pd_port)
 #define PD_RX_CAP_PE_DISABLE			(TCPC_RX_CAP_HARD_RESET)
 #define PD_RX_CAP_PE_STARTUP			(TCPC_RX_CAP_HARD_RESET)
 #define PD_RX_CAP_PE_HARDRESET			(0)
-#define PD_RX_CAP_PE_SWAP	\
-	(TCPC_RX_CAP_HARD_RESET|TCPC_RX_CAP_SOP)
 #define PD_RX_CAP_PE_SEND_WAIT_CAP	\
 	(TCPC_RX_CAP_HARD_RESET|TCPC_RX_CAP_SOP)
 #define PD_RX_CAP_PE_DISCOVER_CABLE	\
 	(TCPC_RX_CAP_HARD_RESET|TCPC_RX_CAP_SOP_PRIME)
-#define PD_RX_CAP_PE_READY_UFP	\
+#define PD_RX_CAP_PE_READY	\
 	(TCPC_RX_CAP_HARD_RESET|TCPC_RX_CAP_SOP)
-#define PD_RX_CAP_PE_READY_DFP	\
+#define PD_RX_CAP_PE_READY_CABLE	\
 	(TCPC_RX_CAP_HARD_RESET|TCPC_RX_CAP_SOP|TCPC_RX_CAP_SOP_PRIME)
 
 enum {
@@ -1152,7 +1153,7 @@ extern void pd_notify_pe_error_recovery(struct pd_port *pd_port);
 extern void pd_notify_pe_execute_pr_swap(struct pd_port *pd_port);
 extern void pd_notify_pe_reset_protocol(struct pd_port *pd_port);
 extern void pd_notify_pe_cancel_pr_swap(struct pd_port *pd_port);
-extern void pd_noitfy_pe_bist_mode(struct pd_port *pd_port, uint8_t mode);
+extern void pd_notify_pe_bist_mode(struct pd_port *pd_port, uint8_t mode);
 extern void pd_notify_pe_pr_changed(struct pd_port *pd_port);
 extern void pd_notify_pe_snk_explicit_contract(struct pd_port *pd_port);
 extern void pd_notify_pe_src_explicit_contract(struct pd_port *pd_port);
@@ -1398,7 +1399,6 @@ int pd_send_soft_reset(struct pd_port *pd_port);
 int pd_send_hard_reset(struct pd_port *pd_port);
 
 int pd_send_bist_mode2(struct pd_port *pd_port);
-int pd_disable_bist_mode2(struct pd_port *pd_port);
 
 
 /* ---- Send / Reply SVDM Command ----*/
