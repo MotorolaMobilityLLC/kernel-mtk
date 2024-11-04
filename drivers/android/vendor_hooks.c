@@ -250,6 +250,7 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_futex_wait_end);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_futex_wake_traverse_plist);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_futex_wake_this);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_futex_wake_up_q_finish);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_futex_wait_queue_start);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_sha256);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_aes_expandkey);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_aes_encrypt);
