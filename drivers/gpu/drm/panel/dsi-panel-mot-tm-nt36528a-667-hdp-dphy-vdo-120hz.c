@@ -189,7 +189,7 @@ static void tm_nt36528a_panel_init(struct tm_nt36528a *ctx)
 
 	tm_nt36528a_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
 	tm_nt36528a_dcs_write_seq_static(ctx, 0x53, 0x24);
-	tm_nt36528a_dcs_write_seq_static(ctx, 0x55, 0x00);
+	tm_nt36528a_dcs_write_seq_static(ctx, 0x55, 0x01);
 
 	tm_nt36528a_dcs_write_seq_static(ctx, 0x11);
 	msleep(100);
