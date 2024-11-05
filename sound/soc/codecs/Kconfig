@@ -2009,4 +2009,5 @@ config SND_SOC_AW87XXX_KERNEL
 	  This option enables support for AW87XXX Smart K PA.
 
 source "sound/soc/codecs/aw87390/Kconfig"
+source "sound/soc/codecs/aw87564/Kconfig"
 endmenu

@@ -1,0 +1,102 @@
+/*
+ * Copyright (c) 2021 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&i2c6 {
+	spk: speaker_amp@5c {
+		compatible = "richtek,rt5512";
+		#sound-dai-cells = <0>;
+		reg = <0x5c>;
+		sound-name-prefix = "Left";
+		status ="disable";
+	};
+};
+
+&i2c0 {
+	/* AWINIC AW87XXX Smart K PA */
+	aw87xxx_pa@58 {
+		compatible = "awinic,aw87xxx_pa";
+		reg = <0x58>;
+		reset-gpio = <&pio 37 0>;
+		dev_index = < 0 >;
+		status = "okay";
+	};
+
+	aw87xxx_pa@5b {
+		compatible = "awinic,aw87xxx_pa";
+		reg = <0x5b>;
+		reset-gpio = <&pio 162 0>;
+		dev_index = < 1 >;
+		status = "okay";
+	};
+    /* AWINIC AW87XXX Smart K PA End */
+};
+
+&pio {
+	aud_pins_hacamp_high: aud_pins_hacamp_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO158__FUNC_GPIO158>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	aud_pins_hacamp_low: aud_pins_hacamp_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO158__FUNC_GPIO158>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+&afe {
+	pinctrl-names = "aud_clk_mosi_off",
+			"aud_clk_mosi_on",
+			"aud_dat_mosi_off",
+			"aud_dat_mosi_on",
+			"aud_dat_miso0_off",
+			"aud_dat_miso0_on",
+			"aud_dat_miso1_off",
+			"aud_dat_miso1_on",
+			"aud_dat_miso2_off",
+			"aud_dat_miso2_on",
+			"vow_dat_miso_off",
+			"vow_dat_miso_on",
+			"vow_clk_miso_off",
+			"vow_clk_miso_on",
+			"aud_gpio_i2s0_off",
+			"aud_gpio_i2s0_on",
+			"aud_gpio_i2s3_off",
+			"aud_gpio_i2s3_on",
+			"hacamp_pullhigh",
+			"hacamp_pulllow";
+	pinctrl-0 = <&aud_clk_mosi_off>;
+	pinctrl-1 = <&aud_clk_mosi_on>;
+	pinctrl-2 = <&aud_dat_mosi_off>;
+	pinctrl-3 = <&aud_dat_mosi_on>;
+	pinctrl-4 = <&aud_dat_miso0_off>;
+	pinctrl-5 = <&aud_dat_miso0_on>;
+	pinctrl-6 = <&aud_dat_miso1_off>;
+	pinctrl-7 = <&aud_dat_miso1_on>;
+	pinctrl-8 = <&aud_dat_miso2_off>;
+	pinctrl-9 = <&aud_dat_miso2_on>;
+	pinctrl-10 = <&vow_dat_miso_off>;
+	pinctrl-11 = <&vow_dat_miso_on>;
+	pinctrl-12 = <&vow_clk_miso_off>;
+	pinctrl-13 = <&vow_clk_miso_on>;
+	pinctrl-14 = <&aud_gpio_i2s0_off>;
+	pinctrl-15 = <&aud_gpio_i2s0_on>;
+	pinctrl-16 = <&aud_gpio_i2s3_off>;
+	pinctrl-17 = <&aud_gpio_i2s3_on>;
+	pinctrl-18 = <&aud_pins_hacamp_high>;
+	pinctrl-19 = <&aud_pins_hacamp_low>;
+};

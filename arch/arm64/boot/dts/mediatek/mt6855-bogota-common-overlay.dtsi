@@ -16,7 +16,7 @@
 #include "mediatek/bogota-touch.dtsi"
 #include "mediatek/mt6855_cancunf_camera_overlay.dtsi"
 #include "mediatek/cancunf-sar.dtsi"
-#include "mediatek/cancunf-audio.dtsi"
+#include "mediatek/bogota-audio.dtsi"
 #include "mediatek/mt6855-moto-cancunf-fps.dtsi"
 #include "mediatek/mt6855-moto-memory.dtsi"
 
