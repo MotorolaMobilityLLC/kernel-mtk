@@ -13,4 +13,5 @@
 LINUXINCLUDE += -include $(srctree)/kernel/sched/sched.h
 LINUXINCLUDE += -include $(srctree)/drivers/android/binder_internal.h
 ccflags-y += -I$(src)              # needed for trace events
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sched/
 obj-$(CONFIG_MTK_TASK_TURBO) += task_turbo.o
