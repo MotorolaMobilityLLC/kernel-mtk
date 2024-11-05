@@ -54,6 +54,7 @@
 		Semtech,ref-phases-c = <0xff>;
 		Semtech,button-flag = <0x1f>;
 		Semtech,reg-num = <65>;
+		esd-reinit-on = <1>;
 		Semtech,reg-init = <
 				0x8024 0x7F00
 				0x4004 0x74
