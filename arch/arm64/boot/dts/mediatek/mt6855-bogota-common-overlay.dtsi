@@ -31,30 +31,16 @@
         mediatek,xo-bbck4 = <1>;
 };
 
+&i2c7 {
+     clock-frequency = <400000>;
 
-
-&i2c3 {
-     sec-nfc@27 {
-		compatible = "sec-nfc";
-		reg = <0x27>;
-
-		sec-nfc,ven-gpio = <&pio 161 0>;
-		sec-nfc,firm-gpio = <&pio 1 0>;
-		sec-nfc,irq-gpio = <&pio 2 0>;
-		sec-nfc,clk_req-gpio = <&pio 160 0>;
-
-		status = "okay";
-	};
-
-     nfc_pn5xx: nfc_pn5xx@28 {
-		compatible = "qcom,sn-nci";
-		reg = <0x28>;
-		interrupt-parent = <&pio>;
-		interrupts = <2 IRQ_TYPE_LEVEL_HIGH 1 0>;
-		qcom,sn-irq = <&pio 2 0>;
-		qcom,sn-ven = <&pio 161 0>;
-		status = "okay";
-	};
+     sn220e: sn220e@28 {
+                compatible = "qcom,sn-nci";
+                reg = <0x28>;
+                qcom,sn-irq = <&pio 2 0>;
+                qcom,sn-ven = <&pio 38 0>;
+                status = "okay";
+     };
 };
 
 &dispsys_config {
