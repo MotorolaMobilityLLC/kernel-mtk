@@ -27,5 +27,5 @@
 };
 
 #include <bogota_evb/cust.dtsi>
-#include "mediatek/cancunf-charger.dtsi"
+#include "mediatek/bogota-charger.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
