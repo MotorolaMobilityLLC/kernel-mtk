@@ -299,7 +299,7 @@
 
 	cam0_enable_sensor = "imx882_mipi_raw";
 	cam1_enable_sensor = "mot_bogota_gc32e1_mipi_raw";
-	cam2_enable_sensor = "mot_bogota_gc08a8_mipi_raw sc820cs_mipi_raw";
+	cam2_enable_sensor = "mot_bogota_gc08a8_mipi_raw mot_bogota_sc820_mipi_raw";
 	status = "okay";
 };
 /* CAMERA GPIO end */
