@@ -97,3 +97,8 @@ config  CONFIG_MOTO_GNEVAN_PROJECT_CAMERA
         tristate "set gnevan camera driver"
         help
           Used to distinguish project-driver code from other projects.
+
+config  MOT_BOGOTA_CAMERA_PROJECT
+        tristate "set bogota camera driver"
+        help
+          Used to distinguish project-driver code from other projects.
