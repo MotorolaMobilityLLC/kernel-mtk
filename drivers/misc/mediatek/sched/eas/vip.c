@@ -508,6 +508,7 @@ out:
 	}
 	return vip_prio;
 }
+EXPORT_SYMBOL_GPL(get_vip_task_prio);
 
 void vip_enqueue_task(struct rq *rq, struct task_struct *p)
 {

@@ -30,6 +30,7 @@
 #include <trace/hooks/sys.h>
 
 #include <task_turbo.h>
+#include <eas/vip.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace_task_turbo.h>
@@ -138,7 +139,6 @@ static int select_turbo_cpu(struct task_struct *p);
 static int find_best_turbo_cpu(struct task_struct *p);
 static void init_hmp_domains(void);
 static void hmp_cpu_mask_setup(void);
-static int arch_get_nr_clusters(void);
 static void arch_get_cluster_cpus(struct cpumask *cpus, int package_id);
 static int hmp_compare(void *priv, const struct list_head *a, const struct list_head *b);
 static inline void fillin_cluster(struct cluster_info *cinfo,
@@ -367,6 +367,10 @@ static void probe_android_rvh_select_task_rq_fair(void *ignore, struct task_stru
 							int prev_cpu, int sd_flag,
 							int wake_flags, int *target_cpu)
 {
+	/* skip if p is vip */
+	if (get_vip_task_prio(p) != -1)
+		return;
+
 	*target_cpu = select_turbo_cpu(p);
 }
 
@@ -1301,23 +1305,6 @@ void hmp_cpu_mask_setup(void)
 			per_cpu(hmp_cpu_domain, cpu) = domain;
 	}
 	pr_info("Initializing HMP scheduler done\n");
-}
-
-int arch_get_nr_clusters(void)
-{
-	int __arch_nr_clusters = -1;
-	int max_id = 0;
-	unsigned int cpu;
-
-	/* assume socket id is monotonic increasing without gap. */
-	for_each_possible_cpu(cpu) {
-		struct cpu_topology *cpu_topo = &cpu_topology[cpu];
-
-		if (cpu_topo->package_id > max_id)
-			max_id = cpu_topo->package_id;
-	}
-	__arch_nr_clusters = max_id + 1;
-	return __arch_nr_clusters;
 }
 
 void arch_get_cluster_cpus(struct cpumask *cpus, int package_id)
