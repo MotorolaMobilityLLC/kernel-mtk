@@ -27,6 +27,12 @@
 	boot_battery_voltage = <3560000>;
 };
 
+&mt6375_typec {
+       tcpc,en_wd;
+       tcpc,en_wd_sbu_polling;
+       tcpc,en_wd_polling_only;
+};
+
 &charger {
         /* sw jeita */
         enable_vbat_mon = <0>;
