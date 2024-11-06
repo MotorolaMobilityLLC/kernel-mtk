@@ -244,6 +244,22 @@
 		};
 	};
 
+	panel4@0 {
+                compatible = "tm,td4376,672,vdo,120hz";
+		reg = <3>;
+		reset-gpios = <&pio 95 0>;
+		tp_reset-gpios = <&pio 3 0>;
+		//avdd-gpios = <&pio 134 0>;
+		//avee-gpios = <&pio 182 0>;
+		//gate-ic = <4831>;
+		pinctrl-names = "default";
+		port {
+			panel_in4: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+
 	ports {
 		port {
 			dsi_out: endpoint {
