@@ -24,6 +24,10 @@
 			mot,board-id = <0x4A 0xA100>;
 		};
 	};
+
+eint_cp: eint_cp {
+	};
+
 };
 
 #include <bogota_evb/cust.dtsi>
