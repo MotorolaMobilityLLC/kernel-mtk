@@ -49,11 +49,10 @@ struct tm_nt36528a {
 	bool enabled;
 
 	int error;
-	unsigned int hbm_mode;
+//	unsigned int hbm_mode;
 	unsigned int cabc_mode;
 };
 
-#if 0
 static struct mtk_panel_para_table panel_cabc_ui[] = {
 	{2, {0xFF, 0x10}},
 	{2, {0xFB, 0x01}},
@@ -72,6 +71,7 @@ static struct mtk_panel_para_table panel_cabc_disable[] = {
 	{2, {0x55, 0x00}},
 };
 
+#if 0
 static struct mtk_panel_para_table panel_hbm_on[] = {
 	{2, {0xFF, 0x10}},
 	{2, {0xFB, 0x01}},
@@ -275,7 +275,7 @@ static int tm_nt36528a_prepare(struct drm_panel *panel)
 	}
 
 	tm_nt36528a_panel_init(ctx);
-	ctx->hbm_mode = 0;
+//	ctx->hbm_mode = 0;
 	ctx->cabc_mode = 0;
 
 	ret = ctx->error;
@@ -598,7 +598,6 @@ static enum mtk_lcm_version nt36528a_get_lcm_version(void)
 	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
 }
 
-#if 0
 static int panel_cabc_set_cmdq(struct tm_nt36528a *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
 {
 	unsigned int para_count = 0;
@@ -636,6 +635,7 @@ static int panel_cabc_set_cmdq(struct tm_nt36528a *ctx, void *dsi, dcs_grp_write
 	return 0;
 }
 
+#if 0
 static int panel_hbm_set_cmdq(struct tm_nt36528a *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
 	unsigned int para_count = 0;
@@ -669,6 +669,7 @@ static int panel_hbm_set_cmdq(struct tm_nt36528a *ctx, void *dsi, dcs_grp_write_
 
 	return 0;
 }
+#endif
 
 static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
@@ -698,7 +699,7 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
 			break;
 		case PARAM_HBM:
-			if (ctx->hbm_mode != param_info.value) {
+		/*	if (ctx->hbm_mode != param_info.value) {
 				ctx->hbm_mode = param_info.value;
 				panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
 				pr_debug("%s: set HBM to %d end\n", __func__, param_info.value);
@@ -706,6 +707,8 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			}
 			else
 				pr_info("%s: skip same HBM mode:%d\n", __func__, ctx->hbm_mode);
+		*/
+				pr_info("%s: set HBM to %d end\n", __func__, param_info.value);
 			break;
 		default:
 			pr_info("%s: skip unsupport feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
@@ -714,7 +717,6 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 
 	return ret;
 }
-#endif
 
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
@@ -723,7 +725,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.get_lcm_version = nt36528a_get_lcm_version,
 //	.ata_check = panel_ata_check,
 	.set_gesture_flag = tm_nt36528a_set_gesture_flag,
-//	.panel_feature_set = panel_feature_set,
+	.panel_feature_set = panel_feature_set,
 };
 #endif
 
