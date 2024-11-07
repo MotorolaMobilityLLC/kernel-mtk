@@ -53,6 +53,7 @@
 #include "aw87xxx_acf_bin.h"
 #include "aw87xxx_bin_parse.h"
 #include "aw87xxx_dsp.h"
+#include <mtk-sp-spk-amp.h>
 
 /*****************************************************************
  * aw87xxx marco
@@ -1847,6 +1848,8 @@ static int aw87xxx_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	g_aw87xxx_dev_cnt++;
 	list_add(&aw87xxx->list, &g_aw87xxx_list);
 	mutex_unlock(&g_aw87xxx_mutex_lock);
+
+	audiopa_set_type(AUDIOPA_AW87564);
 
 	AW_DEV_LOGI(aw87xxx->dev, "succeed, dev_index=[%d], g_aw87xxx_dev_cnt= [%d]",
 			aw87xxx->dev_index, g_aw87xxx_dev_cnt);

@@ -2008,6 +2008,13 @@ config SND_SOC_AW87XXX_KERNEL
 	help
 	  This option enables support for AW87XXX Smart K PA.
 
+config SND_SOC_BOGOTA_MULTI_AUDIO_PA
+	tristate "SoC Audio for multi audio pa"
+	depends on I2C
+	help
+	  This option enables support for multi audio pa.
+
 source "sound/soc/codecs/aw87390/Kconfig"
 source "sound/soc/codecs/aw87564/Kconfig"
+source "sound/soc/codecs/fs1815/Kconfig"
 endmenu

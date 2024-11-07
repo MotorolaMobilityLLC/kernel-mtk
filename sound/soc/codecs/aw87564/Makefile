@@ -1,3 +1,4 @@
+subdir-ccflags-y += -I$(srctree)/sound/soc/mediatek/common
 obj-$(CONFIG_SND_SOC_AW87564)+= snd-soc-aw87564.o
 snd-soc-aw87564-objs += aw87xxx.o
 snd-soc-aw87564-objs += aw87xxx_acf_bin.o

@@ -33,6 +33,11 @@
 #ifdef CONFIG_SND_SOC_AW87XXX_KERNEL
 extern int aw87xxx_add_codec_controls(void *codec);
 #endif
+#ifdef CONFIG_SND_SOC_BOGOTA_MULTI_AUDIO_PA
+#include "../mediatek/common/mtk-sp-spk-amp.h"
+extern int aw87xxx_add_codec_controls(void *codec);
+extern int fsm_add_codec_controls(struct snd_soc_component *codec);
+#endif
 
 #ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
 extern int HAC_Amp_Change(int bEnable);
@@ -5934,6 +5939,24 @@ static int mt6369_codec_probe(struct snd_soc_component *cmpnt)
 	if (ret < 0) {
 		pr_err("%s: awinic add_codec_controls failed, err %d\n",__func__, ret);
 		return ret;
+	}
+#endif
+#ifdef CONFIG_SND_SOC_BOGOTA_MULTI_AUDIO_PA
+	if (audiopa_get_type() == AUDIOPA_AW87564) {
+		ret = aw87xxx_add_codec_controls((void *)cmpnt);
+		pr_info("%s awinic\n", __func__);
+		if (ret < 0) {
+			pr_err("%s: awinic add_codec_controls failed, err %d\n",__func__, ret);
+			return ret;
+		}
+	} else if (audiopa_get_type() == AUDIOPA_FS1815) {
+		pr_info("%s fs1815\n", __func__);
+		ret = fsm_add_codec_controls(cmpnt);
+		if (ret < 0) {
+			pr_err("%s: add fsm1815_codec_controls failed, ret %d\n",
+			__func__, ret);
+			return ret;
+		}
 	}
 #endif
 

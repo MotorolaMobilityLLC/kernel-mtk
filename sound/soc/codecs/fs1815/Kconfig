@@ -1,0 +1,5 @@
+config SND_SOC_FS1815
+	tristate "SoC Audio for awinic FS1815 Smart K PA"
+	depends on I2C
+	help
+	  This option enables support for FS1815 Smart K PA.

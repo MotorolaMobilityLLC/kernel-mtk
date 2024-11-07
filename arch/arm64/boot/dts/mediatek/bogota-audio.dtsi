@@ -38,7 +38,18 @@
 		dev_index = < 1 >;
 		status = "okay";
 	};
-    /* AWINIC AW87XXX Smart K PA End */
+	/* AWINIC AW87XXX Smart K PA End */
+
+	fs18xx@34 {
+		status = "okay";
+		compatible = "foursemi,fs1815";
+		reg = <0x34>;
+	};
+	fs18xx@35 {
+		status = "okay";
+		compatible = "foursemi,fs1815";
+		reg = <0x35>;
+	};
 };
 
 &pio {
