@@ -260,6 +260,22 @@
 		};
 	};
 
+	panel5@0 {
+		compatible = "txd,ili7807s,672,vdo,120hz";
+		reg = <4>;
+		reset-gpios = <&pio 95 0>;
+		//avdd-gpios = <&pio 134 0>;
+		//avee-gpios = <&pio 182 0>;
+		//gate-ic = <4831>;
+		pinctrl-names = "default";
+		port {
+			panel_in5: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+
+
 	ports {
 		port {
 			dsi_out: endpoint {
