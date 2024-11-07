@@ -130,6 +130,7 @@ obj-$(CONFIG_DRM_PANEL_CSOT_ICNL9922C_672_FHDP_DPHY_VDO_120HZ) += dsi-panel-mot-
 obj-$(CONFIG_DRM_PANEL_BOE_ICNL9922C_672_FHD_DPHY_VDO_120HZ) += dsi-panel-mot-boe-icnl9922c-672-fhd-dphy-vdo-120hz.o
 obj-$(CONFIG_DRM_PANEL_DIJING_FT8725_672_FHD_DPHY_VDO_120HZ) += dsi-panel-mot-dijing-ft8725-672-fhd-dphy-vdo-120hz.o
 obj-$(CONFIG_DRM_PANEL_TM_TD4376_672_FHD_DPHY_VDO_120HZ) += dsi-panel-mot-tm-td4376-672-fhd-dphy-vdo-120hz.o
+obj-$(CONFIG_DRM_PANEL_TXD_ILI7807S_672_FHD_DPHY_VDO_120HZ) += dsi-panel-mot-txd-ili7807s-672-fhd-dphy-vdo-120hz.o
 obj-$(CONFIG_DRM_PANEL_TXD_ILI7807S_649_DPHY_VDO_V0) += dsi-panel-mot-txd-ili7807s-649-dphy-vdo-v0.o
 obj-$(CONFIG_DRM_PANEL_TIANMA_VTDR6115_655_FHDP_DPHY_VDO_144HZ) += dsi-panel-mot-tianma-vtdr6115-655-fhdp-dphy-vdo-144hz.o
 obj-$(CONFIG_DRM_PANEL_CSOT_VTDR6115_655_FHDP_DPHY_VDO_144HZ) += dsi-panel-mot-csot-vtdr6115-655-fhdp-dphy-vdo-144hz.o
