@@ -9,7 +9,7 @@
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
-	mediatek,pad-select = <0>, <1>, <2>;
+	mediatek,pad-select = <0>, <1>, <2>, <3>;
 
 	chipone_tddi@0 {
 		compatible = "chipone-tddi";
@@ -56,6 +56,24 @@
                 touch,psy-name = "battery";
                 //ilitek,report_gesture_key;
                 //ilitek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
+        };
+
+	omnivision@3 {
+		compatible = "omnivision,tcm-spi";
+		reg = <3>; //Same as CS ID
+		status = "ok";
+		omnivision,irq-gpio = <&pio 22 0x00>;
+		omnivision,irq-on-state = <0>;
+		omnivision,reset-gpio = <&pio 3 0x00>;
+		omnivision,reset-on-state = <0>;
+		omnivision,reset-active-ms = <20>;
+		omnivision,reset-delay-ms = <200>;
+		omnivision,power-delay-ms = <200>;
+		omnivision,spi-mode = <3>;
+		omnivision,byte-delay-us = <0>;
+		omnivision,block-delay-us = <0>;
+		omnivision,ubl-max-freq = <3000000>;
+		omnivision,ubl-byte-delay-us = <20>;
         };
 
 };
