@@ -58,7 +58,7 @@
 		compatible = "nxp,p61";
 		reg = <0>;
 		spi-max-frequency = <20000000>;
-		nxp,nfcc = "3-0028";
+		nxp,nfcc = "7-0028";
 //		nxp,p61-rst = <&gpio2 5 0>;
 		pinctrl-names = "pinctrl_state_mode_spi",
 				"pinctrl_state_mode_idle";
