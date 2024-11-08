@@ -114,6 +114,8 @@
  *
  ************************************************************************/
 /* Bogota */
+#define MOT_BOGOTA_IMX882_SENSOR_ID                       0x8202
+#define SENSOR_DRVNAME_MOT_BOGOTA_IMX882_MIPI_RAW        "mot_bogota_imx882_mipi_raw"
 #define MOT_BOGOTA_GC32E1_SENSOR_ID                       0x32E1
 #define SENSOR_DRVNAME_MOT_BOGOTA_GC32E1_MIPI_RAW        "mot_bogota_gc32e1_mipi_raw"
 #define MOT_BOGOTA_GC08A8_SENSOR_ID                       0x08a8

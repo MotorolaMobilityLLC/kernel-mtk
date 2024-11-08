@@ -297,7 +297,7 @@
 	cam2_pin_vcamd = "gpio";
 	cam2_pin_vcamio = "regulator";
 
-	cam0_enable_sensor = "imx882_mipi_raw";
+	cam0_enable_sensor = "mot_bogota_imx882_mipi_raw";
 	cam1_enable_sensor = "mot_bogota_gc32e1_mipi_raw";
 	cam2_enable_sensor = "mot_bogota_gc08a8_mipi_raw mot_bogota_sc820_mipi_raw";
 	status = "okay";
@@ -307,7 +307,7 @@
 /* CAMERA EEPROM */
 &i2c2 {
 	status = "okay";
-	clock-frequency = <400000>;
+	clock-frequency = <1000000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
 	camera_main_mtk:camera_main@1a {
