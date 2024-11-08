@@ -24,6 +24,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                 },
         },
 #endif
+#if defined(MOT_BOGOTA_GC08A8_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_BOGOTA_GC08A8_MIPI_RAW,
+		{
+			{RST, Vol_Low, 1},
+			{DOVDD, Vol_1800, 1},
+			{AVDD, Vol_High, 1},
+			{DVDD, Vol_High, 1},
+			{SensorMCLK, Vol_High, 1},
+			{RST, Vol_High, 2},
+		},
+	},
+#endif
 #if defined(HI1339_MIPI_RAW)
 		{
 			SENSOR_DRVNAME_HI1339_MIPI_RAW,

@@ -113,9 +113,12 @@
 /************************************************************************
  *
  ************************************************************************/
- /* Bogota */
- #define MOT_BOGOTA_GC32E1_SENSOR_ID                       0x32E1
- #define SENSOR_DRVNAME_MOT_BOGOTA_GC32E1_MIPI_RAW        "mot_bogota_gc32e1_mipi_raw"
+/* Bogota */
+#define MOT_BOGOTA_GC32E1_SENSOR_ID                       0x32E1
+#define SENSOR_DRVNAME_MOT_BOGOTA_GC32E1_MIPI_RAW        "mot_bogota_gc32e1_mipi_raw"
+#define MOT_BOGOTA_GC08A8_SENSOR_ID                       0x08a8
+#define SENSOR_DRVNAME_MOT_BOGOTA_GC08A8_MIPI_RAW         "mot_bogota_gc08a8_mipi_raw"
+
 /* Gnevan */
 #define MOT_GNEVAN_S5K4H7_SENSOR_ID                       0x487B
 #define MOT_GNEVAN_SC202CS_SENSOR_ID                       0xeb52
