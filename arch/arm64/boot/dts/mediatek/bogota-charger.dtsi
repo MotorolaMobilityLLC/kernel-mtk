@@ -89,7 +89,7 @@
 	mmi,min-cp-therm-current-ua = <1600000>;
 };
 
-/*&odm {
+&odm {
 	mmi_chrg_manager {
 		compatible = "mmi,chrg-manager";
 		mmi,pps-volt-steps = <20000>;
@@ -133,7 +133,7 @@
 			charging-curr-min = <1800000>;
 		};
 	};
-};*/
+};
 
 
 /*&mt6375_chg {
@@ -423,5 +423,68 @@
 		sc,sc8541,pmid2out-uvp = <7>; /*50 + val * 25*/
 		sc,sc8541,pmid2out-ovp = <7>; /*150 + val * 50*/
 	};
+
+};
+
+&i2c7 {
+        wt6670f@35 {
+                status = "okay";
+                compatible = "mediatek,wt6670f_qc3p";
+                reg = <0x35>;
+                wt6670f-reset-gpio = <&pio 29 0x0>;
+                wt6670f-int-gpio = <&pio 19 0x0>;
+                wt6670f-i2c-scl-pin = <&pio 151 0x0>;
+                wt6670f-i2c-sda-pin = <&pio 152 0x0>;
+
+                pinctrl-names = "default",
+                                "wt6670_i2c_scl_low", "wt6670_i2c_scl_high",
+                                "wt6670_i2c_sda_low", "wt6670_i2c_sda_high",
+                                "wt6670_i2c";
+                pinctrl-0 = <&wt6670_pins_default>;
+                pinctrl-1 = <&wt6670_pins_scl_low>;
+                pinctrl-2 = <&wt6670_pins_scl_high>;
+                pinctrl-3 = <&wt6670_pins_sda_low>;
+                pinctrl-4 = <&wt6670_pins_sda_high>;
+                pinctrl-5 = <&wt6670_pins_i2c>;
+        };
+};
+
+&pio {
+        wt6670_pins_default: wt6670_default_mode {
+        };
+        wt6670_pins_scl_low: wt6670_scl_low {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        wt6670_pins_scl_high: wt6670_scl_high {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        wt6670_pins_sda_low: wt6670_sda_low {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        wt6670_pins_sda_high: wt6670_sda_high {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        wt6670_pins_i2c: wt6670_i2c_mode {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO152__FUNC_SDA7>,
+                                <PINMUX_GPIO151__FUNC_SCL7>;
+                };
+        };
 
 };

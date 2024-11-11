@@ -44,6 +44,7 @@ extern int wt6670f_get_charger_type(void);
 extern bool wt6670f_is_charger_ready(void);
 extern int wt6670f_do_reset(void);
 bool m_chg_ready = false;
+extern bool qc3p_z350_init_ok;
 extern int m_chg_type;
 extern int is_already_probe_ok;
 bool wt6670f_is_detect = false;
@@ -2184,6 +2185,7 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 	bool should_notify = false;
 	bool need_retry = false;
 	int early_chg_type = 0;
+	int wait_count = 0;
 	int count = 0;
 	int ret;
 	union power_supply_propval val;
@@ -2257,6 +2259,59 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 			pr_err("[%s]   WT6670F charge type is  0x%x\n",__func__, m_chg_type);
 		}while(need_retry);
 	}//wt6670f
+	if (1 == g_qc3p_id) {//z350
+		if (qc3p_z350_init_ok) {
+			qc3p_z350_init_ok = false;
+			wt6670f_do_reset();
+		}
+		m_chg_type = 0;
+		wait_count = 0;
+		early_chg_type = 0;
+		while (( !m_chg_type) && (wait_count  < 30)) {
+			msleep(30);
+			wait_count ++;
+			pr_err("z350 early waiting dcp type:%x,%d\n", m_chg_type, wait_count);
+		}
+		m_chg_type = wt6670f_get_protocol();
+		if ((m_chg_type != 0x02) && (m_chg_type != 0x03)) {
+			wait_count = 0;
+			while ((!m_chg_type) && (wait_count < 30)) {
+				msleep(100);
+				wait_count++;
+				pr_err("z350 waiting dcp type:%x,%d\n",m_chg_type,wait_count);
+			}
+			m_chg_type = wt6670f_get_protocol();
+		}
+		if (m_chg_type == 0x04) {
+			pr_err("z350==0x04 retry type");
+			msleep(2000);
+			m_chg_type = wt6670f_get_protocol();
+			pr_err("z350==0x04 retry type:%x,%d\n",m_chg_type,wait_count);
+		}
+		if (m_chg_type == 0x10) {
+			wt6670f_en_hvdcp();
+
+			wait_count = 0;
+			while ((m_chg_type != 0xff) && (wait_count<30)) {
+				msleep(100);
+				wait_count++;
+				early_chg_type = wt6670f_get_protocol();
+				if (early_chg_type == 0x06 || early_chg_type == 0x09) {
+					pr_err("[%s] z350 early type is QC3+/QC3: %d, skip detecting\n",__func__, early_chg_type);
+					break;
+				}
+			}
+			m_chg_type = wt6670f_get_protocol();
+		}
+			ret = power_supply_get_property(ddata->psy, POWER_SUPPLY_PROP_ONLINE, &val);
+			if (val.intval) {
+				power_supply_changed(ddata->psy);
+			}
+			else {
+				pr_err("[%s] ONLINE: %d, skip detecting1\n",__func__, val.intval);
+			}
+			pr_err("[%s]   z350 charge type is  0x%x\n",__func__, m_chg_type);
+	}
 	wt6670f_is_detect = false;
 
 	if(m_chg_type == 0x05){
