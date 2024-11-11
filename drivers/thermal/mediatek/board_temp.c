@@ -80,6 +80,7 @@ struct board_ntc_info {
 	struct iio_channel *chan_quiet_ntc;
 	struct iio_channel *chan_tspk_ntc;
 	struct iio_channel *chan_usb_conn_ntc;
+	struct iio_channel *chan_cam_ntc;
 };
 
 unsigned int tia2_rc_sel_to_value(unsigned int sel)
@@ -269,6 +270,9 @@ static int board_ntc_get_temp(void *data, int *temp)
 	} else if(!PTR_ERR_OR_ZERO(ntc_info->chan_usb_conn_ntc)){
 		iio_read_channel_processed(ntc_info->chan_usb_conn_ntc, &val);
 		r_type = 3;
+	} else if(!PTR_ERR_OR_ZERO(ntc_info->chan_cam_ntc)) {
+		iio_read_channel_raw(ntc_info->chan_cam_ntc, &val);
+		r_type = 0;
 	} else {
 		//do {
 		//	val = readl(ntc_info->data_reg);
@@ -558,6 +562,7 @@ static int board_ntc_probe(struct platform_device *pdev)
 	ntc_info->chan_quiet_ntc =  devm_iio_channel_get(&pdev->dev, "QUIET_NTC");
 	ntc_info->chan_tspk_ntc =  devm_iio_channel_get(&pdev->dev, "TSPK_NTC");
 	ntc_info->chan_usb_conn_ntc =  devm_iio_channel_get(&pdev->dev, "USB_CONN_NTC");
+	ntc_info->chan_cam_ntc =  devm_iio_channel_get(&pdev->dev, "CAM_NTC");
 
 	platform_set_drvdata(pdev, ntc_info);
 
