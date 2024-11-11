@@ -30,16 +30,21 @@
 &clock_buffer_ctrl {
         mediatek,xo-bbck4 = <1>;
 };
-
 &i2c7 {
      clock-frequency = <400000>;
 
      sn220e: sn220e@28 {
                 compatible = "qcom,sn-nci";
                 reg = <0x28>;
+                //NXP NFC
                 qcom,sn-irq = <&pio 2 0>;
                 qcom,sn-ven = <&pio 38 0>;
                 status = "okay";
+                // TMS NFC
+                tms,device-name = "tms_nfc";
+                tms,device-count = <1>;
+                tms,irq-gpio = <&pio 2 0x00>;
+                tms,ven-gpio = <&pio 38 0x01>;
      };
 };
 
