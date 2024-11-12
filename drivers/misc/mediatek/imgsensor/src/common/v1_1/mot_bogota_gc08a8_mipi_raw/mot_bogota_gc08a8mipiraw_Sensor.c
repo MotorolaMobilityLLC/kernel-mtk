@@ -57,7 +57,7 @@
 #define LOG_INF(format, args...)		pr_err(PFX "[%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-static kal_uint8 module_id;
+extern bool check_mot_bogota_gc08a8_otp(void);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_BOGOTA_GC08A8_SENSOR_ID,
@@ -657,11 +657,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				LOG_INF("[mot_bogota_gc08a8_camera_sensor]get_imgsensor_id:i2c write id: 0x%x, sensor id: 0x%x, module_id:  0x%x\n",
-					imgsensor.i2c_write_id, *sensor_id,module_id);
-#if IS_ENABLED(CONFIG_OEM_DEVINFO)
-				FULL_PRODUCT_DEVICE_CB(ID_FRONT1_CAM, front_cam_get_info, NULL);
-#endif
+				LOG_INF("[mot_bogota_gc08a8_camera_sensor]get_imgsensor_id:i2c write id: 0x%x, sensor id: 0x%x\n",
+					imgsensor.i2c_write_id, *sensor_id);
+				if(check_mot_bogota_gc08a8_otp()) {
+					LOG_INF("mot_bogota_gc08a8,check OTP pass\n");
+				} else {
+					LOG_INF("mot_bogota_gc08a8,check OTP fail\n");
+				}
 				return ERROR_NONE;
 			}
 			LOG_INF("[mot_bogota_gc08a8_camera_sensor]get_imgsensor_id:Read sensor id fail, write id: 0x%x, id: 0x%x\n",
