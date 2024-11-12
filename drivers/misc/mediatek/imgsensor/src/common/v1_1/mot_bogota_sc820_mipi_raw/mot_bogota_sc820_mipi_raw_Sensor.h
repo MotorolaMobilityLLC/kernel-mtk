@@ -21,85 +21,6 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#define OTP_GROUP1_FLAG 0x827A
-#define OTP_GROUP2_FLAG 0x8C7A
-
-#define MODULE_GROUP1_INFO_PAGE 6
-#define MODULE_GROUP1_INFO_ADDR 0x8BD7
-#define MODULE_GROUP1_CHECKSUM 0x8BFD
-
-#define MODULE_GROUP2_INFO_PAGE 11
-#define MODULE_GROUP2_INFO_ADDR 0x95D7
-#define MODULE_GROUP2_CHECKSUM 0x95FD
-
-#define MODULE_INFO_LENGTH 38
-
-#define AWB_GROUP1_INFO_PAGE 2
-#define AWB_GROUP1_INFO_ADDR 0x8285
-#define AWB_GROUP1_CHECKSUM 0x82A1
-
-#define AWB_GROUP2_INFO_PAGE 7
-#define AWB_GROUP2_INFO_ADDR 0x8C85
-#define AWB_GROUP2_CHECKSUM 0x8CA1
-
-#define AWB_INFO_LENGTH 28
-
-#define LSC_GROUP1_PART1_INFO_PAGE 2
-#define LSC_GROUP1_PART1_INFO_ADDR 0x82A2
-#define LSC_GROUP1_PART1_INFO_LENGTH 350
-
-#define LSC_GROUP1_PART2_INFO_PAGE 3
-#define LSC_GROUP1_PART2_INFO_ADDR 0x847A
-#define LSC_GROUP1_PART2_INFO_LENGTH 390
-
-#define LSC_GROUP1_PART3_INFO_PAGE 4
-#define LSC_GROUP1_PART3_INFO_ADDR 0x867A
-#define LSC_GROUP1_PART3_INFO_LENGTH 390
-
-#define LSC_GROUP1_PART4_INFO_PAGE 5
-#define LSC_GROUP1_PART4_INFO_ADDR 0x887A
-#define LSC_GROUP1_PART4_INFO_LENGTH 390
-
-#define LSC_GROUP1_PART5_INFO_PAGE 6
-#define LSC_GROUP1_PART5_INFO_ADDR 0x8A7A
-#define LSC_GROUP1_PART5_INFO_LENGTH 348
-
-#define LSC_GROUP1_CHECKSUM 0x8BD6
-
-#define LSC_GROUP2_PART1_INFO_PAGE 7
-#define LSC_GROUP2_PART1_INFO_ADDR 0x8CA2
-#define LSC_GROUP2_PART1_INFO_LENGTH 350
-
-#define LSC_GROUP2_PART2_INFO_PAGE 8
-#define LSC_GROUP2_PART2_INFO_ADDR 0x8E7A
-#define LSC_GROUP2_PART2_INFO_LENGTH 390
-
-#define LSC_GROUP2_PART3_INFO_PAGE 9
-#define LSC_GROUP2_PART3_INFO_ADDR 0x907A
-#define LSC_GROUP2_PART3_INFO_LENGTH 390
-
-#define LSC_GROUP2_PART4_INFO_PAGE 10
-#define LSC_GROUP2_PART4_INFO_ADDR 0x927A
-#define LSC_GROUP2_PART4_INFO_LENGTH 390
-
-#define LSC_GROUP2_PART5_INFO_PAGE 11
-#define LSC_GROUP2_PART5_INFO_ADDR 0x947A
-#define LSC_GROUP2_PART5_INFO_LENGTH 348
-
-#define LSC_GROUP2_CHECKSUM 0x95D6
-
-#define LSC_INFO_LENGTH 1868
-
-struct mot_bogota_sc820_otp_t {
-    u8  module_flag;
-    u8  module_param[38]; //u8  module_param[9];
-    u8  module_checksum;
-    u8  awb_param[28];
-    u8  awb_checksum;
-    u8  lsc_param[1868];
-    u8  lsc_checksum;
-};
-
 typedef enum{
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
@@ -203,7 +124,6 @@ typedef struct imgsensor_info_struct {
 	kal_uint8  i2c_addr_table[5];
 	kal_uint32  i2c_speed;     //i2c speed
 } imgsensor_info_struct;
-
 
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData,
 				u16 a_sizeRecvData, u16 i2cId);

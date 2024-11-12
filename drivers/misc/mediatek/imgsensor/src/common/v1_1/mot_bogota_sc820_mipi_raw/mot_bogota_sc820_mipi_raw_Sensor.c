@@ -37,7 +37,7 @@
 #define MOT_BOGOTA_SC820_SENSOR_GAIN_MAP_SIZE         6
 #define MOT_BOGOTA_SC820_SENSOR_BASE_GAIN             0x400
 #define MOT_BOGOTA_SC820_SENSOR_MAX_GAIN              (32 * MOT_BOGOTA_SC820_SENSOR_BASE_GAIN )
-
+extern void read_mot_bogota_sc820_otp_data(void);
 #define PFX "mot_bogota_sc820_camera_sensor"
 #define LOG_INF(format, args...)		pr_err(PFX "[%s] " format, __func__, ##args)
 
@@ -656,7 +656,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					    //Eeprom_DataInit(1, MOT_BOGOTA_SC820_TRULY_SENSOR_ID);
 					    deviceInfo_register_value = 0x01;
 					}
-					// read_mot_bogota_sc820_otp_data();
+					read_mot_bogota_sc820_otp_data();
 					return ERROR_NONE;
 				}
 				LOG_INF("get_imgsensor_id Read sensor id fail, i2c write id: 0x%x,sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
