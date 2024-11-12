@@ -310,6 +310,9 @@ config SND_SOC_88PM860X
 config CANCUNN_AUDIO
 	tristate "Cancun on-board mic power supply 2.5v"
 
+config BOGOTA_AUDIO
+	tristate "bogota on-board mic power supply 2.5v"
+
 config SND_SOC_ARIZONA
 	tristate
 	default y if SND_SOC_CS47L24=y
