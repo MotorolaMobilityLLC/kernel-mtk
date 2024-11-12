@@ -68,6 +68,8 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{MOT_CANCUNN_OV50D_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_CANCUNN_HI1634Q_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_CANCUNN_S5K4H7_SENSOR_ID, 0x5A, mot_cancunn_s5k4h7_read_region},  //otp
+#elif defined(CONFIG_MOT_BOGOTA_CAMERA_PROJECT)
+	{MOT_BOGOTA_GC32E1_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 #else
 	/*Below is commom sensor */
 	{HI1339_SENSOR_ID, 0xB0, Common_read_region},

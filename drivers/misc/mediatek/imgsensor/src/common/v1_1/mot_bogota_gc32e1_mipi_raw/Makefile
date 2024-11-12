@@ -14,4 +14,4 @@
 # Copyright (C) 2020 MediaTek Inc.
 imgsensor_isp6s-objs += \
 	$(subdrv-rpath)/mot_bogota_gc32e1mipi_Sensor.o \
-	# $(subdrv-rpath)/gc32e1_eeprom.o
+	$(subdrv-rpath)/mot_gc32e1_eeprom.o \

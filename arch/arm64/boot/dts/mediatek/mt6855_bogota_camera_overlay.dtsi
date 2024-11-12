@@ -353,6 +353,11 @@
 		reg = <0x1a>;
 		status = "okay";
 	};
+	mtk_camera_eeprom1:camera_eeprom1@51 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x51>;
+		status = "okay";
+	};
 };
 &i2c8 {
 	status = "okay";

@@ -53,6 +53,10 @@
 #define LOG_INF(format, args...)
 #endif
 
+extern mot_calibration_status_t *BOGOTA_GC32E1_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *BOGOTA_GC32E1_eeprom_get_mnf_info(void);
+extern void BOGOTA_GC32E1_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+
 #define CROSSTALK_BUF_SIZE        771
 #define CROSSTALK_START_ADDR      0x0773
 //static kal_uint8 mot_bogota_gc32e1_xtalk_data[CROSSTALK_BUF_SIZE+2];
@@ -437,6 +441,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_info("[mot_bogota_gc32e1_camera_sensor]get_imgsensor_id:i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
+				BOGOTA_GC32E1_eeprom_format_calibration_data(&imgsensor);
 				//mot_bogota_gc32e1_read_crosstalk_data(CROSSTALK_START_ADDR, &mot_bogota_gc32e1_xtalk_data[2], CROSSTALK_BUF_SIZE);
 				return ERROR_NONE;
 			}
@@ -649,6 +654,10 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->VideoDelayFrame = imgsensor_info.video_delay_frame;
 	sensor_info->HighSpeedVideoDelayFrame = imgsensor_info.hs_video_delay_frame;
 	sensor_info->SlimVideoDelayFrame = imgsensor_info.slim_video_delay_frame;
+
+        /*Apply manufacture info*/
+	memcpy(&sensor_info->mnf_calibration, BOGOTA_GC32E1_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, BOGOTA_GC32E1_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
@@ -1223,5 +1232,7 @@ UINT32 MOT_BOGOTA_GC32E1_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfF
 	/* Check Sensor status here */
 	if (pfFunc != NULL)
 		*pfFunc = &sensor_func;
+	if (imgsensor.psensor_func == NULL)
+		imgsensor.psensor_func = &sensor_func;
 	return ERROR_NONE;
 }
