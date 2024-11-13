@@ -204,8 +204,12 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	panel1@0 {
-		compatible = "mot,dummy,vdo,60hz";
+		compatible = "boe,icnl9922c,672,vdo,120hz";
 		reg = <0>;
+		reset-gpios = <&pio 95 0>;
+		//avdd-gpios = <&pio 134 0>;
+		//avee-gpios = <&pio 182 0>;
+		//gate-ic = <4831>;
 		pinctrl-names = "default";
 		port {
 			panel_in1: endpoint {
@@ -215,7 +219,7 @@
 	};
 
 	panel2@0 {
-		compatible = "boe,icnl9922c,672,vdo,120hz";
+                compatible = "dijing,ft8725,672,vdo,120hz";
 		reg = <1>;
 		reset-gpios = <&pio 95 0>;
 		//avdd-gpios = <&pio 134 0>;
@@ -230,9 +234,10 @@
 	};
 
 	panel3@0 {
-                compatible = "dijing,ft8725,672,vdo,120hz";
+                compatible = "tm,td4376,672,vdo,120hz";
 		reg = <2>;
 		reset-gpios = <&pio 95 0>;
+		tp_reset-gpios = <&pio 3 0>;
 		//avdd-gpios = <&pio 134 0>;
 		//avee-gpios = <&pio 182 0>;
 		//gate-ic = <4831>;
@@ -245,10 +250,9 @@
 	};
 
 	panel4@0 {
-                compatible = "tm,td4376,672,vdo,120hz";
+		compatible = "txd,ili7807s,672,vdo,120hz";
 		reg = <3>;
 		reset-gpios = <&pio 95 0>;
-		tp_reset-gpios = <&pio 3 0>;
 		//avdd-gpios = <&pio 134 0>;
 		//avee-gpios = <&pio 182 0>;
 		//gate-ic = <4831>;
@@ -260,13 +264,10 @@
 		};
 	};
 
+/*
 	panel5@0 {
-		compatible = "txd,ili7807s,672,vdo,120hz";
+		compatible = "mot,dummy,vdo,60hz";
 		reg = <4>;
-		reset-gpios = <&pio 95 0>;
-		//avdd-gpios = <&pio 134 0>;
-		//avee-gpios = <&pio 182 0>;
-		//gate-ic = <4831>;
 		pinctrl-names = "default";
 		port {
 			panel_in5: endpoint {
@@ -274,7 +275,7 @@
 			};
 		};
 	};
-
+*/
 
 	ports {
 		port {
