@@ -6563,7 +6563,15 @@
 			part = <0>;
 			};
 		};
-
+		flashlights_ocp81375: flashlights_ocp81375{
+			compatible = "mediatek,flashlights_ocp81375";
+			decouple = <0>;
+			channel@1 {
+			type = <0>;
+			ct = <0>;
+			part = <0>;
+			};
+		};
 		flashlights_aw36518: flashlights_aw36518 {
 			compatible = "awinic,aw36518";
 		};

@@ -28,4 +28,10 @@
 
 #define AW36515_DTNAME_I2C "mediatek,aw36515"
 #define AW36515_DTNAME     "mediatek,flashlights_aw36515"
+
+#define BOGOTA_AW36515_DTNAME_I2C "mediatek,strobe_main"
+#define BOGOTA_AW36515_DTNAME     "mediatek,flashlights_aw36515"
+
+#define OCP81375_DTNAME_I2C "mediatek,strobe_main"
+#define OCP81375_DTNAME    "mediatek,flashlights_ocp81375"
 #endif /* _FLASHLIGHT_DT_H */

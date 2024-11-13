@@ -220,6 +220,20 @@
 	};
 	camera_pins_default: camdefault {
 	};
+	flash_en_pin0: flash_en_pin0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flash_en_pin1: flash_en_pin1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 };
 &kd_camera_hw1 {
 	pinctrl-names = "default",
@@ -303,7 +317,18 @@
 	status = "okay";
 };
 /* CAMERA GPIO end */
-
+&i2c0 {
+        status = "okay";
+        clock-frequency = <400000>;
+        strobe_main:strobe_main@63 {
+        compatible = "mediatek,strobe_main";
+        reg = <0x63>;
+        status = "okay";
+        pinctrl-names = "hwen-low", "hwen-high";
+        pinctrl-0 = <&flash_en_pin0>;
+        pinctrl-1 = <&flash_en_pin1>;
+    };
+};
 /* CAMERA EEPROM */
 &i2c2 {
 	status = "okay";
