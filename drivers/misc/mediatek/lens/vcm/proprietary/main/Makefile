@@ -71,6 +71,7 @@ mainaf-y  += common/bu63169af/OIS_user.o
 mainaf-y  += common/bu64253gwzaf/BU64253GWZAF.o
 mainaf-y  += common/mot_vicky_gt9764af/MOT_VICKY_GT9764AF.o
 mainaf-y  += common/mot_devonf_gt9764af/MOT_DEVONF_GT9764AF.o
+mainaf-y  += common/mot_bogota_gt9764af/MOT_BOGOTA_GT9764AF.o
 mainaf-y  += common/aw86006ois/aw86006_ois.o
 mainaf-y  += common/mot_cancunf_aw86006af/MOT_CANCUNF_AW86006AF.o
 mainaf-y  += common/mot_cancunf_aw86006vcmyovaaf/MOT_CANCUNF_AW86006VCMYOVAAF.o

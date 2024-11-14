@@ -495,3 +495,19 @@ extern int MOT_MAUI_GT9772AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 extern int MOT_MAUI_GT9772AF_GetFileName(unsigned char *pFileName);
 //End
 #endif
+
+//Begin: Add lens driver interface for Bogota
+#define MOT_BOGOTA_GT9764_SetI2CClient MOT_BOGOTA_GT9764AF_SetI2Cclient
+#define MOT_BOGOTA_GT9764_Ioctl MOT_BOGOTA_GT9764AF_Ioctl
+#define MOT_BOGOTA_GT9764_Release MOT_BOGOTA_GT9764AF_Release
+#define MOT_BOGOTA_GT9764_PowerDown MOT_BOGOTA_GT9764AF_PowerDown
+#define MOT_BOGOTA_GT9764_GetFileName MOT_BOGOTA_GT9764AF_GetFileName
+extern int MOT_BOGOTA_GT9764AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_BOGOTA_GT9764AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+				unsigned long a_u4Param);
+extern int MOT_BOGOTA_GT9764AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_BOGOTA_GT9764AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int MOT_BOGOTA_GT9764AF_GetFileName(unsigned char *pFileName);
+//End
