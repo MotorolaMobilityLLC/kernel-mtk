@@ -1,0 +1,36 @@
+&pio {
+	fm_elna_default: fm_elna_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fm_elna_active: fm_elna_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fm_elna_suspend: fm_elna_suspend {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+&{/soc} {
+	fmradio: fm_wcn39x0 {
+		status = "ok";
+		compatible = "moto,fmctrl";
+		pinctrl-names = "default", "elna_active", "elna_suspend";
+		pinctrl-0 = <&fm_elna_default>;
+		pinctrl-1 = <&fm_elna_active>;
+		pinctrl-2 = <&fm_elna_suspend>;
+	};
+};
