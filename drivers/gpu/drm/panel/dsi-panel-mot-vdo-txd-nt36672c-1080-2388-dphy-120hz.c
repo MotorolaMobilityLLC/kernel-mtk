@@ -199,6 +199,56 @@ static void tongxd_panel_init(struct tongxd *ctx)
 	}
 
 	pr_info("txd nt36672c init start!\n");
+        tongxd_dcs_write_seq_static(ctx,0xFF, 0x23);
+        tongxd_dcs_write_seq_static(ctx,0xFB, 0x01);
+
+        tongxd_dcs_write_seq_static(ctx,0x00, 0x60);
+        tongxd_dcs_write_seq_static(ctx,0x05, 0x22);
+        tongxd_dcs_write_seq_static(ctx,0x06, 0x01);
+
+        tongxd_dcs_write_seq_static(ctx,0x07, 0x00);
+        tongxd_dcs_write_seq_static(ctx,0x08, 0x02);
+        tongxd_dcs_write_seq_static(ctx,0x09, 0x36);
+
+        tongxd_dcs_write_seq_static(ctx,0x10, 0x82);
+        tongxd_dcs_write_seq_static(ctx,0x11, 0x01);
+        tongxd_dcs_write_seq_static(ctx,0x12, 0x92);
+        tongxd_dcs_write_seq_static(ctx,0x15, 0x68);
+        tongxd_dcs_write_seq_static(ctx,0x16, 0x0B);
+        tongxd_dcs_write_seq_static(ctx,0x30, 0xFF);
+        tongxd_dcs_write_seq_static(ctx,0x31, 0xFF);
+        tongxd_dcs_write_seq_static(ctx,0x32, 0xFF);
+        tongxd_dcs_write_seq_static(ctx,0x33, 0xFF);
+        tongxd_dcs_write_seq_static(ctx,0x34, 0xF2);
+        tongxd_dcs_write_seq_static(ctx,0x35, 0xEF);
+        tongxd_dcs_write_seq_static(ctx,0x36, 0xED);
+        tongxd_dcs_write_seq_static(ctx,0x37, 0xE6);
+        tongxd_dcs_write_seq_static(ctx,0x38, 0xE4);
+        tongxd_dcs_write_seq_static(ctx,0x39, 0xE0);
+        tongxd_dcs_write_seq_static(ctx,0x3A, 0xDE);
+        tongxd_dcs_write_seq_static(ctx,0x3B, 0xDD);
+        tongxd_dcs_write_seq_static(ctx,0x3D, 0xDA);
+        tongxd_dcs_write_seq_static(ctx,0x3F, 0xD9);
+        tongxd_dcs_write_seq_static(ctx,0x40, 0xD8);
+        tongxd_dcs_write_seq_static(ctx,0x41, 0xD7);
+
+        tongxd_dcs_write_seq_static(ctx,0x58, 0xFF);
+        tongxd_dcs_write_seq_static(ctx,0x59, 0xFE);
+        tongxd_dcs_write_seq_static(ctx,0x5A, 0xF9);
+        tongxd_dcs_write_seq_static(ctx,0x5B, 0xF6);
+        tongxd_dcs_write_seq_static(ctx,0x5C, 0xE0);
+        tongxd_dcs_write_seq_static(ctx,0x5D, 0xD8);
+        tongxd_dcs_write_seq_static(ctx,0x5E, 0xCB);
+        tongxd_dcs_write_seq_static(ctx,0x5F, 0xC4);
+        tongxd_dcs_write_seq_static(ctx,0x60, 0xBA);
+        tongxd_dcs_write_seq_static(ctx,0x61, 0xB7);
+        tongxd_dcs_write_seq_static(ctx,0x62, 0xB0);
+        tongxd_dcs_write_seq_static(ctx,0x63, 0xAA);
+        tongxd_dcs_write_seq_static(ctx,0x64, 0xA7);
+        tongxd_dcs_write_seq_static(ctx,0x65, 0xA5);
+        tongxd_dcs_write_seq_static(ctx,0x66, 0xA3);
+        tongxd_dcs_write_seq_static(ctx,0x67, 0xA1);
+
 	tongxd_dcs_write_seq_static(ctx,0xFF, 0x25);
 	tongxd_dcs_write_seq_static(ctx,0xFB, 0x01);
 	tongxd_dcs_write_seq_static(ctx,0x18, 0x20);
