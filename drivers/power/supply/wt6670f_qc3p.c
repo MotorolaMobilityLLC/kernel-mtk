@@ -46,6 +46,11 @@ EXPORT_SYMBOL_GPL(qc3p_z350_init_ok);
 EXPORT_SYMBOL_GPL(g_qc3p_id);
 EXPORT_SYMBOL_GPL(m_chg_type);
 
+#ifdef CONFIG_WT6670F_I2C_400K
+#define FIRWARE_SIZE                0x01
+#else
+#define FIRWARE_SIZE                0x40
+#endif
 
 // firme update
 /**
@@ -542,7 +547,7 @@ int wt6670f_isp_flow(struct wt6670f *chip)
 	int len = 0;
 	int read_flash_cnt = 0x0;
 
-	code = kzalloc(0x40, GFP_KERNEL);
+	code = kzalloc(FIRWARE_SIZE, GFP_KERNEL);
 	if (code == NULL)
 		return -1;
 #if 0
@@ -576,17 +581,17 @@ int wt6670f_isp_flow(struct wt6670f *chip)
 		addr_bit_15_8 = (programed_cnt >> 8) & 0x0f;
 		addr_bit_7_0 = programed_cnt % 0x100;
 
-		memset(code, 0, 0x40);
+		memset(code, 0, FIRWARE_SIZE);
 
 		wt_set_address_high_byte(chip, addr_bit_15_8);
 
-		if ((programed_cnt + 0x40) > WT70F_QC3p_V02_210326_FBA1_bin_len)
+		if ((programed_cnt + FIRWARE_SIZE) > WT70F_QC3p_V02_210326_FBA1_bin_len)
 		{
-			len =  WT70F_QC3p_V02_210326_FBA1_bin_len % 0x40;
+			len =  WT70F_QC3p_V02_210326_FBA1_bin_len % FIRWARE_SIZE;
 		}
 		else
 		{
-			len = 0x40;
+			len = FIRWARE_SIZE;
 		}
 
 		for (i = 0; i < len; i++)
@@ -594,18 +599,18 @@ int wt6670f_isp_flow(struct wt6670f *chip)
 			code[i] = WT70F_QC3p_V02_210326_FBA1_bin[programed_cnt + i];
 		}
 
-		if (len != 0x40)
+		if (len != FIRWARE_SIZE)
 		{
-			for (i = len; i < 0x40; i++)
+			for (i = len; i < FIRWARE_SIZE; i++)
 			{
 				code[i] = 0xff;
 			}
 		}
 
-		wt_program_flash_64byte(chip, addr_bit_7_0, code, 0x40);
+		wt_program_flash_64byte(chip, addr_bit_7_0, code, FIRWARE_SIZE);
 
 		wt_finish_erase_or_program(chip);
-		programed_cnt += 0x40;
+		programed_cnt += FIRWARE_SIZE;
 	}
 
 	pr_info("[%s] finish program flash, start verify...\n", __func__);
