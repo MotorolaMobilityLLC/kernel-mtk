@@ -23,6 +23,8 @@
 		reg = <0x0B>;
                 io-channels = <&pmic_adc AUXADC_VCDT>;
 		io-channel-names = "pmic_vbus";
+ 		phys = <&u2port0 PHY_TYPE_USB2>;
+ 		phy-names = "usb2-phy";
 		sgm,irq-gpio = <&pio 3 IRQ_TYPE_EDGE_FALLING>;     //irq num base on hardware design
 		sgm,chg-en-gpio = <&pio 148 0>;   //gpio num base on hardware design  1.MTK parent node name is pio  2.QUALCOMM parent node name is tlmm or other
 	};
