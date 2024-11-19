@@ -216,7 +216,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	msleep(100);
 	lcm_dcs_write_seq_static(ctx, 0x29);
 	msleep(10);
-	lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xFF);
+	lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xCF);
 	lcm_dcs_write_seq_static(ctx, 0xAC, 0x05);
 
 	pr_info("%s-\n", __func__);
