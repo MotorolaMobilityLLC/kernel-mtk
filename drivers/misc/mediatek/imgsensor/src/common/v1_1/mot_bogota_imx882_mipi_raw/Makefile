@@ -3,3 +3,4 @@
 
 imgsensor_isp6s-objs += \
 	$(subdrv-rpath)/mot_bogota_imx882mipiraw_Sensor.o \
+	$(subdrv-rpath)/mot_bogota_imx882_eeprom.o \

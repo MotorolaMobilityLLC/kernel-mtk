@@ -19,6 +19,7 @@
  ****************************************************************************/
 #ifndef _MOT_BOGOTA_IMX882MIPI_SENSOR_H
 #define _MOT_BOGOTA_IMX882MIPI_SENSOR_H
+#include "imgsensor_sensor.h"
 
 enum {
 	OTP_QSC_NONE = 0x0,
@@ -75,6 +76,7 @@ struct imgsensor_struct {
 
 	kal_bool extend_frame_length_en;
 	kal_bool fast_mode_on;
+	struct SENSOR_FUNCTION_STRUCT *psensor_func;
 };
 
 /* SENSOR PRIVATE STRUCT FOR CONSTANT*/
@@ -131,6 +133,28 @@ struct imgsensor_info_struct {
 	kal_uint32 i2c_speed; /* i2c speed */
 	kal_uint8 mipi_lane_num; /* mipi lane num */
 	kal_uint8 i2c_addr_table[5];
+};
+
+typedef enum {
+	NO_ERRORS,
+	CRC_FAILURE,
+	LIMIT_FAILURE
+} calibration_status_t;
+
+struct BOGOTA_IMX882_eeprom_t{
+	//MNF_DATA
+	uint8_t eeprom_table_version[1];
+	uint8_t cal_hw_ver[1];
+	uint8_t cal_sw_ver[1];
+	uint8_t mpn[8];
+	uint8_t actuator_id[1];
+	uint8_t lens_id[1];
+	uint8_t manufacturer_id[2];
+	uint8_t factory_id[2];
+	uint8_t manufacture_line[1];
+	uint8_t manufacture_date[3];
+	uint8_t serial_number[16];
+	uint8_t manufacture_crc16[2];
 };
 
 /* SENSOR READ/WRITE ID */

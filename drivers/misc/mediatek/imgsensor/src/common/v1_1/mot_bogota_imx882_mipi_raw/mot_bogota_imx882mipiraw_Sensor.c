@@ -40,6 +40,10 @@
 #include "mot_bogota_imx882mipiraw_Sensor.h"
 #include "mot_bogota_imx882_sensor_setting.h"
 
+extern mot_calibration_status_t *BOGOTA_IMX882_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *BOGOTA_IMX882_eeprom_get_mnf_info(void);
+extern void BOGOTA_IMX882_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+
 #undef VENDOR_EDIT
 
 #define USE_BURST_MODE 1
@@ -1095,7 +1099,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_info("[%s] Read sensor id success , i2c write id: 0x%x, sensor id: 0x%x\n",
 					__func__, imgsensor.i2c_write_id, *sensor_id);
-				// read_sensor_Cali();
+				BOGOTA_IMX882_eeprom_format_calibration_data(&imgsensor);
 				return ERROR_NONE;
 			}
 
@@ -1419,6 +1423,10 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		imgsensor_info.hs_video_delay_frame;
 	sensor_info->SlimVideoDelayFrame =
 		imgsensor_info.slim_video_delay_frame;
+
+	/*Apply calibration status and manufacture info*/
+	memcpy(&sensor_info->calibration_status, BOGOTA_IMX882_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
+	memcpy(&sensor_info->mnf_calibration, BOGOTA_IMX882_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
@@ -2289,5 +2297,8 @@ UINT32 MOT_BOGOTA_IMX882_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfF
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
 		*pfFunc = &sensor_func;
+	if (imgsensor.psensor_func == NULL)
+		imgsensor.psensor_func = &sensor_func;
 	return ERROR_NONE;
+
 } /* MOT_BOGOTA_IMX882_MIPI_RAW_SensorInit */
