@@ -48,7 +48,27 @@ struct lcm {
 	bool prepared;
 	bool enabled;
 	int error;
+	unsigned int hbm_mode;
+	unsigned int cabc_mode;
 };
+
+
+#if 1
+static struct mtk_panel_para_table panel_cabc_ui[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{2, {0x55, 0x01}},
+};
+
+static struct mtk_panel_para_table panel_cabc_mv[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{2, {0x55, 0x03}},
+};
+
+static struct mtk_panel_para_table panel_cabc_disable[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{2, {0x55, 0x00}},
+};
+#endif
 
 //static unsigned int mapped_level = 0;
 //static char bl_tb0[] = {0x51, 0x07, 0xFF};
@@ -243,7 +263,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	struct lcm *ctx = panel_to_lcm(panel);
 	int ret;
 
-	pr_info("[LCM] %s begin\n", __func__);
+	pr_info("[LCM] %s txd ili7807s begin\n", __func__);
 	if (ctx->prepared)
 		return 0;
 
@@ -288,6 +308,9 @@ static int lcm_prepare(struct drm_panel *panel)
 	msleep(15);
 
 	lcm_panel_init(ctx);
+
+	ctx->hbm_mode = 0;
+	ctx->cabc_mode = 0;
 
 	ret = ctx->error;
 	if (ret < 0)
@@ -599,12 +622,99 @@ static enum mtk_lcm_version panel_get_lcm_version(void)
 	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
 }
 
+#if 1
+static int panel_cabc_set_cmdq(struct lcm *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable = NULL;
+
+	if (cabc_mode > 3) {
+		pr_info("%s: invalid CABC mode:%d, return\n", __func__, cabc_mode);
+		return -1;
+	}
+
+	switch (cabc_mode) {
+		case 0:
+			para_count = sizeof(panel_cabc_ui) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_ui;
+			break;
+		case 1:
+			para_count = sizeof(panel_cabc_mv) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_mv;
+			break;
+		case 2:
+			para_count = sizeof(panel_cabc_disable) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_disable;
+			break;
+		default:
+			break;
+	}
+
+	if (pTable) {
+		pr_info("%s: set CABC mode :%d", __func__, cabc_mode);
+		cb(dsi, handle, pTable, para_count);
+	}
+	else
+		pr_info("%s: CABC mode:%d not support", __func__, cabc_mode);
+
+	return 0;
+}
+
+static int panel_feature_set(struct drm_panel *panel, void *dsi,
+			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+	int ret = -1;
+
+	if (!cb) {
+		pr_info("%s: cb NULL\n", __func__);
+		return -1;
+	}
+
+	if (!ctx->enabled) {
+		pr_info("%s: skip set feature %d to %d, panel not enabled\n", __func__, param_info.param_idx, param_info.value);
+		return -1;
+	}
+
+	pr_info("%s: start set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+	switch (param_info.param_idx) {
+		case PARAM_CABC:
+			if (ctx->cabc_mode != param_info.value) {
+				ctx->cabc_mode = param_info.value;
+				panel_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set CABC to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else
+				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
+			break;
+		case PARAM_HBM:
+			/*if (ctx->hbm_mode != param_info.value) {
+				ctx->hbm_mode = param_info.value;
+				panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set HBM to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else*/
+				pr_info("%s: skip same HBM mode:%d\n", __func__, param_info.value);
+			break;
+		default:
+			pr_info("%s: skip unsupport feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+			break;
+	}
+
+	pr_debug("%s: set feature %d to %d, ret %d\n", __func__, param_info.param_idx, param_info.value, ret);
+	return ret;
+}
+#endif
+
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.get_lcm_version = panel_get_lcm_version,
 	//.ata_check = panel_ata_check,
+	.panel_feature_set = panel_feature_set,
 };
 #endif
 
