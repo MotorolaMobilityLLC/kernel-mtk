@@ -694,7 +694,7 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			if (ctx->cabc_mode != param_info.value) {
 				ctx->cabc_mode = param_info.value;
 				panel_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
-				pr_debug("%s: set CABC to %d end\n", __func__, param_info.value);
+				pr_info("%s: set CABC to %d end\n", __func__, param_info.value);
 				ret = 0;
 			}
 			else
