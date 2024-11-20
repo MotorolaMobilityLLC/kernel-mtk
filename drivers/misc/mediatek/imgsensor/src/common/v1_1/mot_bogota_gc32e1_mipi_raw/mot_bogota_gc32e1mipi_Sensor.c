@@ -364,7 +364,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 	if (enable)
 		write_cmos_sensor_8bit(0x0100, 0x01); // stream on
 	else
-		write_cmos_sensor_8bit(0x0100, 0x00); // stream off
+		write_cmos_sensor_8bit(0x0100, 0x80); // stream off
 	mdelay(5);
 	return ERROR_NONE;
 }
@@ -405,24 +405,19 @@ static void slim_video_setting(void)
 		sizeof(mot_bogota_gc32e1_slim_video_addr_data)/sizeof(kal_uint16));
 }
 
-static kal_uint32 set_test_pattern_mode(kal_uint32 modes, struct SET_SENSOR_PATTERN_SOLID_COLOR *pdata)
+static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
-	LOG_INF("enable: %d\n", modes);
+	LOG_INF("enable: %d\n", enable);
 
-	if (modes == 2)
-	{
-		write_cmos_sensor_8bit(0x008c, 0x01);
+	if (enable){
+		write_cmos_sensor_8bit(0x008c, 0x0001);
+		write_cmos_sensor_8bit(0x008d, 0x0000);
+	}else{
+		write_cmos_sensor_8bit(0x008c, 0x0000);
+		write_cmos_sensor_8bit(0x008d, 0x0001);
 	}
-	else if (modes == 5 && (pdata != NULL)) {
-		    write_cmos_sensor_8bit(0x008c, 0x01);
-		    write_cmos_sensor_8bit(0x008d, 0x00);
-    }
-	else
-		write_cmos_sensor_8bit(0x008c, 0x00);
-
 	spin_lock(&imgsensor_drv_lock);
-	imgsensor.test_pattern = modes;
-	LOG_INF("final set_test_pattern modes: %d\n", modes);
+	imgsensor.test_pattern = enable;
 	spin_unlock(&imgsensor_drv_lock);
 	return ERROR_NONE;
 }
@@ -1138,7 +1133,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				(MUINT32 *)(uintptr_t)(*(feature_data + 1)));
 			break;
 		case SENSOR_FEATURE_SET_TEST_PATTERN:
-			set_test_pattern_mode((UINT32)*feature_data, (struct SET_SENSOR_PATTERN_SOLID_COLOR *)(feature_data+1));
+			set_test_pattern_mode((BOOL)*feature_data);
 			break;
 		case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE:
 			*feature_return_para_32 = imgsensor_info.checksum_value;
