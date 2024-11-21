@@ -1,0 +1,9 @@
+diff a/fs/fuse/dev.c b/fs/fuse/dev.c	(rejected hunks)
+@@ -26,6 +26,7 @@
+ #ifdef CONFIG_MTK_FUSE_DEBUG
+ #include <trace/events/fuse.h>
+ #endif
++#include <trace/hooks/fuse.h>
+ 
+ MODULE_ALIAS_MISCDEV(FUSE_MINOR);
+ MODULE_ALIAS("devname:fuse");

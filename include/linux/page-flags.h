@@ -145,6 +145,12 @@ enum pageflags {
 #ifdef CONFIG_MTK_VM_DEBUG
 	PG_debug,
 #endif
+#if defined(CONFIG_64BIT) && !defined(CONFIG_NUMA_BALANCING)
+	PG_oem_reserved_1,
+	PG_oem_reserved_2,
+	PG_oem_reserved_3,
+	PG_oem_reserved_4,
+#endif
 	__NR_PAGEFLAGS,
 
 	/* Filesystems */
