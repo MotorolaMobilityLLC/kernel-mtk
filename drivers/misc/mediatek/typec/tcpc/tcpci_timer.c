@@ -286,6 +286,7 @@ void tcpc_enable_lpm_timer(struct tcpc_device *tcpc, bool en)
 		alarm_try_to_cancel(alarm);
 		tcpc->typec_lpm_tout = 0;
 	}
+	tcpc->tcpc_timer[TYPEC_RT_TIMER_LOW_POWER_MODE].en = en;
 
 	mutex_unlock(&tcpc->timer_lock);
 }
@@ -312,10 +313,12 @@ static inline void tcpc_reset_timer_range(
 {
 	int i;
 
-	for (i = start; i < end; i++)
+	for (i = start; i < end; i++) {
 		/* the timer was canceled */
 		if (alarm_try_to_cancel(&tcpc->tcpc_timer[i].alarm) == 1)
 			atomic_dec_if_positive(&tcpc->suspend_pending);
+		tcpc->tcpc_timer[i].en = false;
+	}
 }
 
 void tcpc_enable_timer(struct tcpc_device *tcpc, uint32_t timer_id)
@@ -374,6 +377,7 @@ void tcpc_enable_timer(struct tcpc_device *tcpc, uint32_t timer_id)
 		atomic_inc(&tcpc->suspend_pending);
 	alarm_start_relative(&tcpc->tcpc_timer[timer_id].alarm,
 			     ktime_set(r, mod * NSEC_PER_USEC));
+	tcpc->tcpc_timer[timer_id].en = true;
 	mutex_unlock(&tcpc->timer_lock);
 }
 
@@ -390,6 +394,7 @@ int tcpc_disable_timer(struct tcpc_device *tcpc, uint32_t timer_id)
 	/* the timer was canceled */
 	if (ret == 1)
 		atomic_dec_if_positive(&tcpc->suspend_pending);
+	tcpc->tcpc_timer[timer_id].en = false;
 	mutex_unlock(&tcpc->timer_lock);
 	return ret;
 }
@@ -432,23 +437,29 @@ static void tcpc_handle_timer_triggered(struct tcpc_device *tcpc)
 	atomic_inc(&tcpc->suspend_pending);
 	tick = tcpc_get_and_clear_all_timer_tick(tcpc);
 
-#if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
-	for (i = 0; i < PD_PE_TIMER_END_ID; i++) {
-		if (tick & RT_MASK64(i)) {
-			TCPC_TIMER_DBG("Trigger %s\n", tcpc_timer_desc[i].name);
-			on_pe_timer_timeout(tcpc, i);
-		}
-	}
-#endif /* CONFIG_USB_POWER_DELIVERY */
-
 	tcpci_lock_typec(tcpc);
-	for (; i < PD_TIMER_NR; i++) {
-		if (tick & RT_MASK64(i)) {
-			TCPC_TIMER_DBG("Trigger %s\n", tcpc_timer_desc[i].name);
-			tcpc_typec_handle_timeout(tcpc, i);
-		}
+	for (i = TYPEC_RT_TIMER_START_ID; i < PD_TIMER_NR; i++) {
+		if (!(tick & RT_MASK64(i)))
+			continue;
+		TCPC_TIMER_DBG("Trigger %s, en = %d\n", tcpc_timer_desc[i].name,
+			       tcpc->tcpc_timer[i].en);
+		if (!tcpc->tcpc_timer[i].en)
+			continue;
+		tcpc_typec_handle_timeout(tcpc, i);
 	}
 	tcpci_unlock_typec(tcpc);
+
+#if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
+	for (i = 0; i < PD_PE_TIMER_END_ID; i++) {
+		if (!(tick & RT_MASK64(i)))
+			continue;
+		TCPC_TIMER_DBG("Trigger %s, en = %d\n", tcpc_timer_desc[i].name,
+			       tcpc->tcpc_timer[i].en);
+		if (!tcpc->tcpc_timer[i].en)
+			continue;
+		on_pe_timer_timeout(tcpc, i);
+	}
+#endif /* CONFIG_USB_POWER_DELIVERY */
 
 	atomic_dec_if_positive(&tcpc->suspend_pending);
 }
@@ -488,6 +499,7 @@ int tcpci_timer_init(struct tcpc_device *tcpc)
 		alarm_init(&tcpc->tcpc_timer[i].alarm,
 			   ALARM_REALTIME, tcpc_timer_call);
 		tcpc->tcpc_timer[i].tcpc = tcpc;
+		tcpc->tcpc_timer[i].en = false;
 	}
 
 	pr_info("%s : init OK\n", __func__);

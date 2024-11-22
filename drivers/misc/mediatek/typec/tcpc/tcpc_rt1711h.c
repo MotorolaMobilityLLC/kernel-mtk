@@ -131,22 +131,30 @@ static int rt1711_read_device(void *client, u32 reg, int len, void *dst)
 	struct rt1711_chip *chip = i2c_get_clientdata(i2c);
 	struct tcpc_device *tcpc = chip->tcpc;
 	int ret = 0, count = 5;
-	u64 __maybe_unused t1 = 0, t2 = 0;
+	u64 __maybe_unused t = 0;
 
 	atomic_inc(&tcpc->suspend_pending);
-	wait_event(tcpc->resume_wait_que, !atomic_read(&tcpc->is_suspended));
+	ret = wait_event_timeout(tcpc->resume_wait_que,
+				 !atomic_read(&tcpc->is_suspended),
+				 msecs_to_jiffies(1000));
+	if (!ret) {
+		ret = -ETIME;
+		goto out;
+	}
 	while (1) {
-		t1 = local_clock();
+		t = local_clock();
 		ret = i2c_smbus_read_i2c_block_data(i2c, reg, len, dst);
-		t2 = local_clock();
-		RT1711_INFO("%s del = %lluus, reg = 0x%02X, len = %d\n",
-			    __func__, (t2 - t1) / NSEC_PER_USEC, reg, len);
+		t = local_clock() - t;
+		do_div(t, NSEC_PER_USEC);
+		RT1711_INFO("del = %lluus, reg = 0x%02X, len = %d\n",
+			    t, reg, len);
 		if (ret < 0 && count > 1)
 			count--;
 		else
 			break;
 		udelay(100);
 	}
+out:
 	atomic_dec_if_positive(&tcpc->suspend_pending);
 	return ret;
 }
@@ -157,22 +165,30 @@ static int rt1711_write_device(void *client, u32 reg, int len, const void *src)
 	struct rt1711_chip *chip = i2c_get_clientdata(i2c);
 	struct tcpc_device *tcpc = chip->tcpc;
 	int ret = 0, count = 5;
-	u64 __maybe_unused t1 = 0, t2 = 0;
+	u64 __maybe_unused t = 0;
 
 	atomic_inc(&tcpc->suspend_pending);
-	wait_event(tcpc->resume_wait_que, !atomic_read(&tcpc->is_suspended));
+	ret = wait_event_timeout(tcpc->resume_wait_que,
+				 !atomic_read(&tcpc->is_suspended),
+				 msecs_to_jiffies(1000));
+	if (!ret) {
+		ret = -ETIME;
+		goto out;
+	}
 	while (1) {
-		t1 = local_clock();
+		t = local_clock();
 		ret = i2c_smbus_write_i2c_block_data(i2c, reg, len, src);
-		t2 = local_clock();
-		RT1711_INFO("%s del = %lluus, reg = 0x%02X, len = %d\n",
-			    __func__, (t2 - t1) / NSEC_PER_USEC, reg, len);
+		t = local_clock() - t;
+		do_div(t, NSEC_PER_USEC);
+		RT1711_INFO("del = %lluus, reg = 0x%02X, len = %d\n",
+			    t, reg, len);
 		if (ret < 0 && count > 1)
 			count--;
 		else
 			break;
 		udelay(100);
 	}
+out:
 	atomic_dec_if_positive(&tcpc->suspend_pending);
 	return ret;
 }
@@ -568,7 +584,7 @@ static int rt1711h_set_clock_gating(struct tcpc_device *tcpc, bool en)
 	if (en) {
 		for (i = 0; i < 2; i++)
 			ret = rt1711_alert_status_clear(tcpc,
-				TCPC_REG_ALERT_RX_ALL_MASK);
+				TCPC_V10_REG_ALERT_RX_ALL_MASK);
 	} else {
 		clks[0] |= RT1711H_REG_CLK_BCLK2_EN | RT1711H_REG_CLK_BCLK_EN;
 		clks[1] |= RT1711H_REG_CLK_CK_24M_EN | RT1711H_REG_CLK_PCLK_EN;
@@ -845,23 +861,19 @@ static int rt1711_enable_vsafe0v_detect(
 
 static int rt1711_set_cc(struct tcpc_device *tcpc, int pull)
 {
-	int ret;
-	uint8_t data;
+	int ret = 0;
+	uint8_t data = 0;
 	int rp_lvl = TYPEC_CC_PULL_GET_RP_LVL(pull), pull1, pull2;
 
-	RT1711_INFO("pull = 0x%02X\n", pull);
+	RT1711_INFO("%d\n", pull);
 	pull = TYPEC_CC_PULL_GET_RES(pull);
 	if (pull == TYPEC_CC_DRP) {
-		data = TCPC_V10_REG_ROLE_CTRL_RES_SET(
-				1, rp_lvl, TYPEC_CC_RD, TYPEC_CC_RD);
-
-		ret = rt1711_i2c_write8(
-			tcpc, TCPC_V10_REG_ROLE_CTRL, data);
-
-		if (ret == 0) {
-			rt1711_enable_vsafe0v_detect(tcpc, false);
-			ret = rt1711_command(tcpc, TCPM_CMD_LOOK_CONNECTION);
-		}
+		data = TCPC_V10_REG_ROLE_CTRL_RES_SET(1, rp_lvl, TYPEC_CC_RD,
+						      TYPEC_CC_RD);
+		ret = rt1711_i2c_write8(tcpc, TCPC_V10_REG_ROLE_CTRL, data);
+		if (ret < 0)
+			return ret;
+		ret = rt1711_command(tcpc, TCPM_CMD_LOOK_CONNECTION);
 	} else {
 #if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
 		if (pull == TYPEC_CC_RD && tcpc->pd_wait_pr_swap_complete)
@@ -880,8 +892,7 @@ static int rt1711_set_cc(struct tcpc_device *tcpc, int pull)
 		data = TCPC_V10_REG_ROLE_CTRL_RES_SET(0, rp_lvl, pull1, pull2);
 		ret = rt1711_i2c_write8(tcpc, TCPC_V10_REG_ROLE_CTRL, data);
 	}
-
-	return 0;
+	return ret;
 }
 
 static int rt1711_set_polarity(struct tcpc_device *tcpc, int polarity)
@@ -947,7 +958,9 @@ static int rt1711_set_low_power_mode(
 
 static int rt1711_tcpc_deinit(struct tcpc_device *tcpc)
 {
+#if IS_ENABLED(CONFIG_RT_REGMAP)
 	struct rt1711_chip *chip = tcpc_get_dev_data(tcpc);
+#endif /* CONFIG_RT_REGMAP */
 	int cc1 = TYPEC_CC_VOLT_OPEN, cc2 = TYPEC_CC_VOLT_OPEN;
 
 	rt1711_get_cc(tcpc, &cc1, &cc2);

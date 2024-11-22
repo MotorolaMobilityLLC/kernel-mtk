@@ -6,7 +6,6 @@ config TCPC_CLASS
 	tristate "TypeC Port Controller Device Class"
 	select MTK_USB_TYPEC
 	select OF
-	select RT_REGMAP
 	select TYPEC
 	help
 	  Say Y to enable

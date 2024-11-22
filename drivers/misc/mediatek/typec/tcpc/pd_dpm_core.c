@@ -612,12 +612,13 @@ void pd_dpm_snk_evaluate_caps(struct pd_port *pd_port)
 void pd_dpm_snk_standby_power(struct pd_port *pd_port)
 {
 	/*
-	 * iSnkStdby :
-	 *   Maximum current during voltage transition. (500mA)
+	 * pSnkStdby :
+	 *   Maximum power consumption while in Sink Standby. (2.5W)
 	 */
 	uint8_t type;
 	int ma = -1;
-	const int standby_curr = 500;
+	const int standby_curr = 2500000 / max(pd_port->request_v,
+					       pd_port->request_v_new);
 
 #if CONFIG_USB_PD_VCONN_SAFE5V_ONLY
 	struct tcpc_device *tcpc = pd_port->tcpc;
@@ -2001,7 +2002,7 @@ void pd_dpm_inform_pps_status(struct pd_port *pd_port)
 
 	if (dpm_check_ext_msg_event(pd_port, PD_EXT_PPS_STATUS)) {
 		ppssdb = pd_get_msg_data_payload(pd_port);
-		DPM_INFO("mv=%d, ma=%d\n",
+		DPM_INFO2("mv=%d, ma=%d\n",
 			PD_PPS_GET_OUTPUT_MV(ppssdb->output_vol_raw),
 			PD_PPS_GET_OUTPUT_MA(ppssdb->output_curr_raw));
 	}

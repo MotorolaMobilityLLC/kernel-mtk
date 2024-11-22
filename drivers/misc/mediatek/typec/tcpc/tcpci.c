@@ -31,14 +31,13 @@ static void tcp_notify_func(struct work_struct *work)
 	uint8_t type = tn_work->type;
 	uint8_t state = tn_work->state;
 #if CONFIG_PD_BEGUG_ON
-	long long begin = 0, end = 0;
-	int timeval = 0;
+	u64 t = 0;
 
-	begin = local_clock();
+	t = local_clock();
 	srcu_notifier_call_chain(&tcpc->evt_nh[type], state, tcp_noti);
-	end = local_clock();
-	timeval = (end - begin) / NSEC_PER_USEC;
-	PD_BUG_ON(timeval > (TCPC_NOTIFY_OVERTIME * 1000));
+	t = local_clock() - t;
+	do_div(t, NSEC_PER_MSEC);
+	PD_BUG_ON(t > TCPC_NOTIFY_OVERTIME);
 #else
 	srcu_notifier_call_chain(&tcpc->evt_nh[type], state, tcp_noti);
 #endif
@@ -69,14 +68,13 @@ static int tcpc_check_notify_time(struct tcpc_device *tcpc,
 {
 	int ret;
 #if CONFIG_PD_BEGUG_ON
-	struct timeval begin, end;
-	int timeval = 0;
+	u64 t = 0;
 
-	do_gettimeofday(&begin);
+	t = local_clock();
 	ret = srcu_notifier_call_chain(&tcpc->evt_nh[type], state, tcp_noti);
-	do_gettimeofday(&end);
-	timeval = (timeval_to_ns(end) - timeval_to_ns(begin))/1000/1000;
-	PD_BUG_ON(timeval > TCPC_NOTIFY_OVERTIME);
+	t = local_clock() - t;
+	do_div(t, NSEC_PER_MSEC);
+	PD_BUG_ON(t > TCPC_NOTIFY_OVERTIME);
 #else
 	ret = srcu_notifier_call_chain(&tcpc->evt_nh[type], state, tcp_noti);
 #endif
@@ -103,9 +101,14 @@ int tcpci_set_auto_dischg_discnt(struct tcpc_device *tcpc, bool en)
 {
 	int ret = 0;
 
+	if (en == tcpc->typec_auto_dischg_discnt)
+		goto out;
 	if (tcpc->ops->set_auto_dischg_discnt)
 		ret = tcpc->ops->set_auto_dischg_discnt(tcpc, en);
-
+	if (ret < 0)
+		goto out;
+	tcpc->typec_auto_dischg_discnt = en;
+out:
 	return ret;
 }
 EXPORT_SYMBOL(tcpci_set_auto_dischg_discnt);
@@ -237,9 +240,8 @@ int tcpci_get_cc(struct tcpc_device *tcpc)
 		return ret;
 
 	if ((cc1 == tcpc->typec_remote_cc[0]) &&
-			(cc2 == tcpc->typec_remote_cc[1])) {
+	    (cc2 == tcpc->typec_remote_cc[1]))
 		return 0;
-	}
 
 	tcpc->typec_remote_cc[0] = cc1;
 	tcpc->typec_remote_cc[1] = cc2;
@@ -416,9 +418,10 @@ int tcpci_set_cc_hidet(struct tcpc_device *tcpc, bool en)
 {
 	int ret = 0, cc_hi = 0;
 
+	if (en == tcpc->cc_hidet_en)
+		goto out;
 	if (!tcpc->ops->set_cc_hidet)
 		goto out;
-
 	ret = tcpc->ops->set_cc_hidet(tcpc, en);
 	if (ret < 0)
 		goto out;
@@ -427,9 +430,8 @@ int tcpci_set_cc_hidet(struct tcpc_device *tcpc, bool en)
 		cc_hi = tcpc_typec_get_rp_present_flag(tcpc);
 		if (tcpc->ops->get_cc_hi)
 			cc_hi |= tcpc->ops->get_cc_hi(tcpc);
-	} else
-		cc_hi = TCPM_ERROR_UNKNOWN;
-	ret = tcpc_typec_handle_cc_hi(tcpc, cc_hi);
+	}
+	ret = tcpci_notify_cc_hi(tcpc, cc_hi);
 out:
 	return ret;
 }
@@ -865,6 +867,9 @@ int tcpci_notify_cc_hi(struct tcpc_device *tcpc, int cc_hi)
 {
 	struct tcp_notify tcp_noti;
 
+	if (cc_hi == tcpc->cc_hi)
+		return 0;
+	tcpc->cc_hi = cc_hi;
 	tcp_noti.cc_hi = cc_hi;
 	return tcpc_check_notify_time(tcpc, &tcp_noti,
 		TCP_NOTIFY_IDX_MISC, TCP_NOTIFY_CC_HI);

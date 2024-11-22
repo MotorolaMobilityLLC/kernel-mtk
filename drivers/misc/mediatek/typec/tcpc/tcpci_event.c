@@ -1107,6 +1107,7 @@ void pd_notify_pe_bist_mode(struct pd_port *pd_port, uint8_t mode)
 	}
 }
 
+#if CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG
 bool pd_is_pe_wait_pd_transmit_done(struct pd_port *pd_port)
 {
 	bool tx_wait;
@@ -1118,6 +1119,7 @@ bool pd_is_pe_wait_pd_transmit_done(struct pd_port *pd_port)
 
 	return tx_wait;
 }
+#endif	/* CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG */
 
 void pd_notify_pe_transmit_msg(
 	struct pd_port *pd_port, uint8_t type)

@@ -113,7 +113,7 @@ bool dp_dfp_u_notify_pe_ready(
 	struct dp_data *dp_data = pd_get_dp_data(pd_port);
 	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
 
-	DP_INFO("%s\n", __func__);
+	DP_DBG("%s\n", __func__);
 
 	if (pd_port->data_role != PD_ROLE_DFP)
 		return false;

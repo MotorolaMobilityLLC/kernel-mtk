@@ -890,6 +890,19 @@ MODULE_LICENSE("GPL");
  * (11) Revise sink_vbus of standby current
  * (12) Implement alert ratelimit mechanism
  * (13) Disable CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG
+ * (14) Discover Cable SVIDS only in PD DP Alt Mode v2.1 flow
+ * (15) Separate tSenderResponse for PD2 and PD3
+ * (16) Enter low power mode with 5ms delay after unattached
+ * (17) Remove the CC Open in typec_unattached_cc_entry()
+ * (18) Fix SinkTxNG
+ * (19) Keep Rp-1.5A in AttachWait.SRC
+ * (20) Fix potential stucking in attached state
+ * (21) Call pm_system_wakeup() in delayed_work handler function
+ * (22) Update pd_transmit_state when PD Hard Reset failed
+ * (23) Remove the unwanted PD Hard Reset in tcpm.c
+ * (24) Revise the feature of VBUS shorted to CC
+ * (25) Handle typec timers first
+ * (26) Replace 64-bit divisions with do_div() calls
  *
  * 2.0.30_MTK
  * (1) Decrease the I2C/IO transactions

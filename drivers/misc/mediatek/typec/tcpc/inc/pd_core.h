@@ -1170,7 +1170,9 @@ extern void pd_notify_tcp_event_2nd_result(struct pd_port *pd_port, int ret);
 extern void pd_notify_tcp_vdm_event_2nd_result(
 		struct pd_port *pd_port, uint8_t ret);
 
+#if CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG
 extern bool pd_is_pe_wait_pd_transmit_done(struct pd_port *pd_port);
+#endif	/* CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG */
 
 /* ---- pd_timer ---- */
 

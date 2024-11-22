@@ -821,6 +821,7 @@ bool pd_process_event(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	bool ret = false;
+	struct tcpc_device *tcpc = pd_port->tcpc;
 	struct pd_msg *pd_msg = pd_event->pd_msg;
 	uint8_t tii = pe_check_trap_in_idle_state(pd_port, pd_event);
 
@@ -831,6 +832,9 @@ bool pd_process_event(
 
 	if (pd_event->event_type == PD_EVT_PD_MSG)
 		pe_translate_pd_msg_event(pd_port, pd_event, pd_msg);
+	else if (pd_event->event_type == PD_EVT_TIMER_MSG &&
+		 !tcpc->tcpc_timer[pd_event->msg].en)
+		return false;
 
 #if PE_EVT_INFO_VDM_DIS
 	if (!pd_curr_is_vdm_evt(pd_port))

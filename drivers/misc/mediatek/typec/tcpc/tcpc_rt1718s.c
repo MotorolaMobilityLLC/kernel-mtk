@@ -11,6 +11,7 @@
 #include <linux/interrupt.h>
 #include <linux/sched/clock.h>
 #include <linux/regmap.h>
+#include <linux/suspend.h>
 
 #include "inc/tcpci.h"
 #include "inc/tcpci_typec.h"
@@ -215,8 +216,15 @@ static int rt1718s_regmap_read(void *context, const void *reg, size_t reg_size,
 	xfer[1].buf = val;
 
 	atomic_inc(&tcpc->suspend_pending);
-	wait_event(tcpc->resume_wait_que, !atomic_read(&tcpc->is_suspended));
+	ret = wait_event_timeout(tcpc->resume_wait_que,
+				 !atomic_read(&tcpc->is_suspended),
+				 msecs_to_jiffies(1000));
+	if (!ret) {
+		ret = -ETIMEOUT;
+		goto out;
+	}
 	ret = i2c_transfer(i2c->adapter, xfer, 2);
+out:
 	atomic_dec_if_positive(&tcpc->suspend_pending);
 	if (ret < 0)
 		return ret;
@@ -245,8 +253,15 @@ static int rt1718s_regmap_write(void *context, const void *val, size_t val_size)
 	}
 
 	atomic_inc(&tcpc->suspend_pending);
-	wait_event(tcpc->resume_wait_que, !atomic_read(&tcpc->is_suspended));
+	ret = wait_event_timeout(tcpc->resume_wait_que,
+				 !atomic_read(&tcpc->is_suspended),
+				 msecs_to_jiffies(1000));
+	if (!ret) {
+		ret = -ETIMEOUT;
+		goto out;
+	}
 	ret = i2c_transfer(i2c->adapter, &xfer, 1);
+out:
 	atomic_dec_if_positive(&tcpc->suspend_pending);
 	if (ret < 0)
 		return ret;
@@ -353,7 +368,7 @@ static const struct reg_sequence rt1718s_init_settings[] = {
 	/* CRCtimer = 1ms for typical spec */
 	{ RT1718S_PHY_CTRL4, 0x60, 0 },
 	{ RT1718S_PHY_CTRL5, 0xE9, 0 },
-	/* BMC decoder idle time = 9.9us */
+	/* BMC decoder idle time = 9.99us */
 	{ RT1718S_PHY_CTRL7, 0x1E, 0 },
 	/* IRQB 3M path, Set shipping mode off, Connect invalid is off */
 	{ RT1718S_SYS_CTRL1, 0xB8, 1000 },
@@ -545,31 +560,27 @@ static int rt1718s_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
 {
 	struct rt1718s_chip *chip = tcpc_get_dev_data(tcpc);
 	bool act_as_sink = false;
-	u8 status = 0, role_ctrl = 0, cc_role = 0;
+	u8 buf[4], status = 0, role_ctrl = 0, cc_role = 0;
 	int ret = 0;
 
-	ret = rt1718s_read8(chip, TCPC_V10_REG_CC_STATUS, &status);
+	ret = rt1718s_bulk_read(chip, TCPC_V10_REG_ROLE_CTRL, buf, sizeof(buf));
 	if (ret < 0)
 		return ret;
-
-	ret = rt1718s_read8(chip, TCPC_V10_REG_ROLE_CTRL, &role_ctrl);
-	if (ret < 0)
-		return ret;
+	role_ctrl = buf[0];
+	status = buf[3];
 
 	if (status & TCPC_V10_REG_CC_STATUS_DRP_TOGGLING) {
-		if (!(role_ctrl & TCPC_V10_REG_ROLE_CTRL_DRP)) {
-			/* Toggle reg0x1A[6] DRP = 1 and = 0 */
-			rt1718s_write8(chip, TCPC_V10_REG_ROLE_CTRL,
-				       role_ctrl | TCPC_V10_REG_ROLE_CTRL_DRP);
-			rt1718s_write8(chip, TCPC_V10_REG_ROLE_CTRL, role_ctrl);
-			return -EAGAIN;
+		if (role_ctrl & TCPC_V10_REG_ROLE_CTRL_DRP) {
+			*cc1 = TYPEC_CC_DRP_TOGGLING;
+			*cc2 = TYPEC_CC_DRP_TOGGLING;
+			return 0;
 		}
-
-		*cc1 = TYPEC_CC_DRP_TOGGLING;
-		*cc2 = TYPEC_CC_DRP_TOGGLING;
-		return 0;
+		/* Toggle reg0x1A[6] DRP = 1 and = 0 */
+		rt1718s_write8(chip, TCPC_V10_REG_ROLE_CTRL,
+			       role_ctrl | TCPC_V10_REG_ROLE_CTRL_DRP);
+		rt1718s_write8(chip, TCPC_V10_REG_ROLE_CTRL, role_ctrl);
+		return -EAGAIN;
 	}
-
 	*cc1 = TCPC_V10_REG_CC_STATUS_CC1(status);
 	*cc2 = TCPC_V10_REG_CC_STATUS_CC2(status);
 
@@ -603,24 +614,25 @@ static inline int rt1718s_enable_vsafe0v_detect(struct rt1718s_chip *chip,
 
 static int rt1718s_set_cc(struct tcpc_device *tcpc, int pull)
 {
-	struct rt1718s_chip *chip = tcpc_get_dev_data(tcpc);
-	int rp_lvl = TYPEC_CC_PULL_GET_RP_LVL(pull), pull1 = 0, pull2 = 0;
 	int ret = 0;
+	u8 data = 0;
+	int rp_lvl = TYPEC_CC_PULL_GET_RP_LVL(pull), pull1 = 0, pull2 = 0;
+	struct rt1718s_chip *chip = tcpc_get_dev_data(tcpc);
 
 	RT1718S_INFO("%d\n", pull);
 	pull = TYPEC_CC_PULL_GET_RES(pull);
 	if (pull == TYPEC_CC_DRP) {
-		ret = rt1718s_write8(chip, TCPC_V10_REG_ROLE_CTRL,
-				     TCPC_V10_REG_ROLE_CTRL_RES_SET(1, rp_lvl,
-				     TYPEC_CC_RD, TYPEC_CC_RD));
+		data = TCPC_V10_REG_ROLE_CTRL_RES_SET(1, rp_lvl, TYPEC_CC_RD,
+						      TYPEC_CC_RD);
+		ret = rt1718s_write8(chip, TCPC_V10_REG_ROLE_CTRL, data);
 		if (ret < 0)
 			return ret;
-		rt1718s_enable_vsafe0v_detect(chip, false);
-		udelay(30);
+		udelay(32);
 		ret = rt1718s_write8(chip, TCPC_V10_REG_COMMAND,
 				     TCPM_CMD_LOOK_CONNECTION);
 	} else {
 		pull2 = pull1 = pull;
+
 		if (pull == TYPEC_CC_RP &&
 		    tcpc->typec_state == typec_attached_src) {
 			if (tcpc->typec_polarity)
@@ -628,9 +640,8 @@ static int rt1718s_set_cc(struct tcpc_device *tcpc, int pull)
 			else
 				pull2 = TYPEC_CC_RD;
 		}
-		ret = rt1718s_write8(chip, TCPC_V10_REG_ROLE_CTRL,
-				     TCPC_V10_REG_ROLE_CTRL_RES_SET(0, rp_lvl,
-				     pull1, pull2));
+		data = TCPC_V10_REG_ROLE_CTRL_RES_SET(0, rp_lvl, pull1, pull2);
+		ret = rt1718s_write8(chip, TCPC_V10_REG_ROLE_CTRL, data);
 	}
 	return ret;
 }
@@ -736,6 +747,8 @@ static void rt1718s_fod_polling_dwork_handler(struct work_struct *work)
 	struct rt1718s_chip *chip = container_of(dwork, struct rt1718s_chip,
 						 fod_polling_dwork);
 
+	pm_system_wakeup();
+
 	RT1718S_DBGINFO("Set FOD_FW_EN\n");
 	tcpci_lock_typec(chip->tcpc);
 	rt1718s_set_bits(chip, RT1718S_FOD_CTRL, RT1718S_M_FOD_FW_EN);
@@ -755,7 +768,7 @@ static inline int rt1718s_fod_evt_process(struct rt1718s_chip *chip)
 	if (ret < 0)
 		return ret;
 	if (fod == TCPC_FOD_LR)
-		mod_delayed_work(system_freezable_wq, &chip->fod_polling_dwork,
+		mod_delayed_work(system_wq, &chip->fod_polling_dwork,
 				 msecs_to_jiffies(5000));
 	return tcpc_typec_handle_fod(tcpc, fod);
 }
@@ -799,7 +812,7 @@ static inline int rt1718s_hidet_cc_evt_process(struct rt1718s_chip *chip)
 	ret = __rt1718s_get_cc_hi(chip);
 	if (ret < 0)
 		return ret;
-	return tcpc_typec_handle_cc_hi(chip->tcpc, ret);
+	return tcpci_notify_cc_hi(chip->tcpc, ret);
 }
 
 /*
@@ -866,14 +879,8 @@ static struct irq_mapping_tbl rt1718s_vend_irq_mapping_tbl[] = {
 static inline int rt1718s_vend_alert_status_clear(struct rt1718s_chip *chip,
 						  const u8 *mask)
 {
-	int ret = 0;
-
-	ret = rt1718s_bulk_write(chip, RT1718S_RT_INT1, mask,
-				 RT1718S_VEND_INT_MAX);
-	if (ret < 0)
-		return ret;
-	return rt1718s_write16(chip, TCPC_V10_REG_ALERT,
-			       TCPC_V10_REG_ALERT_VENDOR_DEFINED);
+	return rt1718s_bulk_write(chip, RT1718S_RT_INT1, mask,
+				  RT1718S_VEND_INT_MAX);
 }
 
 static int rt1718s_alert_vendor_defined_handler(struct tcpc_device *tcpc)
@@ -952,8 +959,9 @@ static int rt1718s_get_vbus_voltage(struct tcpc_device *tcpc, u32 *vbus)
 	ret = rt1718s_read16(chip, TCPC_V10_REG_VBUS_VOLTAGE_L, &data);
 	if (ret < 0)
 		return ret;
+	data = le16_to_cpu(data);
 	*vbus = (data & 0x3FF) * 25;
-	RT1718S_DBGINFO("%s 0x%04x, %dmV\n", __func__, data, *vbus);
+	RT1718S_DBGINFO("0x%04x, %dmV\n", data, *vbus);
 	return 0;
 }
 
@@ -1060,17 +1068,17 @@ static int rt1718s_transmit(struct tcpc_device *tcpc,
 {
 	struct rt1718s_chip *chip = tcpc_get_dev_data(tcpc);
 	u8 temp[RT1718S_TRANSMIT_MAX_SIZE + 1];
-	u64 t1 = 0, t2 = 0;
+	u64 t = 0;
 	int ret = 0, data_cnt = 0, packet_cnt = 0;
 
 	RT1718S_DBGINFO("++\n");
-	t1 = local_clock();
+	t = local_clock();
 	if (type < TCPC_TX_HARD_RESET) {
 		data_cnt = sizeof(u32) * PD_HEADER_CNT(header);
 		packet_cnt = data_cnt + sizeof(u16);
 
 		temp[0] = packet_cnt;
-		memcpy(temp + 1, (u8 *)&header, 2);
+		memcpy(temp + 1, &header, 2);
 		if (data_cnt > 0)
 			memcpy(temp + 3, data, data_cnt);
 
@@ -1083,8 +1091,9 @@ static int rt1718s_transmit(struct tcpc_device *tcpc,
 	ret = rt1718s_write8(chip, TCPC_V10_REG_TRANSMIT,
 			     TCPC_V10_REG_TRANSMIT_SET(tcpc->pd_retry_count,
 			     type));
-	t2 = local_clock();
-	RT1718S_INFO("-- delta = %lluus\n", (t2 - t1) / NSEC_PER_USEC);
+	t = local_clock() - t;
+	do_div(t, NSEC_PER_USEC);
+	RT1718S_INFO("-- delta = %lluus\n", t);
 
 	return ret;
 }

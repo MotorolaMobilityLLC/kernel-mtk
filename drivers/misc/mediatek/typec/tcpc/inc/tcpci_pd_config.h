@@ -53,7 +53,6 @@
 #define CONFIG_USB_PD_REV30_COUNTRY_AUTHORITY	0
 #define CONFIG_USB_PD_DPM_AUTO_SEND_ALERT	0
 #define CONFIG_USB_PD_DPM_AUTO_GET_STATUS	0
-#define CONFIG_MTK_HANDLE_PPS_TIMEOUT	0
 #endif	/* CONFIG_USB_PD_REV30 */
 
 /**********************************************************

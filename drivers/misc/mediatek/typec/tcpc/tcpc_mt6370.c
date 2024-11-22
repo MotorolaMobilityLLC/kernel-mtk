@@ -273,7 +273,8 @@ static int mt6370_set_clock_gating(struct mt6370_tcpc_data *ddata, bool en)
 
 	if (en) {
 		for (i = 0; i < 2; i++) {
-			ret = mt6370_alert_status_clear(ddata->tcpc, TCPC_REG_ALERT_RX_ALL_MASK);
+			ret = mt6370_alert_status_clear(ddata->tcpc,
+					TCPC_V10_REG_ALERT_RX_ALL_MASK);
 			if (ret)
 				return ret;
 		}
@@ -556,13 +557,15 @@ static int mt6370_get_fault_status(struct tcpc_device *tcpc, u8 *status)
 static int mt6370_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
 {
 	struct mt6370_tcpc_data *ddata = tcpc_get_dev_data(tcpc);
-	u8 status, role_ctrl, cc_role;
-	bool act_as_sink, act_as_drp;
-	int ret;
+	bool act_as_sink = false;
+	u8 buf[4], status = 0, role_ctrl = 0, cc_role = 0;
+	int ret = 0;
 
-	ret = mt6370_read8(ddata, TCPC_V10_REG_CC_STATUS, &status);
-	if (ret)
+	ret = mt6370_bulk_read(ddata, TCPC_V10_REG_ROLE_CTRL, buf, sizeof(buf));
+	if (ret < 0)
 		return ret;
+	role_ctrl = buf[0];
+	status = buf[3];
 
 	if (status & TCPC_V10_REG_CC_STATUS_DRP_TOGGLING) {
 		*cc1 = TYPEC_CC_DRP_TOGGLING;
@@ -572,23 +575,14 @@ static int mt6370_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
 	*cc1 = TCPC_V10_REG_CC_STATUS_CC1(status);
 	*cc2 = TCPC_V10_REG_CC_STATUS_CC2(status);
 
-	ret = mt6370_read8(ddata, TCPC_V10_REG_ROLE_CTRL, &role_ctrl);
-	if (ret)
-		return ret;
-
-	act_as_drp = TCPC_V10_REG_ROLE_CTRL_DRP & role_ctrl;
-
-	if (act_as_drp) {
+	if (role_ctrl & TCPC_V10_REG_ROLE_CTRL_DRP)
 		act_as_sink = TCPC_V10_REG_CC_STATUS_DRP_RESULT(status);
-	} else {
+	else {
 		if (tcpc->typec_polarity)
 			cc_role = TCPC_V10_REG_CC_STATUS_CC2(role_ctrl);
 		else
 			cc_role = TCPC_V10_REG_CC_STATUS_CC1(role_ctrl);
-		if (cc_role == TYPEC_CC_RP)
-			act_as_sink = false;
-		else
-			act_as_sink = true;
+		act_as_sink = (cc_role != TYPEC_CC_RP);
 	}
 
 	/*
@@ -597,7 +591,6 @@ static int mt6370_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
 	 */
 	if (*cc1 != TYPEC_CC_VOLT_OPEN)
 		*cc1 |= (act_as_sink << 2);
-
 	if (*cc2 != TYPEC_CC_VOLT_OPEN)
 		*cc2 |= (act_as_sink << 2);
 
@@ -612,19 +605,19 @@ static inline int mt6370_enable_vsafe0v_detect(struct mt6370_tcpc_data *ddata, b
 
 static int mt6370_set_cc(struct tcpc_device *tcpc, int pull)
 {
-	int rp_lvl = TYPEC_CC_PULL_GET_RP_LVL(pull), pull1, pull2, ret;
+	int ret = 0;
+	u8 data = 0;
+	int rp_lvl = TYPEC_CC_PULL_GET_RP_LVL(pull), pull1, pull2;
 	struct mt6370_tcpc_data *ddata = tcpc_get_dev_data(tcpc);
-	u8 data;
 
-	MT6370_INFO("pull = 0x%02X\n", pull);
+	MT6370_INFO("%d\n", pull);
 	pull = TYPEC_CC_PULL_GET_RES(pull);
 	if (pull == TYPEC_CC_DRP) {
-		data = TCPC_V10_REG_ROLE_CTRL_RES_SET(1, rp_lvl, TYPEC_CC_RD, TYPEC_CC_RD);
-
+		data = TCPC_V10_REG_ROLE_CTRL_RES_SET(1, rp_lvl, TYPEC_CC_RD,
+						      TYPEC_CC_RD);
 		ret = mt6370_write8(ddata, TCPC_V10_REG_ROLE_CTRL, data);
-		if (ret)
+		if (ret < 0)
 			return ret;
-		mt6370_enable_vsafe0v_detect(ddata, false);
 		ret = mt6370_command(ddata, TCPM_CMD_LOOK_CONNECTION);
 	} else {
 #if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
@@ -644,7 +637,6 @@ static int mt6370_set_cc(struct tcpc_device *tcpc, int pull)
 		data = TCPC_V10_REG_ROLE_CTRL_RES_SET(0, rp_lvl, pull1, pull2);
 		ret = mt6370_write8(ddata, TCPC_V10_REG_ROLE_CTRL, data);
 	}
-
 	return ret;
 }
 
@@ -705,7 +697,6 @@ static int mt6370_set_low_power_mode(struct tcpc_device *tcpc, bool en, int pull
 
 static int mt6370_tcpc_deinit(struct tcpc_device *tcpc)
 {
-	struct mt6370_tcpc_data *ddata = tcpc_get_dev_data(tcpc);
 	int cc1 = TYPEC_CC_VOLT_OPEN, cc2 = TYPEC_CC_VOLT_OPEN;
 
 	mt6370_get_cc(tcpc, &cc1, &cc2);
@@ -714,8 +705,6 @@ static int mt6370_tcpc_deinit(struct tcpc_device *tcpc)
 		mt6370_set_cc(tcpc, TYPEC_CC_OPEN);
 		usleep_range(20000, 30000);
 	}
-	mt6370_write8(ddata, MT6370_REG_SWRESET, 1);
-	atomic_set(&tcpc->is_suspended, true);
 	return 0;
 }
 
@@ -815,7 +804,7 @@ static int mt6370_transmit(struct tcpc_device *tcpc, enum tcpm_transmit_type typ
 	u8 temp[MT6370_TRANSMIT_MAX_SIZE];
 	int ret, data_cnt, packet_cnt;
 
-	MT6370_INFO("%s, ++\n", __func__);
+	MT6370_INFO("++\n");
 	if (type < TCPC_TX_HARD_RESET) {
 		data_cnt = sizeof(u32) * PD_HEADER_CNT(header);
 		packet_cnt = data_cnt + sizeof(u16);

@@ -190,7 +190,7 @@ EXPORT_SYMBOL(tcpm_inquire_vbus_level);
 
 int tcpm_inquire_cc_high(struct tcpc_device *tcpc)
 {
-	int rv = TCPM_ERROR_UNKNOWN;
+	int rv = 0;
 
 	tcpci_lock_typec(tcpc);
 	if (!tcpc->cc_hidet_en)
@@ -2116,24 +2116,6 @@ static inline int tcpm_dpm_wait_bk_event(
 	return ret;
 }
 
-#if CONFIG_MTK_HANDLE_PPS_TIMEOUT
-static void mtk_handle_tcp_event_result(
-	struct tcpc_device *tcpc, struct tcp_dpm_event *event, int ret)
-{
-	struct tcp_dpm_event evt_hreset = {
-		.event_id = TCP_DPM_EVT_HARD_RESET,
-	};
-
-	if (ret == TCPM_SUCCESS || ret == TCP_DPM_RET_NOT_SUPPORT)
-		return;
-
-	if (event->event_id == TCP_DPM_EVT_GET_STATUS
-		|| event->event_id == TCP_DPM_EVT_GET_PPS_STATUS) {
-		tcpm_put_tcp_dpm_event(tcpc, &evt_hreset);
-	}
-}
-#endif /* CONFIG_MTK_HANDLE_PPS_TIMEOUT */
-
 static int __tcpm_put_tcp_dpm_event_bk(
 	struct tcpc_device *tcpc, struct tcp_dpm_event *event,
 	uint32_t tout_ms, uint8_t *data, uint8_t size)
@@ -2183,10 +2165,6 @@ static int tcpm_put_tcp_dpm_event_bk(
 
 	if (ret == TCP_DPM_RET_DENIED_REPEAT_REQUEST)
 		ret = TCPM_SUCCESS;
-
-#if CONFIG_MTK_HANDLE_PPS_TIMEOUT
-	mtk_handle_tcp_event_result(tcpc, event, ret);
-#endif /* CONFIG_MTK_HANDLE_PPS_TIMEOUT */
 
 	return ret;
 }

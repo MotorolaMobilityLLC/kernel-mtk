@@ -276,7 +276,7 @@ static int typec_alert_attach_state_change(struct tcpc_device *tcpc)
 static inline void typec_enable_low_power_mode(struct tcpc_device *tcpc)
 {
 	tcpc->typec_lpm = true;
-	tcpc->typec_lpm_tout = 0;
+	tcpc->typec_lpm_tout = 5000;
 	tcpc_enable_lpm_timer(tcpc, true);
 }
 
@@ -331,7 +331,6 @@ static inline void typec_unattached_src_and_drp_entry(struct tcpc_device *tcpc)
 static inline void typec_unattached_snk_and_drp_entry(struct tcpc_device *tcpc)
 {
 	TYPEC_NEW_STATE(typec_unattached_snk);
-	tcpci_set_auto_dischg_discnt(tcpc, false);
 	tcpci_set_cc(tcpc, TYPEC_CC_DRP);
 	typec_enable_low_power_mode(tcpc);
 }
@@ -347,24 +346,20 @@ static inline void typec_unattached_cc_entry(struct tcpc_device *tcpc)
 	}
 #endif	/* CONFIG_TYPEC_CAP_ROLE_SWAP */
 
+	if (tcpc->typec_role >= TYPEC_ROLE_TRY_SRC)
+		tcpc_reset_typec_try_timer(tcpc);
+
 #if CONFIG_CABLE_TYPE_DETECTION
 	if (tcpc->tcpc_flags & TCPC_FLAGS_CABLE_TYPE_DETECTION)
 		tcpc_typec_handle_ctd(tcpc, TCPC_CABLE_TYPE_NONE);
 #endif /* CONFIG_CABLE_TYPE_DETECTION */
-
-	if (tcpc->cc_hidet_en)
-		tcpci_set_cc_hidet(tcpc, false);
-
-	if (tcpc->typec_role >= TYPEC_ROLE_TRY_SRC)
-		tcpc_reset_typec_try_timer(tcpc);
-
+	tcpci_set_cc_hidet(tcpc, false);
 	tcpci_set_auto_dischg_discnt(tcpc, false);
 
 	tcpc->typec_role = tcpc->typec_role_new;
 	switch (tcpc->typec_role) {
 	case TYPEC_ROLE_SNK:
 		TYPEC_NEW_STATE(typec_unattached_snk);
-		tcpci_set_auto_dischg_discnt(tcpc, false);
 		tcpci_set_cc(tcpc, TYPEC_CC_RD);
 		typec_enable_low_power_mode(tcpc);
 		break;
@@ -541,7 +536,6 @@ static inline void typec_sink_attached_entry(struct tcpc_device *tcpc)
 		!typec_check_cc2(TYPEC_CC_VOLT_OPEN));
 	tcpc->typec_remote_rp_level = typec_get_cc_res();
 
-	tcpci_set_auto_dischg_discnt(tcpc, true);
 	tcpci_report_power_control(tcpc, true);
 	tcpci_sink_vbus(tcpc, TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SINK_5V, -1);
 }
@@ -655,13 +649,10 @@ static inline void typec_norp_src_attached_entry(struct tcpc_device *tcpc)
 	TYPEC_NEW_STATE(typec_attached_norp_src);
 	tcpc->typec_attach_new = TYPEC_ATTACHED_NORP_SRC;
 
-	if (tcpc->typec_role >= TYPEC_ROLE_DRP) {
-		tcpci_set_auto_dischg_discnt(tcpc, false);
+	if (tcpc->typec_role >= TYPEC_ROLE_DRP)
 		tcpci_set_cc(tcpc, TYPEC_CC_DRP);
-	} else {
-		tcpci_set_auto_dischg_discnt(tcpc, true);
+	else
 		tcpci_set_cc(tcpc, TYPEC_CC_RD);
-	}
 	tcpc->typec_remote_rp_level = TYPEC_CC_VOLT_SNK_DFT;
 	tcpci_report_power_control(tcpc, true);
 	tcpci_sink_vbus(tcpc, TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SINK_5V, 500);
@@ -1351,12 +1342,8 @@ int tcpc_typec_handle_cc_change(struct tcpc_device *tcpc)
 	ret = tcpci_get_cc(tcpc);
 	if (ret < 0)
 		return ret;
-	if (ret)
-		TYPEC_INFO("[CC_Alert] %d/%d\n",
-			   typec_get_cc1(), typec_get_cc2());
-	else
-		TYPEC_DBG("[CC_Alert] %d/%d\n",
-			  typec_get_cc1(), typec_get_cc2());
+
+	TYPEC_INFO("[CC_Alert] %d/%d\n", typec_get_cc1(), typec_get_cc2());
 
 #ifdef CONFIG_MOTO_CHANNEL_SWITCH
 	cc_sum = typec_get_cc1() + typec_get_cc2();
@@ -1739,6 +1726,7 @@ int tcpc_typec_handle_pe_pr_swap(struct tcpc_device *tcpc)
 	case typec_attached_snk:
 		TYPEC_NEW_STATE(typec_attached_src);
 		tcpc->typec_attach_new = TYPEC_ATTACHED_SRC;
+		tcpci_set_auto_dischg_discnt(tcpc, false);
 		tcpci_set_cc(tcpc,
 			TYPEC_CC_PULL(tcpc->typec_local_rp_level, TYPEC_CC_RP));
 		break;
@@ -2178,16 +2166,3 @@ out:
 	return ret;
 }
 EXPORT_SYMBOL(tcpc_typec_handle_otp);
-
-int tcpc_typec_handle_cc_hi(struct tcpc_device *tcpc, int cc_hi)
-{
-	int ret = 0;
-
-	if (tcpc->cc_hi == cc_hi)
-		goto out;
-	tcpc->cc_hi = cc_hi;
-	ret = tcpci_notify_cc_hi(tcpc, cc_hi);
-out:
-	return ret;
-}
-EXPORT_SYMBOL(tcpc_typec_handle_cc_hi);

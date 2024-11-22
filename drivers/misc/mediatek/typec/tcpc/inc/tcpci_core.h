@@ -20,6 +20,7 @@
 #include "tcpm.h"
 #include "tcpci_timer.h"
 #include "tcpci_config.h"
+#include "std_tcpci_v10.h"
 
 #if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
 #include "pd_core.h"
@@ -110,32 +111,6 @@ struct tcpc_desc {
 /* TCPC Alert Register Define */
 #define TCPC_REG_ALERT_EXT_VBUS_80		(1<<(16+1))
 #define TCPC_REG_ALERT_EXT_WAKEUP		(1<<(16+0))
-
-#define TCPC_REG_ALERT_VENDOR_DEFINED (1<<15)
-#define TCPC_REG_ALERT_VBUS_DISCNCT (1<<11)
-#define TCPC_REG_ALERT_RX_BUF_OVF   (1<<10)
-#define TCPC_REG_ALERT_FAULT        (1<<9)
-#define TCPC_REG_ALERT_V_ALARM_LO   (1<<8)
-#define TCPC_REG_ALERT_V_ALARM_HI   (1<<7)
-#define TCPC_REG_ALERT_TX_SUCCESS   (1<<6)
-#define TCPC_REG_ALERT_TX_DISCARDED (1<<5)
-#define TCPC_REG_ALERT_TX_FAILED    (1<<4)
-#define TCPC_REG_ALERT_RX_HARD_RST  (1<<3)
-#define TCPC_REG_ALERT_RX_STATUS    (1<<2)
-#define TCPC_REG_ALERT_POWER_STATUS (1<<1)
-#define TCPC_REG_ALERT_CC_STATUS    (1<<0)
-
-#define TCPC_REG_ALERT_RX_MASK	\
-	(TCPC_REG_ALERT_RX_STATUS | TCPC_REG_ALERT_RX_BUF_OVF)
-
-#define TCPC_REG_ALERT_RX_ALL_MASK	\
-	(TCPC_REG_ALERT_RX_MASK | TCPC_REG_ALERT_RX_HARD_RST)
-
-#define TCPC_REG_ALERT_HRESET_SUCCESS	\
-	(TCPC_REG_ALERT_TX_SUCCESS | TCPC_REG_ALERT_TX_FAILED)
-
-#define TCPC_REG_ALERT_TX_MASK (TCPC_REG_ALERT_TX_SUCCESS | \
-	TCPC_REG_ALERT_TX_FAILED | TCPC_REG_ALERT_TX_DISCARDED)
 
 /* TCPC Behavior Flags */
 #define TCPC_FLAGS_RETRY_CRC_DISCARD		(1<<0)
@@ -250,6 +225,7 @@ struct tcpc_managed_res;
 struct tcpc_timer {
 	struct alarm alarm;
 	struct tcpc_device *tcpc;
+	bool en;
 };
 
 /*
@@ -307,6 +283,8 @@ struct tcpc_device {
 #if CONFIG_TYPEC_CAP_ROLE_SWAP
 	uint8_t typec_during_role_swap;
 #endif	/* CONFIG_TYPEC_CAP_ROLE_SWAP */
+
+	bool typec_auto_dischg_discnt;
 
 #if CONFIG_TYPEC_CAP_FORCE_DISCHARGE
 	bool typec_force_discharge;
