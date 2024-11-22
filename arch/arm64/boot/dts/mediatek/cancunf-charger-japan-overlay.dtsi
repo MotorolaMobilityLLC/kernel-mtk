@@ -89,6 +89,7 @@
 				      <&mt6375_adc MT6375_ADC_TEMPJC>,
 				      <&mt6375_adc MT6375_ADC_USBDP>,
 				      <&mt6375_adc MT6375_ADC_USBDM>,
+				      <&mt6375_adc MT6375_ADC_SBU2>,
 		              <&mt6375_adc MT6375_ADC_VREFTS>,
 					  <&mt6375_adc MT6375_ADC_TS>;
 		typecotp_chg = <1>;
