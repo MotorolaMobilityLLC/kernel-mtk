@@ -283,7 +283,13 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 #else
 	struct regulator *vbus = extcon->vbus;
 	struct device *dev = extcon->dev;
+#if IS_ENABLED(CONFIG_CHARGER_PUMP_NU2115A)
+	struct charger_device *primary_dvchg = get_charger_by_name("primary_dvchg");
 
+	if (!primary_dvchg) {
+		dev_info(dev, "%s : get primary dvchg device failed\n", __func__);
+	}
+#endif
 	/* vbus is optional */
 	if (!vbus || extcon->vbus_on == is_on)
 		return 0;
@@ -292,6 +298,11 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 
 	if (is_on) {
 		mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
+#if IS_ENABLED(CONFIG_CHARGER_PUMP_NU2115A)
+		dev_err(dev, "%s : enable otg on charger pump\n", __func__);
+		charger_dev_is_enable_otg(primary_dvchg, true);
+		charger_dev_is_enable_acdrv1(primary_dvchg, true);
+#endif
 		if (extcon->vbus_vol) {
 			ret = regulator_set_voltage(vbus,
 					extcon->vbus_vol, extcon->vbus_vol);
@@ -316,6 +327,10 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 			return ret;
 		}
 	} else {
+#if IS_ENABLED(CONFIG_CHARGER_PUMP_NU2115A)
+		dev_err(dev, "%s : disable otg on charger pump\n", __func__);
+		charger_dev_is_enable_otg(primary_dvchg, false);
+#endif
 		regulator_disable(vbus);
 		mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, false);
 	}
