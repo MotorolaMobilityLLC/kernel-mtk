@@ -33,12 +33,28 @@ static  struct imgsensor_struct *imgsensor;
 #define BOGOTA_IMX882_EEPROM_SIZE  0x27
 #define BOGOTA_IMX882_EEPROM_CRC_MANUFACTURING_SIZE 39
 
+#define IMX882_SPC_DATA_START 0x25F4
+#define IMX882_SPC_DATA_LEN 384
+#define IMX882_SPC_REG1_START 0xD200
+#define IMX882_SPC_REG2_START 0xD300
+
+#define IMX882_QSC_DATA_START 0x19F2
+#define IMX882_QSC_DATA_LEN 3072
+#define IMX882_QSC_REG_START 0xC000
+
+static uint8_t imx882_spc_data[IMX882_SPC_DATA_LEN+2] = {0};
+static uint8_t imx882_qsc_data[IMX882_QSC_DATA_LEN+2] = {0};
+static uint8_t imx882_spc_data_ready = 0;
+static uint8_t imx882_qsc_data_ready = 0;
+kal_uint16 imx882_SPC_setting[IMX882_SPC_DATA_LEN * 2];
+kal_uint16 imx882_QSC_setting[IMX882_QSC_DATA_LEN * 2];
 
 static uint8_t BOGOTA_IMX882_eeprom[BOGOTA_IMX882_EEPROM_SIZE] = {0};
 static mot_calibration_status_t calibration_status = {CRC_FAILURE};
 static mot_calibration_mnf_t mnf_info = {0};
 
 extern kal_uint16 mot_bogota_imx882_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len);
+extern void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para);
 
 static uint8_t crc_reverse_byte(uint32_t data)
 {
@@ -244,12 +260,104 @@ static void BOGOTA_IMX882_eeprom_get_mnf_data(void *data,
 	}
 }
 
+static int mot_imx882_get_spc_data()
+{
+	u16 ref_crc = 0;
+	kal_uint16 idx = 0;
+	kal_uint16 sensor_spc = 0;
+
+	if (imx882_spc_data_ready) {
+		LOG_ERROR("spc data is ready.");
+		return 0;
+	}
+
+	BOGOTA_IMX882_read_data_from_eeprom(BOGOTA_IMX882_EEPROM_SLAVE_ADDR, IMX882_SPC_DATA_START, IMX882_SPC_DATA_LEN+2, imx882_spc_data);
+
+	ref_crc = ((imx882_spc_data[IMX882_SPC_DATA_LEN] << 8) |imx882_spc_data[IMX882_SPC_DATA_LEN+1]);
+	if (eeprom_util_check_crc16(imx882_spc_data, IMX882_SPC_DATA_LEN, ref_crc)) {
+		imx882_spc_data_ready = 1;
+		LOG_ERROR("SPC data ready now.");
+	} else {
+		/*When CRC error, each time camera open will try to read SPC data from EEPROM, maybe retry for several time is better. Currently
+		  we don't avoid retry each time camera open to try best to eliminate potential randomly read failure.*/
+		LOG_ERROR("SPC data CRC error!");
+	}
+	if (imx882_spc_data_ready) {
+		sensor_spc = IMX882_SPC_REG1_START;
+		for (idx = 0; idx < IMX882_SPC_DATA_LEN*2; idx++){
+			if (idx % 2 == 0){
+			imx882_SPC_setting[idx] = sensor_spc++;
+			if (sensor_spc > 0xd2bf && sensor_spc < IMX882_SPC_REG2_START){
+				sensor_spc = IMX882_SPC_REG2_START;
+			}
+			} else {
+				imx882_SPC_setting[idx] = imx882_spc_data[idx/2];
+			}
+		}
+	} else {
+		LOG_ERROR("IMX882 SPC data is NOT ready");
+	}
+	return 0;
+}
+
+static int mot_imx882_get_qsc_data()
+{
+	u16 ref_crc = 0;
+	kal_uint16 idx = 0;
+	kal_uint16 sensor_qsc = 0;
+
+	if (imx882_qsc_data_ready) {
+		LOG_ERROR("qsc data is ready.");
+		return 0;
+	}
+
+	BOGOTA_IMX882_read_data_from_eeprom(BOGOTA_IMX882_EEPROM_SLAVE_ADDR, IMX882_QSC_DATA_START, IMX882_QSC_DATA_LEN+2, imx882_qsc_data);
+
+	ref_crc = ((imx882_qsc_data[IMX882_QSC_DATA_LEN] << 8) |imx882_qsc_data[IMX882_QSC_DATA_LEN+1]);
+	if (eeprom_util_check_crc16(imx882_qsc_data, IMX882_QSC_DATA_LEN, ref_crc)) {
+		imx882_qsc_data_ready = 1;
+		LOG_ERROR("QSC data ready now.");
+	} else {
+		/*When CRC error, each time camera open will try to read QSC data from EEPROM, maybe retry for several time is better. Currently
+		  we don't avoid retry each time camera open to try best to eliminate potential randomly read failure.*/
+		LOG_ERROR("QSC data CRC error!");
+	}
+	if (imx882_spc_data_ready) {
+		sensor_qsc = IMX882_QSC_REG_START;
+		for (idx = 0; idx < IMX882_QSC_DATA_LEN*2; idx++){
+			if (idx % 2 == 0){
+				imx882_QSC_setting[idx] = sensor_qsc++;
+			} else {
+				imx882_QSC_setting[idx] = imx882_qsc_data[idx/2];
+			}
+		}
+	} else {
+	LOG_ERROR("IMX882 QSC data is NOT ready");
+	}
+	return 0;
+}
+
+void imx882_qsc_spc_apply(void)
+{
+	if (imx882_spc_data_ready) {
+		mot_bogota_imx882_table_write_cmos_sensor(imx882_SPC_setting, sizeof(imx882_SPC_setting) / sizeof(kal_uint16));
+		LOG_ERROR("SPC apply done.");
+	}
+	if (imx882_qsc_data_ready) {
+		write_cmos_sensor_8(0x3206, 0x01);
+		mot_bogota_imx882_table_write_cmos_sensor(imx882_QSC_setting, sizeof(imx882_QSC_setting) / sizeof(kal_uint16));
+		LOG_ERROR("QSC apply done.");
+	}
+}
+
 void BOGOTA_IMX882_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
 {
 	imgsensor = pImgsensor;
 	BOGOTA_IMX882_read_data_from_eeprom(BOGOTA_IMX882_EEPROM_SLAVE_ADDR, 0x0000, BOGOTA_IMX882_EEPROM_CRC_MANUFACTURING_SIZE, BOGOTA_IMX882_eeprom);
 	calibration_status.mnf = BOGOTA_IMX882_check_manufacturing_data(BOGOTA_IMX882_eeprom);
 	BOGOTA_IMX882_eeprom_get_mnf_data((void *)BOGOTA_IMX882_eeprom, &mnf_info);
+	mot_imx882_get_spc_data();
+	mot_imx882_get_qsc_data();
 }
 
 mot_calibration_status_t *BOGOTA_IMX882_eeprom_get_calibration_status(void)

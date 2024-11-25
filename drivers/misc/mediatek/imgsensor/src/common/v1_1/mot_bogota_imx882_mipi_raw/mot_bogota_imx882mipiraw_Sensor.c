@@ -43,6 +43,7 @@
 extern mot_calibration_status_t *BOGOTA_IMX882_eeprom_get_calibration_status(void);
 extern mot_calibration_mnf_t *BOGOTA_IMX882_eeprom_get_mnf_info(void);
 extern void BOGOTA_IMX882_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+extern void imx882_qsc_spc_apply(void);
 
 #undef VENDOR_EDIT
 
@@ -261,7 +262,7 @@ static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 	return get_byte;
 }
 
-static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
+void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 {
 	char pusendcmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF),
 			(char)(para & 0xFF)};
@@ -304,7 +305,7 @@ static kal_uint32 get_cur_exp_cnt(void)
 
 #if USE_BURST_MODE
 #define I2C_BUFFER_LEN 255 /* trans# max is 255, each 3 bytes */
-static kal_uint16 mot_bogota_imx882_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
+kal_uint16 mot_bogota_imx882_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
 	kal_uint32 tosend, IDX;
@@ -342,7 +343,7 @@ static kal_uint16 mot_bogota_imx882_table_write_cmos_sensor(kal_uint16 *para, ka
 }
 #else
 #define I2C_BUFFER_LEN 765 /* trans# max is 255, each 3 bytes */
-static kal_uint16 mot_bogota_imx882_table_write_cmos_sensor(kal_uint16 *para,
+kal_uint16 mot_bogota_imx882_table_write_cmos_sensor(kal_uint16 *para,
 						 kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
@@ -763,7 +764,7 @@ static void sensor_init(void)
 
 	/*enable temperature sensor, TEMP_SEN_CTL:*/
 	//write_cmos_sensor_8(0x0138, 0x01);
-
+	imx882_qsc_spc_apply();
 	set_mirror_flip(imgsensor.mirror);
 
 	LOG_INF("X");
