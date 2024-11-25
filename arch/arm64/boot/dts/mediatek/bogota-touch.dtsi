@@ -45,7 +45,7 @@
 		chipone,y-res = <9600>;
 
 		/* Charger detect*/
-		//chipone,touch-charger-detect-enable;
+		chipone,touch-charger-detect-enable;
 		chipone,touch-charger-detect-type = "notify"; /* notify, poll */
 		chipone,touch-charger-detect-psy-name = "mtk-master-charger"; /* usb */
 		chipone,touch-charger-detect-psp = "POWER_SUPPLY_PROP_ONLINE";
@@ -65,8 +65,8 @@
                 //focaltech,report_gesture_key = <59>;
                 //focaltech,supported_gesture_type = <0x06>;
                 focaltech,panel-supplier = "dijing_ft8725";
-                //focaltech,touch-charger-detect-psy-name = "battery";
-                //focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
+                focaltech,touch-charger-detect-psy-name = "battery";
+                focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
 	};
 
 	ilitek@2 {
