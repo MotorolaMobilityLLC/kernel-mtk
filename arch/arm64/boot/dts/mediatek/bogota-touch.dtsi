@@ -31,6 +31,8 @@
 		omnivision,block-delay-us = <0>;
 		omnivision,ubl-max-freq = <3000000>;
 		omnivision,ubl-byte-delay-us = <20>;
+
+		omnivision,supported_gesture_type = <0x06>;
         };
 
 	chipone_tddi@1 {
