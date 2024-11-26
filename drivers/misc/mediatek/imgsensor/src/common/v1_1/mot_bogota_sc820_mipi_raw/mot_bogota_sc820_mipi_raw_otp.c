@@ -38,6 +38,10 @@
 #define MOT_BOGOTA_SC820_I2C_ID     0x6c
 #define LOG_INF(format, args...)		pr_err(PFX "[%s] " format, __func__, ##args)
 
+static  struct imgsensor_struct *imgsensor;
+
+static mot_calibration_status_t calibration_status = {NO_ERRORS};
+static mot_calibration_mnf_t mnf_info = {0};
 
 struct mot_bogota_sc820_otp_t mot_bogota_sc820_otp_info = {0};
 
@@ -157,6 +161,47 @@ READ_CLOCK_END:
     }
 
     return re;
+}
+
+static void BOGOTA_SC820_eeprom_get_mnf_data(void *data,
+		mot_calibration_mnf_t *mnf)
+{
+	int ret;
+	uint8_t* module_param = data;
+    	// lens_id
+	struct BOGOTA_SC820_eeprom_t eeprom = {
+        	.lens_id = module_param[5],
+    	};
+
+	LOG_INF("eeprom.lens_id:0x%x", eeprom.lens_id);
+	if (eeprom.lens_id == 0x4F){
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "HX-M0846A1");
+	} else {
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
+		LOG_INF("unknown lens_id");
+	}
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		pr_err("snprintf of mnf->serial_number failed");
+		mnf->serial_number[0] = 0;
+	}
+}
+
+
+mot_calibration_status_t *BOGOTA_SC820_eeprom_get_calibration_status(void)
+{
+	return &calibration_status;
+}
+
+mot_calibration_mnf_t *BOGOTA_SC820_eeprom_get_mnf_info(void)
+{
+	return &mnf_info;
+}
+
+void BOGOTA_SC820_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
+{
+	imgsensor = pImgsensor;
+	BOGOTA_SC820_eeprom_get_mnf_data((void *)mot_bogota_sc820_otp_info.module_param, &mnf_info);
 }
 
 static int mot_bogota_sc820_iReadData(u16 page, unsigned int ui4_offset, unsigned int ui4_length, unsigned char *pinputdata)

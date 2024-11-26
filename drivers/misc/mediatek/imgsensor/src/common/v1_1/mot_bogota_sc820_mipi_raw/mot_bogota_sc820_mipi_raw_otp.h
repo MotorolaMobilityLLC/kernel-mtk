@@ -104,6 +104,16 @@
 
 extern struct mot_bogota_sc820_otp_t mot_bogota_sc820_otp_info;
 
+typedef enum {
+	NO_ERRORS,
+	CRC_FAILURE,
+	LIMIT_FAILURE
+} calibration_status_t;
+
+struct BOGOTA_SC820_eeprom_t{
+	uint8_t lens_id;
+};
+
 struct mot_bogota_sc820_otp_t {
     u8  module_flag;
     u8  module_param[22]; //u8  module_param[9];

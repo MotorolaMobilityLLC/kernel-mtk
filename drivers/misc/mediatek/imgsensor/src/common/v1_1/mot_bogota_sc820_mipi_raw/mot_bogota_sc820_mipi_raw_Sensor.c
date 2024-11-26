@@ -38,6 +38,9 @@
 #define MOT_BOGOTA_SC820_SENSOR_BASE_GAIN             0x400
 #define MOT_BOGOTA_SC820_SENSOR_MAX_GAIN              (32 * MOT_BOGOTA_SC820_SENSOR_BASE_GAIN )
 extern void read_mot_bogota_sc820_otp_data(void);
+extern void BOGOTA_SC820_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+extern mot_calibration_status_t *BOGOTA_SC820_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *BOGOTA_SC820_eeprom_get_mnf_info(void);
 #define PFX "mot_bogota_sc820_camera_sensor"
 #define LOG_INF(format, args...)		pr_err(PFX "[%s] " format, __func__, ##args)
 
@@ -657,6 +660,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					    deviceInfo_register_value = 0x01;
 					}
 					read_mot_bogota_sc820_otp_data();
+					BOGOTA_SC820_eeprom_format_calibration_data(&imgsensor);
 					return ERROR_NONE;
 				}
 				LOG_INF("get_imgsensor_id Read sensor id fail, i2c write id: 0x%x,sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
@@ -922,6 +926,10 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->HighSpeedVideoDelayFrame = imgsensor_info.hs_video_delay_frame;
     sensor_info->SlimVideoDelayFrame = imgsensor_info.slim_video_delay_frame;
     sensor_info->FrameTimeDelayFrame = imgsensor_info.frame_time_delay_frame;
+
+    /*Apply manufacture info*/
+    memcpy(&sensor_info->mnf_calibration, BOGOTA_SC820_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+    memcpy(&sensor_info->calibration_status, BOGOTA_SC820_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
 
     sensor_info->SensorMasterClockSwitch = 0; /* not use */
     sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
@@ -1521,6 +1529,8 @@ UINT32 MOT_BOGOTA_SC820_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFu
 	/* To Do : Check Sensor status here */
 	if (pfFunc!=NULL)
 		*pfFunc=&sensor_func;
+	if (imgsensor.psensor_func == NULL)
+		imgsensor.psensor_func = &sensor_func;
 	return ERROR_NONE;
 };	/*	MOT_BOGOTA_SC820_MIPI_RAW_SensorInit	*/
 
