@@ -36,6 +36,8 @@ extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
 #endif
 
+static int tp_gesture_flag = 0;
+
 struct lcm {
 	struct device *dev;
 	struct drm_panel panel;
@@ -221,6 +223,19 @@ static int lcm_disable(struct drm_panel *panel)
 	return 0;
 }
 
+#if 1
+static int panel_set_gesture_flag(int state)
+{
+	if(state == 1)
+		tp_gesture_flag = 1;
+	else
+		tp_gesture_flag = 0;
+
+	pr_info("%s:disp:set tp_gesture_flag:%d\n", __func__, tp_gesture_flag);
+	return 0;
+}
+#endif
+
 static int lcm_unprepare(struct drm_panel *panel)
 {
 	struct lcm *ctx = panel_to_lcm(panel);
@@ -234,27 +249,29 @@ static int lcm_unprepare(struct drm_panel *panel)
 	lcm_dcs_write_seq_static(ctx, 0x10);
 	msleep(100);
 
+	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
+	if(!tp_gesture_flag) {
 #ifdef BIAS_OCP2138
 		ocp2138_BiasPower_disable(5);
 #else
+		ctx->avee_en_gpio = devm_gpiod_get_index(ctx->dev, "avee", 0, GPIOD_OUT_HIGH);
+		if (IS_ERR(ctx->avee_en_gpio)) {
+			dev_info(ctx->dev, "[error]%s: cannot get avee_en_gpio 0 %ld\n", __func__, PTR_ERR(ctx->avee_en_gpio));
+			return PTR_ERR(ctx->avee_en_gpio);
+		}
+		gpiod_set_value(ctx->avee_en_gpio, 0);
+		devm_gpiod_put(ctx->dev, ctx->avee_en_gpio);
+		msleep(5);
 
-	ctx->avee_en_gpio = devm_gpiod_get_index(ctx->dev, "avee", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->avee_en_gpio)) {
-		dev_info(ctx->dev, "[error]%s: cannot get avee_en_gpio 0 %ld\n", __func__, PTR_ERR(ctx->avee_en_gpio));
-		return PTR_ERR(ctx->avee_en_gpio);
-	}
-	gpiod_set_value(ctx->avee_en_gpio, 0);
-	devm_gpiod_put(ctx->dev, ctx->avee_en_gpio);
-	msleep(5);
-
-	ctx->avdd_en_gpio = devm_gpiod_get_index(ctx->dev, "avdd", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->avdd_en_gpio)) {
-		dev_info(ctx->dev, "[error]%s: cannot get avdd_en_gpio 1 %ld\n", __func__, PTR_ERR(ctx->avdd_en_gpio));
-		return PTR_ERR(ctx->avdd_en_gpio);
-	}
-	gpiod_set_value(ctx->avdd_en_gpio, 0);
-	devm_gpiod_put(ctx->dev, ctx->avdd_en_gpio);
+		ctx->avdd_en_gpio = devm_gpiod_get_index(ctx->dev, "avdd", 0, GPIOD_OUT_HIGH);
+		if (IS_ERR(ctx->avdd_en_gpio)) {
+			dev_info(ctx->dev, "[error]%s: cannot get avdd_en_gpio 1 %ld\n", __func__, PTR_ERR(ctx->avdd_en_gpio));
+			return PTR_ERR(ctx->avdd_en_gpio);
+		}
+		gpiod_set_value(ctx->avdd_en_gpio, 0);
+		devm_gpiod_put(ctx->dev, ctx->avdd_en_gpio);
 #endif
+	}
 
 	ctx->error = 0;
 	ctx->prepared = false;
@@ -718,6 +735,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ext_param_set = mtk_panel_ext_param_set,
 	.get_lcm_version = panel_get_lcm_version,
 	//.ata_check = panel_ata_check,
+	.set_gesture_flag = panel_set_gesture_flag,
 	.panel_feature_set = panel_feature_set,
 };
 #endif
