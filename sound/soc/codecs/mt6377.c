@@ -3402,35 +3402,42 @@ static int mt_dcxo_event(struct snd_soc_dapm_widget *w,
 	struct snd_soc_component *cmpnt = snd_soc_dapm_to_component(w->dapm);
 	struct mt6377_priv *priv = snd_soc_component_get_drvdata(cmpnt);
 
+	dev_info(priv->dev, "%s(), event = 0x%x\n", __func__, event);
+	return 0;
+}
+
+static int mt_vow_dcxo_event(struct snd_soc_dapm_widget *w,
+			  struct snd_kcontrol *kcontrol,
+			  int event)
+{
+	struct snd_soc_component *cmpnt = snd_soc_dapm_to_component(w->dapm);
+	struct mt6377_priv *priv = snd_soc_component_get_drvdata(cmpnt);
+
 	dev_info(priv->dev, "%s(), event = 0x%x, vow enable = %d\n", __func__, event, priv->vow_enable);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
-		if (priv->vow_enable) {
-			/* settings for 26MHz low power pre-buffer at FPM mode*/
-			regmap_update_bits(priv->regmap, MT6377_DCXO_CW11,
+		/* settings for 26MHz low power pre-buffer at FPM mode*/
+		regmap_update_bits(priv->regmap, MT6377_DCXO_CW11,
 			   RG_XO_LV_PUF_FPMISET_MASK_SFT,
 			   0x7 << RG_XO_LV_PUF_FPMISET_SFT);
-			/* settings for 26MHz low power pre-buffer*/
-			regmap_update_bits(priv->regmap, MT6377_DCXO_CW11,
+		/* settings for 26MHz low power pre-buffer*/
+		regmap_update_bits(priv->regmap, MT6377_DCXO_CW11,
 			   RG_XO_LV_PUF_ISET_MASK_SFT,
 			   0x6 << RG_XO_LV_PUF_ISET_SFT);
-			/* enable 26MHz clock for VOW use*/
-			regmap_update_bits(priv->regmap, MT6377_DCXO_CW11,
+		/* enable 26MHz clock for VOW use*/
+		regmap_update_bits(priv->regmap, MT6377_DCXO_CW11,
 			   RG_XO_VOW_EN_MASK_SFT,
 			   0x1 << RG_XO_VOW_EN_SFT);
-		}
 		break;
 	case SND_SOC_DAPM_POST_PMD:
-		if (priv->vow_enable)
-			regmap_update_bits(priv->regmap, MT6377_DCXO_CW11,
+		regmap_update_bits(priv->regmap, MT6377_DCXO_CW11,
 			   RG_XO_VOW_EN_MASK_SFT,
 			   0x0 << RG_XO_VOW_EN_SFT);
 		break;
 	default:
 		break;
 	}
-
 	return 0;
 }
 
@@ -3445,6 +3452,10 @@ static const struct snd_soc_dapm_widget mt6377_dapm_widgets[] = {
 	SND_SOC_DAPM_SUPPLY_S("AUDGLB", SUPPLY_SEQ_AUD_GLB,
 			      MT6377_AUDDEC_ANA_CON24,
 			      RG_AUDGLB_PWRDN_VA28_SFT, 1, NULL, 0),
+	SND_SOC_DAPM_SUPPLY_S("AUDGLB_VOW", SUPPLY_SEQ_AUD_GLB_VOW,
+			      SND_SOC_NOPM, 0, 0,
+			      mt_vow_dcxo_event,
+			      SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
 	SND_SOC_DAPM_SUPPLY_S("CLKSQ Audio", SUPPLY_SEQ_CLKSQ,
 			      MT6377_AUDENC_ANA_CON12,
 			      RG_CLKSQ_EN_SFT, 0, NULL, SND_SOC_DAPM_PRE_PMU),
@@ -4074,7 +4085,7 @@ static const struct snd_soc_dapm_route mt6377_dapm_routes[] = {
 	{"VOW TX", NULL, "CLK_BUF"},
 	{"VOW TX", NULL, "vaud28"},
 	{"VOW TX", NULL, "AUDGLB"},
-	//{"VOW TX", NULL, "AUDGLB_VOW", mt_vow_amic_connect},
+	{"VOW TX", NULL, "AUDGLB_VOW"},
 	{"VOW TX", NULL, "AUD_CK", mt_vow_amic_connect},
 	{"VOW TX", NULL, "VOW_AUD_LPW", mt_vow_amic_connect},
 	{"VOW TX", NULL, "VOW_CLK"},
