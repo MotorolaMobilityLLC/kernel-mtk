@@ -130,14 +130,6 @@ static void mt6377_reset_vow_gpio(struct mt6377_priv *priv)
 			   0x1 << 7, 0x0);
 }
 
-/* use only when not govern by DAPM */
-static void mt6377_set_dcxo(struct mt6377_priv *priv, bool enable)
-{
-	regmap_update_bits(priv->regmap, MT6377_DCXO_CW12,
-			   0x1 << RG_XO_AUDIO_EN_M_SFT,
-			   (enable ? 1 : 0) << RG_XO_AUDIO_EN_M_SFT);
-}
-
 /* use only when doing mtkaif calibraiton at the boot time */
 static void mt6377_set_clksq(struct mt6377_priv *priv, bool enable)
 {
@@ -232,7 +224,6 @@ void mt6377_mtkaif_calibration_enable(struct snd_soc_component *cmpnt)
 	mt6377_set_playback_gpio(priv);
 	mt6377_set_capture_gpio(priv);
 	mt6377_mtkaif_tx_enable(priv);
-	mt6377_set_dcxo(priv, true);
 
 	mt6377_set_aud_global_bias(priv, true);
 	mt6377_set_clksq(priv, true);
@@ -269,7 +260,6 @@ void mt6377_mtkaif_calibration_disable(struct snd_soc_component *cmpnt)
 	mt6377_set_topck(priv, false);
 	mt6377_set_clksq(priv, false);
 	mt6377_set_aud_global_bias(priv, false);
-	mt6377_set_dcxo(priv, false);
 
 	mt6377_mtkaif_tx_disable(priv);
 	mt6377_reset_playback_gpio(priv);
@@ -3416,10 +3406,6 @@ static int mt_dcxo_event(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
-		/* enable clk buf */
-		regmap_update_bits(priv->regmap, MT6377_DCXO_CW12,
-			   RG_XO_AUDIO_EN_M_MASK_SFT,
-			   0x1 << RG_XO_AUDIO_EN_M_SFT);
 		if (priv->vow_enable) {
 			/* settings for 26MHz low power pre-buffer at FPM mode*/
 			regmap_update_bits(priv->regmap, MT6377_DCXO_CW11,
@@ -3440,10 +3426,6 @@ static int mt_dcxo_event(struct snd_soc_dapm_widget *w,
 			regmap_update_bits(priv->regmap, MT6377_DCXO_CW11,
 			   RG_XO_VOW_EN_MASK_SFT,
 			   0x0 << RG_XO_VOW_EN_SFT);
-		/* disable clk buf */
-		regmap_update_bits(priv->regmap, MT6377_DCXO_CW12,
-			   RG_XO_AUDIO_EN_M_MASK_SFT,
-			   0x0 << RG_XO_AUDIO_EN_M_SFT);
 		break;
 	default:
 		break;
@@ -4345,9 +4327,6 @@ static void start_trim_hardware(struct mt6377_priv *priv)
 	regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON8,
 			   0x1 << 6, 0x1 << 6);
 
-	/* XO_AUDIO_EN_M Enable */
-	mt6377_set_dcxo(priv, true);
-
 	/* Enable CLKSQ */
 	/* audio clk source from internal dcxo */
 	mt6377_set_clksq(priv, true);
@@ -4596,9 +4575,6 @@ static void stop_trim_hardware(struct mt6377_priv *priv)
 
 	/* Disable CLKSQ */
 	mt6377_set_clksq(priv, false);
-
-	/* XO_AUDIO_EN_M Disable */
-	mt6377_set_dcxo(priv, false);
 
 	/* Set HP CMFB gate rstb */
 	regmap_update_bits(priv->regmap, MT6377_AUDDEC_ANA_CON8,
@@ -5547,9 +5523,6 @@ static int mt6377_rcv_acc_set(struct snd_kcontrol *kcontrol,
 	struct mt6377_priv *priv = snd_soc_component_get_drvdata(cmpnt);
 	int status = 0;
 
-	/* enable clk buf */
-	mt6377_set_dcxo(priv, true);
-
 	if (!IS_ERR(priv->reg_vaud28)) {
 		status = regulator_enable(priv->reg_vaud28);
 		if (status)
@@ -5796,11 +5769,6 @@ static int mt6377_codec_init_reg(struct snd_soc_component *cmpnt)
 
 	/* Disable AUD_ZCD */
 	zcd_enable(priv, false, DEVICE_NUM);
-
-	/* disable clk buf */
-	regmap_update_bits(priv->regmap, MT6377_DCXO_CW12,
-			   0x1 << RG_XO_AUDIO_EN_M_SFT,
-			   0x0 << RG_XO_AUDIO_EN_M_SFT);
 
 	/* this will trigger widget "DC trim" power down event */
 	enable_trim_buf(priv, true);
