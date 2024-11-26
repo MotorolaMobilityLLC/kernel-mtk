@@ -380,13 +380,13 @@ unsigned int mot_bogota_sc820_read_region(struct i2c_client *client, unsigned in
             memcpy(dataTmp, mot_bogota_sc820_otp_info.module_param, sizeof(mot_bogota_sc820_otp_info.module_param));
             dataTmp += sizeof(mot_bogota_sc820_otp_info.module_param);
 
-            data[10] = mot_bogota_sc820_otp_info.module_checksum;
+            data[23] = mot_bogota_sc820_otp_info.module_checksum;
             dataTmp += sizeof(mot_bogota_sc820_otp_info.module_checksum);
 
             memcpy(dataTmp, mot_bogota_sc820_otp_info.awb_param, sizeof(mot_bogota_sc820_otp_info.awb_param));
             dataTmp += sizeof(mot_bogota_sc820_otp_info.awb_param);
 
-            data[39] = mot_bogota_sc820_otp_info.awb_checksum;
+            data[47] = mot_bogota_sc820_otp_info.awb_checksum;
             dataTmp += sizeof(mot_bogota_sc820_otp_info.awb_checksum);
 
             memcpy(dataTmp, mot_bogota_sc820_otp_info.lsc_param, sizeof(mot_bogota_sc820_otp_info.lsc_param));
