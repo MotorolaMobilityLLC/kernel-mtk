@@ -101,26 +101,26 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.hs_video = {
 		.pclk = 280000000,
 		.linelength = 3640,
-		.framelength = 1276,
+		.framelength = 2548,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1632,
-		.grabwindow_height = 1224,
+		.grabwindow_width = 3264,
+		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 136800000,
-		.max_framerate = 600,
+		.mipi_pixel_rate = 268800000,
+		.max_framerate = 300,
 	},
 	.slim_video = {
 		.pclk = 280000000,
 		.linelength = 3640,
-		.framelength = 852,
+		.framelength = 2548,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1280,
-		.grabwindow_height = 720,
+		.grabwindow_width = 3264,
+		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 111600000,
-		.max_framerate = 900,
+		.mipi_pixel_rate = 268800000,
+		.max_framerate = 300,
 	},
 
 	.margin = 16,
@@ -205,8 +205,8 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 	{ 3264, 2448, 0, 0, 3264, 2448, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448}, /* Preview */
 	{ 3264, 2448, 0, 0, 3264, 2448, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448}, /* capture */
 	{ 3264, 2448, 0, 0, 3264, 2448, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448}, /* video */
-	{ 3264, 2448, 0, 0, 3264, 2448, 1632, 1224, 0, 0, 1632, 1224, 0, 0, 1632, 1224}, /* hs video */
-	{ 3264, 2448, 0, 0, 3264, 2448, 1632, 1224, 176, 252, 1280, 720, 0, 0, 1280, 720}  /* slim video */
+	{ 3264, 2448, 0, 0, 3264, 2448, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448}, /* hs_video */
+	{ 3264, 2448, 0, 0, 3264, 2448, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448}, /* slim_video */
 };
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
@@ -573,17 +573,17 @@ static void normal_video_setting(kal_uint16 currefps)
 
 static void hs_video_setting(void)
 {
-	pr_debug(PFX,"[%s] hs_video_Start, 1632x1224@30.19fps\n", __func__);
-	table_write_cmos_sensor(mot_bogota_gc08a8_1632x1224_addr_data,
-		sizeof(mot_bogota_gc08a8_1632x1224_addr_data)/sizeof(kal_uint16));
+	pr_debug(PFX,"[%s] hs_video_Start\n", __func__);
+	table_write_cmos_sensor(mot_bogota_gc08a8_3264x2448_addr_data,
+		sizeof(mot_bogota_gc08a8_3264x2448_addr_data)/sizeof(kal_uint16));
 	pr_debug(PFX,"[%s] hs_video_End\n", __func__);
 }
 
 static void slim_video_setting(void)
 {
-	pr_debug(PFX,"[%s] slim_video_Start, 1280x720@30.19fps\n", __func__);
-	table_write_cmos_sensor(mot_bogota_gc08a8_1280x720_addr_data,
-		sizeof(mot_bogota_gc08a8_1280x720_addr_data)/sizeof(kal_uint16));
+	pr_debug(PFX,"[%s] slim_video_Start\n", __func__);
+	table_write_cmos_sensor(mot_bogota_gc08a8_3264x2448_addr_data,
+		sizeof(mot_bogota_gc08a8_3264x2448_addr_data)/sizeof(kal_uint16));
 	pr_debug(PFX,"[%s] slim_video_End\n", __func__);
 }
 
