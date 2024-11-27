@@ -2,7 +2,9 @@
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM mm
 
+#ifdef CREATE_TRACE_POINTS
 #define TRACE_INCLUDE_PATH trace/hooks
+#endif
 
 #if !defined(_TRACE_HOOK_MM_H) || defined(TRACE_HEADER_MULTI_READ)
 #define _TRACE_HOOK_MM_H
@@ -231,6 +233,14 @@ DECLARE_HOOK(android_vh_mem_cgroup_charge,
 DECLARE_HOOK(android_vh_should_fault_around,
 	TP_PROTO(struct vm_fault *vmf, bool *should_around),
 	TP_ARGS(vmf, should_around));
+DECLARE_HOOK(android_vh_lruvec_add_folio,
+	TP_PROTO(struct lruvec *lruvec, struct folio *folio, enum lru_list lru,
+		bool tail, bool *skip),
+	TP_ARGS(lruvec, folio, lru, tail, skip));
+DECLARE_HOOK(android_vh_lruvec_del_folio,
+	TP_PROTO(struct lruvec *lruvec, struct folio *folio, enum lru_list lru,
+		bool *skip),
+	TP_ARGS(lruvec, folio, lru, skip));
 DECLARE_HOOK(android_vh_mm_alloc_pages_direct_reclaim_exit,
 	TP_PROTO(unsigned long did_some_progress, int retry_times),
 	TP_ARGS(did_some_progress, retry_times));
