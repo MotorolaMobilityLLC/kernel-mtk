@@ -55,6 +55,11 @@ extern void imx882_qsc_spc_apply(void);
 #define LOG_INF(format, args...) pr_debug(PFX "[%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
+#define BINNING_MODE 0
+#define FPS120_MODE 1
+static int sensor_mode = 0;
+static kal_uint32 min_shutter = 6;
+static kal_uint32 exp_step = 4;
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_BOGOTA_IMX882_SENSOR_ID,
@@ -125,13 +130,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 800000000,
 		.max_framerate = 300,
 	},
-	.min_gain = 92, /*1.4287x gain*/
-	.max_gain = 4096, /*64x gain*/
+	.min_gain = 1.4287*BASEGAIN, /*1.4287x gain*/
+	.max_gain = 64*BASEGAIN, /*64x gain*/
 	.min_gain_iso = 100,
 	.margin = 48,		/* sensor framelength & shutter margin */
-	.min_shutter = 30,	/* min shutter */
-	.gain_step = 1,
+	.min_shutter = 6,	/* min shutter */
+	.gain_step = 4,
 	.gain_type = 0,
+	.exp_step = 4,
 	.max_frame_length = 65479,
 	.ae_shut_delay_frame = 0,
 	.ae_sensor_gain_delay_frame = 0,
@@ -492,8 +498,8 @@ static void write_shutter(kal_uint32 shutter, kal_bool gph)
 	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
-	if (shutter < imgsensor_info.min_shutter)
-		shutter = imgsensor_info.min_shutter;
+	if (shutter < min_shutter)
+		shutter = min_shutter;
 
 	if (gph)
 		write_cmos_sensor_8(0x0104, 0x01);
@@ -594,8 +600,8 @@ static void set_shutter_frame_length(
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
 
-	shutter = (shutter < imgsensor_info.min_shutter) ?
-		imgsensor_info.min_shutter : shutter;
+	shutter = (shutter < min_shutter) ?
+		min_shutter : shutter;
 
 	shutter =
 	(shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin))
@@ -636,14 +642,19 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 	// 882 max gain: 64x
 	kal_uint16 reg_gain = 0x0;
 	kal_uint16 gain_value = gain;
+	kal_uint32 max_gain = 64*BASEGAIN;
 
-	if (gain_value < imgsensor_info.min_gain || gain_value > imgsensor_info.max_gain) {
+	if((sensor_mode == BINNING_MODE) || (sensor_mode == FPS120_MODE)) {
+		max_gain = 64*BASEGAIN;
+	}
+
+	if (gain_value < imgsensor_info.min_gain || gain_value > max_gain) {
 		LOG_INF("Error: gain value out of range %d", gain);
 
 		if (gain_value < imgsensor_info.min_gain)
 			gain_value = imgsensor_info.min_gain;
-		else if (gain_value > imgsensor_info.max_gain)
-			gain_value = imgsensor_info.max_gain;
+		else if (gain_value > max_gain)
+			gain_value = max_gain;
 	}
 
 	reg_gain = 16384 - (16384*64)/gain_value;
@@ -671,14 +682,18 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 static kal_uint16 set_gain_w_gph(kal_uint16 gain, kal_bool gph)
 {
 	kal_uint16 reg_gain;
+	kal_uint32 max_gain = 64*BASEGAIN;
 
-	if (gain < imgsensor_info.min_gain || gain > imgsensor_info.max_gain) {
+	if((sensor_mode == BINNING_MODE) || (sensor_mode == FPS120_MODE)) {
+		max_gain = 64*BASEGAIN;
+	}
+	if (gain < imgsensor_info.min_gain || gain > max_gain) {
 		LOG_INF("Error gain setting");
 
 		if (gain < imgsensor_info.min_gain)
 			gain = imgsensor_info.min_gain;
 		else
-			gain = imgsensor_info.max_gain;
+			gain = max_gain;
 	}
 
 	reg_gain = gain2reg(gain);
@@ -821,7 +836,7 @@ static void hdr_write_tri_shutter_w_gph(kal_uint16 le, kal_uint16 me, kal_uint16
 	if (se)
 		exposure_cnt++;
 
-	le = (kal_uint16)max(imgsensor_info.min_shutter, (kal_uint32)le);
+	le = (kal_uint16)max(min_shutter, (kal_uint32)le);
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.frame_length = max((kal_uint32)(le + me + se + imgsensor_info.margin),
@@ -1242,7 +1257,9 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("%s E\n", __func__);
-
+	sensor_mode = BINNING_MODE;
+	min_shutter = 6;
+	exp_step = 4;
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.pclk = imgsensor_info.pre.pclk;
 	imgsensor.line_length = imgsensor_info.pre.linelength;
@@ -1278,6 +1295,9 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
+	sensor_mode = BINNING_MODE;
+	min_shutter = 6;
+	exp_step = 4;
 	spin_lock(&imgsensor_drv_lock);
 
 	if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
@@ -1303,6 +1323,9 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
+	sensor_mode = BINNING_MODE;
+	min_shutter = 6;
+	exp_step = 4;
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.pclk = imgsensor_info.normal_video.pclk;
@@ -1324,6 +1347,9 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
+	sensor_mode = FPS120_MODE;
+	min_shutter = 8;
+	exp_step = 2;
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.pclk = imgsensor_info.hs_video.pclk;
@@ -1347,6 +1373,9 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
+	sensor_mode = BINNING_MODE;
+	min_shutter = 6;
+	exp_step = 4;
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.pclk = imgsensor_info.slim_video.pclk;
@@ -1831,8 +1860,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*(feature_data + 2) = imgsensor_info.gain_type;
 		break;
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
-		*(feature_data + 1) = imgsensor_info.min_shutter;
-		*(feature_data + 2) = 24; // 2/3 exp do not have to round up
+		*(feature_data + 1) = min_shutter;
+		*(feature_data + 2) = exp_step;
 		break;
 	case SENSOR_FEATURE_GET_OFFSET_TO_START_OF_EXPOSURE:
 		*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 3000000;

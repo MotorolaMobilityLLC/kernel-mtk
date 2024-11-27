@@ -116,6 +116,7 @@ struct imgsensor_info_struct {
 	kal_uint32 min_gain_iso;
 	kal_uint32 gain_step;
 	kal_uint32 gain_type;
+        kal_uint32 exp_step;
 	kal_uint32 max_frame_length;
 	kal_uint8 isp_driving_current; /* mclk driving current */
 	kal_uint8 sensor_interface_type; /* sensor_interface_type */
