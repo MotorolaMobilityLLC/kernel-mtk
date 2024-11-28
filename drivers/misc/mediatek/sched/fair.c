@@ -1252,6 +1252,42 @@ inline bool is_task_latency_sensitive(struct task_struct *p)
 	return latency_sensitive;
 }
 
+void mtk_can_migrate_task(void *data, struct task_struct *p,
+						  int dst_cpu, int *can_migrate)
+{
+	struct cpumask eff_mask;
+	int src_cpu = task_cpu(p), num_vip_src, num_vip_dst;
+
+	if (cpu_paused(dst_cpu)) {
+		*can_migrate = false;
+		return;
+	}
+
+	//TODO: need consider normal CFS task?
+	if (task_is_vip_via_prio(p)) {
+		num_vip_src = num_vip_in_cpu(src_cpu);
+		num_vip_dst = num_vip_in_cpu(dst_cpu);
+		if (num_vip_src-1 < num_vip_dst) {
+			*can_migrate = 0;
+			trace_sched_skip_migrate_task(p, num_vip_src-1, num_vip_dst);
+			return;
+		} else if ((num_vip_src-1 == num_vip_dst) &&
+				   (capacity_of(src_cpu) > capacity_of(dst_cpu))) {
+			*can_migrate = 0;
+			trace_sched_skip_migrate_task(p, num_vip_src-1, num_vip_dst);
+			return;
+		}
+	}
+
+	if (READ_ONCE(cpu_rq(src_cpu)->rd->overutilized)) {
+		*can_migrate = 1;
+		return;
+	}
+
+	if (is_task_latency_sensitive(p) && !(cpumask_test_cpu(dst_cpu, &eff_mask)))
+		*can_migrate = 0;
+}
+
 static int mtk_active_load_balance_cpu_stop(void *data)
 {
 	struct task_struct *target_task = data;

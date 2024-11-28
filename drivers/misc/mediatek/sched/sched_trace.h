@@ -305,6 +305,32 @@ TRACE_EVENT(sched_find_energy_efficient_cpu,
 );
 
 /*
+ * Tracepoint for task skip migrations.
+ */
+TRACE_EVENT(sched_skip_migrate_task,
+
+		TP_PROTO(struct task_struct *tsk, int num_vip_src, int num_vip_dst),
+		TP_ARGS(tsk, num_vip_src, num_vip_dst),
+
+		TP_STRUCT__entry(
+		    __array(char, comm, TASK_COMM_LEN)
+			__field(pid_t, pid)
+		    __field(int,  num_vip_src)
+		    __field(int,  num_vip_dst)
+            ),
+		TP_fast_assign(
+		    memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
+			__entry->pid   = tsk->pid;
+            __entry->num_vip_src = num_vip_src;
+            __entry->num_vip_dst = num_vip_dst;
+            ),
+
+        TP_printk("comm=%s pid=%d num_vip_src=%d num_vip_dst=%d",
+            __entry->comm, __entry->pid,
+            __entry->num_vip_src, __entry->num_vip_dst)
+);
+
+/*
  * Tracepoint for task force migrations.
  */
 TRACE_EVENT(sched_force_migrate,

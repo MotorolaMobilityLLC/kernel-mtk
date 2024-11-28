@@ -174,4 +174,6 @@ extern int set_task_idle_prefer(int pid, bool prefer);
 extern bool get_task_idle_prefer_by_pid(int pid);
 extern bool get_task_idle_prefer_by_task(struct task_struct *task);
 extern int sched_cgroup_state(struct task_struct *p, int subsys_id);
+extern void mtk_can_migrate_task(void *data, struct task_struct *p,
+								 int dst_cpu, int *can_migrate);
 #endif

@@ -164,6 +164,13 @@ struct task_struct *next_vip_runnable_in_cpu(struct rq *rq, int type)
 	return NULL;
 }
 
+bool task_is_vip_via_prio(struct task_struct *p)
+{
+    struct vip_task_struct *vts = &((struct mtk_task *) p->android_vendor_data1)->vip_task;
+
+    return (vts->vip_prio != NOT_VIP);
+}
+
 bool task_is_vip(struct task_struct *p, int type)
 {
 	struct vip_task_struct *vts = &((struct mtk_task *) p->android_vendor_data1)->vip_task;

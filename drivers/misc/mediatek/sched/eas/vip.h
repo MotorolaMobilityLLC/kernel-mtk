@@ -50,6 +50,7 @@ extern void set_foreground_vip(unsigned int prio);
 extern void set_background_vip(unsigned int prio);
 extern bool sched_vip_enable_get(void);
 extern inline int get_vip_task_prio(struct task_struct *p);
+extern bool task_is_vip_via_prio(struct task_struct *p);
 extern bool task_is_vip(struct task_struct *p, int type);
 extern inline unsigned int num_vip_in_cpu(int cpu);
 extern inline bool is_task_latency_sensitive(struct task_struct *p);
