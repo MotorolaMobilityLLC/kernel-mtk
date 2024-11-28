@@ -199,6 +199,14 @@ static void tianma_panel_init(struct tianma *ctx)
 	pr_info("tm ili77600a init start!\n");
 	tianma_dcs_write_seq_static(ctx,0xFF, 0x5A,0xA5,0x06);
 	tianma_dcs_write_seq_static(ctx,0x3E, 0xE2);
+	tianma_dcs_write_seq_static(ctx,0xFF, 0x5A,0xA5,0x02);
+        tianma_dcs_write_seq_static(ctx,0x80, 0x23);
+        tianma_dcs_write_seq_static(ctx,0x76, 0x13);
+        tianma_dcs_write_seq_static(ctx,0x79, 0x00);
+        tianma_dcs_write_seq_static(ctx,0xF4, 0xFC);
+        tianma_dcs_write_seq_static(ctx,0xF5, 0xFC);
+        tianma_dcs_write_seq_static(ctx,0xF6, 0xFC);
+        tianma_dcs_write_seq_static(ctx,0xF7, 0xFC);
 	tianma_dcs_write_seq_static(ctx,0xFF, 0x5A,0xA5,0x03);
 	tianma_dcs_write_seq_static(ctx,0x83, 0xC8);
 	tianma_dcs_write_seq_static(ctx,0x84, 0x04);
