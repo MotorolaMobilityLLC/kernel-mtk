@@ -37,6 +37,11 @@ static int m_mot_camera_debug = 1;
 
 #define I2C_ADDR 0x62
 
+static  struct imgsensor_struct *imgsensor;
+
+static mot_calibration_status_t calibration_status = {NO_ERRORS};
+static mot_calibration_mnf_t mnf_info = {0};
+
 //begin 20220402 add for otp check
 struct mot_bogota_gc08a8_otp_t mot_bogota_gc08a8_otp_info;
 EXPORT_SYMBOL(mot_bogota_gc08a8_otp_info);
@@ -121,6 +126,48 @@ static kal_uint16 mot_bogota_gc08a8_otp_read_byte(kal_uint16 addr)
 	pr_debug(PFX,"addr = 0x%x, data = 0x%x\n", addr , val);
 #endif
 	return val;
+}
+
+static void BOGOTA_GC08A8_eeprom_get_mnf_data(void *data,
+		mot_calibration_mnf_t *mnf)
+{
+	int ret;
+
+    uint8_t* module_param = data;
+
+    // lens_id
+	struct BOGOTA_GC08A8_eeprom_t eeprom = {
+        .lens_id = module_param[4],
+    };
+
+	LOG_INF("eeprom->lens_id: 0x%x", eeprom.lens_id);
+	if (eeprom.lens_id == 0x4F){
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "HX-M0846A1");
+	} else {
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
+		LOG_INF("unknown lens_id");
+	}
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		pr_err("snprintf of mnf->serial_number failed");
+		mnf->serial_number[0] = 0;
+	}
+}
+
+mot_calibration_status_t *BOGOTA_GC08A8_eeprom_get_calibration_status(void)
+{
+	return &calibration_status;
+}
+
+mot_calibration_mnf_t *BOGOTA_GC08A8_eeprom_get_mnf_info(void)
+{
+	return &mnf_info;
+}
+
+void BOGOTA_GC08A8_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
+{
+	imgsensor = pImgsensor;
+	BOGOTA_GC08A8_eeprom_get_mnf_data((void *)mot_bogota_gc08a8_otp_info.module_param, &mnf_info);
 }
 
 static int mot_bogota_gc08a8_iReadData(unsigned int ui4_offset, unsigned int ui4_length, unsigned char *pinputdata)

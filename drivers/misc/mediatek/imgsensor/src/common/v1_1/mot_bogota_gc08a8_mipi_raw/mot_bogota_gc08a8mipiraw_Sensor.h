@@ -55,6 +55,8 @@
 #define MOT_BOGOTA_GC08A8_MIRROR	        0x00
 #endif
 
+#include "imgsensor_sensor.h"
+
 enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
@@ -109,6 +111,7 @@ struct imgsensor_struct {
 	kal_uint8 ihdr_mode; /* ihdr enable or disable */
 	kal_uint8 pdaf_mode; /* pdaf enable or disable */
 	kal_uint8 i2c_write_id; /* record current sensor's i2c write id */
+	struct SENSOR_FUNCTION_STRUCT *psensor_func;
 };
 
 /* SENSOR PRIVATE STRUCT FOR CONSTANT*/

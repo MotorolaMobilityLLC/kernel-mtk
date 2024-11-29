@@ -58,6 +58,9 @@
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 extern bool check_mot_bogota_gc08a8_otp(void);
+extern void BOGOTA_GC08A8_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+extern mot_calibration_status_t *BOGOTA_GC08A8_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *BOGOTA_GC08A8_eeprom_get_mnf_info(void);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_BOGOTA_GC08A8_SENSOR_ID,
@@ -664,6 +667,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				} else {
 					LOG_INF("mot_bogota_gc08a8,check OTP fail\n");
 				}
+				BOGOTA_GC08A8_eeprom_format_calibration_data(&imgsensor);
 				return ERROR_NONE;
 			}
 			LOG_INF("[mot_bogota_gc08a8_camera_sensor]get_imgsensor_id:Read sensor id fail, write id: 0x%x, id: 0x%x\n",
@@ -976,6 +980,9 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SlimVideoDelayFrame =
 		imgsensor_info.slim_video_delay_frame;
 
+    /*Apply manufacture info*/
+	memcpy(&sensor_info->mnf_calibration, BOGOTA_GC08A8_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, BOGOTA_GC08A8_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
@@ -1569,5 +1576,7 @@ UINT32 MOT_BOGOTA_GC08A8_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfF
 	/* Check Sensor status here */
 	if (pfFunc != NULL)
 		*pfFunc = &sensor_func;
+	if (imgsensor.psensor_func == NULL)
+		imgsensor.psensor_func = &sensor_func;
 	return ERROR_NONE;
 }
