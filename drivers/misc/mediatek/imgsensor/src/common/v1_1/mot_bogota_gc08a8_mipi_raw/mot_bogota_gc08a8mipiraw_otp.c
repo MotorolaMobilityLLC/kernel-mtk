@@ -237,12 +237,10 @@ bool check_mot_bogota_gc08a8_otp(void)
 	//for lsc otp read
     if (mot_bogota_gc08a8_otp_info.lsc_flag == 0x01) {
         LOG_INF("group1_lsc, size %d", LSC_LENGTH);
-		mot_bogota_gc08a8_otp_info.lsc_flag = 0x01;
         mot_bogota_gc08a8_iReadData(GROUP1_LSC_INFO_FLAG, LSC_LENGTH, &mot_bogota_gc08a8_otp_info.lsc_param[0]);
 		mot_bogota_gc08a8_iReadData(GROUP1_LSC_INFO_FLAG + (LSC_LENGTH - 1) * 8, 1, &mot_bogota_gc08a8_otp_info.lscChksum);
     } else if (mot_bogota_gc08a8_otp_info.lsc_flag == 0x07) {
         LOG_INF("group2_lsc, size %d", LSC_LENGTH);
-        mot_bogota_gc08a8_otp_info.lsc_flag = 0x04;
         mot_bogota_gc08a8_iReadData(GROUP2_LSC_INFO_FLAG, LSC_LENGTH, &mot_bogota_gc08a8_otp_info.lsc_param[0]);
 		mot_bogota_gc08a8_iReadData(GROUP2_LSC_INFO_FLAG + (LSC_LENGTH - 1) * 8, 1, &mot_bogota_gc08a8_otp_info.lscChksum);
     } else if ((mot_bogota_gc08a8_otp_info.lsc_flag & 0x0f) == 0x00) {
