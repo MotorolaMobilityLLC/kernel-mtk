@@ -331,7 +331,11 @@ static inline void typec_unattached_src_and_drp_entry(struct tcpc_device *tcpc)
 static inline void typec_unattached_snk_and_drp_entry(struct tcpc_device *tcpc)
 {
 	TYPEC_NEW_STATE(typec_unattached_snk);
-	tcpci_set_cc(tcpc, TYPEC_CC_DRP);
+	tcpci_set_auto_dischg_discnt(tcpc, false);
+	if (!tcpci_is_support_cid(tcpc)) {
+		tcpci_set_cc(tcpc, TYPEC_CC_DRP);
+		TYPEC_INFO("%s, set cc to DRP\n", __func__);
+	}
 	typec_enable_low_power_mode(tcpc);
 }
 

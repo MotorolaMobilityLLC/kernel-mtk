@@ -83,6 +83,7 @@ int tcpci_set_low_power_mode(struct tcpc_device *tcpc, bool en);
 int tcpci_alert_vendor_defined_handler(struct tcpc_device *tcpc);
 int tcpci_set_auto_dischg_discnt(struct tcpc_device *tcpc, bool en);
 int tcpci_get_vbus_voltage(struct tcpc_device *tcpc, u32 *vbus);
+int tcpci_is_support_cid(struct tcpc_device *tcpc);
 
 #if CONFIG_WATER_DETECTION
 int tcpci_set_water_protection(struct tcpc_device *tcpc, bool en);

@@ -228,6 +228,17 @@ int tcpci_init_alert_mask(struct tcpc_device *tcpc)
 }
 EXPORT_SYMBOL(tcpci_init_alert_mask);
 
+int tcpci_is_support_cid(struct tcpc_device *tcpc)
+{
+	int ret = 0;
+
+	if (tcpc->ops->is_support_cid)
+		ret = tcpc->ops->is_support_cid(tcpc);
+
+	return ret;
+}
+EXPORT_SYMBOL(tcpci_is_support_cid);
+
 int tcpci_get_cc(struct tcpc_device *tcpc)
 {
 	int ret;

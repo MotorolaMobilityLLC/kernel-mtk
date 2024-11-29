@@ -31,6 +31,8 @@
        tcpc,en_wd;
        tcpc,en_wd_sbu_polling;
        tcpc,en_wd_polling_only;
+       mmi,support_CID;
+       mmi_cid_int = <&pio 21 0x0>;
 };
 
 &charger {
