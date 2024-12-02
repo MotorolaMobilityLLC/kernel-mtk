@@ -273,7 +273,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {
 	{8192, 6144,  000,  000, 8192, 6144, 4096, 3072, 0000, 0000, 4096, 3072, 0, 0, 4096, 3072},  /* Video 4096x3072@30fps*/
 	{8192, 6144,  000,  768, 8192, 4608, 2048, 1536, 0000,  192, 2048, 1152, 0, 0, 2048, 1152}, /* hs_video 2048x1152@120fps*/
 	{8192, 6144,  000,  000, 8192, 6144, 4096, 3072, 0000, 0000, 4096, 3072, 0, 0, 4096, 3072},  /* slim_video 4096x3072@30fps*/
-	{8192, 6144,  000,  768, 8192, 4608, 2048, 1536, 0000,  192, 2048, 1152, 0, 0, 2048, 1152}, /* custom1 2048x1152@60fps*/
+	{8192, 6144,  000,  768, 8192, 4608, 2048, 1152, 0000, 0000, 2048, 1152, 0, 0, 2048, 1152}, /* custom1 2048x1152@60fps*/
 	{8192, 6144,  000,  000, 8192, 6144, 2048, 1536, 0000, 0000, 2048, 1536, 0, 0, 2048, 1536}, /* custom2 2048x1536@30fps*/
 	{8192, 6144, 2048, 1536, 4096, 3072, 4096, 3072, 0000, 0000, 4096, 3072, 0, 0, 4096, 3072}, /* custom3 4096x3072crop@30fps*/
 	{8192, 6144,  000,  000, 8192, 6144, 8192, 6144, 0000, 0000, 8192, 6144, 0, 0, 8192, 6144}, /* custom4 8192x6144)50M@14fps*/
@@ -281,12 +281,12 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {
 };
 
 //the index order of VC_STAGGER_NE/ME/SE in array identify the order of readout in MIPI transfer
-static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[4] = {
+static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[7] = {
 	{
 		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//preview
 		{
 			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
-			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1000, 0x0300},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1400, 0x0300},
 			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
 		},
 		1
@@ -295,7 +295,7 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[4] = {
 		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//capture
 		{
 			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
-			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1000, 0x0300},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1400, 0x0300},
 			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
 		},
 		1
@@ -304,7 +304,7 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[4] = {
 		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//video
 		{
 			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
-			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1000, 0x0300},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1400, 0x0300},
 			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
 		},
 		1
@@ -313,7 +313,34 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[4] = {
 		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//slim_video
 		{
 			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
-			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1000, 0x0300},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1400, 0x0300},
+			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
+		},
+		1
+	},
+	{
+		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//cust1
+		{
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x800, 0x480},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0xa00, 0x0120},
+			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
+		},
+		1
+	},
+	{
+		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//cust2
+		{
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x800, 0x600},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0xa00, 0x0180},
+			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
+		},
+		1
+	},
+	{
+		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//cust3
+		{
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0xa00, 0x0600},
 			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
 		},
 		1
@@ -334,7 +361,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4BlockNumX = 0,
 	.i4BlockNumY = 0,
 	.i4Crop = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
-		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
+		{0, 768}, {0, 0}, {2048, 1536}, {0, 0}, {0, 0} },
 };
 
 static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 scenario)
@@ -354,6 +381,18 @@ static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 sc
                 break;
 	case MSDK_SCENARIO_ID_SLIM_VIDEO:
                 memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[3],
+                        sizeof(struct SENSOR_VC_INFO2_STRUCT));
+                break;
+	case MSDK_SCENARIO_ID_CUSTOM1:
+                memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[4],
+                        sizeof(struct SENSOR_VC_INFO2_STRUCT));
+                break;
+	case MSDK_SCENARIO_ID_CUSTOM2:
+                memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[5],
+                        sizeof(struct SENSOR_VC_INFO2_STRUCT));
+                break;
+	case MSDK_SCENARIO_ID_CUSTOM3:
+                memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[6],
                         sizeof(struct SENSOR_VC_INFO2_STRUCT));
                 break;
 	default:
@@ -2530,7 +2569,19 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
 				sizeof(struct SET_PD_BLOCK_INFO_T));
 			break;
-
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM1:
+			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+				sizeof(struct SET_PD_BLOCK_INFO_T));
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM2:
+			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+				sizeof(struct SET_PD_BLOCK_INFO_T));
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM3:
+			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+				sizeof(struct SET_PD_BLOCK_INFO_T));
+			break;
 		default:
 			break;
 		}
@@ -2558,13 +2609,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM1:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM2:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM3:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM4:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
@@ -2758,6 +2809,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		case MSDK_SCENARIO_ID_CUSTOM1:
 		case MSDK_SCENARIO_ID_CUSTOM2:
+		case MSDK_SCENARIO_ID_CUSTOM3:
+		case MSDK_SCENARIO_ID_CUSTOM4:
 			*feature_return_para_32 = 1;
 			break;
 		default:
