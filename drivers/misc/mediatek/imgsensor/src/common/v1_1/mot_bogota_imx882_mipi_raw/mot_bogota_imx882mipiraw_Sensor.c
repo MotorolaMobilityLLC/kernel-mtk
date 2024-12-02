@@ -244,12 +244,12 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] = {
 };
 
 //the index order of VC_STAGGER_NE/ME/SE in array identify the order of readout in MIPI transfer
-static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[3] = {
+static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[4] = {
 	{
 		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//preview
 		{
-			{VC_STAGGER_NE, 0x00, 0x2b, 0x800, 0x600},
-			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x500, 0x180},
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1000, 0x0300},
 			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
 		},
 		1
@@ -257,8 +257,8 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[3] = {
 	{
 		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//capture
 		{
-			{VC_STAGGER_NE, 0x00, 0x2b, 0x800, 0x600},
-			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x500, 0x180},
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1000, 0x0300},
 			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
 		},
 		1
@@ -266,14 +266,39 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[3] = {
 	{
 		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//video
 		{
-			{VC_STAGGER_NE, 0x00, 0x2b, 0x800, 0x600},
-			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x500, 0x180},
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1000, 0x0300},
+			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
+		},
+		1
+	},
+	{
+		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//slim_video
+		{
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1000, 0x0300},
 			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
 		},
 		1
 	},
 };
 
+static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
+	.i4OffsetX = 0,
+	.i4OffsetY = 0,
+	.i4PitchX = 0,
+	.i4PitchY = 0,
+	.i4PairNum = 0,
+	.i4SubBlkW = 0,
+	.i4SubBlkH = 0,
+	.i4PosL = {{0, 0} },
+	.i4PosR = {{0, 0} },
+	.iMirrorFlip = IMAGE_HV_MIRROR,
+	.i4BlockNumX = 0,
+	.i4BlockNumY = 0,
+	.i4Crop = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
+		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
+};
 
 static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 scenario)
 {
@@ -287,6 +312,14 @@ static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 sc
 			sizeof(struct SENSOR_VC_INFO2_STRUCT));
 		break;
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[0],
+                        sizeof(struct SENSOR_VC_INFO2_STRUCT));
+                break;
+	case MSDK_SCENARIO_ID_SLIM_VIDEO:
+                memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[3],
+                        sizeof(struct SENSOR_VC_INFO2_STRUCT));
+                break;
+
 	default:
 		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[0],
 			sizeof(struct SENSOR_VC_INFO2_STRUCT));
@@ -1596,7 +1629,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->TEMPERATURE_SUPPORT = imgsensor_info.temperature_support;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
-	sensor_info->PDAF_Support = 0;
+	sensor_info->PDAF_Support = 7;
 
 	sensor_info->HDR_Support = HDR_SUPPORT_STAGGER_FDOL;
 
@@ -2276,12 +2309,22 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		  (struct SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+				sizeof(struct SET_PD_BLOCK_INFO_T));
+			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+				sizeof(struct SET_PD_BLOCK_INFO_T));
 			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+				sizeof(struct SET_PD_BLOCK_INFO_T));
 			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+				sizeof(struct SET_PD_BLOCK_INFO_T));
+			break;
 
 		default:
 			break;
