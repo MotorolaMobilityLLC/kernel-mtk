@@ -525,6 +525,17 @@ static int do_algorithm(struct mtk_charger *info)
 					if (lst_rnd_alg_idx != i && lst_rnd_alg_idx < MAX_ALG_NO)
 						chg_alg_stop_algo(info->alg[lst_rnd_alg_idx]);
 				}
+#if IS_ENABLED(CONFIG_CHARGER_SC89890H)
+				if (alg->alg_id & PE5_ID) {
+					if (info->old_cv == 0 || (info->old_cv != info->setting.cv)) {
+						chr_err("%s: old_cv=%d,cv=%d, set buck cv.\n",
+							__func__, info->old_cv,	info->setting.cv);
+						charger_dev_set_constant_voltage(info->chg1_dev,
+							info->setting.cv);
+						info->old_cv = info->setting.cv;
+					}
+				}
+#endif
 				chg_alg_start_algo(alg);
 				info->lst_rnd_alg_idx = i;
 				break;
