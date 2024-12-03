@@ -284,6 +284,7 @@ struct mt6375_tcpc_data {
 	int mmi_cid_int;
 	int mmi_cid_irq;
 	bool support_cid;
+	bool is_water_detected;
 	struct delayed_work cid_det_work;
 	struct mutex cid_irq_lock;
 	atomic_t wd_one_min_cnt;
@@ -1275,6 +1276,7 @@ static int mt6375_enable_wd_protection(struct mt6375_tcpc_data *ddata, bool en)
 			mt6375_enable_wd_one_minute_timer(ddata, true);
 			atomic_set(&ddata->wd_one_min_cnt, 1);
 		}
+		ddata->is_water_detected = true;
 	} else {
 		cancel_delayed_work_sync(&ddata->wd_polling_dwork);
 		if (atomic_read(&ddata->wd_one_min_cnt) > 0) {
@@ -1286,6 +1288,7 @@ static int mt6375_enable_wd_protection(struct mt6375_tcpc_data *ddata, bool en)
 				(MT6375_MSK_WD_TDET | MT6375_MASK_WD_TSLEEP),
 				MT6375_WD_SETTING2(MT6375_WD_TDET_10MS,
 						   MT6375_WD_TSLEEP_1024X));
+		ddata->is_water_detected = false;
 	}
 
 	return mt6375_write8(ddata, MT6375_REG_WD12MODECTRL,
@@ -2239,11 +2242,28 @@ static int mt6375_get_vbus_voltage(struct tcpc_device *tcpc, u32 *vbus)
 	return 0;
 }
 
+static int mt6375_set_cid(struct tcpc_device *tcpc, bool en)
+{
+	struct mt6375_tcpc_data *ddata = tcpc_get_dev_data(tcpc);
+
+	ddata->support_cid = en;
+
+	return 0;
+}
+
 static int mt6375_is_support_cid(struct tcpc_device *tcpc)
 {
 	struct mt6375_tcpc_data *ddata = tcpc_get_dev_data(tcpc);
 
 	return ddata->support_cid;
+}
+
+static int mt6375_is_cid_plug(struct tcpc_device *tcpc)
+{
+	struct mt6375_tcpc_data *ddata = tcpc_get_dev_data(tcpc);
+
+	dev_info(ddata->dev, "[%s] cid state %s\n", __func__, ddata->mmi_cid_state?"plug":"unplug");
+	return ddata->mmi_cid_state;
 }
 
 static struct tcpc_ops mt6375_tcpc_ops = {
@@ -2265,6 +2285,8 @@ static struct tcpc_ops mt6375_tcpc_ops = {
 	.set_auto_dischg_discnt = mt6375_set_auto_dischg_discnt,
 	.get_vbus_voltage = mt6375_get_vbus_voltage,
 	.is_support_cid = mt6375_is_support_cid,
+	.is_cid_plug = mt6375_is_cid_plug,
+	.set_cid = mt6375_set_cid,
 	.set_low_power_mode = mt6375_set_low_power_mode,
 
 #if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
@@ -2333,33 +2355,27 @@ static int mt6375_tcpc_init_irq(struct mt6375_tcpc_data *ddata)
 	return 0;
 }
 
-enum cid_cc_state{
-	CID_TYPEC_CONNECT = 0,        /*int_gpio_level is Low*/
-	CID_TYPEC_DISCONNECT = 1, /*int_gpio_level is High*/
-};
-
 static void mmi_cid_detect_work(struct work_struct *work)
 {
 	struct mt6375_tcpc_data *ddata;
 	int int_gpio_level;
+	int cid_state;
 
 	ddata = container_of(to_delayed_work(work),
 			    struct mt6375_tcpc_data, cid_det_work);
 
 	mutex_lock(&ddata->cid_irq_lock);
 	int_gpio_level = gpio_get_value(ddata->mmi_cid_int);
-	dev_info(ddata->dev, "[%s] IRQ triggered, int_gpio_level=%d\n", __func__, int_gpio_level);
-	if (int_gpio_level != ddata->mmi_cid_state) {
-		if (int_gpio_level) {
-			ddata->mmi_cid_state = CID_TYPEC_DISCONNECT;
-			tcpci_set_cc(ddata->tcpc, TYPEC_CC_RD);
-			dev_info(ddata->dev, "[%s] CID High Level irq, TYPEC cable unplug, set CC to SINK only\n", __func__);
-		}
-		else {
-			tcpci_set_cc(ddata->tcpc, TYPEC_CC_DRP);
-			ddata->mmi_cid_state = CID_TYPEC_CONNECT;
-			dev_info(ddata->dev, "[%s] CID Low Level irq, TYPEC cable pluging,set CC to DRP\n", __func__);
-		}
+	cid_state = !int_gpio_level;
+	dev_info(ddata->dev, "[%s] IRQ triggered, int_gpio_level = %d\n", __func__, int_gpio_level);
+	if (cid_state != ddata->mmi_cid_state) {
+		ddata->mmi_cid_state = cid_state;
+		dev_info(ddata->dev, "[%s] cid state %s\n", __func__, ddata->mmi_cid_state?"plug":"unplug");
+		tcpci_notify_cid_state(ddata->tcpc, ddata->mmi_cid_state);
+		if (!ddata->is_water_detected)
+			tcpci_notify_cid_state(ddata->tcpc, ddata->mmi_cid_state);
+		else
+			dev_info(ddata->dev, "[%s] is_water_detected, Don't change typec Role\n", __func__);
 	}
 	mutex_unlock(&ddata->cid_irq_lock);
 
@@ -2721,10 +2737,9 @@ static int mt6375_tcpc_probe(struct platform_device *pdev)
 		}
 		else {
 			mmi_cid_irq_handler(ddata->mmi_cid_irq, (void *)ddata);
-			dev_info(ddata->dev, "As CID,set cc to SINK mode\n");
 		}
 	}
-
+	ddata->is_water_detected = false;
 	dev_info(ddata->dev, "%s successfully!\n", __func__);
 	return 0;
 err:

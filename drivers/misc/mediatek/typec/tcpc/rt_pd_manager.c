@@ -358,6 +358,12 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		dev_info(rpmd->dev, "%s mmi pd vdm verify state = %d\n",
 					__func__, noti->pd_state.vdm_verify);
 		break;
+	case TCP_NOTIFY_CID_STATE:
+		tcpm_typec_change_role_postpone(rpmd->tcpc[idx],
+						noti->cid_state.cid ?
+						rpmd->role_def[idx] :
+						TYPEC_ROLE_SNK, true);
+		break;
 	default:
 		break;
 	}
