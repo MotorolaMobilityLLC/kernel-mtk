@@ -1154,6 +1154,59 @@ static ssize_t wireless_chip_id_show(struct device *dev,
 static DEVICE_ATTR(wireless_chip_id, S_IRUGO|S_IWUSR,
 				wireless_chip_id_show, NULL);
 
+#define CHG_SHOW_MAX_SIZE 70
+
+static ssize_t batt_id_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int battsn_nums = 0, count = 0, i = 0;
+	int rc;
+
+	struct platform_device *pdev = to_platform_device(dev);
+	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	struct device_node *node = data->pdev->dev.of_node;
+
+	struct profile_sn_map {
+		const char *id;
+		const char *sn;
+	} *map_table;
+
+	battsn_nums = of_property_count_strings(node, "mmi,batt-ids-map");
+	if (battsn_nums <= 0 || (battsn_nums % 2)) {
+		pr_err("%s Invalid profile-ids-map in DT, rc=%d\n", __func__, battsn_nums);
+		return -EINVAL;
+	}
+
+	map_table = devm_kmalloc_array(dev, battsn_nums / 2,
+					sizeof(struct profile_sn_map),
+					GFP_KERNEL);
+	if (!map_table)
+		return -ENOMEM;
+
+	rc = of_property_read_string_array(node, "mmi,batt-ids-map",
+					(const char **)map_table,
+					battsn_nums);
+	if (rc < 0) {
+		pr_err("%s Failed to get batt-ids-list, rc=%d\n", __func__, rc);
+		goto free_map;
+	}
+
+	count += scnprintf(buf+count, CHG_SHOW_MAX_SIZE, "%d", battsn_nums / 2);
+
+	for (i = 0; i < battsn_nums / 2 && map_table[i].sn; i++) {
+		count += scnprintf(buf+count, CHG_SHOW_MAX_SIZE,
+				"%s", map_table[i].sn);
+	}
+	count += scnprintf(buf+count, CHG_SHOW_MAX_SIZE, "\n");
+
+free_map:
+	devm_kfree(dev, map_table);
+
+	return count;
+}
+
+static DEVICE_ATTR_RO(batt_id);
+
 static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_address.attr,
 	&dev_attr_data.attr,
@@ -1178,6 +1231,7 @@ static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_adc_vbat.attr,
 	&dev_attr_wireless_en.attr,
 	&dev_attr_wireless_chip_id.attr,
+	&dev_attr_batt_id.attr,
 	NULL,
 };
 
