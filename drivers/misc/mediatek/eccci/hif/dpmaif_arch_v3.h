@@ -327,6 +327,6 @@ do { \
 
 /* dl&ul mask check */
 #define AP_DL_L2INTR_Msk_Check ((~AP_DL_L2INTR_En_Msk)&0x1FFF)
-#define AP_UL_L2INTR_Msk_Check ((~AP_UL_L2INTR_En_Msk)&0x1FFF)
+#define AP_UL_L2INTR_Msk_Check ((~AP_UL_L2INTR_En_Msk)&0x7FFF)
 
 #endif /*__MODEM_DPMAIF_DRV_ARCH_H__*/

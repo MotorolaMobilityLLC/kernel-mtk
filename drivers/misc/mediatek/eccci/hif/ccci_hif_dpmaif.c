@@ -2255,6 +2255,33 @@ static void dpmaif_irq_tx_done(unsigned int tx_done_isr)
 	}
 }
 
+static inline void check_ul_mask_state_register(unsigned int L2TIMR0)
+{
+	unsigned int ul_mask_reg_chk;
+
+	/* ignore check md_pwr_not_rdy bits */
+	ul_mask_reg_chk = AP_UL_L2INTR_Msk_Check & (~DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK);
+
+	if ((L2TIMR0 & ul_mask_reg_chk) != ul_mask_reg_chk) {
+		/* if has error bit, set mask */
+		DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMSR0, ~(AP_UL_L2INTR_En_Msk));
+		/* use msk to clear dummy interrupt */
+		DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_UL_L2TISAR0, ~(AP_UL_L2INTR_En_Msk));
+	}
+}
+
+static inline void check_dl_mask_state_register(unsigned int L2RIMR0)
+{
+	/* check DL mask status register */
+	if ((L2RIMR0 & AP_DL_L2INTR_Msk_Check) != AP_DL_L2INTR_Msk_Check) {
+		/* if has error bit, set mask */
+		DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_APDL_L2TIMSR0, ~(AP_DL_L2INTR_En_Msk));
+		/* use msk to clear dummy interrupt */
+		DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_DL_L2TISAR0, ~(AP_DL_L2INTR_En_Msk));
+	}
+
+}
+
 static void dpmaif_irq_cb(struct hif_dpmaif_ctrl *hif_ctrl)
 {
 	unsigned int L2RISAR0, L2TISAR0;
@@ -2282,6 +2309,9 @@ static void dpmaif_irq_cb(struct hif_dpmaif_ctrl *hif_ctrl)
 			"DPMAIF IRQ L2(%x/%x)(%x/%x)!\n",
 			L2TISAR0, L2RISAR0, L2TIMR0, L2RIMR0);
 
+	/* check UL&DL mask status register */
+	check_ul_mask_state_register(L2TIMR0);
+	check_dl_mask_state_register(L2RIMR0);
 	/* TX interrupt */
 	if (L2TISAR0) {
 		L2TISAR0 &= ~(L2TIMR0);
@@ -2303,9 +2333,22 @@ static void dpmaif_irq_cb(struct hif_dpmaif_ctrl *hif_ctrl)
 			CCCI_NOTICE_LOG(hif_ctrl->md_id, TAG,
 					"dpmaif: ul error L2(%x)\n", L2TISAR0);
 
-		/* tx done */
-		if (L2TISAR0 & DPMAIF_UL_INT_QDONE_MSK)
+		if (L2TISAR0 & DPMAIF_UL_INT_QDONE_MSK) {
+			/* rcv tx_done irq */
+
 			dpmaif_irq_tx_done(L2TISAR0 & DPMAIF_UL_INT_QDONE_MSK);
+
+			/* unmask md_pwr_not_rdy if it had ever been masked */
+			if (L2TIMR0 & DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK)
+				DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMCR0,
+						DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK);
+		} else if (L2TISAR0 & DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK) {
+			/* rcv md_pwr_not_rdy irq */
+
+			/* mask md_pwr_not_rdy */
+			DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMSR0,
+					DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK);
+		}
 	}
 	/* RX interrupt */
 	if (L2RISAR0) {
