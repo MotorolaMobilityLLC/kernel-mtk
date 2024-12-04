@@ -298,7 +298,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	msleep(5);
 
 #ifdef BIAS_OCP2138
-	ocp2138_BiasPower_enable(15,15,5);
+	ocp2138_BiasPower_enable(20,20,5);
 	msleep(5);
 #else
 
