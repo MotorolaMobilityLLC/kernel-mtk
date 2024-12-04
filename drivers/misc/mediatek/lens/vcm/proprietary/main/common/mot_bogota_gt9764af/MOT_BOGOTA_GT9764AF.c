@@ -137,7 +137,7 @@ static int initAF(void)
 					{0x02, 0x00},
 					{0x02, 0x02},
 					{0x06, 0x40}, //SAC setting (use AAC2)
-					{0x07, 0x08}};
+					{0x07, 0x02}};
 	u16 regIdx;
 
 	LOG_INF("+\n");
