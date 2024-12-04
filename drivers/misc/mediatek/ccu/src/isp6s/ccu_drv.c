@@ -904,11 +904,14 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 		uint32_t *outdata = NULL;
 
 		indata = kzalloc(CCU_IPC_IBUF_CAPACITY, GFP_KERNEL);
-		if (!indata)
+		if (!indata) {
+			mutex_unlock(&g_ccu_device->dev_mutex);
 			return -ENOMEM;
+		}
 		outdata = kzalloc(CCU_IPC_OBUF_CAPACITY, GFP_KERNEL);
 		if (!outdata) {
 			kfree(indata);
+			mutex_unlock(&g_ccu_device->dev_mutex);
 			return -ENOMEM;
 		}
 		ret = copy_from_user(&msg,
@@ -1302,8 +1305,10 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 		dma_addr_t dma_addr;
 		struct dma_buf *buf;
 
-		if (iova_buf_count >= CCU_IOVA_BUFFER_MAX)
+		if (iova_buf_count >= CCU_IOVA_BUFFER_MAX) {
+			mutex_unlock(&g_ccu_device->dev_mutex);
 			return -EFAULT;
+		}
 
 		ret = copy_from_user(&fd,
 			(void *)arg, sizeof(int));
