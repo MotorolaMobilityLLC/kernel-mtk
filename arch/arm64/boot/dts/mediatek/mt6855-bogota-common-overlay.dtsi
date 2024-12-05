@@ -18,7 +18,7 @@
 #include "mediatek/bogota-sar.dtsi"
 #include "mediatek/bogota-audio.dtsi"
 #include "mediatek/bogota-fps.dtsi"
-#include "mediatek/mt6855-moto-memory.dtsi"
+#include "mediatek/mt6855-moto-memory-hdcp.dtsi"
 #include "mediatek/bogota-fmr.dtsi"
 
 #include <dt-bindings/iio/mt635x-auxadc.h>
