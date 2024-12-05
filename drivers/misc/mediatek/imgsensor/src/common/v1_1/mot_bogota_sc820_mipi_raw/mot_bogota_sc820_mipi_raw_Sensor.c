@@ -600,21 +600,18 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	pr_debug(PFX, "enable: %d\n", enable);
 	if (enable) {
-		write_cmos_sensor8(0x4501, 0xac);
-		write_cmos_sensor8(0x3902, 0x85);
-		write_cmos_sensor8(0x3908, 0x00);
+		write_cmos_sensor8(0x0100, 0x00);
+		write_cmos_sensor8(0x3902, 0x80);
 		write_cmos_sensor8(0x3909, 0xff);
 		write_cmos_sensor8(0x390a, 0xff);
-		write_cmos_sensor8(0x391d, 0x18);
-	}
-	else {
+		write_cmos_sensor8(0x391f, 0xc8);
+		write_cmos_sensor8(0x0100, 0x01);
+	} else {
 		write_cmos_sensor8(0x0100, 0x00);
-		write_cmos_sensor8(0x4501, 0xb4);
-		write_cmos_sensor8(0x3902, 0xc5);
-		write_cmos_sensor8(0x3908, 0x41);
+		write_cmos_sensor8(0x3902, 0xc0);
 		write_cmos_sensor8(0x3909, 0x00);
 		write_cmos_sensor8(0x390a, 0x00);
-		write_cmos_sensor8(0x391d, 0x19);
+		write_cmos_sensor8(0x391f, 0xc9);
 		write_cmos_sensor8(0x0100, 0x01);
 		mDELAY(10);
 		//write_cmos_sensor8(0x302d, 0x00);
