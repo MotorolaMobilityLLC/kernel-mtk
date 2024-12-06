@@ -234,9 +234,9 @@ struct ocp81375_chip_data {
  * ocp81375 operations
  *****************************************************************************/
 static const int ocp81375_current[OCP81375_LEVEL_NUM] = {
-	 31,   62,  109,  171,  218,  265, 312, 359, 406, 453,
-	500,  547,  593,  640,  687,  734, 781, 828, 875, 922,
-	969, 1015, 1062, 1109, 1156, 1203
+	 22,   101,  180,  259,  338,  417, 496, 575, 654, 734,
+	813,  892,  971,  1050,  1129,  1208, 1287, 1367, 1446, 1525,
+	1604, 1683, 1762, 1841, 1920, 2000
 };
 
 static const unsigned char ocp81375_torch_level[OCP81375_LEVEL_NUM] = {
@@ -246,9 +246,9 @@ static const unsigned char ocp81375_torch_level[OCP81375_LEVEL_NUM] = {
 };//I(mA) = level*3.90+3.90
 
 static const unsigned char ocp81375_flash_level[OCP81375_LEVEL_NUM] = {
-        0x01, 0x03, 0x06, 0x0A, 0x0D, 0x10, 0x13, 0x16, 0x19, 0x1C,
-        0x1F, 0x22, 0x25, 0x28, 0x2B, 0x2E, 0x31, 0x34, 0x37, 0x3A,
-        0x3D, 0x40, 0x43, 0x46, 0x49, 0x4C
+        0x00, 0x05, 0x0A, 0x0F, 0x14, 0x19, 0x1E, 0x23, 0x29, 0x2E,
+        0x33, 0x38, 0x3D, 0x42, 0x47, 0x4C, 0x51, 0x56, 0x5B, 0x60,
+        0x65, 0x6A, 0x6F, 0x74, 0x7A, 0x7F
 };//I(mA) = level*15.63+15.63
 
 
