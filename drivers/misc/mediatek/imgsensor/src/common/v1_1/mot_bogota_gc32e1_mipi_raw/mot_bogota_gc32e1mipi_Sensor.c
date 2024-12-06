@@ -285,15 +285,20 @@ static void set_max_framerate(kal_uint16 framerate, kal_bool min_framelength_en)
 	set_dummy();
 }
 
-static void set_shutter(kal_uint16 shutter)
+int bNeedSetNormalMode = 0;
+
+static void set_shutter(kal_uint32 shutter)
 {
+	kal_uint32 cal_shutter = 0;
+	kal_uint8 long_exp_h = 0;
+	kal_uint8 long_exp_m = 0;
+	kal_uint8 long_exp_l = 0;
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
 	/*kal_uint32 frame_length = 0;*/
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
-
 	/* if shutter bigger than frame_length, should extend frame length first */
 	spin_lock(&imgsensor_drv_lock);
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
@@ -305,9 +310,6 @@ static void set_shutter(kal_uint16 shutter)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
 
-	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
-	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ?
-		(imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
 	realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
 
 	if (imgsensor.autoflicker_en) {
@@ -325,6 +327,37 @@ static void set_shutter(kal_uint16 shutter)
 
 	LOG_INF("shutter = %d, framelength = %d\n",
 		shutter, imgsensor.frame_length);
+	if (shutter >= 0xFFFE - imgsensor_info.margin){
+		bNeedSetNormalMode = KAL_TRUE;
+		LOG_INF("enter long shutter");
+		cal_shutter = (shutter - 0xa0e)/4 - 1;
+		long_exp_h = (cal_shutter >> 16) & 0xF;
+		long_exp_m = (cal_shutter >> 8) & 0xFF;
+		long_exp_l = cal_shutter & 0xFF;
+		write_cmos_sensor_8bit(0x0202, 0x0a);
+		write_cmos_sensor_8bit(0x0203, 0x0e);
+		write_cmos_sensor_8bit(0x0340, 0x0a);
+		write_cmos_sensor_8bit(0x0341, 0x4e);
+		write_cmos_sensor_8bit(0x0230, long_exp_l);
+		write_cmos_sensor_8bit(0x022f, long_exp_m);
+		write_cmos_sensor_8bit(0x022e, long_exp_h);
+		write_cmos_sensor_8bit(0x022d, 0x03);
+		LOG_INF("cal_shutter = %d\n", cal_shutter);
+		LOG_INF("long_exp_l = 0x%x, long_exp_m = 0x%x, long_exp_h = 0x%x\n", long_exp_l, long_exp_m, long_exp_h);
+		} else{
+			if (bNeedSetNormalMode){
+				pr_debug("exit long shutter\n");
+				write_cmos_sensor_8bit(0x0202, 0x0a);
+				write_cmos_sensor_8bit(0x0203, 0x0e);
+				write_cmos_sensor_8bit(0x0340, 0x0a);
+				write_cmos_sensor_8bit(0x0341, 0x4e);
+				write_cmos_sensor_8bit(0x022d, 0x02);
+				write_cmos_sensor_8bit(0x022e, 0x00);
+				write_cmos_sensor_8bit(0x022f, 0x00);
+				write_cmos_sensor_8bit(0x0230, 0x00);
+				bNeedSetNormalMode = KAL_FALSE;
+				}
+			}
 }
 
 static kal_uint16 gain2reg(kal_uint16 gain)
