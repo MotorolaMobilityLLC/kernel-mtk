@@ -33,11 +33,11 @@
 
 //Parameter setting for mode 90
 #define MODE_90_FPS			90
-#define MODE_90_VFP			836
+#define MODE_90_VFP			835
 
 //Parameter setting for mode 60
 #define MODE_60_FPS			60
-#define MODE_60_VFP			2440
+#define MODE_60_VFP			2430
 
 #define LFR_EN                      0
 
