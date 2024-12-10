@@ -365,7 +365,7 @@
         CAR_TUNE_VALUE = <(100)>;
         df-serialnum = "LWNRB52SWD";
         #include "bat_setting/mt6855_battery_ra50_lwn_5200mah.dtsi"
-
+	#include "bat_setting/mt6855_battery_ra50_atl_5200mah.dtsi"
 };
 
 &i2c6 {

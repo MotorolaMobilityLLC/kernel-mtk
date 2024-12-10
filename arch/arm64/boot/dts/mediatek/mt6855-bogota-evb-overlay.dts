@@ -25,9 +25,6 @@
 		};
 	};
 
-eint_cp: eint_cp {
-	};
-
 };
 
 #include <bogota_evb/cust.dtsi>
