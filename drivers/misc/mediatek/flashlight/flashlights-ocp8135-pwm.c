@@ -171,8 +171,6 @@ static int ocp8135_pinctrl_set(int pin, int state)
 {
     int ret = 0;
 
-    pr_debug("%s: E.\n",__func__);
-
     if (IS_ERR(ocp8135_pinctrl)) {
         pr_err("pinctrl is not available\n");
         return -1;
@@ -215,8 +213,6 @@ static int ocp8135_pinctrl_set(int pin, int state)
     }
     pr_debug("pin(%d) state(%d)\n", pin, state);
 
-    pr_debug("%s: X.\n",__func__);
-
     return ret;
 }
 
@@ -230,7 +226,6 @@ static int ocp8135_flashlight_set_pwm(int pwm_num, u32 flash_current, u32 flash_
 {
     struct pwm_spec_config pwm_setting;
     memset(&pwm_setting, 0, sizeof(struct pwm_spec_config));
-    pr_debug("%s: E.\n",__func__);
     flash_opdata.pwm_state                    = OCP8135_FLASH_PWM_ON;
 
     pwm_setting.pwm_no                        = pwm_num;
@@ -252,7 +247,6 @@ static int ocp8135_flashlight_set_pwm(int pwm_num, u32 flash_current, u32 flash_
     pr_err("Set pwm_no = %d,PWM thresh = %u, period = %u, flash_current = %u, flash_maxcurrent = %u",
         pwm_setting.pwm_no,pwm_setting.PWM_MODE_OLD_REGS.THRESH, pwm_setting.PWM_MODE_OLD_REGS.DATA_WIDTH,
         flash_current, flash_maxcurrent);
-    pr_debug("%s: X.\n",__func__);
     return 0;
 }
 
@@ -295,21 +289,19 @@ static int ocp8135_verify_level(int level)
 /* set flashlight level */
 static int ocp8135_set_level(int level, struct ocp8135_flash_operation_data *fl_opdata)
 {
-    pr_debug("%s: E.\n",__func__);
     /* wrap set level function */
     level = ocp8135_verify_level(level);
     if(!ocp8135_is_torch(level)) {
         fl_opdata->opcode        = OCP8135_FLASH_OP_FIRELOW;
         fl_opdata->flash_current = ocp8135_torch_current[level];
-        pr_err("set level %d current = %u, opcode = %d will enter movie mode",
+        pr_debug("set level %d current = %u, opcode = %d will enter movie mode",
             level, fl_opdata->flash_current, fl_opdata->opcode);
     } else {
         fl_opdata->opcode        = OCP8135_FLASH_OP_FIREHIGH;
         fl_opdata->flash_current = ocp8135_flash_current[level];
-        pr_err("set level %d current = %u, opcode = %d will enter flash mode",
+        pr_debug("set level %d current = %u, opcode = %d will enter flash mode",
             level, fl_opdata->flash_current, fl_opdata->opcode);
     }
-    pr_debug("%s: X.\n",__func__);
     return 0;
 }
 
@@ -319,8 +311,6 @@ static int ocp8135_enable(struct ocp8135_flash_operation_data *fl_opdata)
     enum ocp8135_flash_opcode opcode = fl_opdata->opcode;
     u32 flash_current = fl_opdata->flash_current;
 
-    pr_debug("%s: E.\n",__func__);
-
     /* wrap enable function */
     switch (opcode)
     {
@@ -328,19 +318,18 @@ static int ocp8135_enable(struct ocp8135_flash_operation_data *fl_opdata)
         ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_GPIO, OCP8135_PINCTRL_PINSTATE_LOW);
         ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_PWM, OCP8135_PINCTRL_PINSTATE_HIGH);
         os_mdelay(6);
-        ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_PWM_EN, OCP8135_PINCTRL_PINSTATE_HIGH);
         ocp8135_flashlight_set_pwm(OCP8135_PWM_NUMBER, flash_current, FLASH_FIRE_LOW_MAXCURRENT);
+        ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_PWM_EN, OCP8135_PINCTRL_PINSTATE_HIGH);
         break;
     case OCP8135_FLASH_OP_FIREHIGH:
         ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_GPIO, OCP8135_PINCTRL_PINSTATE_HIGH);
-        ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_PWM_EN, OCP8135_PINCTRL_PINSTATE_HIGH);
         ocp8135_flashlight_set_pwm(OCP8135_PWM_NUMBER, flash_current, FLASH_FIRE_HIGH_MAXCURRENT);
+        ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_PWM_EN, OCP8135_PINCTRL_PINSTATE_HIGH);
         break;
     default:
         pr_err("Flash opcode is error,failed to enable flashlight.\n");
         return -1;
     }
-    pr_debug("%s: X.\n",__func__);
     return 0;
 }
 
@@ -420,19 +409,19 @@ static int ocp8135_ioctl(unsigned int cmd, unsigned long arg)
 
     switch (cmd) {
     case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-        pr_err("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
+        pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
                 channel, (int)fl_arg->arg);
         ocp8135_timeout_ms = fl_arg->arg;
         break;
 
     case FLASH_IOC_SET_DUTY:
-        pr_err("FLASH_IOC_SET_DUTY(%d): %d\n",
+        pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
                 channel, (int)fl_arg->arg);
         ocp8135_set_level(fl_arg->arg, &flash_opdata);
         break;
 
     case FLASH_IOC_SET_ONOFF:
-        pr_err("FLASH_IOC_SET_ONOFF(%d): %d\n",
+        pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
                 channel, (int)fl_arg->arg);
         if (fl_arg->arg == 1) {
             if (ocp8135_timeout_ms) {
@@ -494,7 +483,7 @@ static int ocp8135_flashlight_set_driver(int set)
         if (!use_count)
             ret = ocp8135_init();
         use_count++;
-        pr_err("Set driver: %d\n", use_count);
+        pr_debug("Set driver: %d\n", use_count);
     } else {
         use_count--;
         if (!use_count)
