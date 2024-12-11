@@ -1669,7 +1669,7 @@
 
 &therm_intf {
 	/*Vsensor name should be CASE DIFFERENT with the name in config file*/
-	mmi,temperature-names = "FRONT_TEMP";/*for "front_temp" in config file*/
+	mmi,temperature-names = "FRONT_TEMP", "BACK_TEMP";/*for "front_temp" "back_temp" in config file*/
 };
 
 &thermal_zones{
