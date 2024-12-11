@@ -95,6 +95,7 @@ struct debug_rxtx_isr_hdr {
 	u32 rxmr;
 	u32 txsr;
 	u32 txmr;
+	u32 l1sr;
 
 } __packed;
 

@@ -352,6 +352,7 @@
 
 /* dl&ul mask check */
 #define AP_DL_L2INTR_Msk_Check ((~AP_DL_L2INTR_En_Msk)&0x1FFF)
+#define AP_LRO_DL_L2INTR_Msk_Check ((~AP_DL_L2INTR_LRO_En_Msk)&0x1FFF)
 #define AP_UL_L2INTR_Msk_Check ((~AP_UL_L2INTR_En_Msk)&0x1FFF)
 
 #endif /* __CCCI_DPMAIF_REG_V1_H__ */

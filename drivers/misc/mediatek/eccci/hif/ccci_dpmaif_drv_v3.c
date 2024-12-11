@@ -34,7 +34,6 @@
 
 #define TAG "drv3"
 
-static unsigned int g_backup_dl_isr, g_backup_ul_isr;
 
 static struct dpmaif_clk_node g_clk_tbs[] = {
 	{ NULL, "infra-dpmaif-clk"},
@@ -586,6 +585,63 @@ static void drv3_mask_dl_lro1_interrupt(void)
 	}
 }
 
+static inline void check_ul_mask_state_register(unsigned int L2TIMR0)
+{
+	unsigned int ul_mask_reg_chk;
+
+	/* ignore check md_pwr_not_rdy bits */
+	ul_mask_reg_chk = AP_UL_L2INTR_Msk_Check & (~DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK);
+
+	if ((L2TIMR0 & ul_mask_reg_chk) != ul_mask_reg_chk) {
+		/* if has error bit, set mask */
+		DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMSR0, ~(AP_UL_L2INTR_En_Msk));
+		/* use msk to clear dummy interrupt */
+		DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_UL_L2TISAR0, ~(AP_UL_L2INTR_En_Msk));
+	}
+}
+
+/* L2 RX interrupt mask register and L2 RX interrupt Status register
+ * are not one-to-one mapping, this function adjust this unmapped bit
+ * positions of the mask and sts register into a on-by-one bit mapping.
+ */
+static inline unsigned int mapping_rx_reg_from_mask_to_sts(unsigned int L2RIMR0)
+{
+	unsigned int ret_val;
+
+	ret_val = (L2RIMR0 & ((1 << 8) - 1));   // preserve bits 0-7
+	ret_val |= ((L2RIMR0 >> 8) & 1) << 13;  // move bit8 to bit13
+	ret_val |= ((L2RIMR0 >> 9) & 1) << 14;  // move bit9 to bit14
+	ret_val |= ((L2RIMR0 >> 10) & 1) << 8;  // move bit10 to bit8
+	ret_val |= ((L2RIMR0 >> 11) & 1) << 9;  // move bit 11 to bit9
+	ret_val |= ((L2RIMR0 >> 12) & 1) << 10; // move bit 12 to bit 10
+
+	return ret_val;
+}
+
+static inline void check_dl_mask_state_register(unsigned int L2RIMR0)
+{
+	unsigned int L2RISAR0;
+
+	if (!dpmaif_ctl->support_2rxq) {
+	/* check UL&DL mask status register */
+		if ((L2RIMR0 & AP_DL_L2INTR_Msk_Check) != AP_DL_L2INTR_Msk_Check) {
+			/* if has error bit, set mask */
+			DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_APDL_L2TIMSR0, ~(AP_DL_L2INTR_En_Msk));
+			/* use msk to clear dummy interrupt */
+			DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_DL_L2TISAR0, ~(AP_DL_L2INTR_En_Msk));
+		}
+	} else {
+		if ((L2RIMR0 & AP_LRO_DL_L2INTR_Msk_Check) != AP_LRO_DL_L2INTR_Msk_Check) {
+			/* if has error bit, set mask */
+			DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_APDL_L2TIMSR0,
+					~(AP_DL_L2INTR_LRO_En_Msk));
+			/* use msk to clear dummy interrupt */
+			L2RISAR0 = mapping_rx_reg_from_mask_to_sts(AP_DL_L2INTR_LRO_En_Msk);
+			DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_DL_L2TISAR0, ~L2RISAR0);
+		}
+	}
+}
+
 static irqreturn_t drv3_isr0(int irq, void *data)
 {
 	struct dpmaif_rx_queue *rxq = (struct dpmaif_rx_queue *)data;
@@ -593,9 +649,11 @@ static irqreturn_t drv3_isr0(int irq, void *data)
 	unsigned int L2RIMR0  = drv3_get_dl_interrupt_mask();
 	unsigned int L2TISAR0 = ccci_drv_get_ul_isr_event();
 	unsigned int L2TIMR0  = DPMA_READ_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMR0);
-#ifdef ENABLE_DPMAIF_ISR_LOG
 	unsigned int L2RISAR0_bak = L2RISAR0, L2TISAR0_bak = L2TISAR0;
-#endif
+	unsigned int L1TISAR0;
+
+	if (g_debug_flags & DEBUG_RXTX_ISR)
+		L1TISAR0 = DPMA_READ_PD_MISC(NRL2_DPMAIF_AP_MISC_AP_L1TISAR0);
 
 	/* clear IP busy register wake up cpu case */
 	ccci_drv_clear_ip_busy();
@@ -603,6 +661,9 @@ static irqreturn_t drv3_isr0(int irq, void *data)
 	if (atomic_read(&dpmaif_ctl->wakeup_src) == 1)
 		CCCI_NOTICE_LOG(0, TAG, "[%s] wake up by MD0 HIF L2(%x/%x)(%x/%x)!\n",
 			__func__, L2TISAR0, L2TIMR0, L2RISAR0, L2RIMR0);
+
+	check_ul_mask_state_register(L2TIMR0);
+	check_dl_mask_state_register(L2RIMR0);
 
 	/* TX interrupt */
 	if (L2TISAR0) {
@@ -614,14 +675,29 @@ static irqreturn_t drv3_isr0(int irq, void *data)
 			CCCI_ERROR_LOG(0, TAG, "[%s] dpmaif: ul error L2(%x)\n",
 				__func__, L2TISAR0);
 
-		/* tx done */
-		if (L2TISAR0 & DPMAIF_UL_INT_QDONE_MSK)
+		if (L2TISAR0 & DPMAIF_UL_INT_QDONE_MSK) {
+			/* rcv tx_done irq */
+
 			drv3_irq_tx_done(L2TISAR0 & DPMAIF_UL_INT_QDONE_MSK);
+
+			/* unmask md_pwr_not_rdy if it had ever been masked */
+			if (L2TIMR0 & DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK)
+				DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMCR0,
+						DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK);
+		} else if (L2TISAR0 & DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK) {
+			/* rcv md_pwr_not_rdy irq */
+
+			/* mask md_pwr_not_rdy */
+			DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMSR0,
+					DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK);
+		}
 	}
 
 	/* RX interrupt */
 	if (L2RISAR0) {
-		L2RISAR0 &= ~(L2RIMR0|DP_DL_INT_LRO1_QDONE_SET);
+		L2RISAR0 &= ~(mapping_rx_reg_from_mask_to_sts(L2RIMR0) |
+				DP_DL_INT_LRO1_QDONE_SET);
+
 		if (L2RISAR0 & AP_DL_L2INTR_ERR_En_Msk)
 			ccci_irq_rx_lenerr_handler(L2RISAR0);
 
@@ -644,12 +720,14 @@ static irqreturn_t drv3_isr0(int irq, void *data)
 		hdr.type = TYPE_RXTX_ISR_ID;
 		hdr.qidx = 0;
 		hdr.time = (unsigned int)(local_clock() >> 16);
-		hdr.rxsr = L2RISAR0;
+		hdr.rxsr = L2RISAR0_bak;
 		hdr.rxmr = L2RIMR0;
-		hdr.txsr = L2TISAR0;
+		hdr.txsr = L2TISAR0_bak;
 		hdr.txmr = L2TIMR0;
+		hdr.l1sr = L1TISAR0;
 		ccci_dpmaif_debug_add(&hdr, sizeof(hdr));
 	}
+
 #ifdef ENABLE_DPMAIF_ISR_LOG
 	if (ccci_dpmaif_record_isr_cnt(local_clock(), rxq, L2TISAR0, L2RISAR0))
 		CCCI_ERROR_LOG(0, TAG, "DPMAIF IRQ L2(%x/%x)(%x/%x)\n",
@@ -674,6 +752,8 @@ static irqreturn_t drv3_isr1(int irq, void *data)
 	if (atomic_read(&dpmaif_ctl->wakeup_src) == 1)
 		CCCI_NOTICE_LOG(0, TAG, "[%s] wake up by MD0 HIF L2(%x/%x)!\n",
 			__func__, L2RISAR0, L2RIMR0);
+
+	check_dl_mask_state_register(L2RIMR0);
 
 	/* RX interrupt */
 	if (L2RISAR0) {
@@ -713,9 +793,11 @@ static irqreturn_t drv3_isr(int irq, void *data)
 	unsigned int L2RIMR0  = drv3_get_dl_interrupt_mask();
 	unsigned int L2TISAR0 = ccci_drv_get_ul_isr_event();
 	unsigned int L2TIMR0  = DPMA_READ_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMR0);
-#ifdef ENABLE_DPMAIF_ISR_LOG
 	unsigned int L2RISAR0_bak = L2RISAR0, L2TISAR0_bak = L2TISAR0;
-#endif
+	unsigned int L1TISAR0;
+
+	if (g_debug_flags & DEBUG_RXTX_ISR)
+		L1TISAR0 = DPMA_READ_PD_MISC(NRL2_DPMAIF_AP_MISC_AP_L1TISAR0);
 
 	/* clear IP busy register wake up cpu case */
 	ccci_drv_clear_ip_busy();
@@ -724,28 +806,12 @@ static irqreturn_t drv3_isr(int irq, void *data)
 		CCCI_NOTICE_LOG(0, TAG, "[%s] wake up by MD0 HIF L2(%x/%x)(%x/%x)!\n",
 			__func__, L2TISAR0, L2TIMR0, L2RISAR0, L2RIMR0);
 
-	/* check UL&DL mask status register */
-	if (((L2TIMR0 & AP_UL_L2INTR_Msk_Check) != AP_UL_L2INTR_Msk_Check) ||
-		((L2RIMR0 & AP_DL_L2INTR_Msk_Check) != AP_DL_L2INTR_Msk_Check)) {
-		/* if has error bit, set mask */
-		DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMSR0, ~(AP_UL_L2INTR_En_Msk));
-		/* use msk to clear dummy interrupt */
-		DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_UL_L2TISAR0, ~(AP_UL_L2INTR_En_Msk));
-
-		/* if has error bit, set mask */
-		DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_APDL_L2TIMSR0, ~(AP_DL_L2INTR_En_Msk));
-		/* use msk to clear dummy interrupt */
-		DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_DL_L2TISAR0, ~(AP_DL_L2INTR_En_Msk));
-		CCCI_NORMAL_LOG(0, TAG, "[%s]mask:dl=0x%x(0x%x) ul=0x%x(0x%x)\n",
-			__func__,
-			DPMA_READ_AO_UL(NRL2_DPMAIF_AO_UL_APDL_L2TIMR0), L2RIMR0,
-			DPMA_READ_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMR0), L2TIMR0);
-	}
+	check_ul_mask_state_register(L2TIMR0);
+	check_dl_mask_state_register(L2RIMR0);
 
 	/* TX interrupt */
 	if (L2TISAR0) {
 		L2TISAR0 &= ~(L2TIMR0);
-
 		DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_UL_L2TISAR0, L2TISAR0);
 
 		/* this log may be printed frequently, so first cancel it*/
@@ -753,14 +819,27 @@ static irqreturn_t drv3_isr(int irq, void *data)
 			CCCI_ERROR_LOG(0, TAG, "[%s] dpmaif: ul error L2(%x)\n",
 				__func__, L2TISAR0);
 
-		/* tx done */
-		if (L2TISAR0 & DPMAIF_UL_INT_QDONE_MSK)
+		if (L2TISAR0 & DPMAIF_UL_INT_QDONE_MSK) {
+			/* rcv tx_done irq */
+
 			drv3_irq_tx_done(L2TISAR0 & DPMAIF_UL_INT_QDONE_MSK);
+
+			/* unmask md_pwr_not_rdy if it had ever been masked */
+			if (L2TIMR0 & DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK)
+				DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMCR0,
+						DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK);
+		} else if (L2TISAR0 & DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK) {
+			/* rcv md_pwr_not_rdy irq */
+
+			/* mask md_pwr_not_rdy */
+			DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMSR0,
+					DPMAIF_UL_INT_MD_PWR_NOTREADY_MSK);
+		}
 	}
 
 	/* RX interrupt */
 	if (L2RISAR0) {
-		L2RISAR0 &= ~(L2RIMR0);
+		L2RISAR0 &= ~mapping_rx_reg_from_mask_to_sts(L2RIMR0);
 
 		if (L2RISAR0 & AP_DL_L2INTR_ERR_En_Msk)
 			ccci_irq_rx_lenerr_handler(L2RISAR0 & AP_DL_L2INTR_ERR_En_Msk);
@@ -785,10 +864,11 @@ static irqreturn_t drv3_isr(int irq, void *data)
 		hdr.type = TYPE_RXTX_ISR_ID;
 		hdr.qidx = 0;
 		hdr.time = (unsigned int)(local_clock() >> 16);
-		hdr.rxsr = L2RISAR0;
+		hdr.rxsr = L2RISAR0_bak;
 		hdr.rxmr = L2RIMR0;
-		hdr.txsr = L2TISAR0;
+		hdr.txsr = L2TISAR0_bak;
 		hdr.txmr = L2TIMR0;
+		hdr.l1sr = L1TISAR0;
 		ccci_dpmaif_debug_add(&hdr, sizeof(hdr));
 	}
 #ifdef ENABLE_DPMAIF_ISR_LOG
@@ -895,6 +975,11 @@ static int drv3_intr_hw_init(void)
 	DPMA_WRITE_PD_MISC(NRL2_DPMAIF_AP_MISC_AP_IP_BUSY, 0xFFFFFFFF);
 	/* 2. set IP busy unmask*/
 	DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_AP_DL_UL_IP_BUSY_MASK, 0);
+
+	CCCI_NORMAL_LOG(0, TAG, "[%s] support LRO: %u; mask: dl=0x%x ul=0x%x\n",
+		__func__, dpmaif_ctl->support_2rxq,
+		DPMA_READ_AO_UL(NRL2_DPMAIF_AO_UL_APDL_L2TIMR0),
+		DPMA_READ_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMR0));
 
 	return 0;
 }
@@ -1188,29 +1273,36 @@ void ccci_drv3_dl_lro_hpc_hw_init(void)
 
 static int drv3_suspend_noirq(struct device *dev)
 {
-	g_backup_dl_isr = drv3_get_dl_interrupt_mask();
-	g_backup_ul_isr = DPMA_READ_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMR0);
-
-	CCCI_NORMAL_LOG(0, TAG, "[%s]mask:dl=0x%x ul=0x%x,power down=%u\n",
-		__func__, g_backup_dl_isr, g_backup_ul_isr, ops.drv_check_power_down());
+	CCCI_NORMAL_LOG(0, TAG, "[%s] power down=%u\n",
+		__func__, ops.drv_check_power_down());
 
 	return 0;
 }
 
 static int drv3_resume_noirq(struct device *dev)
 {
-	/* DL set mask */
-	DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_APDL_L2TIMSR0, ~(AP_DL_L2INTR_En_Msk));
-	/* use msk to clear dummy interrupt */
-	DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_DL_L2TISAR0, ~(AP_DL_L2INTR_En_Msk));
+	unsigned int L2RISAR0;
 
 	/* UL set mask */
 	DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMSR0, ~(AP_UL_L2INTR_En_Msk));
 	/* use msk to clear dummy interrupt */
 	DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_UL_L2TISAR0, ~(AP_UL_L2INTR_En_Msk));
 
-	CCCI_NORMAL_LOG(0, TAG, "[%s]mask:dl=0x%x ul=0x%x\n",
-		__func__,
+	if (!dpmaif_ctl->support_2rxq) {
+		/* DL set mask */
+		DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_APDL_L2TIMSR0, ~(AP_DL_L2INTR_En_Msk));
+		/* use msk to clear dummy interrupt */
+		DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_DL_L2TISAR0, ~(AP_DL_L2INTR_En_Msk));
+	} else {
+		/* if has error bit, set mask */
+		DPMA_WRITE_AO_UL(NRL2_DPMAIF_AO_UL_APDL_L2TIMSR0, ~(AP_DL_L2INTR_LRO_En_Msk));
+		/* use msk to clear dummy interrupt */
+		L2RISAR0 = mapping_rx_reg_from_mask_to_sts(AP_DL_L2INTR_LRO_En_Msk);
+		DPMA_WRITE_PD_MISC(DPMAIF_PD_AP_DL_L2TISAR0, ~L2RISAR0);
+	}
+
+	CCCI_NORMAL_LOG(0, TAG, "[%s] support LRO: %u; mask: dl=0x%x ul=0x%x\n",
+		__func__, dpmaif_ctl->support_2rxq,
 		DPMA_READ_AO_UL(NRL2_DPMAIF_AO_UL_APDL_L2TIMR0),
 		DPMA_READ_AO_UL(NRL2_DPMAIF_AO_UL_AP_L2TIMR0));
 
