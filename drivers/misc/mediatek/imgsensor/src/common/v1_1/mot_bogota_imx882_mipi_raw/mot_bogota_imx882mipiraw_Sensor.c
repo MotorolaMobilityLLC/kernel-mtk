@@ -390,24 +390,6 @@ void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 	iWriteRegI2C(pusendcmd, 3, imgsensor.i2c_write_id);
 }
 
-static kal_uint32 get_exp_cnt_by_scenario(kal_uint32 scenario)
-{
-	kal_uint32 exp_cnt = 0, i = 0;
-	struct SENSOR_VC_INFO2_STRUCT vcinfo2;
-
-	get_vc_info_2(&vcinfo2, scenario);
-
-	for (i = 0; i < MAX_VC_INFO_CNT; ++i) {
-		if (vcinfo2.vc_info[i].VC_FEATURE > VC_STAGGER_MIN_NUM &&
-			vcinfo2.vc_info[i].VC_FEATURE < VC_STAGGER_MAX_NUM) {
-			exp_cnt++;
-		}
-	}
-
-	LOG_INF("%s exp_cnt %d\n", __func__, exp_cnt);
-	return max(exp_cnt, (kal_uint32)1);
-}
-
 static kal_uint32 get_cur_exp_cnt(void)
 {
 	kal_uint32 exp_cnt = 1;
@@ -605,9 +587,9 @@ static void write_shutter(kal_uint32 shutter, kal_bool gph)
 	shutter = round_up(shutter, 4);
 
 	spin_lock(&imgsensor_drv_lock);
-	// if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
-		// imgsensor.frame_length = shutter + imgsensor_info.margin;
-	// else
+	 if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
+		imgsensor.frame_length = shutter + imgsensor_info.margin;
+	 else
 	imgsensor.frame_length = imgsensor.min_frame_length;
 	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
@@ -629,7 +611,7 @@ static void write_shutter(kal_uint32 shutter, kal_bool gph)
 	}
 
 	write_cmos_sensor_8(0x3100, read_cmos_sensor(0x3100) & 0xf8);
-	// write_frame_len(imgsensor.frame_length);
+	write_frame_len(imgsensor.frame_length);
 	imgsensor.current_ae_effective_frame = 2;
 	LOG_INF("set frame_length\n");
 
@@ -2266,6 +2248,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_gain;
 		*(feature_data + 2) = imgsensor_info.max_gain;
+		if((sensor_mode == CROP_MODE) || (sensor_mode == HW_50M_MODE)) {
+			*(feature_data + 2) = 16*BASEGAIN;
+		}
 		break;
 	case SENSOR_FEATURE_GET_BASE_GAIN_ISO_AND_STEP:
 		*(feature_data + 0) = imgsensor_info.min_gain_iso;
@@ -2327,57 +2312,53 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 	case SENSOR_FEATURE_GET_PERIOD_BY_SCENARIO:
 		{
-			MUINT32 ratio = 1;
-
-			if (*(feature_data + 2) & SENSOR_GET_LINELENGTH_FOR_READOUT)
-				ratio = get_exp_cnt_by_scenario((*feature_data));
 
 			switch (*feature_data) {
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 				*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= (imgsensor_info.cap.framelength << 16)
-					+ (ratio * imgsensor_info.cap.linelength);
+					+ (imgsensor_info.cap.linelength);
 				break;
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 				*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= (imgsensor_info.normal_video.framelength << 16)
-					+ (ratio * imgsensor_info.normal_video.linelength);
+					+ (imgsensor_info.normal_video.linelength);
 				break;
 			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 				*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= (imgsensor_info.hs_video.framelength << 16)
-					+ (ratio * imgsensor_info.hs_video.linelength);
+					+ (imgsensor_info.hs_video.linelength);
 				break;
 			case MSDK_SCENARIO_ID_SLIM_VIDEO:
 				*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= (imgsensor_info.slim_video.framelength << 16)
-					+ (ratio * imgsensor_info.slim_video.linelength);
+					+ (imgsensor_info.slim_video.linelength);
 				break;
 			case MSDK_SCENARIO_ID_CUSTOM1:
 				*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= (imgsensor_info.custom1.framelength << 16)
-					+ (ratio * imgsensor_info.custom1.linelength);
+					+ (imgsensor_info.custom1.linelength);
 				break;
 			case MSDK_SCENARIO_ID_CUSTOM2:
 				*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= (imgsensor_info.custom2.framelength << 16)
-					+ (ratio * imgsensor_info.custom2.linelength);
+					+ (imgsensor_info.custom2.linelength);
 				break;
 			case MSDK_SCENARIO_ID_CUSTOM3:
 				*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= (imgsensor_info.custom3.framelength << 16)
-					+ (ratio * imgsensor_info.custom3.linelength);
+					+ (imgsensor_info.custom3.linelength);
 				break;
 			case MSDK_SCENARIO_ID_CUSTOM4:
 				*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= (imgsensor_info.custom4.framelength << 16)
-					+ (ratio * imgsensor_info.custom4.linelength);
+					+ (imgsensor_info.custom4.linelength);
 				break;
 			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 			default:
 				*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= (imgsensor_info.pre.framelength << 16)
-					+ (ratio * imgsensor_info.pre.linelength);
+					+ (imgsensor_info.pre.linelength);
 				break;
 			}
 		}
@@ -2764,10 +2745,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		case MSDK_SCENARIO_ID_CUSTOM1:
 		case MSDK_SCENARIO_ID_CUSTOM2:
-			*feature_return_para_32 = 1465;
+			*feature_return_para_32 = 1;
 			break;
 		default:
-			*feature_return_para_32 = 1; /*BINNING_AVERAGED*/
+			*feature_return_para_32 = 2; /*BINNING_AVERAGED*/
 			break;
 		}
 		pr_debug("SENSOR_FEATURE_GET_BINNING_TYPE AE_binning_type:%d,\n",
