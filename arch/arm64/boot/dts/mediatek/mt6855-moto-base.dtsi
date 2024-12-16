@@ -7,6 +7,7 @@
 / {
 	utags: utags { };
 	hw: hw { };
+	mmi_pehv: mmi_pehv{};
 	tboard_thermistor1: thermal-ntc1 { };
 	tboard_thermistor2: thermal-ntc2 { };
 	tboard_thermistor3: thermal-ntc3 { };

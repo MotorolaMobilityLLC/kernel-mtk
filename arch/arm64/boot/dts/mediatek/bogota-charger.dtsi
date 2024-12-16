@@ -48,8 +48,8 @@
         disable_aicl;
         enable_dynamic_mivr;
 
-	/*pe5 && pdc && pe2*/
-	fast_charging_indicator = <0x16>;
+	/*pehv && pe5 && pdc*/
+	fast_charging_indicator = <0x4014>;
 	/*swchg + 1CP*/
 	charger_configuration= <3>;
 
@@ -89,6 +89,46 @@
 	mmi,upper-limit-capacity = <65>;
 	mmi,lower-limit-capacity = <60>;
 	mmi,min-cp-therm-current-ua = <1600000>;
+};
+
+&mmi_pehv {
+	compatible = "mmi,pehv";
+	gauge = <&mtk_gauge>;
+	polling-interval = <10000>;
+	vbat-cv = <4550>;
+	start-soc-min = <0>;
+	start-soc-max = <90>;
+	idvchg-cc = <3000>;
+	idvchg-term = <500>;
+	idvchg-step = <50>;
+	idvchg-ss-init = <1000>;
+	idvchg-ss-step = <250>;
+	idvchg-ss-step1 = <100>;
+	idvchg-ss-step2 = <50>;
+	idvchg-ss-step1-vbat = <4000>;
+	idvchg-ss-step2-vbat = <4200>;
+	ta-blanking = <400>;
+	swchg-aicr = <0>;
+	swchg-ichg = <1200>;
+	swchg-aicr-ss-init = <400>;
+	swchg-aicr-ss-step = <200>;
+	swchg-off-vbat = <4250>;
+	force-ta-cv-vbat = <4250>;
+	chg-time-max = <10800>;
+	ifod-threshold = <200>;
+	rsw-min = <20>;
+	ircmp-rbat = <40>;
+	ircmp-vclamp = <0>;
+	vta-cap-min = <6800>;
+	vta-cap-max = <11000>;
+	vta-step = <20>;
+	ita-cap-min = <1000>;
+	vbat-threshold = <4150>;
+	min-charger-voltage = <4600000>;
+	mmi_therm_cur_thres = <500>;
+	mmi_therm_vol_thres = <80>;
+	mmi_therm_step = <3>;
+	mmi_max_ibat = <6000>;
 };
 
 &odm {
@@ -492,4 +532,8 @@
                 };
         };
 
+};
+
+&mt6375_chg {
+	mmi,hvdcp-support;
 };

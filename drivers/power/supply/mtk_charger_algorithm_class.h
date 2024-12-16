@@ -24,6 +24,7 @@
 #define PE5_ID   1 << 4
 #define WLC_ID   1 << 5
 
+#define PEHV_ID (1 << 14)
 struct chg_alg_properties {
 	const char *alias_name;
 };
@@ -45,6 +46,7 @@ enum chg_alg_state {
 	ALG_READY,
 	ALG_RUNNING,
 	ALG_DONE,
+	ALG_WAIVER,
 };
 
 enum chg_idx {
@@ -83,6 +85,7 @@ enum chg_alg_notifier_events {
 	EVT_RECHARGE,
 	EVT_DETACH,
 	EVT_HARDRESET,
+	EVT_SOFTRESET,
 	EVT_VBUSOVP,
 	EVT_IBUSOCP,
 	EVT_IBUSUCP_FALL,

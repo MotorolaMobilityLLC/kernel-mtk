@@ -126,6 +126,13 @@ struct adapter_ops {
 	int (*enable_wdt)(struct adapter_device *dev, bool en);
 	int (*sync_volt)(struct adapter_device *dev, u32 mV);
 	int (*send_hardreset)(struct adapter_device *dev);
+
+	/*for external qc protocol ic such as wt6670f*/
+	int (*reset_chg_type)(struct adapter_device *dev);
+	int (*start_detection)(struct adapter_device *dev);
+	int (*is_charger_ready)(struct adapter_device *dev, bool *val);
+	int (*get_protocol)(struct adapter_device *dev, int *val);
+	int (*dp_dm)(struct adapter_device *dev, int val);
 };
 
 static inline void *adapter_dev_get_drvdata(
@@ -177,4 +184,11 @@ extern int adapter_dev_set_wdt(struct adapter_device *adapter_dev, u32 ms);
 extern int adapter_dev_enable_wdt(struct adapter_device *adapter_dev, bool en);
 extern int adapter_dev_sync_volt(struct adapter_device *adapter_dev, u32 mV);
 extern int adapter_dev_send_hardreset(struct adapter_device *adapter_dev);
+
+/*for external qc protocol ic such as wt6670f*/
+extern int adapter_dev_reset_chg_type(struct adapter_device *adapter_dev);
+extern int adapter_dev_start_detection(struct adapter_device *adapter_dev);
+extern int adapter_dev_is_charger_ready(struct adapter_device *adapter_dev, bool *val);
+extern int adapter_dev_get_protocol(struct adapter_device *adapter_dev, int *val);
+extern int adapter_dev_dp_dm(struct adapter_device *adapter_dev, int val);
 #endif /*LINUX_POWER_ADAPTER_CLASS_H*/

@@ -52,7 +52,12 @@ EXPORT_SYMBOL_GPL(wt6670f_is_detect);
 extern int g_qc3p_id;
 #endif
 
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+static bool dbg_log_en = true;
+#define DELAY_TIME 1500
+#else
 static bool dbg_log_en;
+#endif
 module_param(dbg_log_en, bool, 0644);
 #define mt_dbg(dev, fmt, ...) \
 	do { \
@@ -95,7 +100,11 @@ module_param(dbg_log_en, bool, 0644);
 #define MT6375_REG_BC12_STAT	0x151
 #define MT6375_REG_DPDM_CTRL1	0x153
 #define MT6375_REG_DPDM_CTRL2	0x154
+#define MT6375_REG_DPDM_CTRL3	0x155
 #define MT6375_REG_DPDM_CTRL4	0x156
+#define MT6375_REG_DPDM_CTRL5	0x157
+#define MT6375_REG_DPDM_CTRL7	0x159
+#define MT6375_REG_DPDM_CTRL8	0x15A
 #define MT6375_REG_USBID_CTRL1	0x15D
 #define MT6375_REG_USBID_CTRL2	0x15E
 #define MT6375_REG_VBAT_MON_RPT	0x19C
@@ -169,9 +178,11 @@ enum mt6375_chg_reg_field {
 	/* MT6375_REG_DPDM_CTRL1 */
 	F_DM_DET_EN, F_DP_DET_EN, F_DPDM_SW_VCP_EN, F_MANUAL_MODE,
 	/* MT6375_REG_DPDM_CTRL2 */
-	F_DP_LDO_VSEL, F_DP_LDO_EN,
+	F_DM_LDO_VSEL, F_DM_LDO_EN, F_DP_LDO_VSEL, F_DP_LDO_EN,
 	/* MT6375_REG_DPDM_CTRL4 */
-	F_DP_PULL_RSEL, F_DP_PULL_REN,
+	F_DP_PULL_RSEL, F_DP_PULL_REN, F_DP_PULL_ISEL, F_DP_PULL_IEN,
+	/* MT6375_REG_DPDM_CTRL5 */
+	F_DM_PULL_RSEL, F_DM_PULL_REN, F_DM_PULL_ISEL, F_DM_PULL_IEN,
 	/* MT6375_REG_ADC_CONFG1 */
 	F_VBAT_MON_EN,
 	/* MT6375_REG_CHG_STAT0 */
@@ -279,12 +290,30 @@ struct mt6375_chg_data {
 	atomic_t tchg;
 	int vbat0_flag;
 	int mmi_chg_status;
-
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
 	struct delayed_work psy_dwork;
 	int pulse_cnt;
-#endif
+#elif defined(CONFIG_MOTO_SWQC_SUPPORT)
+	/*for external qc protocol ic such as wt6670f*/
+	struct delayed_work detect_qc_dwork;
+	int pulse_cnt;
+	struct adapter_device *qc_dev;
+	bool	qc_is_detect;
+	int	qc_chg_type;
+	bool mmi_bc12_rerun_done;
 
+	/*for software HVDCP detected*/
+	struct delayed_work mmi_hvdcp_detect_dwork;
+	bool mmi_hvdcp_support;
+	bool mmi_hvdcp_trig_flag;
+	struct task_struct	*mmi_hvdcp_authen_task;
+	wait_queue_head_t	mmi_hvdcp_wait_que;
+	struct	semaphore sem_dpdm;
+	int	mmi_qc3p_power;
+	bool	mmi_qc3p_rerun_done;
+	struct adapter_device *pd_adapter;
+	struct mutex dpdm_lock;
+#endif
 	struct power_supply *batt_psy;
 	struct power_supply *wlc_psy;
 	char                *batt_uenvp[2];
@@ -421,6 +450,7 @@ static const struct mt6375_chg_range mt6375_chg_ranges[F_MAX] = {
 	[F_IRCMP_R] = MT6375_CHG_RANGE(0, 116900, 16700, 0, false),
 	[F_DCDT_SEL] = MT6375_CHG_RANGE(0, 600, 300, 0, false),
 	[F_DP_LDO_VSEL] = MT6375_CHG_RANGE_T(mt6375_chg_dpdm_ldo_vsel, false),
+	[F_DM_LDO_VSEL] = MT6375_CHG_RANGE_T(mt6375_chg_dpdm_ldo_vsel, false),
 };
 
 #define MT6375_CHG_FIELD_RANGE(_fd, _reg, _lsb, _msb, _range) \
@@ -484,10 +514,18 @@ static const struct mt6375_chg_field mt6375_chg_fields[F_MAX] = {
 	MT6375_CHG_FIELD(F_DP_DET_EN, MT6375_REG_DPDM_CTRL1, 1, 1),
 	MT6375_CHG_FIELD(F_DPDM_SW_VCP_EN, MT6375_REG_DPDM_CTRL1, 5, 5),
 	MT6375_CHG_FIELD(F_MANUAL_MODE, MT6375_REG_DPDM_CTRL1, 7, 7),
+	MT6375_CHG_FIELD(F_DM_LDO_VSEL, MT6375_REG_DPDM_CTRL2, 0, 2),
+	MT6375_CHG_FIELD(F_DM_LDO_EN, MT6375_REG_DPDM_CTRL2, 3, 3),
 	MT6375_CHG_FIELD(F_DP_LDO_VSEL, MT6375_REG_DPDM_CTRL2, 4, 6),
 	MT6375_CHG_FIELD(F_DP_LDO_EN, MT6375_REG_DPDM_CTRL2, 7, 7),
+	MT6375_CHG_FIELD(F_DP_PULL_ISEL, MT6375_REG_DPDM_CTRL4, 2, 2),
+	MT6375_CHG_FIELD(F_DP_PULL_IEN, MT6375_REG_DPDM_CTRL4, 3, 3),
 	MT6375_CHG_FIELD(F_DP_PULL_RSEL, MT6375_REG_DPDM_CTRL4, 6, 6),
 	MT6375_CHG_FIELD(F_DP_PULL_REN, MT6375_REG_DPDM_CTRL4, 7, 7),
+	MT6375_CHG_FIELD(F_DM_PULL_ISEL, MT6375_REG_DPDM_CTRL5, 2, 2),
+	MT6375_CHG_FIELD(F_DM_PULL_IEN, MT6375_REG_DPDM_CTRL5, 3, 3),
+	MT6375_CHG_FIELD(F_DM_PULL_RSEL, MT6375_REG_DPDM_CTRL5, 6, 6),
+	MT6375_CHG_FIELD(F_DM_PULL_REN, MT6375_REG_DPDM_CTRL5, 7, 7),
 	MT6375_CHG_FIELD(F_VBAT_MON_EN, MT6375_REG_ADC_CONFG1, 5, 5),
 	MT6375_CHG_FIELD(F_ST_PWR_RDY, MT6375_REG_CHG_STAT0, 0, 0),
 	MT6375_CHG_FIELD(F_ST_MIVR, MT6375_REG_CHG_STAT1, 7, 7),
@@ -1024,6 +1062,9 @@ static int mmi_notify_vbus_event(struct mt6375_chg_data *ddata, bool vbus_status
 	return 0;
 }
 
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+static int mmi_dpdm_manual_mode_enable(struct mt6375_chg_data *ddata, bool enable);
+#endif
 static void mt6375_chg_pwr_rdy_process(struct mt6375_chg_data *ddata)
 {
 	int ret;
@@ -1035,6 +1076,18 @@ static void mt6375_chg_pwr_rdy_process(struct mt6375_chg_data *ddata)
 	ddata->pwr_rdy = val;
 	mt_dbg(ddata->dev, "pwr_rdy=%d\n", val);
 
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	ddata->mmi_bc12_rerun_done = false;
+
+
+	if (ddata->mmi_hvdcp_support) {
+		mmi_dpdm_manual_mode_enable(ddata, false);
+		ddata->pulse_cnt = 0;
+		ddata->qc_chg_type = USB_TYPE_UNKNOWN;
+		ddata->qc_is_detect = false;
+		ddata->mmi_qc3p_rerun_done = false;
+	}
+#endif
 	mmi_notify_vbus_event(ddata, val);
 
 	ret = mt6375_chg_field_set(ddata, F_BLEED_DIS_EN, !ddata->pwr_rdy);
@@ -1192,6 +1245,21 @@ static void mt6375_chg_bc12_work_func(struct work_struct *work)
 		break;
 	}
 
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	if ((val == PORT_STAT_SDP
+		|| val == PORT_STAT_CDP
+		|| val == PORT_STAT_UNKNOWN_TA)
+		&& (!ddata->mmi_bc12_rerun_done)) {
+		bc12_en = true;
+		rpt_psy = false;
+		ddata->mmi_bc12_rerun_done = true;
+		mt6375_chg_enable_bc12(ddata, false); //need to toggle bc12 en for rerun bc12
+		dev_info(ddata->dev, "rerun bc12 for port stat = %s\n", mt6375_port_stat_names[val]);
+		msleep(1000);
+		goto out;
+	}
+#endif
+
 	switch (val) {
 	case PORT_STAT_NOINFO:
 		bc12_en_toggle = true;
@@ -1205,6 +1273,13 @@ static void mt6375_chg_bc12_work_func(struct work_struct *work)
 		ddata->psy_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
 		ddata->psy_type[active_idx] = POWER_SUPPLY_TYPE_USB_DCP;
 		ddata->psy_usb_type[active_idx] = POWER_SUPPLY_USB_TYPE_DCP;
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+		if (ddata->qc_dev)
+			schedule_delayed_work(&ddata->detect_qc_dwork, msecs_to_jiffies(DELAY_TIME)); //for wait PD detected complete
+		else if (ddata->mmi_hvdcp_support) {
+			schedule_delayed_work(&ddata->mmi_hvdcp_detect_dwork, msecs_to_jiffies(DELAY_TIME));
+		}
+#endif
 		break;
 	case PORT_STAT_DCP:
 		ddata->psy_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
@@ -1213,8 +1288,13 @@ static void mt6375_chg_bc12_work_func(struct work_struct *work)
 
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
 		schedule_delayed_work(&ddata->psy_dwork, 0);
+#elif defined(CONFIG_MOTO_SWQC_SUPPORT)
+		if (ddata->qc_dev)
+			schedule_delayed_work(&ddata->detect_qc_dwork, msecs_to_jiffies(DELAY_TIME)); //for wait PD detected complete
+		else if (ddata->mmi_hvdcp_support) {
+			schedule_delayed_work(&ddata->mmi_hvdcp_detect_dwork, msecs_to_jiffies(DELAY_TIME));
+		}
 #endif
-
 		bc12_en = false;
 		break;
 	case PORT_STAT_SDP:
@@ -1706,6 +1786,10 @@ static int mos_parse_dt(struct mt6375_chg_data *ddata)
 		ddata->mos_gpio_on = pinctrl_lookup_state(ddata->mos_pinctrl, "mos_on");
 		ddata->mos_gpio_off = pinctrl_lookup_state(ddata->mos_pinctrl, "mos_off");
 	}
+
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	ddata->mmi_hvdcp_support = of_property_read_bool(node, "mmi,hvdcp-support");
+#endif
 	return 0;
 }
 
@@ -2124,6 +2208,175 @@ static int mt6375_enable_chg_type_det(struct charger_device *chgdev, bool en)
 	mt6375_chg_attach_pre_process(ddata, ATTACH_TRIG_TYPEC, attach);
 	return 0;
 }
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+#define HVDCP_POWER_MIN			15000
+#define HVDCP_VOLTAGE_BASIC		5000000
+#define HVDCP_VOLTAGE_NOM		(HVDCP_VOLTAGE_BASIC - 200000)
+#define HVDCP_VOLTAGE_MAX		(HVDCP_VOLTAGE_BASIC + 200000)
+#define HVDCP_VOLTAGE_MIN		4000000
+#define HVDCP_PULSE_COUNT_MAX 	((HVDCP_VOLTAGE_BASIC - 5000000) / 200000 + 2)
+int mt6375_config_qc_charger(struct charger_device *chg_dev)
+{
+	int rc = 0;
+	int vbus_uv;
+	struct mt6375_chg_data *ddata = charger_get_data(chg_dev);
+
+	if (!ddata->qc_dev && !ddata->mmi_hvdcp_support) {
+		pr_err("qc protocol don't ready, exit\n");
+		return -1;
+	}
+
+	if (!ddata->chgdev) {
+		pr_err("charger dev don't ready, exit\n");
+		return -1;
+	}
+	/*
+	if (!ddata->qc_dev) {
+		pr_err("qc protocol ic don't ready, exit\n");
+		return -1;
+	}
+	*/
+
+	rc = mt6375_get_vbus(chg_dev, &vbus_uv);
+	if (rc != 0) {
+		pr_err("%s get vbus failed\n",__func__);
+		return -1;
+	}
+
+	if(vbus_uv < 4000000 || vbus_uv > 6000000) {
+		pr_err("vbus is not for qc3.0\n");
+		return -1;
+	}
+
+	pr_info("pulse_cnt=%d, vbus_uv=%d\n", ddata->pulse_cnt, vbus_uv);
+	if (vbus_uv < HVDCP_VOLTAGE_NOM && ddata->pulse_cnt < HVDCP_PULSE_COUNT_MAX) {
+		if (ddata->qc_dev && !ddata->mmi_hvdcp_support)
+			rc = adapter_dev_dp_dm(ddata->qc_dev, DP_DM_DP_PULSE);
+		else if (!ddata->qc_dev && ddata->mmi_hvdcp_support)
+			rc = charger_dev_set_dp_dm(ddata->chgdev, DP_DM_DP_PULSE);
+		if (rc<0)
+			dev_err(ddata->dev, "qc protocol ic set vbus up failed\n");
+		else
+			ddata->pulse_cnt++;
+	} else if (vbus_uv > HVDCP_VOLTAGE_MAX && ddata->pulse_cnt > 0 ) {
+		if (ddata->qc_dev && !ddata->mmi_hvdcp_support)
+			rc = adapter_dev_dp_dm(ddata->qc_dev, DP_DM_DM_PULSE);
+		else if (!ddata->qc_dev && ddata->mmi_hvdcp_support)
+			rc = charger_dev_set_dp_dm(ddata->chgdev, DP_DM_DM_PULSE);
+		if (rc<0)
+			dev_err(ddata->dev, "qc protocol ic set vbus down failed\n");
+		else {
+			ddata->pulse_cnt--;
+		}
+	} else {
+		pr_info("QC3.0 output configure completed\n");
+		rc = 0;
+		return rc;
+	}
+	msleep(100);
+	return rc;
+}
+
+void get_qc_charger_type_func_work(struct work_struct *work)
+{
+	struct delayed_work *detect_qc_dwork = NULL;
+	struct mt6375_chg_data *ddata;
+	bool early_notified = false;
+	bool need_retry = false;
+	bool m_chg_ready = false;
+	int early_chg_type = 0;
+	int count = 0;
+	int ret;
+	union power_supply_propval val;
+
+	detect_qc_dwork = container_of(work, struct delayed_work, work);
+	if(detect_qc_dwork == NULL) {
+		pr_err("Cann't get charge_monitor_work\n");
+		return ;
+	}
+	ddata = container_of(detect_qc_dwork, struct mt6375_chg_data, detect_qc_dwork);
+	if(ddata == NULL) {
+		pr_err("Cann't get mt6375_chg_data \n");
+		return ;
+	}
+
+	if (!ddata->qc_dev) {
+		pr_err("qc protocol ic dev is not ready, exit \n");
+		return;
+	}
+
+	adapter_dev_reset_chg_type(ddata->qc_dev);
+	pr_err("start qc detected \n");
+	ddata->qc_is_detect = true;
+
+	mt6375_chg_field_set(ddata, F_IAICR, 500);
+	mt6375_chg_set_usbsw(ddata, USBSW_CHG);
+	do{
+		m_chg_ready = false;
+		ddata->qc_chg_type = 0;
+		early_notified = false;
+		need_retry = false;
+		early_chg_type = 0;
+		adapter_dev_start_detection(ddata->qc_dev);
+		while((!m_chg_ready)&&(count<100)) {
+			ret = power_supply_get_property(ddata->psy, POWER_SUPPLY_PROP_ONLINE, &val);
+			if (val.intval <= 0) {
+			      pr_err("[%s] ONLINE: %d, skip detecting0\n",__func__, val.intval);
+			      break;
+			}
+			msleep(30);
+			count++;
+			adapter_dev_is_charger_ready(ddata->qc_dev, &m_chg_ready);
+
+			if(!early_notified){
+			      adapter_dev_get_protocol(ddata->qc_dev, &early_chg_type);
+			}
+
+			if(early_chg_type == USB_TYPE_QC3P_18 || early_chg_type == USB_TYPE_QC3P_27){
+				pr_err("[%s] qc early type is QC3+: %d, skip detecting\n",__func__, early_chg_type);
+				break;
+			}
+				pr_err("qc waiting early type: 0x%x, detect ready: 0x%x, count: %d\n", early_chg_type, m_chg_ready, count);
+		}
+
+		adapter_dev_get_protocol(ddata->qc_dev, &ddata->qc_chg_type);
+
+		if(ddata->qc_chg_type == USB_TYPE_OCP && !need_retry){
+			need_retry = true;
+		} else {
+			need_retry = false;
+		}
+		ret = power_supply_get_property(ddata->psy, POWER_SUPPLY_PROP_ONLINE, &val);
+		if (val.intval) {
+			power_supply_changed(ddata->psy);
+		}
+		else {
+			pr_err("[%s] ONLINE: %d, skip detecting1\n",__func__, val.intval);
+			break;
+		}
+		pr_err("[%s] qc charge type is  0x%x\n",__func__, ddata->qc_chg_type);
+	}while(need_retry);
+
+	ddata->qc_is_detect = false;
+
+	if(ddata->qc_chg_type == USB_TYPE_QC20){
+		adapter_dev_dp_dm(ddata->qc_dev, DP_DM_FORCE_QC2_5V);
+		pr_err("Force set qc2 5V");
+		msleep(100);
+	}else if(ddata->qc_chg_type == USB_TYPE_QC30){
+		adapter_dev_dp_dm(ddata->qc_dev, DP_DM_FORCE_QC3_5V);
+		msleep(100);
+		ddata->pulse_cnt = 0;
+		pr_err("Force set qc3 5V");
+	}
+
+	if (ddata->qc_chg_type != USB_TYPE_QC3P_27) {
+		mt6375_chg_field_set(ddata, F_IAICR, 3000);
+	} else {
+		mt6375_chg_field_set(ddata, F_IAICR, 500);
+	}
+}
+#endif
 
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
 #define HVDCP_POWER_MIN			15000
@@ -2499,8 +2752,15 @@ static int mt6375_plug_out(struct charger_device *chgdev)
 		wt6670f_reset_chg_type();
 		ddata->pulse_cnt = 0;
 	}
-#endif
+#elif defined(CONFIG_MOTO_SWQC_SUPPORT)
+	if(ddata->qc_dev){
+		adapter_dev_reset_chg_type(ddata->qc_dev);
+		ddata->pulse_cnt = 0;
+		ddata->qc_chg_type = 0;
+		ddata->qc_is_detect = false;
+	}
 
+#endif
 	if (pdata->wdt_en) {
 		ret = mt6375_chg_field_set(ddata, F_WDT_EN, 0);
 		if (ret < 0) {
@@ -2679,6 +2939,77 @@ static int mt6375_enable_usbid_floating(struct charger_device *chgdev, bool en)
 	return mt6375_chg_field_set(ddata, F_USBID_FLOATING, en ? 1 : 0);
 }
 
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+static int mmi_qc_is_detect(struct charger_device *chgdev, bool *val)
+{
+	struct mt6375_chg_data *ddata = charger_get_data(chgdev);
+
+	*val = ddata->qc_is_detect;
+
+	return 0;
+}
+
+static int mmi_get_protocol(struct charger_device *chgdev, int *val)
+{
+	struct mt6375_chg_data *ddata = charger_get_data(chgdev);
+
+	*val = ddata->qc_chg_type;
+
+	return 0;
+}
+
+static int mmi_qc30_step_up_vbus(struct mt6375_chg_data * ddata);
+static int mmi_qc30_step_down_vbus(struct mt6375_chg_data * ddata);
+
+static int mmi_set_dp_dm(struct charger_device *chgdev, int val)
+{
+	int ret = -1;
+	struct mt6375_chg_data *ddata = charger_get_data(chgdev);
+
+	mutex_lock(&ddata->dpdm_lock);
+
+	switch (val) {
+	case DP_DM_DP_PULSE:
+		if (ddata->qc_dev) {
+			ret = adapter_dev_dp_dm(ddata->qc_dev, DP_DM_DP_PULSE);
+		} else if (ddata->mmi_hvdcp_support)  {
+			ret = mmi_qc30_step_up_vbus(ddata);
+		}
+		if (ret < 0)
+			dev_err(ddata->dev, "qc protocol ic set vbus up failed\n");
+		else
+			ddata->pulse_cnt++;
+		break;
+	case DP_DM_DM_PULSE:
+		if (ddata->qc_dev) {
+			ret = adapter_dev_dp_dm(ddata->qc_dev, DP_DM_DP_PULSE);
+		} else if (ddata->mmi_hvdcp_support) {
+			ret = mmi_qc30_step_down_vbus(ddata);
+		}
+		if (ret < 0)
+			dev_err(ddata->dev, "qc protocol ic set vbus down failed\n");
+		else if (ddata->pulse_cnt > 0)
+			ddata->pulse_cnt--;
+		break;
+	default:
+		break;
+	}
+
+	mutex_unlock(&ddata->dpdm_lock);
+	return ret;
+}
+
+static int mmi_get_dp_dm(struct charger_device *chgdev, int *val)
+{
+	int ret = 0;
+	struct mt6375_chg_data *ddata = charger_get_data(chgdev);
+
+	*val = ddata->pulse_cnt;
+
+	return ret;
+}
+#endif
+
 static const struct charger_properties mt6375_chg_props = {
 	.alias_name = "mt6375_chg",
 };
@@ -2753,6 +3084,14 @@ static const struct charger_ops mt6375_chg_ops = {
 	.set_usbid_rup = mt6375_set_usbid_rup,
 	.set_usbid_src_ton = mt6375_set_usbid_src_ton,
 	.enable_usbid_floating = mt6375_enable_usbid_floating,
+
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	.qc_is_detect = mmi_qc_is_detect,
+	.get_protocol = mmi_get_protocol,
+	.config_qc_charger = mt6375_config_qc_charger,
+	.set_dp_dm = mmi_set_dp_dm,
+	.get_dp_dm = mmi_get_dp_dm,
+#endif
 };
 
 static irqreturn_t mt6375_fl_wdt_handler(int irq, void *data)
@@ -3023,6 +3362,505 @@ static int mt6375_chg_get_pdata(struct device *dev)
 	}
 	return pdata ? 0 : -ENODEV;
 }
+
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+static bool is_pd_rdy(struct mt6375_chg_data *ddata)
+{
+	int type = 0;
+
+	if (IS_ERR_OR_NULL(ddata)) {
+		pr_err("%s:ddata is ERR or NULL\n", __func__);
+		return false;
+	}
+
+	if (IS_ERR_OR_NULL(ddata->pd_adapter)) {
+		ddata->pd_adapter = get_adapter_by_name("pd_adapter");
+		if (IS_ERR_OR_NULL(ddata->pd_adapter)) {
+			pr_err("%s: No pd adapter found\n", __func__);
+			return false;
+		}
+	}
+
+	type = adapter_dev_get_property(ddata->pd_adapter, PD_TYPE);
+
+	pr_info("%s pd_type:%d\n", __func__, type);
+
+	if (type == MTK_PD_CONNECT_PE_READY_SNK_APDO ||
+		type == MTK_PD_CONNECT_PE_READY_SNK ||
+		type == MTK_PD_CONNECT_PE_READY_SNK_PD30)
+		return true;
+	else
+		return false;
+}
+
+#define MMI_HVDCP2_VOLTAGE_STANDARD		8000000
+#define MMI_HVDCP3_VOLTAGE_STANDARD		7500000
+void mmi_start_hvdcp_detect_work(struct work_struct *work)
+{
+	struct delayed_work *mmi_hvdcp_detect_dwork = NULL;
+	struct mt6375_chg_data *ddata;
+	int ret;
+	int vbus_uv = 0;
+
+	mmi_hvdcp_detect_dwork = container_of(work, struct delayed_work, work);
+	if(mmi_hvdcp_detect_dwork == NULL) {
+		pr_err("Cann't get mmi_hvdcp_detect_dwork\n");
+		return ;
+	}
+	ddata = container_of(mmi_hvdcp_detect_dwork, struct mt6375_chg_data, mmi_hvdcp_detect_dwork);
+	if(ddata == NULL) {
+		pr_err("Cann't get mt6375_chg_data \n");
+		return ;
+	}
+
+	if (!ddata->mmi_hvdcp_support) {
+		pr_err("HVDCP: mmi hvdcp don't support, exit \n");
+		return;
+	}
+
+	if (!IS_ERR_OR_NULL(ddata->chgdev)) {
+		ret = mt6375_get_vbus(ddata->chgdev, &vbus_uv);
+		if (ret != 0) {
+			pr_err("%s get vbus failed\n",__func__);
+			return;
+		}
+	}
+	pr_info("HVDCP: %s get vbus %d uv\n",__func__,vbus_uv);
+	if (is_pd_rdy(ddata) || vbus_uv > 8000000) {
+		pr_info("HVDCP: pd adaptor ready, exit qc detected\n");
+		return;
+	}
+
+	pr_info("HVDCP: mmi start hvdcp detect\n");
+	ddata->mmi_hvdcp_trig_flag = true;
+	wake_up_interruptible(&ddata->mmi_hvdcp_wait_que);
+}
+
+int mmi_dpdm_dump_info(struct mt6375_chg_data *ddata);
+
+static int mmi_dpdm_manual_mode_enable(struct mt6375_chg_data *ddata, bool enable)
+{
+	int i, ret = 0;
+	static const struct {
+		enum mt6375_chg_reg_field fd;
+		u32 val;
+	} settings[] = {
+		{ F_MANUAL_MODE, 1 },
+		{ F_DPDM_SW_VCP_EN, 1 },
+		{ F_DM_LDO_VSEL, 600 },
+		{ F_DM_LDO_EN, 1 },
+		{ F_DP_LDO_VSEL, 600 },
+		{ F_DP_LDO_EN, 1 },
+		{ F_DP_PULL_ISEL, 1 },
+		{ F_DP_PULL_IEN, 1 },
+		{ F_DM_PULL_ISEL, 1 },
+		{ F_DM_PULL_IEN, 1 },
+	};
+
+	pr_info("HVDCP: dpdm manual mode %s\n", enable? "enable":"disable");
+
+	if (enable) {
+		for (i = 0; i < ARRAY_SIZE(settings); i++) {
+			ret = mt6375_chg_field_set(ddata, settings[i].fd,
+						   settings[i].val);
+			if (ret < 0) {
+				pr_err("HVDCP: dpdm manual mode enable failed (%d %d)\n", i, ret);
+				return ret;
+			}
+		}
+	} else {
+		for (i = 0; i < ARRAY_SIZE(settings); i++) {
+			ret = mt6375_chg_field_set(ddata, settings[i].fd, 0);
+			if (ret < 0) {
+				pr_err("HVDCP: dpdm manual mode disable failed (%d %d)\n", i, ret);
+			}
+		}
+	}
+
+	return ret;
+
+}
+
+static int mmi_adjust_qc20_hvdcp_5v(struct mt6375_chg_data * ddata)
+{
+	int ret;
+
+	/* dp 0.6v and dm 0v out 5V */
+
+	ret = mt6375_chg_field_set(ddata, F_DM_LDO_EN, 0); //dm 0V ldo disable
+	if (ret)
+		return ret;
+
+	ret = mt6375_chg_field_set(ddata, F_DP_LDO_VSEL, 600); //dp 0.6v
+	return ret;
+}
+
+static int mmi_detected_qc20_hvdcp(struct mt6375_chg_data * ddata, int *charger_type)
+{
+	int ret;
+	int vbus_voltage;
+
+	/*dp and dm connected,dp 0.6V dm 0.6V*/
+	ret = mt6375_chg_field_set(ddata, F_DP_LDO_VSEL, 600); //dp 0.6V
+	if (ret)
+	    return ret;
+
+	ret = mt6375_chg_field_set(ddata, F_DM_LDO_VSEL, 600); //dm 0.6V
+	if (ret)
+		return ret;
+
+	msleep(1300);
+
+	ret = mt6375_chg_field_set(ddata, F_DM_LDO_EN, 0); //dm 0V ldo disable
+	if (ret)
+		return ret;
+
+	mdelay(500);
+
+	/* dp 3.3v and dm 0.6v out 9V */
+	ret = mt6375_chg_field_set(ddata, F_DP_LDO_VSEL, 3300); //dp 3.3v
+	if (ret)
+		return ret;
+
+	ret = mt6375_chg_field_set(ddata, F_DM_LDO_VSEL, 600); //dm 0.6v
+	if (ret)
+		return ret;
+
+	ret = mt6375_chg_field_set(ddata, F_DM_LDO_EN, 1); //dm ldo enable
+	if (ret)
+		return ret;
+
+	msleep(200);//need tunning
+
+	mt6375_get_vbus(ddata->chgdev, &vbus_voltage);
+	pr_info("HVDCP: vbus voltage now = %d\n", vbus_voltage);
+
+	if (vbus_voltage > MMI_HVDCP2_VOLTAGE_STANDARD) {
+		pr_info("HVDCP: QC20 charger detected\n");
+		*charger_type = USB_TYPE_QC20;
+	} else {
+		pr_info("HVDCP: charger type is not HVDCP\n");
+	}
+
+	ret = mmi_adjust_qc20_hvdcp_5v(ddata);
+	if (ret) {
+		pr_err("HVDCP: Cann't adjust qc20 hvdcp 5V\n");
+	}
+
+	msleep(300);//need tunning
+
+	mt6375_get_vbus(ddata->chgdev, &vbus_voltage);
+	pr_info("HVDCP: vbus voltage now = %d after qc20 detected\n", vbus_voltage);
+
+	return ret;
+}
+
+
+// Must enter 3.0 mode to call ,otherwise cannot step correctly.
+static int mmi_qc30_step_up_vbus(struct mt6375_chg_data * ddata)
+{
+	int ret;
+
+	/*  dp 3.3v to dp 0.6v  step up 200mV when IC is QC3.0 mode*/
+	ret = mt6375_chg_field_set(ddata, F_DP_LDO_VSEL,3300); //dp 3.3v
+	if (ret)
+		return ret;
+
+	udelay(2500);
+	ret = mt6375_chg_field_set(ddata, F_DP_LDO_VSEL,600); //dp 0.6v
+	if (ret)
+		return ret;
+
+	udelay(2500);
+	return ret;
+}
+
+// Must enter 3.0 mode to call ,otherwise cannot step correctly.
+static int mmi_qc30_step_down_vbus(struct mt6375_chg_data * ddata)
+{
+	int ret;
+
+	/* dm 0.6v and dm 3.3v step down 200mV when IC is QC3.0 mode*/
+	ret = mt6375_chg_field_set(ddata, F_DM_LDO_VSEL,600); //dm 0.6V
+	if (ret)
+		return ret;
+
+	udelay(2500);
+	ret = mt6375_chg_field_set(ddata, F_DM_LDO_VSEL,3300); //dm 3.3v
+	udelay(2500);
+
+	return ret;
+}
+
+static int mmi_detected_qc30_hvdcp(struct mt6375_chg_data * ddata, int *charger_type)
+{
+	int ret = 0;
+	int i=0, vbus_voltage;
+
+	/* dp 0.6v and dm 3.3v entry QC3.0 mode */
+	ret = mt6375_chg_field_set(ddata, F_DM_LDO_VSEL,3300); //dm 3.3v
+	if (ret)
+		return ret;
+
+	ret = mt6375_chg_field_set(ddata, F_DM_LDO_EN, 1); //dm 3.3v
+	if (ret)
+		return ret;
+
+	ret = mt6375_chg_field_set(ddata, F_DP_LDO_VSEL, 600); //dp 0.6v
+	if (ret)
+		return ret;
+
+	mdelay(100);
+
+	for (i = 0; i < 16; i++) {
+		ret = mmi_qc30_step_up_vbus(ddata);
+		if (ret)
+			pr_err("HVDCP: %s qc30 step up vbus error\n", __func__);
+	}
+
+	mdelay(100);//need tunning
+
+	mt6375_get_vbus(ddata->chgdev, &vbus_voltage);
+	pr_info("HVDCP: %s vbus voltage now = %d in detected qc30\n", __func__,vbus_voltage);
+
+	if (vbus_voltage > MMI_HVDCP3_VOLTAGE_STANDARD) {
+		*charger_type = USB_TYPE_QC30;
+		pr_info("HVDCP: %s QC3.0 charger detected\n", __func__);
+	}
+
+	for (i = 0; i < 16; i++) {
+		ret = mmi_qc30_step_down_vbus(ddata);
+		if (ret)
+			pr_err("HVDCP: %s qc30 step down vbus error\n", __func__);
+	}
+
+	//mt6375_get_vbus(ddata->chgdev, &vbus_voltage);
+	//pr_info("HVDCP: %s vbus voltage now = %d after detected qc30\n", __func__,vbus_voltage);
+
+	return ret;
+}
+
+#define QC3P_AUTHEN_LOW_THR_MV 5500000
+#define QC3P_AUTHEN_HIGH_THR_MV 6500000
+#define QC3P_AUTHEN_NONE_THR_MV 9200000
+#define QC3P_AUTHEN_45W_THR_MV 8200000
+#define QC3P_AUTHEN_27W_THR_MV 7200000
+#define QC3P_AUTHEN_18W_THR_MV 6200000
+static int mmi_detected_qc3p_hvdcp(struct mt6375_chg_data * ddata, int *charger_type)
+{
+	int ret = 0;
+	int i=0, vbus_voltage;
+
+	mdelay(100);//need tunning
+
+	mt6375_get_vbus(ddata->chgdev, &vbus_voltage);
+
+	if (vbus_voltage < QC3P_AUTHEN_LOW_THR_MV
+		|| vbus_voltage > QC3P_AUTHEN_HIGH_THR_MV) {
+		/*do qc3p rerun*/
+		pr_err("HVDCP: qc3p voltage is invalid\n");
+		return -1;
+	}
+
+	for (i = 0;i < 3; i++) {
+		ret = mmi_qc30_step_up_vbus(ddata);
+		if (ret)
+			pr_err("HVDCP: %s qc3p step up vbus error\n", __func__);
+
+		ret = mmi_qc30_step_down_vbus(ddata);
+		if (ret)
+			pr_err("HVDCP: %s qc3p step down vbus error\n", __func__);
+
+	}
+
+	mdelay(30);//need tuning
+
+	mt6375_get_vbus(ddata->chgdev, &vbus_voltage);
+
+	for (i = 0; i < 2; i++) {
+		ret = mmi_qc30_step_up_vbus(ddata);
+		if (ret)
+			pr_err("HVDCP: %s qc3p step up vbus error\n", __func__);
+	}
+
+	for (i = 0; i < 2; i++) {
+		ret = mmi_qc30_step_down_vbus(ddata);
+		if (ret)
+			pr_err("HVDCP: %s qc3p step down vbus error\n", __func__);
+	}
+
+	msleep(30);
+
+	pr_info("HVDCP: %s vbus voltage now = %d after detected qc3p\n", __func__,vbus_voltage);
+
+	if (vbus_voltage > QC3P_AUTHEN_NONE_THR_MV)
+		ddata->mmi_qc3p_power = MMI_POWER_SUPPLY_QC3P_NONE;
+	else if (vbus_voltage > QC3P_AUTHEN_45W_THR_MV) {
+		ddata->mmi_qc3p_power = MMI_POWER_SUPPLY_QC3P_45W;
+		*charger_type = USB_TYPE_QC3P_45;
+	} else if (vbus_voltage > QC3P_AUTHEN_27W_THR_MV) {
+		ddata->mmi_qc3p_power = MMI_POWER_SUPPLY_QC3P_27W;
+		*charger_type = USB_TYPE_QC3P_27;
+	} else if (vbus_voltage > QC3P_AUTHEN_18W_THR_MV) {
+		ddata->mmi_qc3p_power = MMI_POWER_SUPPLY_QC3P_18W;
+		*charger_type = USB_TYPE_QC3P_18;
+	} else
+		ddata->mmi_qc3p_power = MMI_POWER_SUPPLY_QC3P_NONE;
+
+	if (ddata->mmi_qc3p_power != MMI_POWER_SUPPLY_QC3P_NONE) {
+		pr_info("HVDCP: %s detected qc3p, qc3p power = %d\n",
+					__func__, ddata->mmi_qc3p_power);
+	} else {
+		pr_err("HVDCP: qc3p power is invalid\n");
+		return -1;
+	}
+
+	return ret;
+}
+
+static int mmi_hvdcp_detect_kthread(void *param)
+{
+	struct mt6375_chg_data * ddata = param;
+	int ret;
+	int charger_type = USB_TYPE_UNKNOWN;
+	union power_supply_propval val;
+
+	do {
+
+		wait_event_interruptible(ddata->mmi_hvdcp_wait_que, ddata->mmi_hvdcp_trig_flag || kthread_should_stop());
+		if (kthread_should_stop())
+			break;
+
+		down(&ddata->sem_dpdm);
+		pr_info("HVDCP: mmi_hvdcp_detect_kthread begin\n");
+		ddata->mmi_hvdcp_trig_flag = false;
+		ddata->qc_is_detect = true;
+		mt6375_chg_field_set(ddata, F_IAICR, 500);
+		mt6375_chg_set_usbsw(ddata, USBSW_CHG);
+
+rerun:
+		//enable dpdm manual mode
+		ret = mmi_dpdm_manual_mode_enable(ddata, true);
+		if (ret < 0) {
+			pr_err("HVDCP: dpdm manual mode enable failed\n");
+			goto out;
+		}
+
+		//do qc2.0 detected
+		ret = mmi_detected_qc20_hvdcp(ddata, &charger_type);
+		if (ret) {
+			pr_err("HVDCP: Cann't detected qc20 hvdcp\n");
+			goto out;
+		}
+
+		if (charger_type != USB_TYPE_QC20)
+			goto out;
+
+		//do qc3.0 detected
+		ret = mmi_detected_qc30_hvdcp(ddata, &charger_type);
+		if (ret) {
+			pr_err("HVDCP: Cann't detected qc30 hvdcp\n");
+		}
+
+		//do qc3p detected
+		if (charger_type == USB_TYPE_QC30) {
+			ret = mmi_detected_qc3p_hvdcp(ddata, &charger_type);
+			if (ret) {
+				if (ddata->mmi_qc3p_rerun_done == false) {
+					pr_info("HVDCP: Rerun detected hvdcp\n");
+					ddata->mmi_qc3p_rerun_done = true;
+					//pull down dpdm for rerun HVDCP detected
+					ret = mmi_dpdm_manual_mode_enable(ddata, false);
+					if (ret < 0) {
+						pr_err("HVDCP: dpdm manual mode disable failed\n");
+					}
+					mdelay(100);
+					goto rerun;
+				} else {
+					pr_err("HVDCP: Cann't detected qc3p hvdcp\n");
+				}
+			}
+		}
+
+		ret = power_supply_get_property(ddata->psy, POWER_SUPPLY_PROP_ONLINE, &val);
+		if (!val.intval)
+			goto out;
+
+		ddata->qc_chg_type = charger_type;
+		ddata->qc_is_detect = false;
+
+		if(ddata->qc_chg_type == USB_TYPE_QC20) {
+			/* dp 3.3v and dm 0.6v out 9V */
+			ret = mt6375_chg_field_set(ddata, F_DP_LDO_VSEL, 3300); //dp 3.3v
+			if (ret)
+				return ret;
+
+			ret = mt6375_chg_field_set(ddata, F_DM_LDO_VSEL, 600); //dm 0.6v
+			if (ret)
+				return ret;
+
+			pr_err("Force set qc2 9V");
+		}
+
+		//notify charging policy to update charger type
+		/*
+		if ((ddata->qc_chg_type == USB_TYPE_QC30)
+			|| (ddata->qc_chg_type == USB_TYPE_QC3P_18)
+			|| (ddata->qc_chg_type == USB_TYPE_QC3P_27)
+			|| (ddata->qc_chg_type == USB_TYPE_QC3P_45)) {
+			charger_dev_notify(ddata->chgdev, CHARGER_DEV_NOTIFY_CTD_DONE);
+		}
+*/
+		msleep(300);
+
+out:
+
+		ddata->qc_is_detect = false;
+		up(&ddata->sem_dpdm);
+		pr_info("HVDCP: mmi_hvdcp_detect_kthread end\n");
+	}while(!kthread_should_stop());
+
+	pr_info("HVDCP: qc3 kthread stop\n");
+	return 0;
+}
+
+int mmi_dpdm_dump_info(struct mt6375_chg_data *ddata)
+{
+	int i, ret;
+	u32 val;
+	char buf[DUMP_REG_BUF_SIZE] = "\0";
+	static struct {
+		const u16 reg;
+		const char *name;
+	} regs[] = {
+		{ .reg = MT6375_REG_DPDM_CTRL1, .name = "DPDM_CTRL1" },
+		{ .reg = MT6375_REG_DPDM_CTRL2, .name = "DPDM_CTRL2" },
+		{ .reg = MT6375_REG_DPDM_CTRL3, .name = "DPDM_CTRL3" },
+		{ .reg = MT6375_REG_DPDM_CTRL4, .name = "DPDM_CTRL4" },
+		{ .reg = MT6375_REG_DPDM_CTRL5, .name = "DPDM_CTRL5" },
+		{ .reg = MT6375_REG_DPDM_CTRL7, .name = "DPDM_CTRL7" },
+		{ .reg = MT6375_REG_DPDM_CTRL8, .name = "DPDM_CTRL8" },
+	};
+
+	for (i = 0; i < ARRAY_SIZE(regs); i++) {
+		ret = regmap_read(ddata->rmap, regs[i].reg, &val);
+		if (ret < 0) {
+			dev_err(ddata->dev, "failed to read %s\n",
+				regs[i].name);
+			return ret;
+		}
+		if (i == ARRAY_SIZE(regs) - 1)
+			scnprintf(buf + strlen(buf), DUMP_REG_BUF_SIZE,
+				  "%s = 0x%02X\n", regs[i].name, val);
+		else
+			scnprintf(buf + strlen(buf), DUMP_REG_BUF_SIZE,
+				  "%s = 0x%02X, ", regs[i].name, val);
+	}
+	dev_info(ddata->dev, "HVDCP:%s %s", __func__, buf);
+
+	return 0;
+}
+#endif
 
 static int mt6375_chg_init_setting(struct mt6375_chg_data *ddata)
 {
@@ -3336,6 +4174,9 @@ static int mt6375_chg_probe(struct platform_device *pdev)
 	mutex_init(&ddata->cv_lock);
 	mutex_init(&ddata->hm_lock);
 	mutex_init(&ddata->pwr_rdy_dwork_lock);
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	mutex_init(&ddata->dpdm_lock);
+#endif
 	ddata->pwr_rdy = false;
 	atomic_set(&ddata->eoc_cnt, 0);
 	ddata->wq = create_singlethread_workqueue(dev_name(dev));
@@ -3344,12 +4185,22 @@ static int mt6375_chg_probe(struct platform_device *pdev)
 		ret = -ENOMEM;
 		goto out;
 	}
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	ddata->qc_dev = get_adapter_by_name("qc_protocol_ic");
+	if (ddata->qc_dev) {
+		dev_info(dev, "Found qc protocol ic dev\n");
+	} else {
+		dev_info(dev, "Don't find qc protocol ic dev\n");
+	}
+	sema_init(&ddata->sem_dpdm, 1);
+	INIT_DELAYED_WORK(&ddata->detect_qc_dwork, get_qc_charger_type_func_work);
+	INIT_DELAYED_WORK(&ddata->mmi_hvdcp_detect_dwork, mmi_start_hvdcp_detect_work);
+#endif
 	INIT_WORK(&ddata->bc12_work, mt6375_chg_bc12_work_func);
 	INIT_DELAYED_WORK(&ddata->pwr_rdy_dwork, mt6375_chg_pwr_rdy_dwork_func);
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
     INIT_DELAYED_WORK(&ddata->psy_dwork, wt6670f_get_charger_type_func_work);
 #endif
-
 	platform_set_drvdata(pdev, ddata);
 
 	ret = device_create_file(dev, &dev_attr_shipping_mode);
@@ -3399,6 +4250,18 @@ static int mt6375_chg_probe(struct platform_device *pdev)
 		dev_err(dev, "failed to init irq\n");
 		goto out_chgdev;
 	}
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	if (ddata->mmi_hvdcp_support) {
+		ddata->mmi_hvdcp_authen_task = kthread_create(mmi_hvdcp_detect_kthread, ddata, "mmi_hvdcp_authen");
+		if (IS_ERR(ddata->mmi_hvdcp_authen_task)) {
+			ret = PTR_ERR(ddata->mmi_hvdcp_authen_task);
+			dev_err(dev, "Failed to create mmi_hvdcp_authen_task ret = %d\n", ret);
+			goto out_chgdev;
+		}
+		init_waitqueue_head(&ddata->mmi_hvdcp_wait_que);
+		wake_up_process(ddata->mmi_hvdcp_authen_task);
+	}
+#endif
 	queue_delayed_work(system_freezable_wq, &ddata->pwr_rdy_dwork,
 			   msecs_to_jiffies(2000));
 	mt_dbg(dev, "successfully\n");
@@ -3412,6 +4275,9 @@ out_attr:
 out_wq:
 	destroy_workqueue(ddata->wq);
 out:
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	mutex_destroy(&ddata->dpdm_lock);
+#endif
 	mutex_destroy(&ddata->pwr_rdy_dwork_lock);
 	mutex_destroy(&ddata->hm_lock);
 	mutex_destroy(&ddata->cv_lock);
@@ -3428,11 +4294,17 @@ static int mt6375_chg_remove(struct platform_device *pdev)
 	if (ddata) {
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
 		cancel_delayed_work_sync(&ddata->psy_dwork);
+#elif defined(CONFIG_MOTO_SWQC_SUPPORT)
+		cancel_delayed_work_sync(&ddata->detect_qc_dwork);
+		cancel_delayed_work_sync(&ddata->mmi_hvdcp_detect_dwork);
 #endif
 		charger_device_unregister(ddata->chgdev);
 		device_remove_file(ddata->dev, &dev_attr_shipping_mode);
 		cancel_delayed_work_sync(&ddata->pwr_rdy_dwork);
 		destroy_workqueue(ddata->wq);
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+		mutex_destroy(&ddata->dpdm_lock);
+#endif
 		mutex_destroy(&ddata->pwr_rdy_dwork_lock);
 		mutex_destroy(&ddata->hm_lock);
 		mutex_destroy(&ddata->cv_lock);

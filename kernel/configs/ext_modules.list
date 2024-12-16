@@ -10,3 +10,4 @@
 ../motorola/kernel/modules/drivers/power/nu2115a_mmi
 ../motorola/kernel/modules/drivers/power/sc8541_mmi
 ../motorola/kernel/modules/drivers/power/mmi_decrete_charger_cp_qc3p
+../motorola/kernel/modules/drivers/power/mmi_pephv

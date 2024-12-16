@@ -1119,6 +1119,9 @@ static ssize_t Charging_mode_show(struct device *dev,
 	case PE5_ID:
 		alg_name = "P5";
 		break;
+	case PEHV_ID:
+		alg_name = "pehv";
+		break;
 	}
 	chr_err("%s: charging_mode: %s\n", __func__, alg_name);
 	return sprintf(buf, "%s\n", alg_name);
@@ -2578,6 +2581,23 @@ static bool charger_init_algo(struct mtk_charger *info)
 	}
 	idx++;
 
+	if (info->fast_charging_indicator & PEHV_ID) {
+		alg = get_chg_alg_by_name("pehv");
+		info->alg[idx] = alg;
+		if (alg == NULL) {
+			chr_err("get pehv fail\n");
+			return false;
+		} else if (alg->alg_id == 0) {
+			chr_err("get pehv success\n");
+			alg->config = info->config;
+			alg->alg_id = PEHV_ID;
+			chg_alg_init_algo(alg);
+
+			register_chg_alg_notifier(alg, &info->chg_alg_nb);
+		}
+		idx++;
+	}
+
 	alg = get_chg_alg_by_name("pe4");
 	info->alg[idx] = alg;
 	if (alg == NULL)
@@ -3307,6 +3327,10 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 	static struct chg_alg_device *pe_alg = NULL;
 	static struct chg_alg_device *pe2_alg = NULL;
 
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	int qc_chg_type = 0;
+#endif
+
 #if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 	struct chg_alg_device *alg = NULL;
 	int i = 0;
@@ -3361,6 +3385,17 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 		goto end_rate_check;
  	}
 
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
+	// QC2, QC3 and Qc3+ all support max power more than 15w, should show trubo power
+	if ((qc_chg_type == USB_TYPE_QC30) ||
+            (qc_chg_type == USB_TYPE_QC3P_18) ||
+            (qc_chg_type == USB_TYPE_QC3P_27) ||
+            (qc_chg_type == USB_TYPE_QC3P_45)) {
+		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		goto end_rate_check;
+	}
+#endif
 	// detect if PE1.0 adaptor insert
 	if(pe_alg == NULL){
 		pe_alg = get_chg_alg_by_name("pe");
@@ -3452,12 +3487,15 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 #endif
 
 end_rate_check:
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT)
 	pr_info("%s ICL:%d, aicl_lmt:%d, vbus: %d, ibus: %d, Rp:%d, PD:%d, chg_type: %d, Charger Detected: %s\n",
 		__func__, icl, aicl_lmt, vbus, ibus, rp_level, info->pd_type, m_chg_type, charge_rate[info->mmi.charge_rate]);
 #elif defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 	pr_info("%s ICL:%d, aicl_lmt:%d, vbus: %d, ibus: %d, Rp:%d, PD:%d, Charger Detected: %s\n",
 		__func__, icl, aicl_lmt, vbus, ibus, rp_level, info->pd_type, charge_rate[info->mmi.charge_rate]);
+#elif defined(CONFIG_MOTO_SWQC_SUPPORT)
+	pr_info("%s ICL:%d, Rp:%d, PD:%d, chg_type: %d, Charger Detected: %s\n",
+		__func__, icl, rp_level, info->pd_type, qc_chg_type, charge_rate[info->mmi.charge_rate]);
 #else
 	pr_info("%s ICL:%d, Rp:%d, PD:%d, Charger Detected: %s\n",
 		__func__, icl, rp_level, info->pd_type, charge_rate[info->mmi.charge_rate]);
@@ -3756,12 +3794,17 @@ static int mmi_get_pdc_power(struct mtk_charger *info, bool force)
 	return pmax_mw;
 }
 
+#define MMI_POWER_30W 30
+#define MMI_POWER_15W 15
 static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 {
 	int rc = 0;
 	int icl = 0;
 	int power_watt = 0;
 	union power_supply_propval val;
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	int qc_chg_type = 0;
+#endif
 
 	if (info == NULL)
 		return power_watt;
@@ -3792,6 +3835,9 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 	}
 
 	icl = get_charger_input_current(info, info->chg1_dev) / 1000;
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
+#endif
 
 	if (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
 		power_watt = mmi_get_apdo_power(info, force) / 1000;
@@ -3801,7 +3847,13 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 		power_watt = mmi_get_pdc_power(info, force) / 1000;
 
 	} else {
-#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+		if (qc_chg_type == USB_TYPE_QC3P_27 || qc_chg_type == USB_TYPE_QC3P_18) {
+			power_watt = MMI_POWER_30W;
+		} else if (qc_chg_type == USB_TYPE_QC30) {
+			power_watt = MMI_POWER_15W;
+		}
+#elif defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 	    if(info->mmi.charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO){
 		power_watt = 5 * 3;
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_MT6375_SUPPORT)
@@ -3846,7 +3898,7 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
                 }
 
 		if(!is_fast_charging && (get_uisoc(info) < 100)){
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT)
 	            pr_info("[%s] icl = %d, aicl_lmt = %d, chg_type = %d, ibus = %d, power_type = %d, pd = %d\n", __func__, icl, aicl_lmt, m_chg_type, ibus, info->mmi.charge_rate, info->pd_type);
 		    if(icl >= 3000) {
                         // QC2, QC3 and Qc3+ all support max power more than 15w, should show trubo power
@@ -4085,7 +4137,7 @@ static int mmi_charger_check_dcp_ffc_status(struct mtk_charger *info, int batt_s
 	do {
 
 		chr_type = get_charger_type(info);
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT)
 		pr_err("[%s] ffc_state:%d, charge stage:%d, uisoc:%d, chg_type:%d\n", __func__, mmi->ffc_state, current_charge_state, batt_soc, m_chg_type);
 #else
                 pr_err("[%s] ffc_state:%d, charge stage:%d, uisoc:%d, chg_type:%d\n", __func__, mmi->ffc_state, current_charge_state, batt_soc, chr_type);
@@ -4355,7 +4407,9 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 	int stop_recharge_hyst;
 	int prev_step;
 	int batt_cv_delata;
-
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	int qc_chg_type = 0;
+#endif
 	union power_supply_propval val;
 	struct mmi_params *mmi = &info->mmi;
 	struct mmi_temp_zone *zone;
@@ -4456,6 +4510,14 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 		//if (info->mmi.chrg_iterm > FFC_ITERM_500MA) {
 		//	mmi->vfloat_comp_mv = (batt_soc == 100)?FV_COMP_24_MV:FV_COMP_32_MV; //Only for ffc charging
 		//}
+#elif  defined(CONFIG_MOTO_SWQC_SUPPORT)
+	charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
+	if ( (info->dvchg1_dev != NULL && info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) ||
+                (qc_chg_type == USB_TYPE_QC3P_27 || qc_chg_type == USB_TYPE_QC3P_18)) {
+		max_fv_mv = mmi_get_ffc_fv(info, batt_temp);
+
+		if (max_fv_mv == 0)
+			max_fv_mv = mmi->base_fv_mv;
 #else
 	if (info->dvchg1_dev != NULL
 		&& info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
@@ -6020,6 +6082,8 @@ static int psy_charger_property_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_INPUT_POWER_LIMIT:
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		return 1;
+	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
+		return 1;
 	default:
 		return 0;
 	}
@@ -6035,6 +6099,9 @@ static enum power_supply_property charger_psy_properties[] = {
 	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
 	POWER_SUPPLY_PROP_INPUT_POWER_LIMIT,
 	POWER_SUPPLY_PROP_CURRENT_MAX,
+#if defined(CONFIG_MOTO_SWQC_SUPPORT)
+	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
+#endif
 };
 
 static int psy_charger_get_property(struct power_supply *psy,
@@ -6081,9 +6148,20 @@ static int psy_charger_get_property(struct power_supply *psy,
 					val->intval = true;
 			}
 			break;
-		}
 
-		val->intval = is_charger_exist(info);
+			alg = get_chg_alg_by_name("pehv");
+			if (alg == NULL)
+				chr_err("get pehv fail\n");
+			else {
+				ret = chg_alg_is_algo_ready(alg);
+				if (ret == ALG_RUNNING) {
+					val->intval = true;
+					break;
+				}
+			}
+			break;
+		}
+ 		val->intval = is_charger_exist(info);
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
 		if (chg != NULL)

@@ -865,6 +865,51 @@ int charger_dev_get_property(struct charger_device *charger_dev,
 }
 EXPORT_SYMBOL(charger_dev_get_property);
 
+int charger_dev_qc_is_detect(struct charger_device *chg_dev, bool *val)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->qc_is_detect)
+		return chg_dev->ops->qc_is_detect(chg_dev, val);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_qc_is_detect);
+
+int charger_dev_get_protocol(struct charger_device *chg_dev, int *val)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->get_protocol)
+		return chg_dev->ops->get_protocol(chg_dev, val);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_protocol);
+
+int charger_dev_config_qc_charger(struct charger_device *chg_dev)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->config_qc_charger)
+		return chg_dev->ops->config_qc_charger(chg_dev);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_config_qc_charger);
+
+int charger_dev_set_dp_dm(struct charger_device *chg_dev, int val)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->set_dp_dm)
+		return chg_dev->ops->set_dp_dm(chg_dev, val);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_set_dp_dm);
+
+int charger_dev_get_dp_dm(struct charger_device *chg_dev, int *val)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->get_dp_dm)
+		return chg_dev->ops->get_dp_dm(chg_dev, val);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_dp_dm);
+
 static DEVICE_ATTR_RO(name);
 
 static struct attribute *charger_class_attrs[] = {

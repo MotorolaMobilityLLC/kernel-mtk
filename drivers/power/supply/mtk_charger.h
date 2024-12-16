@@ -134,6 +134,38 @@ struct mmi_mux_configure {
 	bool wls_chip_en;
 };
 
+enum mmi_usb_type {
+	USB_TYPE_UNKNOWN = 0,
+	USB_TYPE_FC,
+	USB_TYPE_SDP,		/* Standard Downstream Port */
+	USB_TYPE_CDP,		/* Charging Downstream Port */
+	USB_TYPE_DCP,		/* Dedicated Charging Port */
+
+	USB_TYPE_QC20,
+	USB_TYPE_QC30,
+	USB_TYPE_OCP,
+	USB_TYPE_QC3P_18,
+	USB_TYPE_QC3P_27,
+	USB_TYPE_QC3P_45,
+};
+
+enum mmi_qc3p_power {
+	MMI_POWER_SUPPLY_QC3P_NONE,
+	MMI_POWER_SUPPLY_QC3P_18W,
+	MMI_POWER_SUPPLY_QC3P_27W,
+	MMI_POWER_SUPPLY_QC3P_45W,
+};
+
+enum {
+	DP_DM_UNKNOWN = 0,
+	DP_DM_FORCE_QC2_5V,
+	DP_DM_FORCE_QC2_9V,
+	DP_DM_FORCE_QC3_5V,
+	DP_DM_FORCE_QC3P_5V,
+	DP_DM_DP_PULSE,
+	DP_DM_DM_PULSE,
+};
+
 enum bat_temp_state_enum {
 	BAT_TEMP_LOW = 0,
 	BAT_TEMP_NORMAL,
