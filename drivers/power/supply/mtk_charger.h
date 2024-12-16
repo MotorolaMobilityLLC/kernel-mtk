@@ -166,6 +166,15 @@ enum {
 	DP_DM_DM_PULSE,
 };
 
+enum {
+	POWER_SUPPLY_USB_TYPE_HVDCP2 = 128,
+	POWER_SUPPLY_USB_TYPE_HVDCP3,
+	POWER_SUPPLY_USB_TYPE_HVDCP3P5,
+	POWER_SUPPLY_USB_TYPE_WLC_BPP = 144,
+	POWER_SUPPLY_USB_TYPE_WLC_EPP,
+	POWER_SUPPLY_USB_TYPE_WLC_MOTO,
+};
+
 enum bat_temp_state_enum {
 	BAT_TEMP_LOW = 0,
 	BAT_TEMP_NORMAL,
@@ -459,10 +468,10 @@ struct mmi_params {
 	int			vbus_h;
 	int			vbus_l;
 	int			charger_watt;
-
 	int			typec_ntc_pull_up_r;
 	struct ntc_temp 		*typec_ntc_table;
 	int			num_typec_ntc_table;
+	int			real_charger_type;
 	struct work_struct		notify_power_event_work;
 };
 /*moto mmi Functionality end*/

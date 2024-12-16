@@ -3418,8 +3418,9 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 
 #if defined(CONFIG_MOTO_SWQC_SUPPORT)
 	charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
-	// QC2, QC3 and Qc3+ all support max power more than 15w, should show trubo power
-	if ((qc_chg_type == USB_TYPE_QC30) ||
+	//QC3 and Qc3+ all support max power more than 15w, should show trubo power
+	if ((qc_chg_type == USB_TYPE_QC20) ||
+            (qc_chg_type == USB_TYPE_QC30) ||
             (qc_chg_type == USB_TYPE_QC3P_18) ||
             (qc_chg_type == USB_TYPE_QC3P_27) ||
             (qc_chg_type == USB_TYPE_QC3P_45)) {
@@ -3826,16 +3827,21 @@ static int mmi_get_pdc_power(struct mtk_charger *info, bool force)
 }
 
 #define MMI_POWER_30W 30
+#define MMI_POWER_18W 18
 #define MMI_POWER_15W 15
-static int mmi_check_power_watt(struct mtk_charger *info, bool force)
+#define MMI_POWER_10W 10
+#define MMI_POWER_7W 7
+#define MMI_POWER_2W 2
+static int mmi_check_power_info(struct mtk_charger *info, bool force)
 {
 	int rc = 0;
 	int icl = 0;
 	int power_watt = 0;
-	union power_supply_propval val;
 #if defined(CONFIG_MOTO_SWQC_SUPPORT)
 	int qc_chg_type = 0;
 #endif
+	union power_supply_propval val = {0,};
+	int real_charger_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
 
 	if (info == NULL)
 		return power_watt;
@@ -3850,7 +3856,13 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 			rc = power_supply_get_property(info->wl_psy,
 				POWER_SUPPLY_PROP_POWER_NOW, &val);
 			power_watt = val.intval;
-			return power_watt;
+
+			rc = power_supply_get_property(info->wl_psy,
+				POWER_SUPPLY_PROP_USB_TYPE, &val);
+			if (rc == 0)
+				real_charger_type = val.intval;
+
+			goto out;
 		}
 	}
 
@@ -3858,11 +3870,13 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 	if (rc < 0) {
 		pr_err("[%s]Error get chg online rc = %d\n", __func__, rc);
 		power_watt = 0;
-		return power_watt;
+		real_charger_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+		goto out;
 	} else if (!val.intval) {
 		pr_info("[%s]usb off line\n", __func__);
 		power_watt = 0;
-		return power_watt;
+		real_charger_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+		goto out;
 	}
 
 	icl = get_charger_input_current(info, info->chg1_dev) / 1000;
@@ -3872,22 +3886,49 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 
 	if (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
 		power_watt = mmi_get_apdo_power(info, force) / 1000;
-
+		real_charger_type = POWER_SUPPLY_USB_TYPE_PD_PPS;
 	} else if (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK
 			|| info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_PD30) {
 		power_watt = mmi_get_pdc_power(info, force) / 1000;
-
+		real_charger_type = POWER_SUPPLY_USB_TYPE_PD;
 	} else {
 #if defined(CONFIG_MOTO_SWQC_SUPPORT)
-		if (qc_chg_type == USB_TYPE_QC3P_27 || qc_chg_type == USB_TYPE_QC3P_18 ||qc_chg_type == USB_TYPE_QC3P_45) {
+		if (qc_chg_type == USB_TYPE_QC3P_45 || qc_chg_type == USB_TYPE_QC3P_27) {
 			power_watt = MMI_POWER_30W;
+			real_charger_type = POWER_SUPPLY_USB_TYPE_HVDCP3P5;
+		} else if (qc_chg_type == USB_TYPE_QC3P_18) {
+			power_watt = MMI_POWER_18W;
+			real_charger_type = POWER_SUPPLY_USB_TYPE_HVDCP3P5;
 		} else if (qc_chg_type == USB_TYPE_QC30) {
 			power_watt = MMI_POWER_15W;
+			real_charger_type = POWER_SUPPLY_USB_TYPE_HVDCP3;
+		} else if (qc_chg_type == USB_TYPE_QC20) {
+			power_watt = MMI_POWER_15W;
+			real_charger_type = POWER_SUPPLY_USB_TYPE_HVDCP2;
+		} else { //BC1.2
+			switch (info->chr_type) {
+			case POWER_SUPPLY_TYPE_USB_DCP:
+				power_watt = MMI_POWER_10W;
+				real_charger_type = POWER_SUPPLY_USB_TYPE_DCP;
+				break;
+			case POWER_SUPPLY_TYPE_USB_CDP:
+				power_watt = MMI_POWER_7W;
+				real_charger_type = POWER_SUPPLY_USB_TYPE_CDP;
+				break;
+			case POWER_SUPPLY_TYPE_USB:
+				power_watt = MMI_POWER_2W;
+				real_charger_type = POWER_SUPPLY_USB_TYPE_SDP;
+				break;
+			default:
+				power_watt = 5 * icl /1000;
+				real_charger_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+				break;
+			}
 		}
 		pr_info("[%s] In noramal mode, show power watt by charger type, chg_type = %d, power_watt = %d\n", __func__, qc_chg_type, power_watt);
 #elif defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
-	    if(info->mmi.charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO){
-		power_watt = 5 * 3;
+		if(info->mmi.charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO){
+			power_watt = 5 * 3;
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_MT6375_SUPPORT)
 		if (info->mmi.factory_mode) {
 		// Qc3+ should show power 30W in factory mode
@@ -3979,12 +4020,14 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 
 	power_watt = MAX(power_watt, 1);
 
+out:
+	info->mmi.real_charger_type = real_charger_type;
 	info->mmi.charger_watt = power_watt;
-	pr_info("[%s] power_watt = %dW\n", __func__, power_watt);
+	pr_info("[%s] power_watt = %dW, real_charger_type = %d\n", __func__, power_watt, real_charger_type);
+
 	return power_watt;
 }
-
-#define MMI_BATT_UEVENT_NUM (6)
+#define MMI_BATT_UEVENT_NUM (7)
 static void mmi_updata_batt_status(struct mtk_charger *info)
 {
 	static struct power_supply	*batt_psy;
@@ -3994,6 +4037,7 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 	char *chrg_vbus_string = NULL;
 	char *chrg_pmax_mw = NULL;
 	char *chrg_pmax_design_string = NULL;
+	char *real_charger_type_string = NULL;
 	char *batt_string = NULL;
 	char *envp[MMI_BATT_UEVENT_NUM + 1];
 	int rc;
@@ -4022,6 +4066,7 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 		chrg_vbus_string = &batt_string[CHG_SHOW_MAX_SIZE * 3];
 		chrg_pmax_mw = &batt_string[CHG_SHOW_MAX_SIZE * 4];
 		chrg_pmax_design_string = &batt_string[CHG_SHOW_MAX_SIZE * 5];
+		real_charger_type_string = &batt_string[CHG_SHOW_MAX_SIZE * 6];
 
 		scnprintf(chrg_rate_string, CHG_SHOW_MAX_SIZE,
 			  "POWER_SUPPLY_CHARGE_RATE=%s",
@@ -4038,10 +4083,13 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 			  "POWER_SUPPLY_VBUS_PRESENT=%s", mmi_check_vbus_present(info)? "true": "false");
 
 		scnprintf(chrg_pmax_mw, CHG_SHOW_MAX_SIZE,
-			  "POWER_SUPPLY_POWER_WATT=%d", mmi_check_power_watt(info, false));
+			  "POWER_SUPPLY_POWER_WATT=%d", mmi_check_power_info(info, false));
 
 		scnprintf(chrg_pmax_design_string, CHG_SHOW_MAX_SIZE,
 			  "POWER_SUPPLY_POWER_WATT_DESIGN=%d", info->mmi.power_max_design_mw / 1000);
+
+		scnprintf(real_charger_type_string, CHG_SHOW_MAX_SIZE,
+			  "POWER_SUPPLY_CHARGE_REAL_TYPE=%d", info->mmi.real_charger_type);
 
 		envp[0] = chrg_rate_string;
 		envp[1] = batt_age_string;
@@ -4049,6 +4097,7 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 		envp[3] = chrg_vbus_string;
 		envp[4] = chrg_pmax_mw;
 		envp[5] = chrg_pmax_design_string;
+		envp[6] = real_charger_type_string;
 		envp[MMI_BATT_UEVENT_NUM] = NULL;
 		kobject_uevent_env(&batt_psy->dev.kobj, KOBJ_CHANGE, envp);
 		kfree(batt_string);
@@ -6618,10 +6667,13 @@ static int mmi_notify_lpd_event(struct mtk_charger *pinfo) {
 }
 
 #define CHG_SHOW_MAX_SIEZE 50
+#define MMI_UEVENT_NUM (2)
 static void mmi_notify_power_event_work(struct work_struct *work) {
 	char *event_string = NULL;
-	char *batt_uenvp[2];
+	char *batt_uenvp[MMI_UEVENT_NUM + 1];
 	int pmax_w = 0;
+	char *chrg_pmax_mw_string = NULL;
+	char *real_charger_type_string = NULL;
 
 	if(!mmi_info->bat_psy)
 		mmi_info->bat_psy = power_supply_get_by_name("battery");
@@ -6630,18 +6682,28 @@ static void mmi_notify_power_event_work(struct work_struct *work) {
 		return;
 	}
 
-	pmax_w = mmi_check_power_watt(mmi_info, true);
+	pmax_w = mmi_check_power_info(mmi_info, true);
 
-	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
+	event_string = kmalloc(CHG_SHOW_MAX_SIEZE * MMI_UEVENT_NUM, GFP_KERNEL);
 
-	scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
-			"POWER_SUPPLY_POWER_WATT=%d", pmax_w);
+	if (!event_string) {
+		pr_err("%s  Failed to Get Uevent Mem\n", __func__);
+	} else {
+		chrg_pmax_mw_string = event_string;
+		real_charger_type_string = &event_string[CHG_SHOW_MAX_SIEZE];
 
-	batt_uenvp[0] = event_string;
-	batt_uenvp[1] = NULL;
-	kobject_uevent_env(&mmi_info->bat_psy->dev.kobj, KOBJ_CHANGE, batt_uenvp);
-	chr_err("%s, pmax_w:%d send %s\n",__func__, pmax_w, event_string);
-	kfree(event_string);
+		scnprintf(chrg_pmax_mw_string, CHG_SHOW_MAX_SIEZE,
+				"POWER_SUPPLY_POWER_WATT=%d", pmax_w);
+
+		scnprintf(real_charger_type_string, CHG_SHOW_MAX_SIEZE,
+				"POWER_SUPPLY_CHARGE_REAL_TYPE=%d", mmi_info->mmi.real_charger_type);
+
+		batt_uenvp[0] = chrg_pmax_mw_string;
+		batt_uenvp[1] = real_charger_type_string;
+		batt_uenvp[MMI_UEVENT_NUM] = NULL;
+		kobject_uevent_env(&mmi_info->bat_psy->dev.kobj, KOBJ_CHANGE, batt_uenvp);
+		kfree(event_string);
+	}
 }
 
 
