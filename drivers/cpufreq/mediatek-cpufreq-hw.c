@@ -10,7 +10,7 @@
 #include <linux/iopoll.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/of_address.h>
+#include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/pm_qos.h>
 #include <linux/slab.h>
@@ -378,7 +378,6 @@ static int mtk_cpufreq_hw_driver_probe(struct platform_device *pdev)
 	const u16 *offsets;
 	unsigned int cpu;
 	int ret;
-
 	offsets = of_device_get_match_data(&pdev->dev);
 	if (!offsets)
 		return -EINVAL;

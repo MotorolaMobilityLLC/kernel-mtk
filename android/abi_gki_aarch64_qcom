@@ -420,6 +420,7 @@
   devm_extcon_dev_unregister
   devm_extcon_register_notifier
   devm_free_irq
+  devm_fwnode_pwm_get
   devm_gpiod_get
   devm_gpiod_get_optional
   devm_gpio_request
@@ -720,6 +721,7 @@
   extcon_set_property_capability
   extcon_set_state
   extcon_set_state_sync
+  extcon_sync
   fasync_helper
   __fdget
   fd_install
@@ -2612,7 +2614,9 @@
   usb_control_msg_send
   usb_debug_root
   usb_decode_ctrl
+  usb_disable_autosuspend
   usb_driver_set_configuration
+  usb_enable_autosuspend
   usb_ep_alloc_request
   usb_ep_autoconfig
   usb_ep_dequeue
