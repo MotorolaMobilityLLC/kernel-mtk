@@ -24,8 +24,11 @@ static int vtskin_get_temp(void *data, int *temp)
 	int tz_temp, i, ret;
 	char *sensor_name;
 
+	mutex_lock(&skin_param[skin_tz->id].lock);
+
 	if (skin_param[skin_tz->id].ref_num == 0) {
 		*temp = THERMAL_TEMP_INVALID;
+		mutex_unlock(&skin_param[skin_tz->id].lock);
 		return 0;
 	}
 
@@ -34,6 +37,7 @@ static int vtskin_get_temp(void *data, int *temp)
 		if (!sensor_name) {
 			dev_err(skin_data->dev, "get sensor name fail %d\n", i);
 			*temp = THERMAL_TEMP_INVALID;
+			mutex_unlock(&skin_param[skin_tz->id].lock);
 			return -EINVAL;
 		}
 
@@ -41,6 +45,7 @@ static int vtskin_get_temp(void *data, int *temp)
 		if (IS_ERR_OR_NULL(tzd) || !tzd->ops->get_temp) {
 			dev_err(skin_data->dev, "get %s temp fail\n", sensor_name);
 			*temp = THERMAL_TEMP_INVALID;
+			mutex_unlock(&skin_param[skin_tz->id].lock);
 			return -EINVAL;
 		}
 
@@ -48,6 +53,7 @@ static int vtskin_get_temp(void *data, int *temp)
 		if (ret < 0) {
 			dev_err(skin_data->dev, "%s get_temp fail %d\n", sensor_name, ret);
 			*temp = THERMAL_TEMP_INVALID;
+			mutex_unlock(&skin_param[skin_tz->id].lock);
 			return -EINVAL;
 		}
 
@@ -66,6 +72,7 @@ static int vtskin_get_temp(void *data, int *temp)
 		}
 	}
 
+	mutex_unlock(&skin_param[skin_tz->id].lock);
 	return 0;
 }
 
@@ -117,6 +124,8 @@ static int vtskin_probe(struct platform_device *pdev)
 		ret = snprintf(skin_data->params[i].tz_name, THERMAL_NAME_LENGTH, tzdev->type);
 		if (ret < 0)
 			dev_notice(dev, "copy tz_name fail %s\n", tzdev->type);
+
+		mutex_init(&skin_data->params[i].lock);
 	}
 
 	plat_vtskin_info = skin_data;
