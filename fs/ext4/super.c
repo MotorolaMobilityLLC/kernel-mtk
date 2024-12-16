@@ -1834,6 +1834,7 @@ static const struct mount_opts {
 	{Opt_fc_debug_force, EXT4_MOUNT2_JOURNAL_FAST_COMMIT,
 	 MOPT_SET | MOPT_2 | MOPT_EXT4_ONLY},
 #endif
+	{Opt_abort, EXT4_MOUNT2_ABORT, MOPT_SET | MOPT_2},
 	{Opt_err, 0, 0}
 };
 
@@ -1902,8 +1903,6 @@ struct ext4_fs_context {
 	unsigned int	mask_s_mount_opt;
 	unsigned int	vals_s_mount_opt2;
 	unsigned int	mask_s_mount_opt2;
-	unsigned long	vals_s_mount_flags;
-	unsigned long	mask_s_mount_flags;
 	unsigned int	opt_flags;	/* MOPT flags */
 	unsigned int	spec;
 	u32		s_max_batch_time;
@@ -2054,12 +2053,6 @@ EXT4_SET_CTX(mount_opt2);
 EXT4_CLEAR_CTX(mount_opt2);
 EXT4_TEST_CTX(mount_opt2);
 
-static inline void ctx_set_mount_flag(struct ext4_fs_context *ctx, int bit)
-{
-	set_bit(bit, &ctx->mask_s_mount_flags);
-	set_bit(bit, &ctx->vals_s_mount_flags);
-}
-
 static int ext4_parse_param(struct fs_context *fc, struct fs_parameter *param)
 {
 	struct ext4_fs_context *ctx = fc->fs_private;
@@ -2122,9 +2115,6 @@ static int ext4_parse_param(struct fs_context *fc, struct fs_parameter *param)
 	case Opt_removed:
 		ext4_msg(NULL, KERN_WARNING, "Ignoring removed %s option",
 			 param->key);
-		return 0;
-	case Opt_abort:
-		ctx_set_mount_flag(ctx, EXT4_MF_FS_ABORTED);
 		return 0;
 	case Opt_inlinecrypt:
 #ifdef CONFIG_FS_ENCRYPTION_INLINE_CRYPT
@@ -2779,8 +2769,6 @@ static void ext4_apply_options(struct fs_context *fc, struct super_block *sb)
 	sbi->s_mount_opt |= ctx->vals_s_mount_opt;
 	sbi->s_mount_opt2 &= ~ctx->mask_s_mount_opt2;
 	sbi->s_mount_opt2 |= ctx->vals_s_mount_opt2;
-	sbi->s_mount_flags &= ~ctx->mask_s_mount_flags;
-	sbi->s_mount_flags |= ctx->vals_s_mount_flags;
 	sb->s_flags &= ~ctx->mask_s_flags;
 	sb->s_flags |= ctx->vals_s_flags;
 
@@ -6432,9 +6420,6 @@ static int __ext4_remount(struct fs_context *fc, struct super_block *sb)
 		goto restore_opts;
 	}
 
-	if (ext4_test_mount_flag(sb, EXT4_MF_FS_ABORTED))
-		ext4_abort(sb, ESHUTDOWN, "Abort forced by user");
-
 	sb->s_flags = (sb->s_flags & ~SB_POSIXACL) |
 		(test_opt(sb, POSIX_ACL) ? SB_POSIXACL : 0);
 
@@ -6602,6 +6587,14 @@ static int __ext4_remount(struct fs_context *fc, struct super_block *sb)
 
 	if (!ext4_has_feature_mmp(sb) || sb_rdonly(sb))
 		ext4_stop_mmpd(sbi);
+
+	/*
+	 * Handle aborting the filesystem as the last thing during remount to
+	 * avoid obsure errors during remount when some option changes fail to
+	 * apply due to shutdown filesystem.
+	 */
+	if (test_opt2(sb, ABORT))
+		ext4_abort(sb, ESHUTDOWN, "Abort forced by user");
 
 	return 0;
 
