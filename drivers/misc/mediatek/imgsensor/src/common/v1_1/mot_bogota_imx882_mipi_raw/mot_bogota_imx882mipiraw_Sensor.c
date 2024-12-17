@@ -114,9 +114,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	//2048x1152@120fps
 	.hs_video = {
-		.pclk = 806400000,
+		.pclk = 480000000,
 		.linelength = 2468,
-		.framelength = 2702,
+		.framelength = 1612,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2048,
