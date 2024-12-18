@@ -133,11 +133,12 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 /* initAF include driver initialization and standby mode */
 static int initAF(void)
 {
-	u8 gt6764_init_setting[4][2] = {
+	u8 gt6764_init_setting[5][2] = {
 					{0x02, 0x00},
 					{0x02, 0x02},
 					{0x06, 0x40}, //SAC setting (use AAC2)
-					{0x07, 0x02}};
+					{0x07, 0x02},
+					{0x0B, 0x00}};
 	u16 regIdx;
 
 	LOG_INF("+\n");
@@ -151,7 +152,7 @@ static int initAF(void)
 		s4AF_ReadReg(0x00, &Temp);  //ic info
 		LOG_INF("Check HW version: 0x00 is %x\n", Temp);
 
-		for (regIdx=0; regIdx<4; regIdx++) {
+		for (regIdx=0; regIdx<5; regIdx++) {
 
 			ret |= s4AF_WriteReg(0, gt6764_init_setting[regIdx][0], gt6764_init_setting[regIdx][1]); //Init setting
 
