@@ -1588,7 +1588,9 @@ free_card:
 static void mmc_sd_remove(struct mmc_host *host)
 {
 	mmc_remove_card(host->card);
+	mmc_claim_host(host);
 	host->card = NULL;
+	mmc_release_host(host);
 }
 
 /*
@@ -1698,19 +1700,20 @@ static int _mmc_sd_suspend(struct mmc_host *host)
 
 	mmc_claim_host(host);
 
-	if (mmc_card_suspended(card))
-		goto out;
+	if (card) {
+		if (mmc_card_suspended(card))
+			goto out;
 
-	if (sd_can_poweroff_notify(card))
-		err = sd_poweroff_notify(card);
-	else if (!mmc_host_is_spi(host))
-		err = mmc_deselect_cards(host);
+		if (sd_can_poweroff_notify(card))
+			err = sd_poweroff_notify(card);
+		else if (!mmc_host_is_spi(host))
+			err = mmc_deselect_cards(host);
 
-	if (!err) {
-		mmc_power_off(host);
-		mmc_card_set_suspended(card);
+		if (!err) {
+			mmc_power_off(host);
+			mmc_card_set_suspended(card);
+		}
 	}
-
 out:
 	mmc_release_host(host);
 	return err;
