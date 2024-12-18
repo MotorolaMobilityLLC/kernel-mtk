@@ -142,20 +142,20 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.min_shutter = 6,
 		.exp_step = 4,
 	},
-	//4096x2304@60fps
+	//2048x1152@60fps
 	.custom1 = {
-		.pclk = 804000000,
-		.linelength = 4984,
-		.framelength = 2684,
+		.pclk = 878400000,
+		.linelength = 4024,
+		.framelength = 3632,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 4096,
-		.grabwindow_height = 2304,
+		.grabwindow_width = 2048,
+		.grabwindow_height = 1152,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 800000000,
 		.max_framerate = 600,
-		.min_shutter = 5,
-		.exp_step = 1,
+		.min_shutter = 12,
+		.exp_step = 8,
 	},
 	//2048x1536@30fps
 	.custom2 = {
@@ -273,7 +273,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {
 	{8192, 6144,  000,  000, 8192, 6144, 4096, 3072, 0000, 0000, 4096, 3072, 0, 0, 4096, 3072},  /* Video 4096x3072@30fps*/
 	{8192, 6144,  000,  768, 8192, 4608, 2048, 1536, 0000,  192, 2048, 1152, 0, 0, 2048, 1152}, /* hs_video 2048x1152@120fps*/
 	{8192, 6144,  000,  000, 8192, 6144, 4096, 3072, 0000, 0000, 4096, 3072, 0, 0, 4096, 3072},  /* slim_video 4096x3072@30fps*/
-	{8192, 6144,  000,  768, 8192, 4608, 4096, 2304, 0000, 0000, 4096, 2304, 0, 0, 4096, 2304}, /* custom1 4096x2304@60fps*/
+	{8192, 6144,  000,  768, 8192, 4608, 2048, 1536, 0000,  192, 2048, 1152, 0, 0, 2048, 1152}, /* custom1 2048x1152@60fps*/
 	{8192, 6144,  000,  000, 8192, 6144, 2048, 1536, 0000, 0000, 2048, 1536, 0, 0, 2048, 1536}, /* custom2 2048x1536@30fps*/
 	{8192, 6144, 2048, 1536, 4096, 3072, 4096, 3072, 0000, 0000, 4096, 3072, 0, 0, 4096, 3072}, /* custom3 4096x3072crop@30fps*/
 	{8192, 6144,  000,  000, 8192, 6144, 8192, 6144, 0000, 0000, 8192, 6144, 0, 0, 8192, 6144}, /* custom4 8192x6144)50M@14fps*/
@@ -356,7 +356,6 @@ static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 sc
                 memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[3],
                         sizeof(struct SENSOR_VC_INFO2_STRUCT));
                 break;
-
 	default:
 		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[0],
 			sizeof(struct SENSOR_VC_INFO2_STRUCT));
