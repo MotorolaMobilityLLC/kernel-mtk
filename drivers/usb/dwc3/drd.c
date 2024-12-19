@@ -330,9 +330,7 @@ void dwc3_otg_update(struct dwc3 *dwc, bool ignore_idstatus)
 	int ret;
 	u32 reg;
 	int id;
-	int i;
 	unsigned long flags;
-	struct dwc3_vendor *vdwc = container_of(dwc, struct dwc3_vendor, dwc);
 
 	if (dwc->dr_mode != USB_DR_MODE_OTG)
 		return;
@@ -388,13 +386,9 @@ void dwc3_otg_update(struct dwc3 *dwc, bool ignore_idstatus)
 		} else {
 			if (dwc->usb2_phy)
 				otg_set_vbus(dwc->usb2_phy->otg, true);
-			phy_set_mode(dwc->usb2_generic_phy, PHY_MODE_USB_HOST);
-			for (i = 1; i < vdwc->num_usb2_ports; i++) {
-				if (vdwc->usb2_generic_phy[i]) {
-					phy_set_mode(vdwc->usb2_generic_phy[i],
-						     PHY_MODE_USB_HOST);
-				}
-			}
+			if (dwc->usb2_generic_phy)
+				phy_set_mode(dwc->usb2_generic_phy,
+					     PHY_MODE_USB_HOST);
 		}
 		break;
 	case DWC3_OTG_ROLE_DEVICE:
