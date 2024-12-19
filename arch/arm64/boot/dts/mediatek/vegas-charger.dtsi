@@ -289,7 +289,7 @@
          mmi,lower-limit-capacity = <60>;
          mmi,vfloat-comp-uv = <0>;
          mmi,enable-mux;
-         fast_charging_indicator = <0x8010>;
+         fast_charging_indicator = <0x8014>;
 };
 
 &pe5 {
@@ -310,9 +310,9 @@
 	status = "disabled";
 };
 
-&pdc {
+/*&pdc {
 	status = "disabled";
-};
+};*/
 
 &pe {
 	status = "disabled";

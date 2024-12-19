@@ -63,6 +63,10 @@
 static int pd_dbg_level = PD_DEBUG_LEVEL;
 #define PD_VBUS_IR_DROP_THRESHOLD 1200
 
+#ifdef CONFIG_CHARGER_SC89890H
+#define PD_IBUS_P_IBAT 55
+#endif
+
 static bool algo_waiver_test;
 module_param(algo_waiver_test, bool, 0644);
 
@@ -525,7 +529,9 @@ int mtk_pd_input_current_protection(struct chg_alg_device *alg, int vbus)
 int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 			int *newidx)
 {
+#ifndef CONFIG_CHARGER_SC89890H
 	int ret = 0;
+#endif
 	int idx, selected_idx;
 	unsigned int pd_max_watt, pd_min_watt, now_max_watt;
 	struct mtk_pd *pd = dev_get_drvdata(&alg->dev);
@@ -548,11 +554,13 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 	if (cap->nr == 0)
 		return -1;
 
+#ifndef CONFIG_CHARGER_SC89890H
 	ret = pd_hal_get_ibus(alg, &ibus);
 	if (ret < 0) {
 		pd_err("[%s] get ibus fail, keep default voltage\n", __func__);
 		return -1;
 	}
+#endif
 
 #ifdef FIXME
 	if (info->data.parallel_vbus) {
@@ -594,10 +602,22 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 	}
 
 	vbus = pd_hal_get_vbus(alg);
+#ifdef CONFIG_CHARGER_SC89890H
+	ibus = pd_hal_get_current(alg);
+	pd_err("[%s]vbus %d, ta %d, cur %d\n", __func__, vbus, cap->max_mv[idx], ibus);
+	if (ibus <= 0) {
+		pd_err("[%s] ibus<=0\n", __func__);
+		ibus = 1000;
+	} else {
+		if( (cap->max_mv[idx] > 5000) && ((cap->max_mv[idx] - abs(vbus))< 1000) )
+		ibus = (ibus * PD_IBUS_P_IBAT) / 100;
+		pd_err("[%s] ibus=%d\n", __func__, ibus);
+	}
+#else
 	ibus = ibus / 1000;
 	if (ibus == 0)
 		ibus = 1000;
-
+#endif
 	if ((chg1_mivr && (vbus < mivr1 / 1000 - 500)) ||
 	    (chg2_mivr && (vbus < mivr2 / 1000 - 500)))
 		goto reset;
