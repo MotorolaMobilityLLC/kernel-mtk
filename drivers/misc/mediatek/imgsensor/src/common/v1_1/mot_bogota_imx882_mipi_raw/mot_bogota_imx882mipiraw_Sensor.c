@@ -1120,14 +1120,6 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 	{
-		kal_uint16 changed_reg_setting[] = {
-			PHASE_PIX_OUT_EN, 0x01,
-			FRAME_LEN_UPPER, 0x09,
-			FRAME_LEN_LOWER, 0x74,
-			DOL_EN, 0x00,
-			DOL_MODE, 0x00
-		};
-
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.current_scenario_id = scenario_id;
 		imgsensor.autoflicker_en = KAL_FALSE;
@@ -1138,8 +1130,8 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
 		spin_unlock(&imgsensor_drv_lock);
 
 		FMC_GPH_START;
-		mot_bogota_imx882_table_write_cmos_sensor(changed_reg_setting,
-				sizeof(changed_reg_setting) / sizeof(kal_uint16));
+		mot_bogota_imx882_table_write_cmos_sensor(imx882_seamless_preview,
+				sizeof(imx882_seamless_preview) / sizeof(kal_uint16));
 
 		if (ae_ctrl) {
 
@@ -1152,30 +1144,22 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
 		FMC_GPH_END;
 	}
 		break;
-	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+	case MSDK_SCENARIO_ID_CUSTOM3:
 	{
-		kal_uint16 changed_reg_setting[] = {
-			PHASE_PIX_OUT_EN, 0x01,
-			FRAME_LEN_UPPER, 0x12,
-			FRAME_LEN_LOWER, 0xEC,
-			DOL_EN, 0x00,
-			DOL_MODE, 0x00
-		};
-
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.autoflicker_en = KAL_FALSE;
-		imgsensor.pclk = imgsensor_info.normal_video.pclk;
-		imgsensor.line_length = imgsensor_info.normal_video.linelength;
-		imgsensor.frame_length = imgsensor_info.normal_video.framelength;
-		imgsensor.min_frame_length = imgsensor_info.normal_video.framelength;
+		imgsensor.pclk = imgsensor_info.custom3.pclk;
+		imgsensor.line_length = imgsensor_info.custom3.linelength;
+		imgsensor.frame_length = imgsensor_info.custom3.framelength;
+		imgsensor.min_frame_length = imgsensor_info.custom3.framelength;
 		spin_unlock(&imgsensor_drv_lock);
 
 		FMC_GPH_START;
-		mot_bogota_imx882_table_write_cmos_sensor(changed_reg_setting,
-				sizeof(changed_reg_setting) / sizeof(kal_uint16));
+		mot_bogota_imx882_table_write_cmos_sensor(imx882_seamless_custom3,
+				sizeof(imx882_seamless_custom3) / sizeof(kal_uint16));
 
 		if (ae_ctrl) {
-			LOG_INF("call MSDK_SCENARIO_ID_VIDEO_PREVIEW %d %d",
+			LOG_INF("call MSDK_SCENARIO_ID_CUSTOM3 %d %d",
 					ae_ctrl[SHUTTER_NE_FRM_1], ae_ctrl[GAIN_NE_FRM_1]);
 			set_shutter_w_gph(ae_ctrl[SHUTTER_NE_FRM_1], KAL_FALSE);
 			set_gain_w_gph(ae_ctrl[GAIN_NE_FRM_1], KAL_FALSE);
@@ -2621,6 +2605,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		}
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			*pScenarios = MSDK_SCENARIO_ID_CUSTOM3;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM3:
+			*pScenarios = MSDK_SCENARIO_ID_CAMERA_PREVIEW;
+			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
