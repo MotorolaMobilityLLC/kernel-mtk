@@ -161,6 +161,7 @@ extern int pd_hal_is_pd_adapter_ready(struct chg_alg_device *alg);
 extern int pd_hal_get_adapter_cap(struct chg_alg_device *alg,
 	struct pd_power_cap *cap);
 extern int pd_hal_get_vbus(struct chg_alg_device *alg);
+extern int pd_hal_get_current(struct chg_alg_device *alg);
 extern int pd_hal_get_ibus(struct chg_alg_device *alg, int *ibus);
 extern int pd_hal_get_mivr_state(struct chg_alg_device *alg,
 	enum chg_idx chgidx, bool *in_loop);
