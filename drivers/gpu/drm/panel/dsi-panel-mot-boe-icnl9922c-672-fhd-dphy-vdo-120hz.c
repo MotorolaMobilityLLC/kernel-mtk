@@ -172,9 +172,9 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0xE2, 0x36, 0x24, 0x37, 0x4B, 0x38, 0x72, 0x39, 0x99, 0x3D, 0x00, 0x3C, 0x0F, 0x3B, 0xC2, 0x3B, 0xA5, 0x3C, 0x28, 0x3C, 0xED, 0x3D, 0xB1, 0x3E, 0x76, 0x3F, 0x3A, 0x3F, 0xFF, 0x3F, 0xFF, 0x3F, 0xFF);
 	lcm_dcs_write_seq_static(ctx, 0xF0, 0x00, 0x00, 0x00);
 
-	lcm_dcs_write_seq_static(ctx, 0x11);
+	lcm_dcs_write_seq_static(ctx, 0x11, 0x00);
 	msleep(100);
-	lcm_dcs_write_seq_static(ctx, 0x29);
+	lcm_dcs_write_seq_static(ctx, 0x29, 0x00);
 	msleep(10);
 	lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xCF);
 	lcm_dcs_write_seq_static(ctx, 0xAC, 0x05);
@@ -224,9 +224,9 @@ static int lcm_unprepare(struct drm_panel *panel)
 	pr_info("%s+, boe_icnl9922c\n", __func__);
 
 	lcm_dcs_write_seq_static(ctx, 0xAC, 0x0A);
-	lcm_dcs_write_seq_static(ctx, 0x28);
+	lcm_dcs_write_seq_static(ctx, 0x28, 0x00);
 	msleep(10);
-	lcm_dcs_write_seq_static(ctx, 0x10);
+	lcm_dcs_write_seq_static(ctx, 0x10, 0x00);
 	msleep(100);
 
 	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
@@ -421,6 +421,7 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 
 static struct mtk_panel_params ext_params_60hz = {
 	.data_rate = DATA_RATE,
+	.phy_timcon.lpx = 8,
 	.ssc_enable = 0,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -476,6 +477,7 @@ static struct mtk_panel_params ext_params_60hz = {
 
 static struct mtk_panel_params ext_params_90hz = {
 	.data_rate = DATA_RATE,
+	.phy_timcon.lpx = 8,
 	.ssc_enable = 0,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -531,6 +533,7 @@ static struct mtk_panel_params ext_params_90hz = {
 
 static struct mtk_panel_params ext_params_120hz = {
 	.data_rate = DATA_RATE,
+	.phy_timcon.lpx = 8,
 	.ssc_enable = 0,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
