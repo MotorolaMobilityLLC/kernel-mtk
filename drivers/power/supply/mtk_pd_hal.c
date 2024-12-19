@@ -219,6 +219,43 @@ int pd_hal_get_vbus(struct chg_alg_device *alg)
 	return vchr;
 }
 
+int pd_hal_get_current(struct chg_alg_device *alg)
+{
+	union power_supply_propval prop;
+	struct power_supply *bat_psy = NULL;
+	int ret;
+	struct mtk_pd *pd;
+
+	if (alg == NULL)
+		return -EINVAL;
+
+	pd = dev_get_drvdata(&alg->dev);
+	bat_psy = pd->bat_psy;
+
+	if (bat_psy == NULL || IS_ERR(bat_psy)) {
+		pr_err("%s retry to get pd->bat_psy from gauge\n", __func__);
+		bat_psy = devm_power_supply_get_by_phandle(&pd->pdev->dev, "gauge");
+		if (bat_psy == NULL || IS_ERR(bat_psy)) {
+			pr_err("%s retry to get bat_psy from battery\n", __func__);
+			bat_psy = power_supply_get_by_name("battery");
+		}
+		pd->bat_psy = bat_psy;
+	}
+
+	if (bat_psy == NULL || IS_ERR(bat_psy)) {
+		pr_err("%s Couldn't get bat_psy\n", __func__);
+		ret = 0;
+	} else {
+		ret = power_supply_get_property(bat_psy,
+			POWER_SUPPLY_PROP_CURRENT_NOW, &prop);
+		pr_info("%s: check: %d\n", __func__, prop.intval);
+		ret = prop.intval / 1000;
+	}
+
+	pr_info("%s:%d\n", __func__, ret);
+	return ret;
+}
+
 int pd_hal_get_ibus(struct chg_alg_device *alg, int *ibus)
 {
 	int ret = 0;
