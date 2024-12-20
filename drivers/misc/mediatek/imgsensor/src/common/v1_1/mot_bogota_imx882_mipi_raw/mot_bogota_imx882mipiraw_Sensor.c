@@ -583,6 +583,8 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 static void write_shutter(kal_uint32 shutter, kal_bool gph)
 {
 	kal_uint16 realtime_fps = 0;
+	kal_uint16 l_shift = 1;
+	kal_uint32 l_shutter = 0;
 
 	shutter = round_up(shutter, 4);
 
@@ -615,6 +617,29 @@ static void write_shutter(kal_uint32 shutter, kal_bool gph)
 	imgsensor.current_ae_effective_frame = 2;
 	LOG_INF("set frame_length\n");
 
+        /* long expsoure */
+        if (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) {
+
+                for (l_shift = 1; l_shift < MAX_CIT_LSHIFT; l_shift++) {
+			l_shutter = ((shutter - 1) >> l_shift) + 1;
+			if (l_shutter < (imgsensor_info.max_frame_length - imgsensor_info.margin))
+                                break;
+                }
+                if (l_shift > MAX_CIT_LSHIFT) {
+                        LOG_INF("Unable to set such a long exposure %d, set to max\n", shutter);
+                        l_shift = MAX_CIT_LSHIFT;
+                }
+                shutter = ((shutter - 1) >> l_shift) + 1;
+                imgsensor.frame_length = shutter + imgsensor_info.margin;
+                write_frame_len(imgsensor.frame_length);
+                LOG_INF("enter long exposure mode, time is %d", l_shift);
+                write_cmos_sensor_8(0x3160,l_shift);
+                write_cmos_sensor_8(0x301c,0);
+        } else {
+                write_cmos_sensor_8(0x3160, read_cmos_sensor(0x3160) & 0xf8);
+                write_cmos_sensor_8(0x301c,1);
+                write_frame_len(imgsensor.frame_length);
+        }
 
 	/* Update Shutter */
 	write_cmos_sensor_8(0x0350, 0x01); /* Enable auto extend */
