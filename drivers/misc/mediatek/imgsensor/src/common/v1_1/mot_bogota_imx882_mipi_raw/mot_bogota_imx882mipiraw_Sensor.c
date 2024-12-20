@@ -207,8 +207,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.min_gain_iso = 100,
 	.margin = 48,		/* sensor framelength & shutter margin */
 	.min_shutter = 6,	/* min shutter */
-	.gain_step = 4,
-	.gain_type = 0,
+	.gain_step = 1,
+	.gain_type = 3,
 	.exp_step = 4,
 	.max_frame_length = 65479,
 	.ae_shut_delay_frame = 0,
@@ -757,7 +757,7 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 	}
 
 	reg_gain = 16384 - (16384*64)/gain_value;
-
+	reg_gain = (reg_gain+2)/4*4;
 
 	return (kal_uint16) reg_gain;
 }
@@ -2236,7 +2236,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	/*LOG_INF("feature_id = %d\n", feature_id);*/
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_ANA_GAIN_TABLE:
-		if ((void *)(uintptr_t) (*(feature_data + 1)) == NULL) {
+		if ((*(feature_data + 0)) == 0) {
 			*(feature_data + 0) =
 				sizeof(mot_bogota_imx882_ana_gain_table);
 		} else {
