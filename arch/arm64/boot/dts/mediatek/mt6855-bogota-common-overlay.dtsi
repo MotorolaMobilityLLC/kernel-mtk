@@ -217,9 +217,9 @@
 
 &u2port0{
 	mediatek,eye-vrt = <7>;
-	mediatek,eye-term = <3>;
+	mediatek,eye-term = <4>;
 	mediatek,rev6 = <3>;
-	mediatek,discth = <0xf>;
+	mediatek,discth = <0x9>;
 };
 
 
