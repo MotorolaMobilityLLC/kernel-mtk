@@ -218,6 +218,20 @@
 			drive-strength = <3>;
 		};
 	};
+	camera_pins_cam0_af_0: vcamaf0@vcam0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam0_af_1: vcamaf1@vcam0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 	camera_pins_default: camdefault {
 	};
 	flash_en_pin0: flash_en_pin0 {
@@ -294,13 +308,12 @@
 	cam0_vcamio-supply = <&mt6369_vtp>;
 	cam1_vcamio-supply = <&mt6369_vtp>;
 	cam2_vcamio-supply = <&mt6369_vtp>;
-	cam0_vcamaf-supply = <&mt6369_vio28>;
 
 	cam0_pin_mclk = "mclk";
 	cam0_pin_rst = "gpio";
 	cam0_pin_vcama = "gpio";
 	cam0_pin_vcamd = "gpio";
-	cam0_pin_vcamaf = "regulator";
+	cam0_pin_vcamaf = "gpio";
 	cam0_pin_vcamio = "regulator";
 	cam1_pin_mclk = "mclk";
 	cam1_pin_rst = "gpio";
@@ -415,6 +428,12 @@
 		reg = <0x0C>;
 		status = "okay";
 	};
+};
+&camera_af_hw_node {
+	pinctrl-names = "camaf_m1_gpio_on",	"camaf_m1_gpio_off";
+	pinctrl-0 = <&camera_pins_cam0_af_1>;
+	pinctrl-1 = <&camera_pins_cam0_af_0>;
+	status = "okay";
 };
 //&i2c8 {
 //	camera_main_af_mtk:camera_main_af@72 {
