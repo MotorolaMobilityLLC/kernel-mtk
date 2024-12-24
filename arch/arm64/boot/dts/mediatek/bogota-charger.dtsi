@@ -88,7 +88,7 @@
 	mmi,enable-charging-limit;
 	mmi,upper-limit-capacity = <65>;
 	mmi,lower-limit-capacity = <60>;
-	mmi,min-cp-therm-current-ua = <1600000>;
+	mmi,min-cp-therm-current-ua = <1400000>;
 };
 
 &mmi_pehv {
@@ -304,7 +304,7 @@
 &charger_cooler {
 	bootmode = <&chosen>;
 	mmi,thermal-mitigation = <(-1) 5200000 5000000 4700000 4500000 4000000 3400000 3000000 2500000
-				2000000 1000000 800000 500000>;
+				2000000 1500000 1000000 800000 500000>;
 	mmi,thermal-charger-pump-support;
 };
 
