@@ -500,8 +500,7 @@ static void sensor_init(void)
 
 	write_cmos_sensor8(0x0103,0x01);
 	mDELAY(10);
-    write_cmos_sensor8(0x0100,0x00);
-
+	write_cmos_sensor8(0x0100,0x00);
 
      mot_bogota_sc820_table_write_cmos_sensor(
          addr_data_pair_init_mot_bogota_sc820,
@@ -513,7 +512,6 @@ static void sensor_init(void)
 		}else {
 		write_cmos_sensor8(0x550F,0xBC);
 		}
-
 	pr_debug(PFX, "<< %s()\n", __func__);
 	pr_debug(PFX, "0X800D = 0x%x, 0X550f = 0x%x \n", read_cmos_sensor(0x800D),read_cmos_sensor(0x550F));
 }
@@ -525,14 +523,6 @@ static void preview_setting(void)
          addr_data_pair_preview_mot_bogota_sc820,
          sizeof(addr_data_pair_preview_mot_bogota_sc820)/
          sizeof(kal_uint16));
-     if ((read_cmos_sensor(0x800D)&0xFF)==0)
-        {
-             write_cmos_sensor8(0x550F,0x34);
-        }else {
-             write_cmos_sensor8(0x550F,0xBC);
-        }
-     write_cmos_sensor8(0x0100,0x01);
-     pr_debug(PFX, "<< %s()   YHS\n", __func__);
 }
 
 static void capture_setting(kal_uint16 currefps)
@@ -541,13 +531,6 @@ static void capture_setting(kal_uint16 currefps)
          addr_data_pair_capture_fps_mot_bogota_sc820,
          sizeof(addr_data_pair_capture_fps_mot_bogota_sc820) /
          sizeof(kal_uint16));
-     if ((read_cmos_sensor(0x800D)&0xFF)==0)
-        {
-             write_cmos_sensor8(0x550F,0x34);
-        }else {
-             write_cmos_sensor8(0x550F,0xBC);
-        }
-     write_cmos_sensor8(0x0100,0x01);
 }
 
 static void normal_video_setting(void)
@@ -556,13 +539,6 @@ static void normal_video_setting(void)
          addr_data_pair_normal_video_mot_bogota_sc820,
          sizeof(addr_data_pair_normal_video_mot_bogota_sc820) /
          sizeof(kal_uint16));
-     if ((read_cmos_sensor(0x800D)&0xFF)==0)
-        {
-             write_cmos_sensor8(0x550F,0x34);
-        }else {
-             write_cmos_sensor8(0x550F,0xBC);
-        }
-     write_cmos_sensor8(0x0100,0x01);
 }
 
 static void hs_video_setting(void)
@@ -571,13 +547,6 @@ static void hs_video_setting(void)
          addr_data_pair_hs_video_mot_bogota_sc820,
          sizeof(addr_data_pair_hs_video_mot_bogota_sc820) /
          sizeof(kal_uint16));
-     if ((read_cmos_sensor(0x800D)&0xFF)==0)
-        {
-             write_cmos_sensor8(0x550F,0x34);
-        }else {
-             write_cmos_sensor8(0x550F,0xBC);
-        }
-     write_cmos_sensor8(0x0100,0x01);
 }
 
 static void slim_video_setting(void)
@@ -586,13 +555,6 @@ static void slim_video_setting(void)
          addr_data_pair_slim_video_mot_bogota_sc820,
          sizeof(addr_data_pair_slim_video_mot_bogota_sc820) /
          sizeof(kal_uint16));
-     if ((read_cmos_sensor(0x800D)&0xFF)==0)
-        {
-             write_cmos_sensor8(0x550F,0x34);
-        }else {
-             write_cmos_sensor8(0x550F,0xBC);
-        }
-     write_cmos_sensor8(0x0100,0x01);
 }
 
 
