@@ -477,7 +477,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 	pr_info("%s+, dijing_ft8725\n", __func__);
 
 	lcm_dcs_write_seq_static(ctx, 0x28);
-	msleep(10);
+	msleep(20);
 	lcm_dcs_write_seq_static(ctx, 0x10);
 	msleep(100);
 	lcm_dcs_write_seq_static(ctx, 0x00, 0x00);
