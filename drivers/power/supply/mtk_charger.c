@@ -3848,11 +3848,12 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 
 	} else {
 #if defined(CONFIG_MOTO_SWQC_SUPPORT)
-		if (qc_chg_type == USB_TYPE_QC3P_27 || qc_chg_type == USB_TYPE_QC3P_18) {
+		if (qc_chg_type == USB_TYPE_QC3P_27 || qc_chg_type == USB_TYPE_QC3P_18 ||qc_chg_type == USB_TYPE_QC3P_45) {
 			power_watt = MMI_POWER_30W;
 		} else if (qc_chg_type == USB_TYPE_QC30) {
 			power_watt = MMI_POWER_15W;
 		}
+		pr_info("[%s] In noramal mode, show power watt by charger type, chg_type = %d, power_watt = %d\n", __func__, qc_chg_type, power_watt);
 #elif defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_10W_3A_SUPPORT)
 	    if(info->mmi.charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO){
 		power_watt = 5 * 3;
@@ -4513,7 +4514,7 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 #elif  defined(CONFIG_MOTO_SWQC_SUPPORT)
 	charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
 	if ( (info->dvchg1_dev != NULL && info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) ||
-                (qc_chg_type == USB_TYPE_QC3P_27 || qc_chg_type == USB_TYPE_QC3P_18)) {
+                (qc_chg_type == USB_TYPE_QC3P_27 || qc_chg_type == USB_TYPE_QC3P_18|| qc_chg_type == USB_TYPE_QC3P_45)) {
 		max_fv_mv = mmi_get_ffc_fv(info, batt_temp);
 
 		if (max_fv_mv == 0)
