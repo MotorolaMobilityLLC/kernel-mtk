@@ -456,6 +456,7 @@ struct mmi_params {
 	int			typec_ntc_pull_up_r;
 	struct ntc_temp 		*typec_ntc_table;
 	int			num_typec_ntc_table;
+	struct work_struct		notify_power_event_work;
 };
 /*moto mmi Functionality end*/
 

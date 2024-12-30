@@ -1246,8 +1246,7 @@ static void mt6375_chg_bc12_work_func(struct work_struct *work)
 	}
 
 #if defined(CONFIG_MOTO_SWQC_SUPPORT)
-	if ((val == PORT_STAT_SDP
-		|| val == PORT_STAT_CDP
+	if ((val == PORT_STAT_CDP
 		|| val == PORT_STAT_UNKNOWN_TA)
 		&& (!ddata->mmi_bc12_rerun_done)) {
 		bc12_en = true;
@@ -3803,14 +3802,14 @@ rerun:
 		}
 
 		//notify charging policy to update charger type
-		/*
+
 		if ((ddata->qc_chg_type == USB_TYPE_QC30)
 			|| (ddata->qc_chg_type == USB_TYPE_QC3P_18)
 			|| (ddata->qc_chg_type == USB_TYPE_QC3P_27)
 			|| (ddata->qc_chg_type == USB_TYPE_QC3P_45)) {
 			charger_dev_notify(ddata->chgdev, CHARGER_DEV_NOTIFY_CTD_DONE);
 		}
-*/
+
 		msleep(300);
 
 out:
