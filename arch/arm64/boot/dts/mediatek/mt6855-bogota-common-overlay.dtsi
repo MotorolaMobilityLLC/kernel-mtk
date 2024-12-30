@@ -86,10 +86,15 @@
         };
         pinctrl_state_mode_idle: pinctrl_state_mode_idle {
                 pins_cmd_dat {
-                        pinmux = <PINMUX_GPIO78__FUNC_GPIO78>;
+                        pinmux = <PINMUX_GPIO77__FUNC_GPIO77>,<PINMUX_GPIO78__FUNC_GPIO78>,<PINMUX_GPIO79__FUNC_GPIO79>;
                         slew-rate = <1>;
                         output-high;
                 };
+                pins_cmd_dat1 {
+			pinmux = <PINMUX_GPIO80__FUNC_GPIO80>;
+			input-enable;
+			bias-pull-up;
+		};
         };
 };
 
