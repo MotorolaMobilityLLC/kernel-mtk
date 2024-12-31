@@ -198,13 +198,13 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x1E);
 	lcm_dcs_write_seq_static(ctx, 0xC9, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x00);
-	lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xCF);
 	lcm_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	lcm_dcs_write_seq_static(ctx, 0x55, 0x01);
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
-	lcm_dcs_write_seq_static(ctx, 0x11);
+	lcm_dcs_write_seq_static(ctx, 0x11, 0x00);
 	msleep(100);
-	lcm_dcs_write_seq_static(ctx, 0x29);
+	lcm_dcs_write_seq_static(ctx, 0x29, 0x00);
+	lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xCF);
 	msleep(10);
 }
 
@@ -246,8 +246,11 @@ static int lcm_unprepare(struct drm_panel *panel)
 		return 0;
 	pr_info("[LCM] %s begin\n", __func__);
 
+	lcm_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x00);
+	msleep(1);
+	lcm_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x28);
-	msleep(10);
+	msleep(20);
 	lcm_dcs_write_seq_static(ctx, 0x10);
 	msleep(100);
 
