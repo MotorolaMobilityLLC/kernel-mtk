@@ -2549,7 +2549,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 			break;
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
@@ -2558,16 +2558,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM1:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM2:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM3:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM4:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 			break;
 		default:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
