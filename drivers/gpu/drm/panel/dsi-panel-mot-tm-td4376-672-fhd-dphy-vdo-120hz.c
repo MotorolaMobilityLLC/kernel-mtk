@@ -162,7 +162,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	msleep(100);
 	lcm_dcs_write_seq_static(ctx, 0x29);
 	lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xCF);
-	msleep(10);
+	msleep(5);
 
 	pr_info("%s-\n", __func__);
 }
@@ -227,7 +227,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 	pr_info("%s+, tm_td4376\n", __func__);
 
 	lcm_dcs_write_seq_static(ctx, 0x28);
-	msleep(10);
+	msleep(5);
 	lcm_dcs_write_seq_static(ctx, 0x10);
 	msleep(100);
 
@@ -314,9 +314,9 @@ static int lcm_prepare(struct drm_panel *panel)
 	gpiod_set_value(ctx->reset_gpio, 1);
 	msleep(5);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	msleep(5);
+	msleep(10);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(15);
+	msleep(20);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 	lcm_panel_init(ctx);
