@@ -311,10 +311,10 @@ struct charger_data {
 };
 
 /*moto mmi Functionality start*/
-struct mmi_ffc_zone  {
+struct mmi_zone  {
 	int		temp;
-	int		ffc_max_mv;
-	int		ffc_chg_iterm;
+	int		max_mv;
+	int		chg_iterm;
 };
 
 struct mmi_cycle_cv_steps {
@@ -404,9 +404,12 @@ struct mmi_params {
 	int			back_chrg_iterm;
 
 	int			num_ffc_zones;
-	struct mmi_ffc_zone	*ffc_zones;
+	struct mmi_zone	*ffc_zones;
 	int			num_cycle_cv_steps;
 	struct mmi_cycle_cv_steps	*cycle_cv_steps;
+
+	int			num_normal_zones;
+	struct mmi_zone     *normal_zones;
 
 #ifdef CONFIG_MOTO_CHG_FFC_5V10W_SUPPORT
 	CHARGER_FFC_STATE_T	ffc_state;
