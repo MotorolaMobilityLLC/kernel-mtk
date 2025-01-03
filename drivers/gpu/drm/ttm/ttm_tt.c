@@ -37,7 +37,9 @@
 #include <linux/file.h>
 #include <linux/module.h>
 #include <drm/drm_cache.h>
+#ifndef __GENKSYMS__
 #include <drm/drm_device.h>
+#endif
 #include <drm/ttm/ttm_bo_driver.h>
 
 #include "ttm_module.h"
