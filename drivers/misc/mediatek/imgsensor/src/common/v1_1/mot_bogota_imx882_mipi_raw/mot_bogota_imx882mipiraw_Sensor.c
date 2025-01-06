@@ -81,6 +81,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.min_shutter = 6,
 		.exp_step = 4,
+		.framelength_step = 4,
 	},
 	//4096x3072@30fps
 	.cap = {
@@ -96,6 +97,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.min_shutter = 6,
 		.exp_step = 4,
+		.framelength_step = 4,
 	},
 	//4096x3072@30fps
 	.normal_video = {
@@ -111,6 +113,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.min_shutter = 6,
 		.exp_step = 4,
+		.framelength_step = 4,
 	},
 	//2048x1152@120fps
 	.hs_video = {
@@ -126,6 +129,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 1200,
 		.min_shutter = 8,
 		.exp_step = 2,
+		.framelength_step = 2,
 	},
 	//4096x3072@30fps
 	.slim_video = {
@@ -141,6 +145,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.min_shutter = 6,
 		.exp_step = 4,
+		.framelength_step = 4,
 	},
 	//2048x1152@60fps
 	.custom1 = {
@@ -156,6 +161,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 600,
 		.min_shutter = 12,
 		.exp_step = 8,
+		.framelength_step = 8,
 	},
 	//2048x1536@30fps
 	.custom2 = {
@@ -171,6 +177,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.min_shutter = 12,
 		.exp_step = 8,
+		.framelength_step = 8,
 	},
 	//4096x3072 crop@30fps
 	.custom3 = {
@@ -186,6 +193,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.min_shutter = 10,
 		.exp_step = 2,
+		.framelength_step = 2,
 	},
 	//8192x6144)50M@14fps
 	.custom4 = {
@@ -201,6 +209,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 140,
 		.min_shutter = 10,
 		.exp_step = 2,
+		.framelength_step = 2,
 	},
 	.min_gain = 1.4287*BASEGAIN, /*1.4287x gain*/
 	.max_gain = 64*BASEGAIN, /*64x gain*/
@@ -623,9 +632,10 @@ static void write_shutter(kal_uint32 shutter, kal_bool gph)
 	kal_uint16 realtime_fps = 0;
 	kal_uint16 l_shift = 1;
 	kal_uint32 l_shutter = 0;
-
-	shutter = round_up(shutter, 4);
-
+	kal_uint32 frame_length_temp = 0;
+	if (imgsensor.exp_step){
+	shutter = round_up(shutter, imgsensor.exp_step);
+	}
 	spin_lock(&imgsensor_drv_lock);
 	 if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
@@ -651,6 +661,11 @@ static void write_shutter(kal_uint32 shutter, kal_bool gph)
 	}
 
 	write_cmos_sensor_8(0x3100, read_cmos_sensor(0x3100) & 0xf8);
+	frame_length_temp = imgsensor.frame_length;
+	if (imgsensor.framelength_step){
+	frame_length_temp = round_up(frame_length_temp, imgsensor.framelength_step);
+	imgsensor.frame_length = frame_length_temp;
+	}
 	write_frame_len(imgsensor.frame_length);
 	imgsensor.current_ae_effective_frame = 2;
 	LOG_INF("set frame_length\n");
@@ -1449,6 +1464,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.min_shutter = imgsensor_info.pre.min_shutter;
 	imgsensor.exp_step = imgsensor_info.pre.exp_step;
+	imgsensor.framelength_step = imgsensor_info.pre.framelength_step;
 	imgsensor.pclk = imgsensor_info.pre.pclk;
 	imgsensor.line_length = imgsensor_info.pre.linelength;
 	imgsensor.frame_length = imgsensor_info.pre.framelength;
@@ -1493,6 +1509,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			imgsensor_info.cap.max_framerate / 10);
 	imgsensor.min_shutter = imgsensor_info.cap.min_shutter;
 	imgsensor.exp_step = imgsensor_info.cap.exp_step;
+	imgsensor.framelength_step = imgsensor_info.cap.framelength_step;
 	imgsensor.pclk = imgsensor_info.cap.pclk;
 	imgsensor.line_length = imgsensor_info.cap.linelength;
 	imgsensor.frame_length = imgsensor_info.cap.framelength;
@@ -1516,6 +1533,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.min_shutter = imgsensor_info.normal_video.min_shutter;
 	imgsensor.exp_step = imgsensor_info.normal_video.exp_step;
+	imgsensor.framelength_step = imgsensor_info.normal_video.framelength_step;
 	imgsensor.pclk = imgsensor_info.normal_video.pclk;
 	imgsensor.line_length = imgsensor_info.normal_video.linelength;
 	imgsensor.frame_length = imgsensor_info.normal_video.framelength;
@@ -1540,6 +1558,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.min_shutter = imgsensor_info.hs_video.min_shutter;
 	imgsensor.exp_step = imgsensor_info.hs_video.exp_step;
+	imgsensor.framelength_step = imgsensor_info.hs_video.framelength_step;
 	imgsensor.pclk = imgsensor_info.hs_video.pclk;
 	/*imgsensor.video_mode = KAL_TRUE;*/
 	imgsensor.line_length = imgsensor_info.hs_video.linelength;
@@ -1566,6 +1585,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.min_shutter = imgsensor_info.slim_video.min_shutter;
 	imgsensor.exp_step = imgsensor_info.slim_video.exp_step;
+	imgsensor.framelength_step = imgsensor_info.slim_video.framelength_step;
 	imgsensor.pclk = imgsensor_info.slim_video.pclk;
 	/*imgsensor.video_mode = KAL_TRUE;*/
 	imgsensor.line_length = imgsensor_info.slim_video.linelength;
@@ -1593,6 +1613,7 @@ static kal_uint32 custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.min_shutter = imgsensor_info.custom1.min_shutter;
 	imgsensor.exp_step = imgsensor_info.custom1.exp_step;
+	imgsensor.framelength_step = imgsensor_info.custom1.framelength_step;
 	imgsensor.pclk = imgsensor_info.custom1.pclk;
 	imgsensor.line_length = imgsensor_info.custom1.linelength;
 	imgsensor.frame_length = imgsensor_info.custom1.framelength;
@@ -1617,6 +1638,7 @@ static kal_uint32 custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.min_shutter = imgsensor_info.custom2.min_shutter;
 	imgsensor.exp_step = imgsensor_info.custom2.exp_step;
+	imgsensor.framelength_step = imgsensor_info.custom2.framelength_step;
 	imgsensor.pclk = imgsensor_info.custom2.pclk;
 	imgsensor.line_length = imgsensor_info.custom2.linelength;
 	imgsensor.frame_length = imgsensor_info.custom2.framelength;
@@ -1641,6 +1663,7 @@ static kal_uint32 custom3(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.min_shutter = imgsensor_info.custom3.min_shutter;
 	imgsensor.exp_step = imgsensor_info.custom3.exp_step;
+	imgsensor.framelength_step = imgsensor_info.custom3.framelength_step;
 	imgsensor.pclk = imgsensor_info.custom3.pclk;
 	imgsensor.line_length = imgsensor_info.custom3.linelength;
 	imgsensor.frame_length = imgsensor_info.custom3.framelength;
@@ -1665,6 +1688,7 @@ static kal_uint32 custom4(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.min_shutter = imgsensor_info.custom4.min_shutter;
 	imgsensor.exp_step = imgsensor_info.custom4.exp_step;
+	imgsensor.framelength_step = imgsensor_info.custom4.framelength_step;
 	imgsensor.pclk = imgsensor_info.custom4.pclk;
 	imgsensor.line_length = imgsensor_info.custom4.linelength;
 	imgsensor.frame_length = imgsensor_info.custom4.framelength;

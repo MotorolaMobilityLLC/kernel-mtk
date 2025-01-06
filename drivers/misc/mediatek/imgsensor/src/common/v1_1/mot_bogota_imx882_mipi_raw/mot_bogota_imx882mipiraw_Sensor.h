@@ -46,6 +46,7 @@ struct imgsensor_mode_struct {
 	kal_uint32 mipi_pixel_rate;
 	kal_uint32 min_shutter;
 	kal_uint32 exp_step;
+	kal_uint32 framelength_step;
 };
 
 /* SENSOR PRIVATE STRUCT FOR VARIABLES*/
@@ -80,6 +81,7 @@ struct imgsensor_struct {
 	kal_bool fast_mode_on;
 	kal_uint32 min_shutter;
 	kal_uint32 exp_step;
+	kal_uint32 framelength_step;
 	struct SENSOR_FUNCTION_STRUCT *psensor_func;
 };
 
