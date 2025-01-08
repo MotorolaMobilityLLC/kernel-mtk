@@ -323,7 +323,7 @@
 	mmi,ntc_table = <1>;
 	mmi,ntc_v_ref = <1800000>;
 	mmi,ntc_r_pull = <100000>;
-	mmi,batt-ids-map = "1", "LWNRB52SWD","2", "ATLRB52NVT","3", "VEKRB52FMT","4", "ATLRB60NVT","5", "LWNRB60SWD";
+	mmi,batt-ids-map = "1", "LWNRB52SWD","2", "ATLRB52NVT","3", "ATLRB60NVT","4", "LWNRB60SWD","5", "VEKRB52FMT";
 	mmi,batid_v_ref = <1800000>;
 	mmi,batid_r_pull = <100000>;
 
@@ -345,11 +345,11 @@
 
 	/* battery prop */
 	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
-	g_FG_PSEUDO100 = <96 96 100 100
-		96 96 100 100
-		96 96 100 100
-		96 96 100 100
-		96 96 100 100
+	g_FG_PSEUDO100 = <97 97 100 100
+		97 97 100 100
+		97 97 100 100
+		97 97 100 100
+		97 97 100 100
 		100 100 100 100
 		100 100 100 100
 		100 100 100 100
@@ -412,8 +412,10 @@
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
         CAR_TUNE_VALUE = <(100)>;
         df-serialnum = "LWNRB52SWD";
-        #include "bat_setting/mt6855_battery_ra50_lwn_5200mah.dtsi"
-	#include "bat_setting/mt6855_battery_ra50_atl_5200mah.dtsi"
+        #include "bat_setting/mt6855_battery_rb52_lwn_5200mah.dtsi"
+	#include "bat_setting/mt6855_battery_rb52_atl_5200mah.dtsi"
+	#include "bat_setting/mt6855_battery_rb60_swd_6000mah.dtsi"
+	#include "bat_setting/mt6855_battery_rb60_atl_6000mah.dtsi"
 };
 
 &i2c6 {
