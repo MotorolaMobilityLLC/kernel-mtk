@@ -142,3 +142,13 @@ config PCIE_EDR
 	  the PCI Firmware Specification r3.2.  Enable this if you want to
 	  support hybrid DPC model which uses both firmware and OS to
 	  implement DPC.
+
+config PCIE_PATCH_BACK
+	bool "PCIe upstream patch back"
+	help
+	  This option enables a mechanism to separate the PCI framework patches
+	  that are intended for the ACK submission but have not yet been merged.
+	  Enabling this option allows developers to test and use these patches
+	  before they are accepted into the ACK, facilitating development and testing
+	  of new PCIe features or fixes that are critical for certain systems but are
+	  still under review.
