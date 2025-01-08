@@ -479,7 +479,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 	lcm_dcs_write_seq_static(ctx, 0x28);
 	msleep(20);
 	lcm_dcs_write_seq_static(ctx, 0x10);
-	msleep(100);
+	msleep(120);
 	lcm_dcs_write_seq_static(ctx, 0x00, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0xF7, 0x5A, 0xA5, 0x95, 0x27);
 
