@@ -1140,6 +1140,16 @@ config DRM_PANEL_NT37705_ALPHA_CMD_SPR
 	  and uses 24-bits RGB per pixel. It provides a MIPI DSI
 	  interface to host.
 
+config DRM_PANEL_NUM_NO_LIMIT
+	tristate "mtk panel num no limit"
+	depends on OF
+	depends on DRM_MIPI_DSI
+        default n
+	help
+	  To set display panel num no limit support.
+	  set N by default.
+	  If need support more than 4 panel, set Y in product dts to avoid panel num max limit.
+
 config DRM_MEDIATEK_PANEL
 	tristate "drm panel common driver"
 	depends on OF
