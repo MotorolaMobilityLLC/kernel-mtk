@@ -844,7 +844,11 @@ static int tm_nt36528_remove(struct mipi_dsi_device *dsi)
 
 static const struct of_device_id tm_nt36528_of_match[] = {
 	{
+#if defined(CONFIG_DRM_PANEL_NUM_NO_LIMIT)
+		.compatible = "tm_nt36528_vid_667_720",
+#else
 		.compatible = "tm,nt36528,vdo,120hz",
+#endif
 	},
 	{}
 };

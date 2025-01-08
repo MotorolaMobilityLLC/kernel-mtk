@@ -814,7 +814,11 @@ static int boe_ft8057s_remove(struct mipi_dsi_device *dsi)
 
 static const struct of_device_id boe_ft8057s_of_match[] = {
 	{
+#if defined(CONFIG_DRM_PANEL_NUM_NO_LIMIT)
+		.compatible = "boe_ft8057s_vid_667_720",
+#else
 		.compatible = "boe,ft8057s,vdo,120hz",
+#endif
 	},
 	{}
 };
