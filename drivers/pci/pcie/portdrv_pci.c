@@ -148,8 +148,22 @@ static void pcie_portdrv_remove(struct pci_dev *dev)
 	}
 
 	pcie_port_device_remove(dev);
+#if IS_ENABLED(CONFIG_PCIE_PATCH_BACK)
+	pci_disable_device(dev);
+#endif
 }
+#if IS_ENABLED(CONFIG_PCIE_PATCH_BACK)
+static void pcie_portdrv_shutdown(struct pci_dev *dev)
+{
+	if (pci_bridge_d3_possible(dev)) {
+		pm_runtime_forbid(&dev->dev);
+		pm_runtime_get_noresume(&dev->dev);
+		pm_runtime_dont_use_autosuspend(&dev->dev);
+	}
 
+	pcie_port_device_remove(dev);
+}
+#endif
 static pci_ers_result_t pcie_portdrv_error_detected(struct pci_dev *dev,
 					pci_channel_state_t error)
 {
@@ -198,8 +212,11 @@ static struct pci_driver pcie_portdriver = {
 
 	.probe		= pcie_portdrv_probe,
 	.remove		= pcie_portdrv_remove,
+#if IS_ENABLED(CONFIG_PCIE_PATCH_BACK)
+	.shutdown	= pcie_portdrv_shutdown,
+#else
 	.shutdown	= pcie_portdrv_remove,
-
+#endif
 	.err_handler	= &pcie_portdrv_err_handler,
 
 	.driver_managed_dma = true,
