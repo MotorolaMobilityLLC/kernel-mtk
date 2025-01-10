@@ -140,7 +140,7 @@ static int initAF(void)
 		//int cnt = 0;
 		unsigned char Temp;
 
-		mdelay(3);
+		mdelay(6);
 		s4AF_ReadReg(0x00, &Temp);  //ic info
 		LOG_INF("Check HW version: 0x00 is %x\n", Temp);
 		ret = s4AF_WriteReg(0, 0x02, 0x02); //CONTROL
