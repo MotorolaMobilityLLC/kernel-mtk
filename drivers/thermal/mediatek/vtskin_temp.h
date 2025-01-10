@@ -24,11 +24,11 @@ struct vtskin_tz_param {
 	enum vtskin_operation operation;
 	unsigned int ref_num;
 	struct vtskin_coef vtskin_ref[MAX_VTSKIN_REF_NUM];
-	struct mutex lock;
 };
 
 struct vtskin_data {
 	struct device *dev;
+	struct mutex lock;
 	int num_sensor;
 	struct vtskin_tz_param *params;
 };

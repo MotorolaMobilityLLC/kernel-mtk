@@ -1226,10 +1226,9 @@ static ssize_t vtskin_info_show(struct kobject *kobj,
 	len += snprintf(buf + len, PAGE_SIZE - len, "vtskin sensor total num=%d\n",
 			plat_vtskin_info->num_sensor);
 
+	mutex_lock(&plat_vtskin_info->lock);
 	for (i = 0; i < plat_vtskin_info->num_sensor; i++) {
 		param = &plat_vtskin_info->params[i];
-
-		mutex_lock(&param->lock);
 		len += snprintf(buf + len, PAGE_SIZE - len,
 			"   vtskin id=%d, name=%s, ref_num=%d op=%d\n",
 			i, param->tz_name, param->ref_num, param->operation);
@@ -1238,10 +1237,9 @@ static ssize_t vtskin_info_show(struct kobject *kobj,
 				"      %20s, %10lld\n", param->vtskin_ref[j].sensor_name,
 				param->vtskin_ref[j].sensor_coef);
 		}
-		mutex_unlock(&param->lock);
-
 		len += snprintf(buf + len, PAGE_SIZE - len, "\n");
 	}
+	mutex_unlock(&plat_vtskin_info->lock);
 
 	return len;
 }
@@ -1307,13 +1305,12 @@ static ssize_t vtskin_info_store(struct kobject *kobj,
 		coef[i].sensor_coef = ref_coef;
 	}
 
+	mutex_lock(&plat_vtskin_info->lock);
 	param = &plat_vtskin_info->params[skin_id];
-
-	mutex_lock(&param->lock);
 	param->operation = op;
 	param->ref_num = (unsigned int)ref_num;
 	memcpy(&param->vtskin_ref[0], &coef[0], sizeof(struct vtskin_coef) * MAX_VTSKIN_REF_NUM);
-	mutex_unlock(&param->lock);
+	mutex_unlock(&plat_vtskin_info->lock);
 
 	return count;
 }
