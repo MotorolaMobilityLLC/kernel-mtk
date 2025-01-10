@@ -62,10 +62,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		{
 			{RST, Vol_Low, 1},
 			{SensorMCLK, Vol_High, 1},
-			{DOVDD, Vol_1800, 0},
-			{DVDD, Vol_High, 2},
-			{AVDD, Vol_High, 2},
-			{RST, Vol_High, 14},
+			{DOVDD, Vol_1800, 1},
+			{DVDD, Vol_High, 4},
+			{AVDD, Vol_High, 4},
+			{RST, Vol_High, 17},
 		},
 	},
 #endif
@@ -75,10 +75,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		{
 			{RST, Vol_Low, 1},
 			{SensorMCLK, Vol_High, 1},
-			{DOVDD, Vol_1800, 0},
-			{DVDD, Vol_High, 2},
-			{AVDD, Vol_High, 2},
-			{RST, Vol_High, 14},
+			{DOVDD, Vol_1800, 1},
+			{DVDD, Vol_High, 4},
+			{AVDD, Vol_High, 4},
+			{RST, Vol_High, 17},
 		},
 	},
 #endif
@@ -87,10 +87,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         SENSOR_DRVNAME_MOT_KANSAS_SC202ACS_MIPI_RAW,
         {
             {RST, Vol_Low, 0},
-            {DOVDD, Vol_1800, 1},
-            {AVDD, Vol_High, 1},
-            {RST, Vol_High, 3},
-            {SensorMCLK, Vol_High, 6},
+            {DOVDD, Vol_1800, 4},
+            {AVDD, Vol_High, 4},
+            {RST, Vol_High, 5},
+            {SensorMCLK, Vol_High, 7},
         },
     },
 #endif
@@ -102,7 +102,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{SensorMCLK, Vol_High, 1},
 			{DOVDD, Vol_1800, 1},
 			{DVDD, Vol_High, 1},
-			{AVDD, Vol_High, 1},
+			{AVDD, Vol_High, 4},
 			{RST, Vol_High, 12},
 		},
 	},
