@@ -934,6 +934,17 @@ static int lcm_remove(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
+static void lcm_shutdown(struct mipi_dsi_device *dsi)
+{
+
+        pr_info("%s\n", __func__);
+
+#ifdef BIAS_OCP2138
+                pr_info("%s: ocp2138_BiasPower_disable\n", __func__);
+                ocp2138_BiasPower_disable(5);
+#endif
+}
+
 static const struct of_device_id lcm_of_match[] = {
 	{ .compatible = "txd,ili7807s,672,vdo,120hz", },
 	{ }
@@ -944,6 +955,7 @@ MODULE_DEVICE_TABLE(of, lcm_of_match);
 static struct mipi_dsi_driver lcm_driver = {
 	.probe = lcm_probe,
 	.remove = lcm_remove,
+	.shutdown = lcm_shutdown,
 	.driver = {
 		.name = "txd_ili7807s_vid_672_1080",
 		.owner = THIS_MODULE,
