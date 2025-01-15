@@ -292,7 +292,7 @@ static int boe_ft8057m_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode performance_mode_60hz = {
-	.clock		= 186346,
+	.clock		= (int)((FRAME_WIDTH + MODE_60_HFP + HSA + HBP) * (FRAME_HEIGHT + MODE_60_VFP + VSA + VBP) * MODE_60_FPS / 1000),
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -304,7 +304,7 @@ static const struct drm_display_mode performance_mode_60hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 186183,
+	.clock		= (int)((FRAME_WIDTH + MODE_90_HFP + HSA + HBP) * (FRAME_HEIGHT + MODE_90_VFP + VSA + VBP) * MODE_90_FPS / 1000),
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -316,7 +316,7 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 static const struct drm_display_mode performance_mode_120hz = {
-	.clock		= 186346,
+	.clock		= (int)((FRAME_WIDTH + MODE_120_HFP + HSA + HBP) * (FRAME_HEIGHT + MODE_120_VFP + VSA + VBP) * MODE_120_FPS / 1000),
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
