@@ -211,7 +211,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.exp_step = 2,
 		.framelength_step = 2,
 	},
-	.min_gain = 1.4287*BASEGAIN, /*1.4287x gain*/
+	.min_gain = BASEGAIN, /*1x gain*/
 	.max_gain = 64*BASEGAIN, /*64x gain*/
 	.min_gain_iso = 100,
 	.margin = 48,		/* sensor framelength & shutter margin */
@@ -817,19 +817,22 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 	kal_uint16 reg_gain = 0x0;
 	kal_uint16 gain_value = gain;
 	kal_uint32 max_gain = 64*BASEGAIN;
+	kal_uint32 min_gain = 1.4287*BASEGAIN;
 
 	if((sensor_mode == BINNING_MODE) || (sensor_mode == FPS120_MODE) || (sensor_mode == FPS60_4K_MODE)
 		||(sensor_mode == VIDEOCALL_MODE) ) {
 		max_gain = 64*BASEGAIN;
+		min_gain = 1.4287*BASEGAIN;
 	} else {
 		max_gain = 16*BASEGAIN;
+		min_gain = BASEGAIN;
 	}
 
-	if (gain_value < imgsensor_info.min_gain || gain_value > max_gain) {
+	if (gain_value < min_gain || gain_value > max_gain) {
 		LOG_INF("Error: gain value out of range %d", gain);
 
-		if (gain_value < imgsensor_info.min_gain)
-			gain_value = imgsensor_info.min_gain;
+		if (gain_value < min_gain)
+			gain_value = min_gain;
 		else if (gain_value > max_gain)
 			gain_value = max_gain;
 	}
@@ -860,18 +863,21 @@ static kal_uint16 set_gain_w_gph(kal_uint16 gain, kal_bool gph)
 {
 	kal_uint16 reg_gain;
 	kal_uint32 max_gain = 64*BASEGAIN;
+	kal_uint32 min_gain = 1.4287*BASEGAIN;
 
 	if((sensor_mode == BINNING_MODE) || (sensor_mode == FPS120_MODE) || (sensor_mode == FPS60_4K_MODE)
 		||(sensor_mode == VIDEOCALL_MODE) ) {
 		max_gain = 64*BASEGAIN;
+		min_gain = 1.4287*BASEGAIN;
 	} else {
 		max_gain = 16*BASEGAIN;
+		min_gain = BASEGAIN;
 	}
-	if (gain < imgsensor_info.min_gain || gain > max_gain) {
+	if (gain < min_gain || gain > max_gain) {
 		LOG_INF("Error gain setting");
 
-		if (gain < imgsensor_info.min_gain)
-			gain = imgsensor_info.min_gain;
+		if (gain < min_gain)
+			gain = min_gain;
 		else
 			gain = max_gain;
 	}
@@ -2320,6 +2326,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*(feature_data + 1) = imgsensor_info.min_gain;
 		*(feature_data + 2) = imgsensor_info.max_gain;
 		if((sensor_mode == CROP_MODE) || (sensor_mode == HW_50M_MODE)) {
+			*(feature_data + 1) = BASEGAIN;
 			*(feature_data + 2) = 16*BASEGAIN;
 		}
 		break;
