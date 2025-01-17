@@ -390058,6 +390058,15 @@ elf_symbol {
   full_name: "of_translate_address"
 }
 elf_symbol {
+  id: 0x6b89c359
+  name: "of_update_property"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xec5a0571
+  type_id: 0x90903ad4
+  full_name: "of_update_property"
+}
+elf_symbol {
   id: 0xee187039
   name: "of_usb_get_dr_mode_by_phy"
   is_defined: true
@@ -422652,6 +422661,7 @@ interface {
   symbol_id: 0x28517749
   symbol_id: 0xdfe02c28
   symbol_id: 0xdcce2e99
+  symbol_id: 0x6b89c359
   symbol_id: 0xee187039
   symbol_id: 0x7d8fe18b
   symbol_id: 0x02252ed7
