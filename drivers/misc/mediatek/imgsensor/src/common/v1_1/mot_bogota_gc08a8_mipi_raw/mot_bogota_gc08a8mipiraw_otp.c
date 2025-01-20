@@ -324,7 +324,7 @@ unsigned int mot_bogota_gc08a8_read_region(struct i2c_client *client, unsigned i
     pr_err("<%s>%d:otp region addr = 0x%x, size = %d\n", __func__, __LINE__, addr, size);
 #if 1
     if (addr == 0x0 && size == 1) {//0xff
-        *(u32 *)data = mot_bogota_gc08a8_otp_info.module_flag;
+        *(u8 *)data = mot_bogota_gc08a8_otp_info.module_flag;
     } else if (addr == 0x0 && size == 1904) {
         unsigned int totalSize = sizeof(mot_bogota_gc08a8_otp_info.module_flag) +
                                  sizeof(mot_bogota_gc08a8_otp_info.module_param) +
@@ -370,20 +370,20 @@ unsigned int mot_bogota_gc08a8_read_region(struct i2c_client *client, unsigned i
         memcpy(data, (mot_bogota_gc08a8_otp_info.module_param), size);
         pr_err("<%s>%d: addr = 0x%x, read module\n", __func__, __LINE__, addr);
     } else if (addr == 0x13 && size == 1) {
-        *(u32 *)data = mot_bogota_gc08a8_otp_info.moduleChksum;
+        *(u8 *)data = mot_bogota_gc08a8_otp_info.moduleChksum;
         pr_err("<%s>%d: addr = 0x%x, read module checksum\n", __func__, __LINE__, addr);
     } else if (addr == 0x15 && size == 12) {
         memcpy(data, (mot_bogota_gc08a8_otp_info.awb_param), size);
         pr_err("<%s>%d: addr = 0x%x, read awb\n", addr);
     } else if (addr == 0x21 && size == 1) {
-        *(u32 *)data = mot_bogota_gc08a8_otp_info.awbChksum;
-        pr_err("<%s>%d: addr = 0x%x, read awb checksum 0x%x\n", __func__, __LINE__, addr, *(u32 *)data);
+        *(u8 *)data = mot_bogota_gc08a8_otp_info.awbChksum;
+        pr_err("<%s>%d: addr = 0x%x, read awb checksum 0x%x\n", __func__, __LINE__, addr, *(u8 *)data);
     } else if (addr == 0x23 && size == 1868) {
         memcpy(data, mot_bogota_gc08a8_otp_info.lsc_param, size);
         pr_err("<%s>%d: addr = 0x%x, read lsc\n", __func__, __LINE__, addr);
     } else if (addr == 0x076f && size == 1) {
-        *(u32 *)data = mot_bogota_gc08a8_otp_info.lscChksum;
-        pr_err("<%s>%d: addr = 0x%x, read lscChksum = %x\n", __func__, __LINE__, addr, *(u32 *)data);
+        *(u8 *)data = mot_bogota_gc08a8_otp_info.lscChksum;
+        pr_err("<%s>%d: addr = 0x%x, read lscChksum = %x\n", __func__, __LINE__, addr, *(u8 *)data);
     } else{
         pr_err("<%s>%d: otp addr = 0x%x, size = %d ,read error !!!\n", __func__, __LINE__, addr, size);
     }

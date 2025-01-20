@@ -407,7 +407,7 @@ unsigned int mot_bogota_sc820_read_region(struct i2c_client *client, unsigned in
 
     pr_err("mot_bogota_sc820 otp region addr = 0x%x, size = %d\n", addr, size);
     if (addr == 0x1 && size == 1) {//0xff
-        *(u32 *)data = 0x00000006;
+        *(u8 *)data = 0x00000006;
     } else if (addr == 0x0 && size == 1917) {
         unsigned int totalSize = sizeof(mot_bogota_sc820_otp_info.module_flag) +
                                  sizeof(mot_bogota_sc820_otp_info.module_param) +
@@ -449,11 +449,11 @@ unsigned int mot_bogota_sc820_read_region(struct i2c_client *client, unsigned in
         memcpy(data, mot_bogota_sc820_otp_info.lsc_param, size);
         pr_err("add = 0x%x, read lsc\n",addr);
     } else if (addr == 1937 && size == 1) {
-        *(u32 *)data = mot_bogota_sc820_otp_info.lsc_checksum;
-        pr_err("add = 0x%x, read lsc_checksum = %x\n",addr, *(u32 *)data);
+        *(u8 *)data = mot_bogota_sc820_otp_info.lsc_checksum;
+        pr_err("add = 0x%x, read lsc_checksum = %x\n",addr, *(u8 *)data);
     } else if (addr == 68 && size == 1) {
-        *(u32 *)data = mot_bogota_sc820_otp_info.awb_checksum;
-        pr_err("add = 0x%x, read awb_checksum = %x\n",addr, *(u32 *)data);
+        *(u8 *)data = mot_bogota_sc820_otp_info.awb_checksum;
+        pr_err("add = 0x%x, read awb_checksum = %x\n",addr, *(u8 *)data);
     } else{
         pr_err("mot_bogota_sc820 otp add = 0x%x, size = %d ,read error !!!\n",addr,size);
     }
