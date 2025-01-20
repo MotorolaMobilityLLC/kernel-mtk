@@ -42,6 +42,11 @@ extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
 #endif
 
+enum panel_version {
+        PANEL_V0=1,		//EVT
+        PANEL_V1,		//DVT, PVT
+};
+
 static int tp_gesture_flag = 0;
 
 struct lcm {
@@ -58,6 +63,7 @@ struct lcm {
 	int error;
 	unsigned int hbm_mode;
 	unsigned int cabc_mode;
+	enum panel_version version;
 };
 
 #if 1
@@ -152,6 +158,8 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx,0x00,0x80);
 	lcm_dcs_write_seq_static(ctx,0xFF,0x87,0x25);
 
+  if (PANEL_V0 == ctx->version) {
+	pr_info("dijing_ft8725 init v0 for evt\n", __func__);
 	lcm_dcs_write_seq_static(ctx,0x00,0xA3);
 	lcm_dcs_write_seq_static(ctx,0xB3,0x09,0x60,0x00,0x18);
 	lcm_dcs_write_seq_static(ctx,0x00,0x80);
@@ -421,6 +429,11 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx,0xCA,0x05,0x05,0x0B);
 	lcm_dcs_write_seq_static(ctx,0x00,0xA0);
 	lcm_dcs_write_seq_static(ctx,0xCA,0x06,0x06,0x06);
+  }
+  else {
+	//DVT, PVT
+	pr_info("dijing_ft8725 init v1\n", __func__);
+  }
 
 	lcm_dcs_write_seq_static(ctx,0x53,0x2C);
 	lcm_dcs_write_seq_static(ctx,0x55,0x01);
@@ -1044,6 +1057,32 @@ static const struct drm_panel_funcs lcm_drm_funcs = {
 	.get_modes = lcm_get_modes,
 };
 
+static void lcm_parse_panel_version(struct lcm *ctx)
+{
+	int rc;
+	struct device_node *chosen = of_find_node_by_name(NULL, "chosen");
+
+	ctx->version = PANEL_V1;
+	if(chosen) {
+		u32 tmp = 0;
+
+		rc = of_property_read_u32(chosen, "mmi,panel_ver", &tmp);
+		if (!rc) {
+			if (PANEL_V0 == tmp) {
+				ctx->version = PANEL_V0;
+				pr_info("dijing get evt panel_ver:%d\n", ctx->version);
+			}
+		}
+		else
+			pr_info("dijing mmi,panel_ver not get\n");
+	}
+	else
+		pr_info("parse_panel chosen node null\n");
+
+	pr_info("parse_panel get panel_ver:%d\n", ctx->version);
+	return;
+}
+
 static int lcm_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
@@ -1123,6 +1162,9 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	ctx->panel.funcs = &lcm_drm_funcs;
 
 	drm_panel_add(&ctx->panel);
+
+	//parse panel version for evt/dvt
+	lcm_parse_panel_version(ctx);
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
