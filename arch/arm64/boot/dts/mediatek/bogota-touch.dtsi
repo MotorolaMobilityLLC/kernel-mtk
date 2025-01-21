@@ -45,6 +45,7 @@
 		chipone,irq-gpio = <&pio 22 0x00>;
 		chipone,x-res = <4320>;
 		chipone,y-res = <9600>;
+		chipone,def-config-id = <1>;
 
 		/* Charger detect*/
 		chipone,touch-charger-detect-enable;
