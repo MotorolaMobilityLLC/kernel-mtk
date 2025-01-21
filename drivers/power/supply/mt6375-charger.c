@@ -3430,6 +3430,11 @@ void mmi_start_hvdcp_detect_work(struct work_struct *work)
 		return;
 	}
 
+	if (ddata->psy_desc.type == POWER_SUPPLY_TYPE_USB) {
+		pr_err("psy_desc.type is usb exit \n");
+		return;
+	}
+
 	pr_info("HVDCP: mmi start hvdcp detect\n");
 	ddata->mmi_hvdcp_trig_flag = true;
 	wake_up_interruptible(&ddata->mmi_hvdcp_wait_que);
