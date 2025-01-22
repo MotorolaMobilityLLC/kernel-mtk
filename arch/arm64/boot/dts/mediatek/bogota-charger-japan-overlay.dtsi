@@ -66,7 +66,7 @@
 	apple_2_1a_charger_current = <800000>;
 	ta_ac_charger_current = <2000000>;
 	typec_limit_aicr = <3000000>;
-//	typecotp_charger = <1>;
+	typecotp_charger = <1>;
 
 	/*mmi config*/
 	mmi,iterm-ma = <255>;
@@ -185,44 +185,43 @@
 	};
 };
 
-
-/*&mt6375_chg {
+&mt6375_chg {
 		io-channels = <&mt6375_adc MT6375_ADC_CHGVIN>,
-				      <&mt6375_adc MT6375_ADC_VSYS>,
-				      <&mt6375_adc MT6375_ADC_VBAT>,
-				      <&mt6375_adc MT6375_ADC_IBUS>,
-				      <&mt6375_adc MT6375_ADC_IBAT>,
-				      <&mt6375_adc MT6375_ADC_TEMPJC>,
-				      <&mt6375_adc MT6375_ADC_USBDP>,
-				      <&mt6375_adc MT6375_ADC_USBDM>,
-		              <&mt6375_adc MT6375_ADC_VREFTS>,
-					  <&mt6375_adc MT6375_ADC_TS>;
-		typecotp_chg = <1>;
+				<&mt6375_adc MT6375_ADC_VSYS>,
+				<&mt6375_adc MT6375_ADC_VBAT>,
+				<&mt6375_adc MT6375_ADC_IBUS>,
+				<&mt6375_adc MT6375_ADC_IBAT>,
+				<&mt6375_adc MT6375_ADC_TEMPJC>,
+				<&mt6375_adc MT6375_ADC_USBDP>,
+				<&mt6375_adc MT6375_ADC_USBDM>,
+				<&mt6375_adc MT6375_ADC_VREFTS>,
+				<&mt6375_adc MT6375_ADC_TS>;
 		pinctrl-names = "mos_on","mos_off";
 		pinctrl-0 = <&mos_on>;
 		pinctrl-1 = <&mos_off>;
-
 	cv = <4500>;
 	ircmp_r = <0>;
 	ircmp_v = <0>;
+	typecotp_chg = <1>;
+	mmi,hvdcp-support;
 };
 
 &pio {
 	mos_on: mos_on {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO38__FUNC_GPIO38>;
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	mos_off: mos_off {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO38__FUNC_GPIO38>;
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-};*/
+};
 
 &extcon_usb {
 	vbus-current = <1100000>;
@@ -549,10 +548,6 @@
 		channel = <AUXADC_VIN6>;
 		pures = <ADC_PURES_100K>;
 	};
-};
-
-&mt6375_chg {
-	mmi,hvdcp-support;
 };
 
 &tboard_thermistor9 {
@@ -911,7 +906,7 @@
 			polling-delay-passive = <0>; /* milliseconds */
 			thermal-sensors = <&tboard_thermistor9>;
 		};
-		conn_ntc {
+		usb_conn_ntc {
 			polling-delay = <0>; /* milliseconds */
 			polling-delay-passive = <0>; /* milliseconds */
 			thermal-sensors = <&tboard_thermistor10>;

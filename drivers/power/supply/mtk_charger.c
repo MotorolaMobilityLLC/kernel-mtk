@@ -115,8 +115,8 @@ static struct typec_vol_temp typec_table[17] = {
 
 };
 #define typec_tab_len 17
-#define otp_threshold 750
-#define recover_threshold 650
+#define otp_threshold 700
+#define recover_threshold 600
 #define otpv_threshold 4000
 
 #define interpolate(x, x1, y1, x2, y2) \
@@ -165,7 +165,7 @@ int res_to_temp(struct ntc_temp *ptable, int num, int res)
 	return t_value;
 }
 
-static int get_typec_temp(struct mtk_charger *info)
+__maybe_unused static int get_typec_temp(struct mtk_charger *info)
 {
 	struct charger_device *chg_dev = info->chg1_dev;
 	int ntc_v, bif_v, i, value,ret;
@@ -5605,14 +5605,14 @@ static int mmi_get_typec_temp(struct mtk_charger *info)
 	usb_conn_zone = thermal_zone_get_zone_by_name("usb_conn_ntc");
 	if (IS_ERR(usb_conn_zone)) {
 		chr_err("get usb_conn zone failure\n");
-		return get_typec_temp(info);
+		return -EINVAL;//get_typec_temp(info);
 	}
 
         ret = thermal_zone_get_temp(usb_conn_zone, &temp);
 	if (ret) {
 		if (ret != -EAGAIN)
 			chr_err("failed to read out thermal zone (%d)\n", ret);
-		return get_typec_temp(info);
+		return -EINVAL;//get_typec_temp(info);
 	}
 
 	return temp / 100;
