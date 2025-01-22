@@ -53,6 +53,7 @@ extern int g_qc3p_id;
 #endif
 
 #if defined(CONFIG_MOTO_SWQC_SUPPORT)
+extern int wt6670f_en_hvdcp(void);
 static bool dbg_log_en = true;
 #define DELAY_TIME 1500
 #else
@@ -2285,6 +2286,7 @@ void get_qc_charger_type_func_work(struct work_struct *work)
 	bool m_chg_ready = false;
 	int early_chg_type = 0;
 	int count = 0;
+	int wait_count = 0;
 	int ret;
 	union power_supply_propval val;
 
@@ -2317,7 +2319,7 @@ void get_qc_charger_type_func_work(struct work_struct *work)
 		need_retry = false;
 		early_chg_type = 0;
 		adapter_dev_start_detection(ddata->qc_dev);
-		while((!m_chg_ready)&&(count<100)) {
+		while((!m_chg_ready) && (count < 100)) {
 			ret = power_supply_get_property(ddata->psy, POWER_SUPPLY_PROP_ONLINE, &val);
 			if (val.intval <= 0) {
 			      pr_err("[%s] ONLINE: %d, skip detecting0\n",__func__, val.intval);
@@ -2334,6 +2336,28 @@ void get_qc_charger_type_func_work(struct work_struct *work)
 			if(early_chg_type == USB_TYPE_QC3P_18 || early_chg_type == USB_TYPE_QC3P_27){
 				pr_err("[%s] qc early type is QC3+: %d, skip detecting\n",__func__, early_chg_type);
 				break;
+			}
+
+			if (early_chg_type == 0x04) {
+				pr_err("z350==0x04 retry type");
+				msleep(2000);
+				adapter_dev_get_protocol(ddata->qc_dev, &early_chg_type);
+				pr_err("z350==0x04 retry type:%x,%d\n",early_chg_type,wait_count);
+			}
+			if (early_chg_type == 0x10) {
+				wt6670f_en_hvdcp();
+				pr_err("[%s]  z350 qc early type is QC3+: %d, detect 0x10\n",__func__, early_chg_type);
+				wait_count = 0;
+				while ((ddata->qc_chg_type != 0xff) && (wait_count  < 30)) {
+					msleep(100);
+					wait_count++;
+					adapter_dev_get_protocol(ddata->qc_dev, &early_chg_type);
+					if (early_chg_type == 0x06 || early_chg_type == 0x09) {
+						pr_err("[%s] z350 early type is QC3+/QC3: %d, skip detecting\n",__func__, early_chg_type);
+						break;
+					}
+				adapter_dev_get_protocol(ddata->qc_dev, &ddata->qc_chg_type);
+				}
 			}
 				pr_err("qc waiting early type: 0x%x, detect ready: 0x%x, count: %d\n", early_chg_type, m_chg_ready, count);
 		}
@@ -2981,7 +3005,7 @@ static int mmi_set_dp_dm(struct charger_device *chgdev, int val)
 		break;
 	case DP_DM_DM_PULSE:
 		if (ddata->qc_dev) {
-			ret = adapter_dev_dp_dm(ddata->qc_dev, DP_DM_DP_PULSE);
+			ret = adapter_dev_dp_dm(ddata->qc_dev, DP_DM_DM_PULSE);
 		} else if (ddata->mmi_hvdcp_support) {
 			ret = mmi_qc30_step_down_vbus(ddata);
 		}

@@ -15,11 +15,25 @@ struct wt6670f {
 	struct notifier_block pm_nb;
 	bool wt6670f_suspend_flag;
 	struct mutex i2c_rw_lock;
+
+	struct adapter_device *qc_dev;
+	const char *qc_dev_name;
+	bool not_register_qc_dev;
 };
 
 enum {
 	QC3P_WT6670F,
 	QC3P_Z350,
+};
+
+enum {
+	DP_DM_UNKNOWN = 0,
+	DP_DM_FORCE_QC2_5V,
+	DP_DM_FORCE_QC2_9V,
+	DP_DM_FORCE_QC3_5V,
+	DP_DM_FORCE_QC3P_5V,
+	DP_DM_DP_PULSE,
+	DP_DM_DM_PULSE,
 };
 
 #define WT6670_ISP_I2C_ADDR		0x34
