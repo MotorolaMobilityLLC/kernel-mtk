@@ -440,12 +440,12 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx,0x35,0x00);
 
 	lcm_dcs_write_seq_static(ctx,0x11,0x00);
-	msleep(100);
+	usleep_range(100*1000, 100*1000+1);
 	lcm_dcs_write_seq_static(ctx,0x29,0x00);
 	lcm_dcs_write_seq_static(ctx,0x51,0xFA,0x01);
-	msleep(10);
+	usleep_range(10000, 10001);
 
-	pr_info("%s-\n", __func__);
+	pr_info("disp: %s-\n", __func__);
 }
 
 static int lcm_disable(struct drm_panel *panel)
@@ -490,9 +490,9 @@ static int lcm_unprepare(struct drm_panel *panel)
 	pr_info("%s+, dijing_ft8725\n", __func__);
 
 	lcm_dcs_write_seq_static(ctx, 0x28);
-	msleep(20);
+	usleep_range(20000, 20001);
 	lcm_dcs_write_seq_static(ctx, 0x10);
-	msleep(120);
+	usleep_range(120*1000, 120*1000+1);
 	lcm_dcs_write_seq_static(ctx, 0x00, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0xF7, 0x5A, 0xA5, 0x95, 0x27);
 
@@ -508,7 +508,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 		}
 		gpiod_set_value(ctx->avee_en_gpio, 0);
 		devm_gpiod_put(ctx->dev, ctx->avee_en_gpio);
-		msleep(5);
+		usleep_range(5000,5001);
 
 		ctx->avdd_en_gpio = devm_gpiod_get_index(ctx->dev, "avdd", 0, GPIOD_OUT_HIGH);
 		if (IS_ERR(ctx->avdd_en_gpio)) {
@@ -531,7 +531,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	struct lcm *ctx = panel_to_lcm(panel);
 	int ret;
 
-	pr_info("%s+, dijing_ft8725\n", __func__);
+	pr_info("disp: %s+, dijing_ft8725\n", __func__);
 	if (ctx->prepared) {
 		pr_info("%s, already prepared, return\n", __func__);
 		return 0;
@@ -544,11 +544,11 @@ static int lcm_prepare(struct drm_panel *panel)
 	}
 	gpiod_set_value(ctx->reset_gpio, 0);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	msleep(5);
+	usleep_range(5000,5001);
 
 #ifdef BIAS_OCP2138
 	ocp2138_BiasPower_enable(20,20,5);
-	msleep(1);
+	usleep_range(1000,1001);
 #else
 	ctx->avdd_en_gpio = devm_gpiod_get_index(ctx->dev, "avdd", 0, GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->avdd_en_gpio)) {
@@ -557,7 +557,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	}
 	gpiod_set_value(ctx->avdd_en_gpio, 1);
 	devm_gpiod_put(ctx->dev, ctx->avdd_en_gpio);
-	msleep(5);
+	usleep_range(5000,5001);
 
 	ctx->avee_en_gpio = devm_gpiod_get_index(ctx->dev, "avee", 0, GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->avee_en_gpio)) {
@@ -566,15 +566,15 @@ static int lcm_prepare(struct drm_panel *panel)
 	}
 	gpiod_set_value(ctx->avee_en_gpio, 1);
 	devm_gpiod_put(ctx->dev, ctx->avee_en_gpio);
-	msleep(5);
+	usleep_range(5000,5001);
 #endif
 
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(5);
+	usleep_range(5000,5001);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	msleep(5);
+	usleep_range(5000,5001);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(15);
+	usleep_range(15000,15001);
 
 	lcm_panel_init(ctx);
 	ctx->hbm_mode = 0;

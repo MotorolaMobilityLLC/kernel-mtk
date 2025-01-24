@@ -42,6 +42,9 @@ extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
 #endif
 
+//log for KPI
+const u8 kpi_log_level = 1;
+
 static int tp_gesture_flag = 0;
 
 struct lcm {
@@ -164,7 +167,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	lcm_dcs_write_seq_static(ctx, 0x55, 0x03);
-	msleep(5);
+	usleep_range(5000,5001);
 
 	lcm_dcs_write_seq_static(ctx, 0xE0, 0x0C, 0x00, 0xB0, 0x0C, 0x00, 0x15, 0x7C, 0x29, 0x04, 0x21, 0x01, 0x00, 0x00, 0x00, 0x00, 0x2E, 0x17, 0x0C, 0x98);
 
@@ -172,14 +175,15 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0xE2, 0x36, 0x24, 0x37, 0x4B, 0x38, 0x72, 0x39, 0x99, 0x3D, 0x00, 0x3C, 0x0F, 0x3B, 0xC2, 0x3B, 0xA5, 0x3C, 0x28, 0x3C, 0xED, 0x3D, 0xB1, 0x3E, 0x76, 0x3F, 0x3A, 0x3F, 0xFF, 0x3F, 0xFF, 0x3F, 0xFF);
 	lcm_dcs_write_seq_static(ctx, 0xF0, 0x00, 0x00, 0x00);
 
+	if(kpi_log_level > 1) pr_info("disp:%s 0x11 start\n", __func__);
 	lcm_dcs_write_seq_static(ctx, 0x11, 0x00);
-	msleep(100);
+	usleep_range(100*1000, 100*1000+1);
 	lcm_dcs_write_seq_static(ctx, 0x29, 0x00);
-	msleep(10);
+	usleep_range(10000, 10001);
 	lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xCF);
 	lcm_dcs_write_seq_static(ctx, 0xAC, 0x05);
 
-	pr_info("%s-\n", __func__);
+	pr_info("disp: %s-\n", __func__);
 }
 
 static int lcm_disable(struct drm_panel *panel)
@@ -225,9 +229,9 @@ static int lcm_unprepare(struct drm_panel *panel)
 
 	lcm_dcs_write_seq_static(ctx, 0xAC, 0x0A);
 	lcm_dcs_write_seq_static(ctx, 0x28, 0x00);
-	msleep(10);
+	usleep_range(10000, 10001);
 	lcm_dcs_write_seq_static(ctx, 0x10, 0x00);
-	msleep(100);
+	usleep_range(100*1000, 100*1000+1);
 
 	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
 	if(!tp_gesture_flag) {
@@ -241,7 +245,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 		}
 		gpiod_set_value(ctx->avee_en_gpio, 0);
 		devm_gpiod_put(ctx->dev, ctx->avee_en_gpio);
-		msleep(5);
+		usleep_range(5000,5001);
 
 		ctx->avdd_en_gpio = devm_gpiod_get_index(ctx->dev, "avdd", 0, GPIOD_OUT_HIGH);
 		if (IS_ERR(ctx->avdd_en_gpio)) {
@@ -264,12 +268,13 @@ static int lcm_prepare(struct drm_panel *panel)
 	struct lcm *ctx = panel_to_lcm(panel);
 	int ret;
 
-	pr_info("%s+, boe_icnl9922c\n", __func__);
+	pr_info("disp: %s+, boe_icnl9922c\n", __func__);
 	if (ctx->prepared) {
 		pr_info("%s, already prepared, return\n", __func__);
 		return 0;
 	}
 
+	if(kpi_log_level > 1) pr_info("disp: %s, lcd reset 0 start\n", __func__);
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
 		dev_info(ctx->dev, "[error]%s: cannot get reset_gpio %ld\n", __func__, PTR_ERR(ctx->reset_gpio));
@@ -277,11 +282,13 @@ static int lcm_prepare(struct drm_panel *panel)
 	}
 	gpiod_set_value(ctx->reset_gpio, 0);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	msleep(5);
+	usleep_range(5000,5001);
 
 #ifdef BIAS_OCP2138
+	if(kpi_log_level) pr_info("disp: %s bias en\n", __func__);
 	ocp2138_BiasPower_enable(15,15,5);
-	msleep(1);
+	usleep_range(1000,1001);
+	if(kpi_log_level > 1) pr_info("disp: %s bias en done\n", __func__);
 #else
 	ctx->avdd_en_gpio = devm_gpiod_get_index(ctx->dev, "avdd", 0, GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->avdd_en_gpio)) {
@@ -290,7 +297,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	}
 	gpiod_set_value(ctx->avdd_en_gpio, 1);
 	devm_gpiod_put(ctx->dev, ctx->avdd_en_gpio);
-	msleep(5);
+	usleep_range(5000,5001);
 
 	ctx->avee_en_gpio = devm_gpiod_get_index(ctx->dev, "avee", 0, GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->avee_en_gpio)) {
@@ -299,15 +306,17 @@ static int lcm_prepare(struct drm_panel *panel)
 	}
 	gpiod_set_value(ctx->avee_en_gpio, 1);
 	devm_gpiod_put(ctx->dev, ctx->avee_en_gpio);
-	msleep(5);
+	usleep_range(5000,5001);
 #endif
 
+	if(kpi_log_level) pr_info("disp: %s lcd reset\n", __func__);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(5);
+	usleep_range(5000,5001);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	msleep(5);
+	usleep_range(5000,5001);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(15);
+	usleep_range(15000,15001);
+	if(kpi_log_level > 1) pr_info("disp: %s lcd reset done\n", __func__);
 
 	lcm_panel_init(ctx);
 	ctx->hbm_mode = 0;
@@ -343,6 +352,7 @@ static int lcm_enable(struct drm_panel *panel)
 
 	ctx->enabled = true;
 
+	if(kpi_log_level) pr_info("disp: %s-\n", __func__);
 	return 0;
 }
 
