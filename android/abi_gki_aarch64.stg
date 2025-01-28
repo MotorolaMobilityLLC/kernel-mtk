@@ -379634,6 +379634,33 @@ elf_symbol {
   full_name: "iio_device_unregister"
 }
 elf_symbol {
+  id: 0xe5481ec8
+  name: "iio_enum_available_read"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xcb388b01
+  type_id: 0x13641115
+  full_name: "iio_enum_available_read"
+}
+elf_symbol {
+  id: 0x2bfd6710
+  name: "iio_enum_read"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x1972438f
+  type_id: 0x13641115
+  full_name: "iio_enum_read"
+}
+elf_symbol {
+  id: 0xbd0b946f
+  name: "iio_enum_write"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xafda2d93
+  type_id: 0x1364c655
+  full_name: "iio_enum_write"
+}
+elf_symbol {
   id: 0xef661661
   name: "iio_format_value"
   is_defined: true
@@ -421402,6 +421429,9 @@ interface {
   symbol_id: 0x49e3dfdd
   symbol_id: 0x7a6b0e4c
   symbol_id: 0xe0909072
+  symbol_id: 0xe5481ec8
+  symbol_id: 0x2bfd6710
+  symbol_id: 0xbd0b946f
   symbol_id: 0xef661661
   symbol_id: 0x83815ff1
   symbol_id: 0x01f28688
