@@ -18,6 +18,10 @@ DECLARE_RESTRICTED_HOOK(android_rvh_shmem_get_folio,
 			TP_PROTO(struct shmem_inode_info *info, struct folio **folio),
 			TP_ARGS(info, folio), 2);
 
+DECLARE_HOOK(android_vh_io_statistics,
+	TP_PROTO(struct address_space *mapping, unsigned int index,
+		unsigned int nr_page, bool read, bool direct),
+	TP_ARGS(mapping, index, nr_page, read, direct));
 DECLARE_RESTRICTED_HOOK(android_rvh_set_gfp_zone_flags,
 			TP_PROTO(unsigned int *flags),	/* gfp_t *flags */
 			TP_ARGS(flags), 1);
@@ -123,6 +127,12 @@ DECLARE_HOOK(android_vh_show_smap,
 	TP_PROTO(struct seq_file *m, unsigned long writeback,
 		unsigned long same, unsigned long huge),
 	TP_ARGS(m, writeback, same, huge));
+DECLARE_HOOK(android_vh_slab_alloc_node,
+	TP_PROTO(void *object, unsigned long addr, struct kmem_cache *s),
+	TP_ARGS(object, addr, s));
+DECLARE_HOOK(android_vh_slab_free,
+	TP_PROTO(unsigned long addr, struct kmem_cache *s),
+	TP_ARGS(addr, s));
 DECLARE_HOOK(android_vh_meminfo_cache_adjust,
 	TP_PROTO(unsigned long *cached),
 	TP_ARGS(cached));

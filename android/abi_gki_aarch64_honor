@@ -11,6 +11,7 @@
  __tracepoint_android_vh_should_continue_reclaim
  __tracepoint_android_vh_tune_fault_around_bytes
  __tracepoint_android_vh_should_memcg_bypass
+ __tracepoint_android_vh_io_statistics
  __traceiter_android_vh_get_page_wmark
  __traceiter_android_vh_page_add_new_anon_rmap
  __traceiter_android_vh_do_shrink_slab
@@ -27,12 +28,27 @@
  __traceiter_android_vh_should_continue_reclaim
  __traceiter_android_vh_tune_fault_around_bytes
  __traceiter_android_vh_should_memcg_bypass
+ __traceiter_android_vh_io_statistics
+ __traceiter_rpm_idle
+ __tracepoint_rpm_idle
+ __traceiter_rpm_suspend
+ __tracepoint_rpm_suspend
+ __traceiter_rpm_resume
+ __tracepoint_rpm_resume
+ __traceiter_rpm_return_int
+ __tracepoint_rpm_return_int
  binder_alloc_copy_from_buffer
  kfree
  __kmalloc
  mod_node_page_state
  page_cache_sync_ra
  proc_create
+ arch_vma_name
+ __pmd_trans_huge_lock
+ anon_vma_name
+ vm_normal_page
+ walk_page_range
+ pmd_clear_bad
  profile_event_register
  profile_event_unregister
  drop_super
@@ -48,7 +64,14 @@
  udp4_lib_lookup
  udp6_lib_lookup
  next_arg
+ pm_wakeup_irq
  __tracepoint_android_vh_dc_send_copy
  __traceiter_android_vh_dc_send_copy
  __tracepoint_android_vh_dc_receive
  __traceiter_android_vh_dc_receive
+ __tracepoint_android_vh_slab_alloc_node
+ __traceiter_android_vh_slab_alloc_node
+ __tracepoint_android_vh_slab_free
+ __traceiter_android_vh_slab_free
+ __traceiter_android_rvh_hw_protection_shutdown
+ __tracepoint_android_rvh_hw_protection_shutdown

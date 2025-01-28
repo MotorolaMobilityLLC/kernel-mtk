@@ -2821,12 +2821,12 @@ unsigned long __reclaim_pages(struct list_head *folio_list, void *private)
 
 	return nr_reclaimed;
 }
-EXPORT_SYMBOL_GPL(reclaim_pages);
 
 unsigned long reclaim_pages(struct list_head *folio_list)
 {
 	return __reclaim_pages(folio_list, NULL);
 }
+EXPORT_SYMBOL_GPL(reclaim_pages);
 
 static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
 				 struct lruvec *lruvec, struct scan_control *sc)
@@ -7881,8 +7881,12 @@ kswapd_try_sleep:
 		 */
 		trace_mm_vmscan_kswapd_wake(pgdat->node_id, highest_zoneidx,
 						alloc_order);
+		trace_android_rvh_vmscan_kswapd_wake(pgdat->node_id, highest_zoneidx,
+						alloc_order);
 		reclaim_order = balance_pgdat(pgdat, alloc_order,
 						highest_zoneidx);
+		trace_android_rvh_vmscan_kswapd_done(pgdat->node_id, highest_zoneidx,
+						alloc_order, reclaim_order);
 		trace_android_vh_vmscan_kswapd_done(pgdat->node_id, highest_zoneidx,
 			       			alloc_order, reclaim_order);
 		if (reclaim_order < alloc_order)
