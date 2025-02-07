@@ -2383,8 +2383,8 @@ void get_qc_charger_type_func_work(struct work_struct *work)
 	ddata->qc_is_detect = false;
 
 	if(ddata->qc_chg_type == USB_TYPE_QC20){
-		adapter_dev_dp_dm(ddata->qc_dev, DP_DM_FORCE_QC2_5V);
-		pr_err("Force set qc2 5V");
+		adapter_dev_dp_dm(ddata->qc_dev, DP_DM_FORCE_QC2_9V);
+		pr_err("Force set qc2 9V");
 		msleep(100);
 	}else if(ddata->qc_chg_type == USB_TYPE_QC30){
 		adapter_dev_dp_dm(ddata->qc_dev, DP_DM_FORCE_QC3_5V);
