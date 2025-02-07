@@ -137,6 +137,7 @@
 	mmi_therm_vol_thres = <80>;
 	mmi_therm_step = <3>;
 	mmi_max_ibat = <6000>;
+	ibus-ocp-ratio = <120>;
 };
 
 &odm {
