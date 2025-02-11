@@ -167,7 +167,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	lcm_dcs_write_seq_static(ctx, 0x55, 0x03);
-	usleep_range(5000,5001);
+	usleep_range(2000,2001);
 
 	lcm_dcs_write_seq_static(ctx, 0xE0, 0x0C, 0x00, 0xB0, 0x0C, 0x00, 0x15, 0x7C, 0x29, 0x04, 0x21, 0x01, 0x00, 0x00, 0x00, 0x00, 0x2E, 0x17, 0x0C, 0x98);
 
@@ -177,7 +177,7 @@ static void lcm_panel_init(struct lcm *ctx)
 
 	if(kpi_log_level > 1) pr_info("disp:%s 0x11 start\n", __func__);
 	lcm_dcs_write_seq_static(ctx, 0x11, 0x00);
-	usleep_range(100*1000, 100*1000+1);
+	usleep_range(90*1000, 90*1000+1);
 	lcm_dcs_write_seq_static(ctx, 0x29, 0x00);
 	usleep_range(10000, 10001);
 	lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xCF);
@@ -274,20 +274,10 @@ static int lcm_prepare(struct drm_panel *panel)
 		return 0;
 	}
 
-	if(kpi_log_level > 1) pr_info("disp: %s, lcd reset 0 start\n", __func__);
-	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->reset_gpio)) {
-		dev_info(ctx->dev, "[error]%s: cannot get reset_gpio %ld\n", __func__, PTR_ERR(ctx->reset_gpio));
-		return PTR_ERR(ctx->reset_gpio);
-	}
-	gpiod_set_value(ctx->reset_gpio, 0);
-	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	usleep_range(5000,5001);
-
 #ifdef BIAS_OCP2138
 	if(kpi_log_level) pr_info("disp: %s bias en\n", __func__);
 	ocp2138_BiasPower_enable(15,15,5);
-	usleep_range(1000,1001);
+
 	if(kpi_log_level > 1) pr_info("disp: %s bias en done\n", __func__);
 #else
 	ctx->avdd_en_gpio = devm_gpiod_get_index(ctx->dev, "avdd", 0, GPIOD_OUT_HIGH);
@@ -309,13 +299,20 @@ static int lcm_prepare(struct drm_panel *panel)
 	usleep_range(5000,5001);
 #endif
 
-	if(kpi_log_level) pr_info("disp: %s lcd reset\n", __func__);
+	if(kpi_log_level > 1) pr_info("disp: %s, lcd reset 1 start\n", __func__);
+	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->reset_gpio)) {
+		dev_info(ctx->dev, "[error]%s: cannot get reset_gpio %ld\n", __func__, PTR_ERR(ctx->reset_gpio));
+		return PTR_ERR(ctx->reset_gpio);
+	}
 	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(5000,5001);
+	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+	usleep_range(7000,7001);
+
 	gpiod_set_value(ctx->reset_gpio, 0);
-	usleep_range(5000,5001);
+	usleep_range(1000,1001);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(15000,15001);
+	usleep_range(10000,10001);
 	if(kpi_log_level > 1) pr_info("disp: %s lcd reset done\n", __func__);
 
 	lcm_panel_init(ctx);
