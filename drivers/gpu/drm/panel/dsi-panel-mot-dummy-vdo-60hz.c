@@ -229,7 +229,11 @@ static int dummy_panel_remove(struct mipi_dsi_device *dsi)
 
 static const struct of_device_id dummy_panel_of_match[] = {
 	{
+#if defined(CONFIG_DRM_PANEL_NUM_NO_LIMIT)
+	    .compatible = "panel_mot_vdo_dummy",
+#else
 	    .compatible = "mot,dummy,vdo,60hz",
+#endif
 	},
 	{}
 };
