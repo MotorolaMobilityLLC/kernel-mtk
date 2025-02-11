@@ -205,12 +205,9 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	panel1@0 {
-		compatible = "boe,icnl9922c,672,vdo,120hz";
+		compatible = "mot";
 		reg = <0>;
 		reset-gpios = <&pio 95 0>;
-		//avdd-gpios = <&pio 134 0>;
-		//avee-gpios = <&pio 182 0>;
-		//gate-ic = <4831>;
 		pinctrl-names = "default";
 		port {
 			panel_in1: endpoint {
@@ -219,6 +216,7 @@
 		};
 	};
 
+/*
 	panel2@0 {
                 compatible = "dijing,ft8725,672,vdo,120hz";
 		reg = <1>;
@@ -265,7 +263,6 @@
 		};
 	};
 
-/*
 	panel5@0 {
 		compatible = "mot,dummy,vdo,60hz";
 		reg = <4>;

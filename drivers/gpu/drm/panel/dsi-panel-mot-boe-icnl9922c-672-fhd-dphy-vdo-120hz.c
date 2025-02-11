@@ -896,7 +896,7 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 #if IS_ENABLED(CONFIG_OEM_DEVINFO)
 	FULL_PRODUCT_DEVICE_INFO(ID_LCD, "ICNL9922C_FHDPLUS_DSI_VDO_BOE");
 #endif
-	pr_info("[%d  %s]- boe,icnl9922c,672,vdo,120hz ret:%d  \n", __LINE__, __func__,ret);
+	pr_info("[%d  %s]- boe_icnl9922c ret:%d  \n", __LINE__, __func__,ret);
 
 	return ret;
 }
@@ -922,7 +922,11 @@ static int lcm_remove(struct mipi_dsi_device *dsi)
 
 static const struct of_device_id boe_of_match[] = {
 	{
+#if defined(CONFIG_DRM_PANEL_NUM_NO_LIMIT)
+		.compatible = "boe_icnl9922c_vid_672_1080",
+#else
 		.compatible = "boe,icnl9922c,672,vdo,120hz",
+#endif
 	},
 	{}
 };

@@ -974,7 +974,11 @@ static void lcm_shutdown(struct mipi_dsi_device *dsi)
 }
 
 static const struct of_device_id lcm_of_match[] = {
+#if defined(CONFIG_DRM_PANEL_NUM_NO_LIMIT)
+	{ .compatible = "txd_ili7807s_vid_672_1080", },
+#else
 	{ .compatible = "txd,ili7807s,672,vdo,120hz", },
+#endif
 	{ }
 };
 

@@ -1205,7 +1205,11 @@ static int lcm_remove(struct mipi_dsi_device *dsi)
 
 static const struct of_device_id dijing_of_match[] = {
 	{
+#if defined(CONFIG_DRM_PANEL_NUM_NO_LIMIT)
+		.compatible = "dijing_ft8725_vid_672_1080",
+#else
 		.compatible = "dijing,ft8725,672,vdo,120hz",
+#endif
 	},
 	{}
 };
