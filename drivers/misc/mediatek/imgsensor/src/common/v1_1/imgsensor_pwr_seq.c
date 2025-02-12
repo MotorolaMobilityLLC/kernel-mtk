@@ -180,12 +180,12 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		{
 			{SensorMCLK, Vol_High,1},
 			{RST, Vol_Low, 1},
-			{DVDD1, Vol_High, 1},
-			{DOVDD, Vol_High, 1},
-			{AVDD, Vol_High, 0},
-			{DVDD, Vol_High, 1},
+			{DVDD1, Vol_High, 20},
+			{DOVDD, Vol_High, 4},
+			{AVDD, Vol_High, 1},
+			{DVDD, Vol_High, 4},
 			{AFVDD, Vol_High, 1},
-			{RST, Vol_High, 6},
+			{RST, Vol_High, 8},
 		},
 	},
 #endif
@@ -194,10 +194,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		SENSOR_DRVNAME_MOT_CANCUNN_HI1634Q_MIPI_RAW,
 		{
 			{RST, Vol_Low, 1},
-			{DOVDD, Vol_High, 1},
+			{DOVDD, Vol_High, 3},
 			{AVDD, Vol_High, 1},
-			{DVDD, Vol_High, 1},//1.1v
-			{SensorMCLK, Vol_High, 1},
+			{DVDD, Vol_High, 4},//1.1v
+			{SensorMCLK, Vol_High, 3},
 			{RST, Vol_High, 5},
 		},
 	},
@@ -210,9 +210,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{SensorMCLK, Vol_High, 1},
 			{DVDD, Vol_High, 1},
 			{AVDD, Vol_High, 1},
-			{DOVDD, Vol_High, 1},
+			{DOVDD, Vol_High, 4},
 			{AFVDD, Vol_High, 1},
-			{RST, Vol_High, 4}
+			{RST, Vol_High, 5}
 		},
 	},
 #endif
