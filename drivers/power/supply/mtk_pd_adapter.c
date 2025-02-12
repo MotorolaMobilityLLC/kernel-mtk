@@ -270,6 +270,9 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 		sink_ma = noti->vbus_state.ma;
 		pr_info("%s: sink vbus %dmV %dmA type(0x%02x)\n", __func__,
 			sink_mv, sink_ma, noti->vbus_state.type);
+		if (noti->vbus_state.type & TCP_VBUS_CTRL_PD_DETECT)
+			srcu_notifier_call_chain(&adapter->evt_nh,
+					 MTK_SINK_VBUS, &noti->vbus_state.ma);
 		if (!pinfo->enable_pp) {
 			if (sink_mv && sink_ma) {
 				pinfo->enable_pp = true;
@@ -311,6 +314,13 @@ static int pd_get_property(struct adapter_device *dev,
 	case PD_TYPE:
 		{
 			return info->pd_type;
+		}
+		break;
+	/*Ryan*/
+	case PD_SRC_PDO_SUPPORT_USB_SUSPEND:
+		{
+		return tcpm_inquire_dpm_flags(info->tcpc)
+		& DPM_FLAGS_PARTNER_USB_SUSPEND;
 		}
 		break;
 	default:

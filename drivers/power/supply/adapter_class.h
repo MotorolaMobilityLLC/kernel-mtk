@@ -57,6 +57,7 @@ enum adapter_event {
 	MTK_PD_CONNECT_PE_READY_SNK_APDO,
 	MTK_PD_CONNECT_TYPEC_ONLY_SNK,
 	MTK_TYPEC_WD_STATUS,
+	MTK_SINK_VBUS,
 	MTK_TYPEC_HRESET_STATUS,
 	MMI_PD30_VDM_VERIFY,
 };
@@ -64,6 +65,7 @@ enum adapter_event {
 enum adapter_property {
 	TYPEC_RP_LEVEL,
 	PD_TYPE,
+	PD_SRC_PDO_SUPPORT_USB_SUSPEND,
 };
 
 enum adapter_cap_type {

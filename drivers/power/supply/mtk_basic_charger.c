@@ -94,6 +94,28 @@ static void select_cv(struct mtk_charger *info)
 	info->setting.cv = constant_voltage;
 }
 
+static int mtk_charger_force_disable_power_path(struct mtk_charger *info,
+	bool disable)
+{
+	int ret = 0;
+
+	if (!info)
+		return -EINVAL;
+
+	mutex_lock(&info->pp_lock[CHG1_SETTING]);
+
+	if (disable == info->force_disable_pp[CHG1_SETTING])
+		goto out;
+
+	info->force_disable_pp[CHG1_SETTING] = disable;
+	ret = charger_dev_enable_powerpath(info->chg1_dev,
+		info->force_disable_pp[CHG1_SETTING] ?
+		false : info->enable_pp[CHG1_SETTING]);
+out:
+	mutex_unlock(&info->pp_lock[CHG1_SETTING]);
+	return ret;
+}
+
 static bool is_typec_adapter(struct mtk_charger *info)
 {
 	int rp;
@@ -313,8 +335,13 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 				pdata->charging_current_limit = 2000000;
 			} else {
 				chr_err("type-C: inquire rp error\n");
-				pdata->input_current_limit = 500000;
-				pdata->charging_current_limit = 500000;
+				if (info->en_cts_mode) {
+					pdata->input_current_limit = 100000;
+					pdata->charging_current_limit = 100000;
+				} else {
+					pdata->input_current_limit = 500000;
+					pdata->charging_current_limit = 500000;
+				}
 			}
 
 			chr_err("type-C:%d current:%d\n",
@@ -448,6 +475,45 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 	} else
 		info->setting.input_current_limit1 = -1;
 
+	/* only in pdtest mode */
+	if (pdata->usb_input_current_limit != -1) {
+		if (pdata->usb_input_current_limit <= 100000 &&
+		adapter_dev_get_property(info->pd_adapter,
+		PD_SRC_PDO_SUPPORT_USB_SUSPEND)) {
+			info->en_power_path = false;
+		} else if (pdata->usb_input_current_limit > 100000) {
+			info->en_power_path = true;
+		}
+
+		if (pdata->usb_input_current_limit <=
+			pdata->input_current_limit) {
+			pdata->input_current_limit =
+				pdata->usb_input_current_limit;
+			info->setting.input_current_limit1 =
+				pdata->input_current_limit;
+		}
+
+	} else {
+		info->en_power_path = true;
+	}
+	// for pdtest: first run
+	if (pdata->pd_input_current_limit != -1) {
+		if (pdata->pd_input_current_limit <=
+			pdata->input_current_limit) {
+			pdata->input_current_limit =
+					pdata->pd_input_current_limit;
+			info->setting.input_current_limit1 =
+					pdata->input_current_limit;
+			info->en_power_path =
+					pdata->pd_input_current_limit > 100000;
+		}
+	}
+
+	if (info->en_cts_mode)
+		chr_err("pdtest: %d, pd: %d, usb: %d, ret: %d\n",
+		info->en_cts_mode, pdata->pd_input_current_limit,
+		pdata->usb_input_current_limit, pdata->input_current_limit);
+
 	if (pdata2->thermal_charging_current_limit != -1) {
 		if (pdata2->thermal_charging_current_limit <=
 			pdata2->charging_current_limit) {
@@ -514,7 +580,7 @@ done:
 	}
 
 	/* For TC_018, pleasae don't modify the format */
-	chr_err("m:%d chg1:%d,%d,%d,%d chg2:%d,%d,%d,%d dvchg1:%d sc:%d %d %d type:%d:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d bm:%d b:%d\n",
+	chr_err("m:%d chg1:%d,%d,%d,%d chg2:%d,%d,%d,%d dvchg1:%d sc:%d %d %d type:%d:%d usb_unlimited:%d usbif:%d usbsm:%d ii:%d,%d aicl:%d atm:%d bm:%d b:%d\n",
 		info->config,
 		_uA_to_mA(pdata->thermal_input_current_limit),
 		_uA_to_mA(pdata->thermal_charging_current_limit),
@@ -531,6 +597,8 @@ done:
 		info->chr_type, info->pd_type,
 		info->usb_unlimited,
 		IS_ENABLED(CONFIG_USBIF_COMPLIANCE), info->usb_state,
+		_uA_to_mA(pdata->usb_input_current_limit),
+		_uA_to_mA(pdata->pd_input_current_limit),
 		pdata->input_current_limit_by_aicl, info->atm_enabled,
 		info->bootmode, is_basic);
 
@@ -586,7 +654,7 @@ static int do_algorithm(struct mtk_charger *info)
 
 			if (!info->enable_hv_charging ||
 			    pdata->charging_current_limit == 0 ||
-			    pdata->input_current_limit == 0) {
+			    pdata->input_current_limit <= 100000) {
 				chg_alg_get_prop(alg, ALG_MAX_VBUS, &val);
 				if (val > 5000)
 					chg_alg_stop_algo(alg);
@@ -644,7 +712,7 @@ static int do_algorithm(struct mtk_charger *info)
 	} else {
 		if (info->enable_hv_charging != true ||
 		    pdata->charging_current_limit == 0 ||
-		    pdata->input_current_limit == 0) {
+		    pdata->input_current_limit <= 100000) {
 			for (i = 0; i < MAX_ALG_NO; i++) {
 				alg = info->alg[i];
 				if (alg == NULL)
@@ -667,6 +735,18 @@ static int do_algorithm(struct mtk_charger *info)
 			pdata->input_current_limit);
 		charger_dev_set_charging_current(info->chg1_dev,
 			pdata->charging_current_limit);
+
+		if (info->en_cts_mode) {
+			// close power path
+			if (!info->en_power_path) {
+				mtk_charger_force_disable_power_path(info, true);
+				chr_err("%s: close power path\n", __func__);
+			// open power path
+			} else if (info->en_power_path) {
+				mtk_charger_force_disable_power_path(info, false);
+				chr_err("%s: open power path\n", __func__);
+			}
+		}
 
 		chr_debug("%s:old_cv=%d,cv=%d, vbat_mon_en=%d\n",
 			__func__,

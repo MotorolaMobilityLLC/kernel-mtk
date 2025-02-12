@@ -677,6 +677,11 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 		info->fast_charging_indicator = DEFAULT_ALG;
 	}
 
+	/*	PDtest */
+	if (of_property_read_u32(np, "enable-pdtest-mode", &val)>= 0)
+		info->en_cts_mode = val;
+	chr_err("info->en_cts_mode :%d\n", info->en_cts_mode);
+
 	if (of_property_read_u32(np, "wireless_factory_max_current", &val) >= 0) {
 		info->data.wireless_factory_max_current = val;
 	} else {
@@ -2522,10 +2527,10 @@ stop_charging:
 
 	info->can_charging = charging;
 
-	if (info->mmi.adaptive_charging_disable_ichg || info->mmi.demo_discharging) {
+	if (info->mmi.adaptive_charging_disable_ichg || info->mmi.demo_discharging || (!info->en_power_path)) {
 		mtk_charger_force_disable_power_path(info, CHG1_SETTING, true);
 		pr_info("[%s] force disable power path true\n", __func__);
-	} else if (mtk_is_charger_on(info)) {
+	} else if (mtk_is_charger_on(info) && (info->en_power_path)) {
 		mtk_charger_force_disable_power_path(info, CHG1_SETTING, false);
 		pr_info("[%s] force disable power path false\n", __func__);
 	}
@@ -2751,6 +2756,10 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 
 	info->pd_reset = false;
 	info->mmi.active_fast_alg = 0;
+
+	info->en_power_path = true;
+	pdata1->usb_input_current_limit = -1;
+	pdata1->pd_input_current_limit = -1;
 
 	pdata1->disable_charging_count = 0;
 	pdata1->input_current_limit_by_aicl = -1;
@@ -6628,7 +6637,7 @@ int notify_adapter_event(struct notifier_block *notifier,
 			unsigned long evt, void *val)
 {
 	struct mtk_charger *pinfo = NULL;
-
+	int i = 0;
 	chr_err("%s %lu\n", __func__, evt);
 
 	pinfo = container_of(notifier,
@@ -6707,6 +6716,19 @@ int notify_adapter_event(struct notifier_block *notifier,
 	case MMI_PD30_VDM_VERIFY:
 		chr_err("%s VDM VERIFY\n", __func__);
 		mtk_chg_alg_notify_call(pinfo, EVT_VDM_VERIFY, 0);
+		break;
+	case MTK_SINK_VBUS:
+		if (pinfo->en_cts_mode) {
+			for (i = 0; i < CHGS_SETTING_MAX; i++)
+				pinfo->chg_data[i].pd_input_current_limit = *(int *)val * 1000;
+			charger_dev_set_input_current(pinfo->chg1_dev, *(int *)val * 1000);
+			if ((*(int *)val) <= 100) {
+				mtk_charger_force_disable_power_path(pinfo, CHG1_SETTING, true);	// for pdtest, speed up job
+				pinfo->en_power_path = false;
+			}
+			chr_err("mtk get sink vbus ma = %d, en_pp= %d\n", *(int *)val, pinfo->en_power_path);
+			_wake_up_charger(pinfo);
+		}
 		break;
 	}
 	return NOTIFY_DONE;
@@ -6918,6 +6940,8 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	for (i = 0; i < CHGS_SETTING_MAX; i++) {
 		info->chg_data[i].thermal_charging_current_limit = -1;
 		info->chg_data[i].thermal_input_current_limit = -1;
+		info->chg_data[i].usb_input_current_limit = -1;
+		info->chg_data[i].pd_input_current_limit = -1;
 		info->chg_data[i].input_current_limit_by_aicl = -1;
 		info->chg_data[i].moto_chg_tcmd_ichg = -1;
 		info->chg_data[i].moto_chg_tcmd_ibat = -1;
@@ -7028,6 +7052,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	info->enable_meta_current_limit = 1;
 	info->is_charging = false;
+	info->en_power_path = true;
 	info->safety_timer_cmd = -1;
 
 	/* 8 = KERNEL_POWER_OFF_CHARGING_BOOT */
