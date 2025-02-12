@@ -125,11 +125,11 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                         {RST, Vol_Low, 1},
                         {SensorMCLK, Vol_High, 1},
                         {DOVDD, Vol_High, 0},
-                        {DVDD, Vol_High, 1},
-                        {AVDD, Vol_High, 1},
-                        {DVDD1, Vol_High, 1},
-                        {AFVDD, Vol_High, 1},
-                        {RST, Vol_High, 14},
+                        {DVDD, Vol_High, 5},
+                        {AVDD, Vol_High, 5},
+                        {DVDD1, Vol_High, 5},
+                        {AFVDD, Vol_High, 4},
+                        {RST, Vol_High, 18},
                 },
         },
 #endif
@@ -140,8 +140,8 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                         {RST, Vol_Low, 1},
                         {DOVDD, Vol_High, 0},
                         {AVDD, Vol_High, 1},
-                        {DVDD, Vol_High, 1},//1.1v
-                        {SensorMCLK, Vol_High, 1},
+                        {DVDD, Vol_High, 4},//1.1v
+                        {SensorMCLK, Vol_High, 3},
                         {RST, Vol_High, 5},
                 },
         },
@@ -153,9 +153,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                         {RST, Vol_Low, 1},
                         {DOVDD, Vol_High, 0},
                         {AVDD, Vol_High, 1},
-                        {DVDD, Vol_High, 1},//1.05v
+                        {DVDD, Vol_High, 4},//1.05v
                         {RST, Vol_High, 5},
-                        {SensorMCLK, Vol_High, 2},
+                        {SensorMCLK, Vol_High, 4},
                 },
         },
 #endif
@@ -169,7 +169,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                         {AVDD, Vol_2800, 1},
                         {DOVDD, Vol_1800, 1},
                         {AFVDD, Vol_2800, 1},
-                        {RST, Vol_High, 4},
+                        {RST, Vol_High, 5},
                 },
         },
 #endif
