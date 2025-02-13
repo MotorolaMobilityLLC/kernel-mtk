@@ -895,9 +895,9 @@ int wt6670f_force_qc2_vbus(int cmd)
 	if (_wt->chg_ready == false)
 		return ret;
 
-	if (cmd == DP_DM_FORCE_QC2_5V)
+	if (cmd == QC_DP_DM_FORCE_QC2_5V)
 		data = 0x01;
-	else if (cmd == DP_DM_FORCE_QC2_9V)
+	else if (cmd == QC_DP_DM_FORCE_QC2_9V)
 		data = 0x02;
 
 	if (1 == g_qc3p_id)
@@ -1333,22 +1333,22 @@ int mmi_dp_dm(struct adapter_device *dev, int val)
 {
 	int ret = 0;
 	switch (val) {
-	case DP_DM_FORCE_QC2_5V:
-		ret = wt6670f_force_qc2_vbus(DP_DM_FORCE_QC2_5V);
+	case QC_DP_DM_FORCE_QC2_5V:
+		ret = wt6670f_force_qc2_vbus(QC_DP_DM_FORCE_QC2_5V);
 		break;
-	case DP_DM_FORCE_QC2_9V:
-		ret = wt6670f_force_qc2_vbus(DP_DM_FORCE_QC2_9V);
+	case QC_DP_DM_FORCE_QC2_9V:
+		ret = wt6670f_force_qc2_vbus(QC_DP_DM_FORCE_QC2_9V);
 		break;
-	case DP_DM_FORCE_QC3_5V:
+	case QC_DP_DM_FORCE_QC3_5V:
 		ret = wt6670f_force_qc3_5V();
 		break;
-	case DP_DM_FORCE_QC3P_5V:
+	case QC_DP_DM_FORCE_QC3P_5V:
 		ret = wt6670f_set_voltage(5000);
 		break;
-	case DP_DM_DP_PULSE:
+	case QC_DP_DM_DP_PULSE:
 		ret = wt6670f_set_volt_count(1);
 		break;
-	case DP_DM_DM_PULSE:
+	case QC_DP_DM_DM_PULSE:
 		ret = wt6670f_set_volt_count(-1);
 		break;
 	default:
