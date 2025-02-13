@@ -1203,6 +1203,7 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 	{
 		spin_lock(&imgsensor_drv_lock);
+		sensor_mode = BINNING_MODE;
 		imgsensor.current_scenario_id = scenario_id;
 		imgsensor.autoflicker_en = KAL_FALSE;
 		imgsensor.pclk = imgsensor_info.pre.pclk;
@@ -1229,6 +1230,7 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
 	case MSDK_SCENARIO_ID_CUSTOM3:
 	{
 		spin_lock(&imgsensor_drv_lock);
+		sensor_mode = CROP_MODE;
 		imgsensor.autoflicker_en = KAL_FALSE;
 		imgsensor.pclk = imgsensor_info.custom3.pclk;
 		imgsensor.line_length = imgsensor_info.custom3.linelength;
