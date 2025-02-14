@@ -427,8 +427,11 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		}
 	} else {
 		if(m_chg_type == 0x09 || m_chg_type == 0x08) {
-				pdata->input_current_limit = 2000000;
+			pdata->input_current_limit = 2000000;
+		}else if(m_chg_type == 0x06){
+			pdata->input_current_limit = 3000000;
 		}
+		chr_info("m_chg_type = %d input_current_limit = %d\n",m_chg_type,pdata->input_current_limit);
 	}
 #endif
 
