@@ -363704,6 +363704,15 @@ elf_symbol {
   full_name: "debugfs_file_put"
 }
 elf_symbol {
+  id: 0x4931dddc
+  name: "debugfs_initialized"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x716265c7
+  type_id: 0xfea45b04
+  full_name: "debugfs_initialized"
+}
+elf_symbol {
   id: 0x5e671464
   name: "debugfs_lookup"
   is_defined: true
@@ -419735,6 +419744,7 @@ interface {
   symbol_id: 0xa80f19b8
   symbol_id: 0x5f9a95c1
   symbol_id: 0x01ee66df
+  symbol_id: 0x4931dddc
   symbol_id: 0x5e671464
   symbol_id: 0x0d94ff56
   symbol_id: 0xc28b6d25
