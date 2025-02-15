@@ -107,6 +107,15 @@ static struct lock_class_key backing_shmem_inode_class;
 /* Enable unpinning feature by default to retain compatibility with existing behavior. */
 static bool unpinning_enable = true;
 
+/*
+ * memfd does not allow removing permissions to map a buffer with PROT_READ. This variable
+ * is exposed as a tunable so that it can be used to make ashmem behave more like memfd for
+ * test purposes.
+ *
+ * It is set to false by default to retain compatibility with the original behavior of the driver.
+ */
+static bool ignore_unset_prot_read;
+
 static inline unsigned long range_size(struct ashmem_range *range)
 {
 	return range->pgend - range->pgstart + 1;
@@ -549,6 +558,10 @@ static int set_prot_mask(struct ashmem_area *asma, unsigned long prot)
 
 	mutex_lock(&ashmem_mutex);
 
+	/* Ensure the buffer can only be mapped with PROT_READ iff it has that permission. */
+	if (ignore_unset_prot_read)
+		prot |= asma->prot_mask & PROT_READ;
+
 	/* the user can only remove, not add, protection bits */
 	if ((asma->prot_mask & prot) != prot) {
 		ret = -EINVAL;
@@ -934,6 +947,12 @@ static int unpinning_enable_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
+static int ignore_unset_prot_read_open(struct inode *inode, struct file *file)
+{
+	file->private_data = &ignore_unset_prot_read;
+	return 0;
+}
+
 static ssize_t attr_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 {
 	bool *attrp = file->private_data;
@@ -993,6 +1012,13 @@ static const struct file_operations unpinning_enable_fops = {
 	.write = attr_write,
 };
 
+static const struct file_operations ignore_unset_prot_read_fops = {
+	.owner = THIS_MODULE,
+	.open = ignore_unset_prot_read_open,
+	.read = attr_read,
+	.write = attr_write,
+};
+
 static struct miscdevice ashmem_miscs[] = {
 	{
 		.minor = MISC_DYNAMIC_MINOR,
@@ -1003,6 +1029,11 @@ static struct miscdevice ashmem_miscs[] = {
 		.minor = MISC_DYNAMIC_MINOR,
 		.name = "ashmem_unpinning_enable",
 		.fops = &unpinning_enable_fops,
+	},
+	{
+		.minor = MISC_DYNAMIC_MINOR,
+		.name = "ashmem_ignore_unset_prot_read",
+		.fops = &ignore_unset_prot_read_fops,
 	},
 };
 
