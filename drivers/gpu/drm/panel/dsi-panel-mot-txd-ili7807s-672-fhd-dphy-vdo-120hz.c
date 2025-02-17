@@ -514,6 +514,8 @@ static struct mtk_panel_params ext_params_60hz = {
         .rc_tgt_offset_hi		= 3,
         .rc_tgt_offset_lo		= 3,
 	},
+	.lfr_enable = LFR_EN,
+	.lfr_minimum_fps = MODE_60_FPS,
 };
 
 static struct mtk_panel_params ext_params_90hz = {
@@ -569,6 +571,8 @@ static struct mtk_panel_params ext_params_90hz = {
         .rc_tgt_offset_hi		= 3,
         .rc_tgt_offset_lo		= 3,
 	},
+	.lfr_enable = LFR_EN,
+	.lfr_minimum_fps = MODE_60_FPS,
 };
 
 static struct mtk_panel_params ext_params_120hz = {
@@ -624,6 +628,8 @@ static struct mtk_panel_params ext_params_120hz = {
         .rc_tgt_offset_hi		= 3,
         .rc_tgt_offset_lo		= 3,
 	},
+	.lfr_enable = LFR_EN,
+	.lfr_minimum_fps = MODE_60_FPS,
 };
 
 struct drm_display_mode *get_mode_by_id(struct drm_connector *connector,

@@ -38,7 +38,7 @@
 #define MODE_60_FPS                  60
 #define MODE_60_VFP                  2538
 
-#define LFR_EN                      0
+#define LFR_EN                      1
 
 /* DSC RELATED */
 #define DSC_ENABLE                  1

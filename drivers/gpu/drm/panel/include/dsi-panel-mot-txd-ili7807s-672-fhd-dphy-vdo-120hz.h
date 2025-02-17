@@ -32,4 +32,6 @@
 #define MODE_60_VFP			2540
 /*Parameter setting for mode 60 End*/
 
-#endif //end of PANEL_MOT_BOE_ICNL9922C_672_DPHY_VDO_HFP_H
+#define LFR_EN                      	1
+
+#endif //end of PANEL_MOT_TXD_ILI7807S_672_DPHY_VDO_HFP_H
