@@ -614,6 +614,14 @@ int wt6670f_isp_flow(struct wt6670f *chip)
 		programed_cnt += FIRWARE_SIZE;
 	}
 
+	kfree(code);
+	code = kzalloc(0x40, GFP_KERNEL);
+	if (code == NULL) {
+		pr_info("[%s] Failed to allocate memory for verification\n", __func__);
+		goto isp_err;
+
+	}
+
 	pr_info("[%s] finish program flash, start verify...\n", __func__);
 
 	//wt_enable_isp_flash_mode(chip->client);
