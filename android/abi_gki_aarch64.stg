@@ -307921,6 +307921,11 @@ function {
   parameter_id: 0x1d19a9d5
 }
 function {
+  id: 0x3d0bcda3
+  return_type_id: 0x23f6f3f6
+  parameter_id: 0x06835e9c
+}
+function {
   id: 0x3d0f6874
   return_type_id: 0x1c3dbe5a
   parameter_id: 0x3b04bead
@@ -390439,6 +390444,15 @@ elf_symbol {
   full_name: "page_reporting_unregister"
 }
 elf_symbol {
+  id: 0xb942a21f
+  name: "page_swap_info"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xb7074429
+  type_id: 0x3d0bcda3
+  full_name: "page_swap_info"
+}
+elf_symbol {
   id: 0xb681e6bc
   name: "page_symlink"
   is_defined: true
@@ -422712,6 +422726,7 @@ interface {
   symbol_id: 0x3c537500
   symbol_id: 0x1b814fa6
   symbol_id: 0x9ca2e070
+  symbol_id: 0xb942a21f
   symbol_id: 0xb681e6bc
   symbol_id: 0x4271852e
   symbol_id: 0x0fe80546
