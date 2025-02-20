@@ -353,6 +353,30 @@ static int lcm_enable(struct drm_panel *panel)
 	return 0;
 }
 
+static const struct drm_display_mode switch_mode_30hz = {
+	.clock = (int)((FRAME_WIDTH + HFP + HSA + HBP) * (FRAME_HEIGHT + MODE_30_VFP + VSA + VBP) * MODE_30_FPS / 1000),
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + HFP,
+	.hsync_end = FRAME_WIDTH + HFP + HSA,
+	.htotal = FRAME_WIDTH + HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_30_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_30_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_30_VFP + VSA + VBP,
+};
+
+static const struct drm_display_mode switch_mode_45hz = {
+	.clock = (int)((FRAME_WIDTH + HFP + HSA + HBP) * (FRAME_HEIGHT + MODE_45_VFP + VSA + VBP) * MODE_45_FPS / 1000),
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + HFP,
+	.hsync_end = FRAME_WIDTH + HFP + HSA,
+	.htotal = FRAME_WIDTH + HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_45_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_45_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_45_VFP + VSA + VBP,
+};
+
 static const struct drm_display_mode switch_mode_60hz = {
 	.clock = (int)((FRAME_WIDTH + HFP + HSA + HBP) * (FRAME_HEIGHT + MODE_60_VFP + VSA + VBP) * MODE_60_FPS / 1000),
 	.hdisplay = FRAME_WIDTH,
@@ -425,6 +449,118 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	pr_info("%s: skip for using bl ic, level=%d\n", __func__, level);
 	return 0;
 }
+
+static struct mtk_panel_params ext_params_30hz = {
+	.data_rate = DATA_RATE,
+	.phy_timcon.lpx = 8,
+	.ssc_enable = 0,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0A, .count = 1, .para_list[0] = 0x9C,
+	},
+	.panel_ver = 1,
+	.panel_id = 0x912c0a02,
+	.panel_name = "boe_icnl9922c_vid_672_1080",
+	.panel_supplier = "boe",
+	.lcm_index = 0,
+	.hbm_type = HBM_MODE_RAMPING,
+	.max_bl_level = 2047,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable                =  DSC_ENABLE,
+		.ver                   =  DSC_VER,
+		.slice_mode            =  DSC_SLICE_MODE,
+		.rgb_swap              =  DSC_RGB_SWAP,
+		.dsc_cfg               =  DSC_DSC_CFG,
+		.rct_on                =  DSC_RCT_ON,
+		.bit_per_channel       =  DSC_BIT_PER_CHANNEL,
+		.dsc_line_buf_depth    =  DSC_DSC_LINE_BUF_DEPTH,
+		.bp_enable             =  DSC_BP_ENABLE,
+		.bit_per_pixel         =  DSC_BIT_PER_PIXEL,
+		.pic_height            =  FRAME_HEIGHT,
+		.pic_width             =  FRAME_WIDTH,
+		.slice_height          =  DSC_SLICE_HEIGHT,
+		.slice_width           =  DSC_SLICE_WIDTH,
+		.chunk_size            =  DSC_CHUNK_SIZE,
+		.xmit_delay            =  DSC_XMIT_DELAY,
+		.dec_delay             =  DSC_DEC_DELAY,
+		.scale_value           =  DSC_SCALE_VALUE,
+		.increment_interval    =  DSC_INCREMENT_INTERVAL,
+		.decrement_interval    =  DSC_DECREMENT_INTERVAL,
+		.line_bpg_offset       =  DSC_LINE_BPG_OFFSET,
+		.nfl_bpg_offset        =  DSC_NFL_BPG_OFFSET,
+		.slice_bpg_offset      =  DSC_SLICE_BPG_OFFSET,
+		.initial_offset        =  DSC_INITIAL_OFFSET,
+		.final_offset          =  DSC_FINAL_OFFSET,
+		.flatness_minqp        =  DSC_FLATNESS_MINQP,
+		.flatness_maxqp        =  DSC_FLATNESS_MAXQP,
+		.rc_model_size         =  DSC_RC_MODEL_SIZE,
+		.rc_edge_factor        =  DSC_RC_EDGE_FACTOR,
+		.rc_quant_incr_limit0  =  DSC_RC_QUANT_INCR_LIMIT0,
+		.rc_quant_incr_limit1  =  DSC_RC_QUANT_INCR_LIMIT1,
+		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
+		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
+	},
+};
+
+static struct mtk_panel_params ext_params_45hz = {
+	.data_rate = DATA_RATE,
+	.phy_timcon.lpx = 8,
+	.ssc_enable = 0,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0A, .count = 1, .para_list[0] = 0x9C,
+	},
+	.panel_ver = 1,
+	.panel_id = 0x912c0a02,
+	.panel_name = "boe_icnl9922c_vid_672_1080",
+	.panel_supplier = "boe",
+	.lcm_index = 0,
+	.hbm_type = HBM_MODE_RAMPING,
+	.max_bl_level = 2047,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable                =  DSC_ENABLE,
+		.ver                   =  DSC_VER,
+		.slice_mode            =  DSC_SLICE_MODE,
+		.rgb_swap              =  DSC_RGB_SWAP,
+		.dsc_cfg               =  DSC_DSC_CFG,
+		.rct_on                =  DSC_RCT_ON,
+		.bit_per_channel       =  DSC_BIT_PER_CHANNEL,
+		.dsc_line_buf_depth    =  DSC_DSC_LINE_BUF_DEPTH,
+		.bp_enable             =  DSC_BP_ENABLE,
+		.bit_per_pixel         =  DSC_BIT_PER_PIXEL,
+		.pic_height            =  FRAME_HEIGHT,
+		.pic_width             =  FRAME_WIDTH,
+		.slice_height          =  DSC_SLICE_HEIGHT,
+		.slice_width           =  DSC_SLICE_WIDTH,
+		.chunk_size            =  DSC_CHUNK_SIZE,
+		.xmit_delay            =  DSC_XMIT_DELAY,
+		.dec_delay             =  DSC_DEC_DELAY,
+		.scale_value           =  DSC_SCALE_VALUE,
+		.increment_interval    =  DSC_INCREMENT_INTERVAL,
+		.decrement_interval    =  DSC_DECREMENT_INTERVAL,
+		.line_bpg_offset       =  DSC_LINE_BPG_OFFSET,
+		.nfl_bpg_offset        =  DSC_NFL_BPG_OFFSET,
+		.slice_bpg_offset      =  DSC_SLICE_BPG_OFFSET,
+		.initial_offset        =  DSC_INITIAL_OFFSET,
+		.final_offset          =  DSC_FINAL_OFFSET,
+		.flatness_minqp        =  DSC_FLATNESS_MINQP,
+		.flatness_maxqp        =  DSC_FLATNESS_MAXQP,
+		.rc_model_size         =  DSC_RC_MODEL_SIZE,
+		.rc_edge_factor        =  DSC_RC_EDGE_FACTOR,
+		.rc_quant_incr_limit0  =  DSC_RC_QUANT_INCR_LIMIT0,
+		.rc_quant_incr_limit1  =  DSC_RC_QUANT_INCR_LIMIT1,
+		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
+		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
+	},
+};
 
 static struct mtk_panel_params ext_params_60hz = {
 	.data_rate = DATA_RATE,
@@ -631,6 +767,10 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 		ext->params = &ext_params_90hz;
 	else if (drm_mode_vrefresh(m) == MODE_60_FPS)
 		ext->params = &ext_params_60hz;
+	else if (drm_mode_vrefresh(m) == MODE_45_FPS)
+		ext->params = &ext_params_45hz;
+	else if (drm_mode_vrefresh(m) == MODE_30_FPS)
+		ext->params = &ext_params_30hz;
 	else
 		ret = 1;
 
@@ -753,10 +893,34 @@ static struct mtk_panel_funcs ext_funcs = {
 
 static int lcm_get_modes(struct drm_panel *panel, struct drm_connector *connector)
 {
+	struct drm_display_mode *mode_30hz;
+	struct drm_display_mode *mode_45hz;
 	struct drm_display_mode *mode_60hz;
 	struct drm_display_mode *mode_90hz;
 	struct drm_display_mode *mode_120hz;
 	pr_info("[LCM] %s begin\n", __func__);
+
+	mode_30hz = drm_mode_duplicate(connector->dev, &switch_mode_30hz);
+	if (!mode_30hz) {
+		dev_info(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			switch_mode_30hz.hdisplay, switch_mode_30hz.vdisplay,
+			drm_mode_vrefresh(&switch_mode_30hz));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_30hz);
+	mode_30hz->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+	drm_mode_probed_add(connector, mode_30hz);
+
+	mode_45hz = drm_mode_duplicate(connector->dev, &switch_mode_45hz);
+	if (!mode_45hz) {
+		dev_info(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			switch_mode_45hz.hdisplay, switch_mode_45hz.vdisplay,
+			drm_mode_vrefresh(&switch_mode_45hz));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_45hz);
+	mode_45hz->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+	drm_mode_probed_add(connector, mode_45hz);
 
 	mode_60hz = drm_mode_duplicate(connector->dev, &switch_mode_60hz);
 	if (!mode_60hz) {

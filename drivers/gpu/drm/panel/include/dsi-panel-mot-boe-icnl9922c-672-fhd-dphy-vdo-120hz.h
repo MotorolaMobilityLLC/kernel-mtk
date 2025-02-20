@@ -38,6 +38,15 @@
 #define MODE_60_FPS                  60
 #define MODE_60_VFP                  2512
 
+
+//Parameter setting for mode 45
+#define MODE_45_FPS                  45
+#define MODE_45_VFP                  4159
+
+//Parameter setting for mode 30
+#define MODE_30_FPS                  30
+#define MODE_30_VFP                  7456
+
 #define LFR_EN                      1
 
 /* DSC RELATED */
