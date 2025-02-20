@@ -204,7 +204,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0x55, 0x01);
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x11, 0x00);
-	usleep_range(100*1000, 100*1000+1);
+	usleep_range(75*1000, 75*1000+1);
 	lcm_dcs_write_seq_static(ctx, 0x29, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xCF);
 	usleep_range(10000, 10001);
