@@ -187,7 +187,6 @@
 		/delete-property/ reset-gpios;
 		/delete-property/gate-ic;
 
-		compatible = "mot";
 		reg = <0>;
 
 		reset-gpios = <&pio 86 0>;
