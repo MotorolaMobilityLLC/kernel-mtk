@@ -1,0 +1,47 @@
+		.slim1_video = {
+		.pclk = 132000000,
+		.linelength = 1760,
+		.framelength = 2500,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 3264,
+		.grabwindow_height = 1836,
+		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 320000000,
+		.max_framerate = 300,
+	},
+
+
+	{ 3264, 2448, 0, 306, 3264, 1836, 3264, 1836, 0, 0, 3264, 1836, 0, 0, 3264, 1836},	/* slim1_video  */
+
+
+kal_uint16 addr_data_pair_slim1_video_mot_bogota_sc820[] = {
+	0x301f,0x01,
+	0x3200,0x00,
+	0x3201,0x00,
+	0x3202,0x01,
+	0x3203,0x32,
+	0x3204,0x0c,
+	0x3206,0x08,
+	0x3207,0x6d,
+	0x3208,0x0c,
+	0x3209,0xc0,
+	0x320a,0x07,
+	0x320b,0x2c,
+	0x3210,0x00,
+	0x3212,0x00,
+	0x3213,0x08,
+	0x3215,0x11,
+	0x3220,0x00,
+	0x5000,0x0e,
+	0x5900,0x01,
+	0x5901,0x00,
+};
+
+
+static void slim1_video_setting(void)
+{
+     mot_bogota_sc820_table_write_cmos_sensor(
+         addr_data_pair_slim_video_mot_bogota_sc820,
+         sizeof(addr_data_pair_slim1_video_mot_bogota_sc820) /
+         sizeof(kal_uint16));
