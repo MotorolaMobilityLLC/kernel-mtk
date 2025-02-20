@@ -205,7 +205,6 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	panel1@0 {
-		compatible = "mot";
 		reg = <0>;
 		reset-gpios = <&pio 95 0>;
 		pinctrl-names = "default";
