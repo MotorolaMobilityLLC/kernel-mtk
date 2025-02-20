@@ -325,7 +325,7 @@
 	mmi,ntc_table = <1>;
 	mmi,ntc_v_ref = <1800000>;
 	mmi,ntc_r_pull = <100000>;
-	mmi,batt-ids-map = "1", "LWNRB52SWD","2", "ATLRB52NVT","3", "ATLRB60NVT","4", "LWNRB60SWD","5", "VEKRB52FMT";
+	mmi,batt-ids-map = "1", "LWNRB52SWD","2", "ATLRB52NVT","3", "VEKRB52FMT","4", "LWNRB60SWD","5", "ATLRB60NVT";
 	mmi,batid_v_ref = <1800000>;
 	mmi,batid_r_pull = <100000>;
 
@@ -348,33 +348,33 @@
 
 	/* battery prop */
 	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
-	g_FG_PSEUDO100 = <97 97 100 100
-		97 97 100 100
-		97 97 100 100
-		97 97 100 100
-		97 97 100 100
+	g_FG_PSEUDO100 = <97 97 97 100
+		97 97 97 100
+		97 97 97 100
+		97 97 97 100
+		97 97 97 100
 		100 100 100 100
 		100 100 100 100
 		100 100 100 100
 		100 100 100 100
 		100 100 100 100>;
 
-	g_Q_MAX = <5129 5189 2490 1965
-		5239 5238 2468 1984
-		5192 5250 2310 1946
-		5041 5112 1858 1873
-		4894 4977 1843 1851
+	g_Q_MAX = <5129 5189 5163 1965
+		5239 5238 5234 1984
+		5192 5250 5225 1946
+		5041 5112 5146 1873
+		4894 4977 5036 1851
 		2211 1652 1533 1541
 		2201 1642 1523 1531
 		2191 1632 1513 1521
 		2181 1622 1503 1511
 		2171 1612 1493 1501>;
 
-	g_Q_MAX_H_CURRENT = <5117 5178 2190 1665
-		5222 5224 2168 1684
-		5091 5155 2010 1646
-		4869 4975 1558 1573
-		4484 4423 1543 1551
+	g_Q_MAX_H_CURRENT = <5117 5178 5153 1665
+		5222 5224 5219 1684
+		5091 5155 5182 1646
+		4869 4975 5004 1573
+		4484 4423 4697 1551
 		2210 1650 1533 1541
 		2200 1640 1523 1531
 		2190 1630 1513 1521
@@ -417,6 +417,7 @@
         df-serialnum = "LWNRB52SWD";
         #include "bat_setting/mt6855_battery_rb52_lwn_5200mah.dtsi"
 	#include "bat_setting/mt6855_battery_rb52_atl_5200mah.dtsi"
+	#include "bat_setting/mt6855_battery_rb52_vek_5200mah.dtsi"
 	#include "bat_setting/mt6855_battery_rb60_swd_6000mah.dtsi"
 	#include "bat_setting/mt6855_battery_rb60_atl_6000mah.dtsi"
 };

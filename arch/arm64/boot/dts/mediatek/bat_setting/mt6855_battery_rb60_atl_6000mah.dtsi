@@ -11,11 +11,11 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-serialnum_2 = "ATLRB60NVT";
+serialnum_4 = "ATLRB60NVT";
 
-battery2_profile_t0_num = <100>;
-battery2_profile_t0_col = <3>;
-battery2_profile_t0 =
+battery4_profile_t0_num = <100>;
+battery4_profile_t0_col = <3>;
+battery4_profile_t0 =
 <
 0       44480   350
 607     44268   350
@@ -118,9 +118,9 @@ battery2_profile_t0 =
 59493   33110   775
 60100   33110   775
 >;
-battery2_profile_t1_num = <100>;
-battery2_profile_t1_col = <3>;
-battery2_profile_t1 =
+battery4_profile_t1_num = <100>;
+battery4_profile_t1_col = <3>;
+battery4_profile_t1 =
 <
 0       44520   625
 607     44318   625
@@ -223,9 +223,9 @@ battery2_profile_t1 =
 59493   34500   771
 60100   33450   950
 >;
-battery2_profile_t2_num = <100>;
-battery2_profile_t2_col = <3>;
-battery2_profile_t2 =
+battery4_profile_t2_num = <100>;
+battery4_profile_t2_col = <3>;
+battery4_profile_t2 =
 <
 0       44530   1175
 607     44328   1175
@@ -328,9 +328,9 @@ battery2_profile_t2 =
 59493   34117   6103
 60100   32300   10775
 >;
-battery2_profile_t3_num = <100>;
-battery2_profile_t3_col = <3>;
-battery2_profile_t3 =
+battery4_profile_t3_num = <100>;
+battery4_profile_t3_col = <3>;
+battery4_profile_t3 =
 <
 0       44560   2175
 607     44328   2175
@@ -433,9 +433,9 @@ battery2_profile_t3 =
 59493   35470   18725
 60100   35470   18725
 >;
-battery2_profile_t4_num = <100>;
-battery2_profile_t4_col = <3>;
-battery2_profile_t4 =
+battery4_profile_t4_num = <100>;
+battery4_profile_t4_col = <3>;
+battery4_profile_t4 =
 <
 0       44600   5100
 607     44328   5101
