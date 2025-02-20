@@ -62,6 +62,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define CROP_MODE 4
 #define HW_50M_MODE 5
 #define XTS_MODE 6
+#define VIDEO_MODE 7
 static int sensor_mode = 0;
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -108,7 +109,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
-		.grabwindow_height = 3072,
+		.grabwindow_height = 2304,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 899200000,
 		.max_framerate = 300,
@@ -297,8 +298,8 @@ static struct imgsensor_struct imgsensor = {
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	{8192, 6144,  000,  000, 8192, 6144, 4096, 3072, 0000, 0000, 4096, 3072, 0, 0, 4096, 3072}, /* Preview  4096x3072@30fps*/
 	{8192, 6144,  000,  000, 8192, 6144, 4096, 3072, 0000, 0000, 4096, 3072, 0, 0, 4096, 3072}, /* Capture 4096x3072@30fps*/
-	{8192, 6144,  000,  000, 8192, 6144, 4096, 3072, 0000, 0000, 4096, 3072, 0, 0, 4096, 3072},  /* Video 4096x3072@30fps*/
-	{8192, 6144,  000,  768, 8192, 4608, 2048, 1536, 0000,  192, 2048, 1152, 0, 0, 2048, 1152}, /* hs_video 2048x1152@120fps*/
+	{8192, 6144,  000,  768, 8192, 4608, 4096, 2304, 0000, 0000, 4096, 2304, 0, 0, 4096, 2304},  /* Video 4096x3072@30fps*/
+	{8192, 6144,  000,  768, 8192, 4608, 2048, 1152, 0000, 0000, 2048, 1152, 0, 0, 2048, 1152}, /* hs_video 2048x1152@120fps*/
 	{8192, 6144,  000,  000, 8192, 6144, 4096, 3072, 0000, 0000, 4096, 3072, 0, 0, 4096, 3072},  /* slim_video 4096x3072@30fps*/
 	{8192, 6144,  000,  768, 8192, 4608, 2048, 1152, 0000, 0000, 2048, 1152, 0, 0, 2048, 1152}, /* custom1 2048x1152@60fps*/
 	{8192, 6144,  000,  000, 8192, 6144, 2048, 1536, 0000, 0000, 2048, 1536, 0, 0, 2048, 1536}, /* custom2 2048x1536@30fps*/
@@ -331,8 +332,8 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[7] = {
 	{
 		0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,//video
 		{
-			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
-			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1400, 0x0300},
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0x900},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1400, 0x0240},
 			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
 		},
 		1
@@ -388,7 +389,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.iMirrorFlip = IMAGE_HV_MIRROR,
 	.i4BlockNumX = 0,
 	.i4BlockNumY = 0,
-	.i4Crop = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
+	.i4Crop = { {0, 0}, {0, 0}, {0, 768}, {0, 0}, {0, 0},
 		{0, 768}, {0, 0}, {2048, 1536}, {0, 0}, {0, 0} },
 };
 
@@ -843,7 +844,7 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 	kal_uint32 min_gain = 1.4287*BASEGAIN;
 
 	if((sensor_mode == BINNING_MODE) || (sensor_mode == FPS120_MODE) || (sensor_mode == FPS60_4K_MODE)
-		||(sensor_mode == VIDEOCALL_MODE) ) {
+		||(sensor_mode == VIDEOCALL_MODE) ||(sensor_mode == VIDEO_MODE)) {
 		max_gain = 64*BASEGAIN;
 		min_gain = 1.4287*BASEGAIN;
 	} else {
@@ -889,7 +890,7 @@ static kal_uint16 set_gain_w_gph(kal_uint16 gain, kal_bool gph)
 	kal_uint32 min_gain = 1.4287*BASEGAIN;
 
 	if((sensor_mode == BINNING_MODE) || (sensor_mode == FPS120_MODE) || (sensor_mode == FPS60_4K_MODE)
-		||(sensor_mode == VIDEOCALL_MODE) ) {
+		||(sensor_mode == VIDEOCALL_MODE) || (sensor_mode == VIDEO_MODE)) {
 		max_gain = 64*BASEGAIN;
 		min_gain = 1.4287*BASEGAIN;
 	} else {
@@ -1569,7 +1570,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
-	sensor_mode = BINNING_MODE;
+	sensor_mode = VIDEO_MODE;
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.min_shutter = imgsensor_info.normal_video.min_shutter;
