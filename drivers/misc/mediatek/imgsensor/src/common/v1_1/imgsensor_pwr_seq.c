@@ -15,12 +15,12 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         {
                 SENSOR_DRVNAME_MOT_BOGOTA_IMX882_MIPI_RAW,
                 {
-                        {SensorMCLK, Vol_High, 3},
+                        {SensorMCLK, Vol_High, 1},
                         {RST, Vol_Low, 1},
-                        {DOVDD, Vol_1800, 1},
+                        {DOVDD, Vol_1800, 3},
                         {DVDD, Vol_High, 1},
-                        {AVDD, Vol_High, 1},
-                        {RST, Vol_High, 3},
+                        {AVDD, Vol_High, 4},
+                        {RST, Vol_High, 5},
                 },
         },
 #endif
@@ -30,9 +30,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                 {
                         {SensorMCLK, Vol_High, 0},
                         {RST, Vol_Low, 1},
-                        {DOVDD, Vol_1800, 1},
-                        {DVDD, Vol_High, 1},
-                        {AVDD, Vol_High, 1},
+                        {DOVDD, Vol_1800, 6},
+                        {DVDD, Vol_High, 5},
+                        {AVDD, Vol_High, 5},
                         {RST, Vol_High, 5},
                 },
         },
@@ -41,12 +41,12 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_MOT_BOGOTA_GC08A8_MIPI_RAW,
 		{
-			{RST, Vol_Low, 1},
-			{DOVDD, Vol_1800, 1},
-			{AVDD, Vol_High, 1},
-			{DVDD, Vol_High, 1},
 			{SensorMCLK, Vol_High, 1},
-			{RST, Vol_High, 2},
+			{RST, Vol_Low, 1},
+			{DOVDD, Vol_1800, 3},
+			{AVDD, Vol_High, 1},
+			{DVDD, Vol_High, 4},
+			{RST, Vol_High, 4},
 		},
 	},
 #endif
@@ -56,10 +56,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		{
 			{RST, Vol_Low, 1},
 			{SensorMCLK, Vol_High, 1},
-			{DOVDD, Vol_1800, 1},
+			{DOVDD, Vol_1800, 3},
 			{DVDD, Vol_1200, 1},
-			{AVDD, Vol_2800, 1},
-			{RST, Vol_High, 5}
+			{AVDD, Vol_2800, 4},
+			{RST, Vol_High, 7}
 		},
 	},
 #endif

@@ -140,7 +140,7 @@ static int initAF(void)
 					{0x07, 0x02},
 					{0x0B, 0x00}};
 	u16 regIdx;
-
+	mdelay(5);
 	LOG_INF("+\n");
 
 	if (*g_pAF_Opened == 1) {
