@@ -198,6 +198,8 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x06);
 	lcm_dcs_write_seq_static(ctx, 0x1E, 0x44);
 	lcm_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x1E);
+	lcm_dcs_write_seq_static(ctx, 0xC2, 0x7E);
+	lcm_dcs_write_seq_static(ctx, 0xC3, 0x7E);
 	lcm_dcs_write_seq_static(ctx, 0xC9, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0xFF, 0x78, 0x07, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x53, 0x2C);
@@ -375,6 +377,30 @@ static int lcm_enable(struct drm_panel *panel)
 	return 0;
 }
 
+static const struct drm_display_mode switch_mode_30hz = {
+	.clock = (int)((FRAME_WIDTH + HFP + HSA + HBP) * (FRAME_HEIGHT + MODE_30_VFP + VSA + VBP) * MODE_30_FPS / 1000),
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + HFP,
+	.hsync_end = FRAME_WIDTH + HFP + HSA,
+	.htotal = FRAME_WIDTH + HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_30_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_30_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_30_VFP + VSA + VBP,
+};
+
+static const struct drm_display_mode switch_mode_45hz = {
+	.clock = (int)((FRAME_WIDTH + HFP + HSA + HBP) * (FRAME_HEIGHT + MODE_45_VFP + VSA + VBP) * MODE_45_FPS / 1000),
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + HFP,
+	.hsync_end = FRAME_WIDTH + HFP + HSA,
+	.htotal = FRAME_WIDTH + HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_45_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_45_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_45_VFP + VSA + VBP,
+};
+
 static const struct drm_display_mode switch_mode_60hz = {
 	.clock = (int)((FRAME_WIDTH + HFP + HSA + HBP) * (FRAME_HEIGHT + MODE_60_VFP + VSA + VBP) * MODE_60_FPS / 1000),
 	.hdisplay = FRAME_WIDTH,
@@ -460,6 +486,126 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 
 	return 0;
 }
+
+static struct mtk_panel_params ext_params_30hz = {
+	.data_rate = DATA_RATE,
+	.ssc_enable = 0,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0A, .count = 1, .para_list[0] = 0x9C,
+	},
+	.panel_ver = 1,
+	.panel_id = 0x94070502,
+	.panel_name = "txd_ili7807s_vid_672_1080",
+	.panel_supplier = "txd",
+	.lcm_index = 3,
+	.hbm_type = HBM_MODE_RAMPING,
+	.max_bl_level = 2047,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 560,
+		.hfp = 86,
+	},
+    .dsc_params = {
+        .enable					= 1,
+        .ver					= 17,
+        .slice_mode				= 1,
+        .rgb_swap				= 0,
+        .dsc_cfg				= 34,
+        .rct_on					= 1,
+        .bit_per_channel		= 8,
+        .dsc_line_buf_depth		= 9,
+        .bp_enable				= 1,
+        .bit_per_pixel			= 128,
+        .pic_height				= 2400,
+        .pic_width				= 1080,
+        .slice_height			= 10,
+        .slice_width			= 540,
+        .chunk_size				= 540,
+        .xmit_delay				= 512,
+        .dec_delay				= 526,
+        .scale_value			= 32,
+        .increment_interval 	= 237,
+        .decrement_interval 	= 7,
+        .line_bpg_offset		= 12,
+        .nfl_bpg_offset			= 2731,
+        .slice_bpg_offset		= 2604,
+        .initial_offset			= 6144,
+        .final_offset			= 4336,
+        .flatness_minqp			= 3,
+        .flatness_maxqp			= 12,
+        .rc_model_size			= 8192,
+        .rc_edge_factor			= 6,
+        .rc_quant_incr_limit0	= 11,
+        .rc_quant_incr_limit1	= 11,
+        .rc_tgt_offset_hi		= 3,
+        .rc_tgt_offset_lo		= 3,
+	},
+};
+
+static struct mtk_panel_params ext_params_45hz = {
+	.data_rate = DATA_RATE,
+	.ssc_enable = 0,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0A, .count = 1, .para_list[0] = 0x9C,
+	},
+	.panel_ver = 1,
+	.panel_id = 0x94070502,
+	.panel_name = "txd_ili7807s_vid_672_1080",
+	.panel_supplier = "txd",
+	.lcm_index = 3,
+	.hbm_type = HBM_MODE_RAMPING,
+	.max_bl_level = 2047,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 560,
+		.hfp = 86,
+	},
+    .dsc_params = {
+        .enable					= 1,
+        .ver					= 17,
+        .slice_mode				= 1,
+        .rgb_swap				= 0,
+        .dsc_cfg				= 34,
+        .rct_on					= 1,
+        .bit_per_channel		= 8,
+        .dsc_line_buf_depth		= 9,
+        .bp_enable				= 1,
+        .bit_per_pixel			= 128,
+        .pic_height				= 2400,
+        .pic_width				= 1080,
+        .slice_height			= 10,
+        .slice_width			= 540,
+        .chunk_size				= 540,
+        .xmit_delay				= 512,
+        .dec_delay				= 526,
+        .scale_value			= 32,
+        .increment_interval 	= 237,
+        .decrement_interval 	= 7,
+        .line_bpg_offset		= 12,
+        .nfl_bpg_offset			= 2731,
+        .slice_bpg_offset		= 2604,
+        .initial_offset			= 6144,
+        .final_offset			= 4336,
+        .flatness_minqp			= 3,
+        .flatness_maxqp			= 12,
+        .rc_model_size			= 8192,
+        .rc_edge_factor			= 6,
+        .rc_quant_incr_limit0	= 11,
+        .rc_quant_incr_limit1	= 11,
+        .rc_tgt_offset_hi		= 3,
+        .rc_tgt_offset_lo		= 3,
+	},
+};
 
 static struct mtk_panel_params ext_params_60hz = {
 	.data_rate = DATA_RATE,
@@ -674,6 +820,10 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 		ext->params = &ext_params_90hz;
 	else if (drm_mode_vrefresh(m) == MODE_120_FPS)
 		ext->params = &ext_params_120hz;
+	else if (drm_mode_vrefresh(m) == MODE_45_FPS)
+		ext->params = &ext_params_45hz;
+	else if (drm_mode_vrefresh(m) == MODE_30_FPS)
+		ext->params = &ext_params_30hz;
 	else
 		ret = 1;
 
@@ -815,10 +965,34 @@ struct panel_desc {
 
 static int lcm_get_modes(struct drm_panel *panel, struct drm_connector *connector)
 {
+	struct drm_display_mode *mode_30hz;
+	struct drm_display_mode *mode_45hz;
 	struct drm_display_mode *mode_60hz;
 	struct drm_display_mode *mode_90hz;
 	struct drm_display_mode *mode_120hz;
 	pr_info("[LCM] %s begin\n", __func__);
+
+	mode_30hz = drm_mode_duplicate(connector->dev, &switch_mode_30hz);
+	if (!mode_30hz) {
+		dev_info(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			switch_mode_30hz.hdisplay, switch_mode_30hz.vdisplay,
+			drm_mode_vrefresh(&switch_mode_30hz));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_30hz);
+	mode_30hz->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+	drm_mode_probed_add(connector, mode_30hz);
+
+	mode_45hz = drm_mode_duplicate(connector->dev, &switch_mode_45hz);
+	if (!mode_45hz) {
+		dev_info(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			switch_mode_45hz.hdisplay, switch_mode_45hz.vdisplay,
+			drm_mode_vrefresh(&switch_mode_45hz));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_45hz);
+	mode_45hz->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+	drm_mode_probed_add(connector, mode_45hz);
 
 	mode_60hz = drm_mode_duplicate(connector->dev, &switch_mode_60hz);
 	if (!mode_60hz) {

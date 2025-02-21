@@ -32,6 +32,14 @@
 #define MODE_60_VFP			2540
 /*Parameter setting for mode 60 End*/
 
+//Parameter setting for mode 45
+#define MODE_45_FPS			45
+#define MODE_45_VFP			4201
+
+//Parameter setting for mode 30
+#define MODE_30_FPS			30
+#define MODE_30_VFP			7524
+
 #define LFR_EN                      	1
 
 #endif //end of PANEL_MOT_TXD_ILI7807S_672_DPHY_VDO_HFP_H
