@@ -161,7 +161,7 @@ static void lcm_panel_init(struct lcm *ctx)
 
 	lcm_dcs_write_seq_static(ctx, 0xF0, 0x99, 0x22, 0x0C);
 
-	lcm_dcs_write_seq_static(ctx, 0xC1, 0x00, 0x00, 0x20, 0x26, 0x26, 0x04, 0x30, 0x30, 0x04, 0x60, 0x19, 0x22, 0x50, 0x01, 0x12, 0x07, 0x5F, 0xFF, 0xA0, 0x00, 0x93, 0x10, 0x10, 0x00);
+	lcm_dcs_write_seq_static(ctx, 0xC1, 0x00, 0x00, 0x20, 0x26, 0x26, 0x04, 0x62, 0x62, 0x04, 0x60, 0x19, 0x22, 0x50, 0x01, 0x12, 0x07, 0x5F, 0xFF, 0xA0, 0x00, 0x93, 0x10, 0x10, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0xD0, 0x0C, 0x23, 0x18, 0x00, 0x00, 0x00, 0x80, 0x0C, 0xFF, 0x0F, 0x40);
 
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00, 0x00);
@@ -469,6 +469,13 @@ static struct mtk_panel_params ext_params_30hz = {
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 560,
+		.hfp = 84,
+	},
+
 	.dsc_params = {
 		.enable                =  DSC_ENABLE,
 		.ver                   =  DSC_VER,
@@ -525,6 +532,13 @@ static struct mtk_panel_params ext_params_45hz = {
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 560,
+		.hfp = 84,
+	},
+
 	.dsc_params = {
 		.enable                =  DSC_ENABLE,
 		.ver                   =  DSC_VER,
@@ -581,6 +595,13 @@ static struct mtk_panel_params ext_params_60hz = {
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 560,
+		.hfp = 84,
+	},
+
 	.dsc_params = {
 		.enable                =  DSC_ENABLE,
 		.ver                   =  DSC_VER,

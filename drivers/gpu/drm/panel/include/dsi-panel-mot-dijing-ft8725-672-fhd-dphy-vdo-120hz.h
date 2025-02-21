@@ -21,10 +21,10 @@
 
 #define HSA				8
 #define HBP				56
-#define HFP				76
+#define HFP				148
 #define VSA				10
 #define VBP				20
-#define DATA_RATE			1000
+#define DATA_RATE			1140
 
 
 //Parameter setting for mode 120

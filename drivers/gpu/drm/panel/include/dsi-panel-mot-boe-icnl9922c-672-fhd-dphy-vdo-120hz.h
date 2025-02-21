@@ -20,11 +20,11 @@
 #define PHYSICAL_HEIGHT            154560
 
 #define HSA                         4
-#define HBP                         48
-#define HFP                         48
+#define HBP                         98
+#define HFP                         98
 #define VSA                         4
 #define VBP                         32
-#define DATA_RATE                   948
+#define DATA_RATE                   1140
 
 //Parameter setting for mode 120
 #define MODE_120_FPS                  120
