@@ -1026,6 +1026,37 @@ static void mt6375_chg_attach_pre_process(struct mt6375_chg_data *ddata,
 		dev_notice(ddata->dev, "%s bc12 work already queued\n", __func__);
 }
 
+static int mt6375_get_vbus(struct charger_device *chgdev, u32 *vbus);
+static bool mmi_is_vbus_changed(struct mt6375_chg_data *ddata)
+{
+	static bool g_vbus_present = false;
+	int vbus_uv = 0;
+	bool vbus_present = false;
+	bool vbus_changed = false;
+	int rc;
+
+	if (IS_ERR_OR_NULL(ddata->chgdev))
+		return false;
+
+	rc = mt6375_get_vbus(ddata->chgdev, &vbus_uv);
+	if (rc != 0) {
+		pr_err("%s get vbus failed\n",__func__);
+		return false;
+	}
+	if (vbus_uv >= 3000000)
+		vbus_present = true;
+
+	if (g_vbus_present == vbus_present) {
+		vbus_changed = false;
+	} else {
+		vbus_changed = true;
+	}
+	g_vbus_present = vbus_present;
+	dev_info(ddata->dev, "%s, vbus:%d, vbus_changed:%d\n",__func__, vbus_uv, vbus_changed);
+
+	return vbus_changed;
+}
+
 #define CHG_SHOW_MAX_SIEZE 50
 static int mmi_notify_vbus_event(struct mt6375_chg_data *ddata, bool vbus_status)
 {
@@ -1050,16 +1081,18 @@ static int mmi_notify_vbus_event(struct mt6375_chg_data *ddata, bool vbus_status
 			return 0;
 	}
 
-	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
+	if (mmi_is_vbus_changed(ddata)) {
+		event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
 
-	scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
-			"POWER_SUPPLY_VBUS_PRESENT=%s", vbus_status? "true": "false");
+		scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
+				"POWER_SUPPLY_VBUS_PRESENT=%s", vbus_status? "true": "false");
 
-	ddata->batt_uenvp[0] = event_string;
-	ddata->batt_uenvp[1] = NULL;
-	kobject_uevent_env(&ddata->batt_psy->dev.kobj, KOBJ_CHANGE, ddata->batt_uenvp);
-	dev_info(ddata->dev, "%s, vbus:%d send %s\n",__func__, vbus_status, event_string);
-	kfree(event_string);
+		ddata->batt_uenvp[0] = event_string;
+		ddata->batt_uenvp[1] = NULL;
+		kobject_uevent_env(&ddata->batt_psy->dev.kobj, KOBJ_CHANGE, ddata->batt_uenvp);
+		dev_info(ddata->dev, "%s, vbus:%d send %s\n",__func__, vbus_status, event_string);
+		kfree(event_string);
+	}
 	return 0;
 }
 

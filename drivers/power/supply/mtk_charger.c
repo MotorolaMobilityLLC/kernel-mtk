@@ -4027,6 +4027,43 @@ out:
 
 	return power_watt;
 }
+
+static bool mmi_is_power_supply_changed(struct mtk_charger *info)
+{
+	static int g_charge_rate = 0;
+	static int g_battery_age = 0;
+	static bool g_water_detected = false;
+	static bool g_vbus_present = false;
+	static int g_power_watt = 0;
+	static int g_power_max_design_mw = 0;
+	static int g_real_charger_type = 0;
+
+	if (info == NULL)
+		return false;
+
+	if(g_charge_rate == info->mmi.charge_rate &&
+		g_battery_age == mmi_get_battery_age() &&
+		g_water_detected == info->water_detected &&
+		g_vbus_present == mmi_check_vbus_present(info) &&
+		g_power_watt == mmi_check_power_info(info, false) &&
+		g_power_max_design_mw == info->mmi.power_max_design_mw &&
+		g_real_charger_type == info->mmi.real_charger_type)
+	{
+		pr_info("[%s] same mmi status no need broadcast uevent\n", __func__);
+		return false;
+	}
+
+	g_charge_rate = info->mmi.charge_rate;
+	g_battery_age = mmi_get_battery_age();
+	g_water_detected = info->water_detected;
+	g_vbus_present = mmi_check_vbus_present(info);
+	g_power_watt = mmi_check_power_info(info, false);
+	g_power_max_design_mw = info->mmi.power_max_design_mw;
+	g_real_charger_type = info->mmi.real_charger_type;
+
+	return true;
+}
+
 #define MMI_BATT_UEVENT_NUM (7)
 static void mmi_updata_batt_status(struct mtk_charger *info)
 {
@@ -4056,51 +4093,55 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 	}
 
 	mmi_charge_rate_check(info);
-	batt_string = kmalloc(CHG_SHOW_MAX_SIZE * MMI_BATT_UEVENT_NUM, GFP_KERNEL);
-	if (!batt_string) {
-		pr_err("%s  Failed to Get Uevent Mem\n", __func__);
-	} else {
-		chrg_rate_string = batt_string;
-		batt_age_string = &batt_string[CHG_SHOW_MAX_SIZE];
-		chrg_lpd_string = &batt_string[CHG_SHOW_MAX_SIZE * 2];
-		chrg_vbus_string = &batt_string[CHG_SHOW_MAX_SIZE * 3];
-		chrg_pmax_mw = &batt_string[CHG_SHOW_MAX_SIZE * 4];
-		chrg_pmax_design_string = &batt_string[CHG_SHOW_MAX_SIZE * 5];
-		real_charger_type_string = &batt_string[CHG_SHOW_MAX_SIZE * 6];
 
-		scnprintf(chrg_rate_string, CHG_SHOW_MAX_SIZE,
-			  "POWER_SUPPLY_CHARGE_RATE=%s",
-			  charge_rate[info->mmi.charge_rate]);
+	if(mmi_is_power_supply_changed(info))
+	{
+		batt_string = kmalloc(CHG_SHOW_MAX_SIZE * MMI_BATT_UEVENT_NUM, GFP_KERNEL);
+		if (!batt_string) {
+			pr_err("%s  Failed to Get Uevent Mem\n", __func__);
+		} else {
+			chrg_rate_string = batt_string;
+			batt_age_string = &batt_string[CHG_SHOW_MAX_SIZE];
+			chrg_lpd_string = &batt_string[CHG_SHOW_MAX_SIZE * 2];
+			chrg_vbus_string = &batt_string[CHG_SHOW_MAX_SIZE * 3];
+			chrg_pmax_mw = &batt_string[CHG_SHOW_MAX_SIZE * 4];
+			chrg_pmax_design_string = &batt_string[CHG_SHOW_MAX_SIZE * 5];
+			real_charger_type_string = &batt_string[CHG_SHOW_MAX_SIZE * 6];
 
-		scnprintf(batt_age_string, CHG_SHOW_MAX_SIZE,
-			  "POWER_SUPPLY_AGE=%d",
-			  mmi_get_battery_age());
+			scnprintf(chrg_rate_string, CHG_SHOW_MAX_SIZE,
+				  "POWER_SUPPLY_CHARGE_RATE=%s",
+				  charge_rate[info->mmi.charge_rate]);
 
-		scnprintf(chrg_lpd_string, CHG_SHOW_MAX_SIZE,
-			  "POWER_SUPPLY_LPD_PRESENT=%s", info->water_detected? "true": "false");
+			scnprintf(batt_age_string, CHG_SHOW_MAX_SIZE,
+				  "POWER_SUPPLY_AGE=%d",
+				  mmi_get_battery_age());
 
-		scnprintf(chrg_vbus_string, CHG_SHOW_MAX_SIZE,
-			  "POWER_SUPPLY_VBUS_PRESENT=%s", mmi_check_vbus_present(info)? "true": "false");
+			scnprintf(chrg_lpd_string, CHG_SHOW_MAX_SIZE,
+				  "POWER_SUPPLY_LPD_PRESENT=%s", info->water_detected? "true": "false");
 
-		scnprintf(chrg_pmax_mw, CHG_SHOW_MAX_SIZE,
-			  "POWER_SUPPLY_POWER_WATT=%d", mmi_check_power_info(info, false));
+			scnprintf(chrg_vbus_string, CHG_SHOW_MAX_SIZE,
+				  "POWER_SUPPLY_VBUS_PRESENT=%s", mmi_check_vbus_present(info)? "true": "false");
 
-		scnprintf(chrg_pmax_design_string, CHG_SHOW_MAX_SIZE,
-			  "POWER_SUPPLY_POWER_WATT_DESIGN=%d", info->mmi.power_max_design_mw / 1000);
+			scnprintf(chrg_pmax_mw, CHG_SHOW_MAX_SIZE,
+				  "POWER_SUPPLY_POWER_WATT=%d", mmi_check_power_info(info, false));
 
-		scnprintf(real_charger_type_string, CHG_SHOW_MAX_SIZE,
-			  "POWER_SUPPLY_CHARGE_REAL_TYPE=%d", info->mmi.real_charger_type);
+			scnprintf(chrg_pmax_design_string, CHG_SHOW_MAX_SIZE,
+				  "POWER_SUPPLY_POWER_WATT_DESIGN=%d", info->mmi.power_max_design_mw / 1000);
 
-		envp[0] = chrg_rate_string;
-		envp[1] = batt_age_string;
-		envp[2] = chrg_lpd_string;
-		envp[3] = chrg_vbus_string;
-		envp[4] = chrg_pmax_mw;
-		envp[5] = chrg_pmax_design_string;
-		envp[6] = real_charger_type_string;
-		envp[MMI_BATT_UEVENT_NUM] = NULL;
-		kobject_uevent_env(&batt_psy->dev.kobj, KOBJ_CHANGE, envp);
-		kfree(batt_string);
+			scnprintf(real_charger_type_string, CHG_SHOW_MAX_SIZE,
+				  "POWER_SUPPLY_CHARGE_REAL_TYPE=%d", info->mmi.real_charger_type);
+
+			envp[0] = chrg_rate_string;
+			envp[1] = batt_age_string;
+			envp[2] = chrg_lpd_string;
+			envp[3] = chrg_vbus_string;
+			envp[4] = chrg_pmax_mw;
+			envp[5] = chrg_pmax_design_string;
+			envp[6] = real_charger_type_string;
+			envp[MMI_BATT_UEVENT_NUM] = NULL;
+			kobject_uevent_env(&batt_psy->dev.kobj, KOBJ_CHANGE, envp);
+			kfree(batt_string);
+		}
 	}
 
 }
