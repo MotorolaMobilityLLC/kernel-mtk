@@ -6281,10 +6281,11 @@ static int psy_charger_get_property(struct power_supply *psy,
 				chr_err("get pe5 fail\n");
 			else {
 				ret = chg_alg_is_algo_ready(alg);
-				if (ret == ALG_RUNNING)
+				if (ret == ALG_RUNNING) {
 					val->intval = true;
+					break;
+				}
 			}
-			break;
 
 			alg = get_chg_alg_by_name("pehv");
 			if (alg == NULL)
