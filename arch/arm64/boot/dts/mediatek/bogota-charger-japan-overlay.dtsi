@@ -106,7 +106,7 @@
 	polling-interval = <10000>;
 	vbat-cv = <4550>;
 	start-soc-min = <0>;
-	start-soc-max = <90>;
+	start-soc-max = <80>;
 	idvchg-cc = <3000>;
 	idvchg-term = <500>;
 	idvchg-step = <50>;
