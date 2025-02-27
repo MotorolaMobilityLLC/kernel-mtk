@@ -2242,6 +2242,35 @@ static int mt6375_enable_chg_type_det(struct charger_device *chgdev, bool en)
 	return 0;
 }
 #if defined(CONFIG_MOTO_SWQC_SUPPORT)
+static bool is_pd_rdy(struct mt6375_chg_data *ddata)
+{
+	int type = 0;
+
+	if (IS_ERR_OR_NULL(ddata)) {
+		pr_err("%s:ddata is ERR or NULL\n", __func__);
+		return false;
+	}
+
+	if (IS_ERR_OR_NULL(ddata->pd_adapter)) {
+		ddata->pd_adapter = get_adapter_by_name("pd_adapter");
+		if (IS_ERR_OR_NULL(ddata->pd_adapter)) {
+			pr_err("%s: No pd adapter found\n", __func__);
+			return false;
+		}
+	}
+
+	type = adapter_dev_get_property(ddata->pd_adapter, PD_TYPE);
+
+	pr_info("%s pd_type:%d\n", __func__, type);
+
+	if (type == MTK_PD_CONNECT_PE_READY_SNK_APDO ||
+		type == MTK_PD_CONNECT_PE_READY_SNK ||
+		type == MTK_PD_CONNECT_PE_READY_SNK_PD30)
+		return true;
+	else
+		return false;
+}
+
 #define HVDCP_POWER_MIN			15000
 #define HVDCP_VOLTAGE_BASIC		5000000
 #define HVDCP_VOLTAGE_NOM		(HVDCP_VOLTAGE_BASIC - 200000)
@@ -2321,6 +2350,7 @@ void get_qc_charger_type_func_work(struct work_struct *work)
 	int count = 0;
 	int wait_count = 0;
 	int ret;
+	int vbus_uv = 0;
 	union power_supply_propval val;
 
 	detect_qc_dwork = container_of(work, struct delayed_work, work);
@@ -2336,6 +2366,19 @@ void get_qc_charger_type_func_work(struct work_struct *work)
 
 	if (!ddata->qc_dev) {
 		pr_err("qc protocol ic dev is not ready, exit \n");
+		return;
+	}
+
+	if (!IS_ERR_OR_NULL(ddata->chgdev)) {
+		ret = mt6375_get_vbus(ddata->chgdev, &vbus_uv);
+		if (ret != 0) {
+			pr_err("%s get vbus failed\n",__func__);
+			return;
+		}
+	}
+	pr_info("%s get vbus %d uv\n",__func__,vbus_uv);
+	if (is_pd_rdy(ddata) || vbus_uv > 8000000) {
+		pr_info("pd adaptor ready, exit qc detected\n");
 		return;
 	}
 
@@ -3420,35 +3463,6 @@ static int mt6375_chg_get_pdata(struct device *dev)
 }
 
 #if defined(CONFIG_MOTO_SWQC_SUPPORT)
-static bool is_pd_rdy(struct mt6375_chg_data *ddata)
-{
-	int type = 0;
-
-	if (IS_ERR_OR_NULL(ddata)) {
-		pr_err("%s:ddata is ERR or NULL\n", __func__);
-		return false;
-	}
-
-	if (IS_ERR_OR_NULL(ddata->pd_adapter)) {
-		ddata->pd_adapter = get_adapter_by_name("pd_adapter");
-		if (IS_ERR_OR_NULL(ddata->pd_adapter)) {
-			pr_err("%s: No pd adapter found\n", __func__);
-			return false;
-		}
-	}
-
-	type = adapter_dev_get_property(ddata->pd_adapter, PD_TYPE);
-
-	pr_info("%s pd_type:%d\n", __func__, type);
-
-	if (type == MTK_PD_CONNECT_PE_READY_SNK_APDO ||
-		type == MTK_PD_CONNECT_PE_READY_SNK ||
-		type == MTK_PD_CONNECT_PE_READY_SNK_PD30)
-		return true;
-	else
-		return false;
-}
-
 #define MMI_HVDCP2_VOLTAGE_STANDARD		8000000
 #define MMI_HVDCP3_VOLTAGE_STANDARD		7500000
 void mmi_start_hvdcp_detect_work(struct work_struct *work)
