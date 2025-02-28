@@ -2115,22 +2115,22 @@ static inline bool boost_watermark(struct zone *zone)
 
 /*
  * When we are falling back to another migratetype during allocation, try to
- * steal extra free pages from the same pageblocks to satisfy further
- * allocations, instead of polluting multiple pageblocks.
+ * claim entire blocks to satisfy further allocations, instead of polluting
+ * multiple pageblocks.
  *
- * If we are stealing a relatively large buddy page, it is likely there will
- * be more free pages in the pageblock, so try to steal them all. For
- * reclaimable and unmovable allocations, we steal regardless of page size,
- * as fragmentation caused by those allocations polluting movable pageblocks
- * is worse than movable allocations stealing from unmovable and reclaimable
- * pageblocks.
+ * If we are stealing a relatively large buddy page, it is likely there will be
+ * more free pages in the pageblock, so try to claim the whole block. For
+ * reclaimable and unmovable allocations, we try to claim the whole block
+ * regardless of page size, as fragmentation caused by those allocations
+ * polluting movable pageblocks is worse than movable allocations stealing from
+ * unmovable and reclaimable pageblocks.
  */
-static bool can_steal_fallback(unsigned int order, int start_mt)
+static bool should_try_claim_block(unsigned int order, int start_mt)
 {
 	/*
 	 * Leaving this order check is intended, although there is
 	 * relaxed order check in next check. The reason is that
-	 * we can actually steal whole pageblock if this condition met,
+	 * we can actually claim the whole pageblock if this condition met,
 	 * but, below check doesn't guarantee it and that is just heuristic
 	 * so could be changed anytime.
 	 */
@@ -2143,7 +2143,7 @@ static bool can_steal_fallback(unsigned int order, int start_mt)
 	 * reclaimable pages that are closest to the request size.  After a
 	 * while, memory compaction may occur to form large contiguous pages,
 	 * and the next movable allocation may not need to steal.  Unmovable and
-	 * reclaimable allocations need to actually steal pages.
+	 * reclaimable allocations need to actually claim the whole block.
 	 */
 	if (order >= pageblock_order / 2 ||
 		start_mt == MIGRATE_RECLAIMABLE ||
@@ -2156,12 +2156,14 @@ static bool can_steal_fallback(unsigned int order, int start_mt)
 
 /*
  * Check whether there is a suitable fallback freepage with requested order.
- * If only_stealable is true, this function returns fallback_mt only if
- * we can steal other freepages all together. This would help to reduce
+ * Sets *claim_block to instruct the caller whether it should convert a whole
+ * pageblock to the returned migratetype.
+ * If only_claim is true, this function returns fallback_mt only if
+ * we would do this whole-block claiming. This would help to reduce
  * fragmentation due to mixed migratetype pages in one pageblock.
  */
 int find_suitable_fallback(struct free_area *area, unsigned int order,
-			int migratetype, bool only_stealable, bool *can_steal)
+			int migratetype, bool only_claim, bool *claim_block)
 {
 	int i;
 	int fallback_mt;
@@ -2169,19 +2171,16 @@ int find_suitable_fallback(struct free_area *area, unsigned int order,
 	if (area->nr_free == 0)
 		return -1;
 
-	*can_steal = false;
+	*claim_block = false;
 	for (i = 0; i < MIGRATE_FALLBACKS - 1 ; i++) {
 		fallback_mt = fallbacks[migratetype][i];
 		if (free_area_empty(area, fallback_mt))
 			continue;
 
-		if (can_steal_fallback(order, migratetype))
-			*can_steal = true;
+		if (should_try_claim_block(order, migratetype))
+			*claim_block = true;
 
-		if (!only_stealable)
-			return fallback_mt;
-
-		if (*can_steal)
+		if (*claim_block || !only_claim)
 			return fallback_mt;
 	}
 
@@ -2189,14 +2188,14 @@ int find_suitable_fallback(struct free_area *area, unsigned int order,
 }
 
 /*
- * This function implements actual steal behaviour. If order is large enough, we
- * can claim the whole pageblock for the requested migratetype. If not, we check
- * the pageblock for constituent pages; if at least half of the pages are free
- * or compatible, we can still claim the whole block, so pages freed in the
- * future will be put on the correct free list.
+ * This function implements actual block claiming behaviour. If order is large
+ * enough, we can claim the whole pageblock for the requested migratetype. If
+ * not, we check the pageblock for constituent pages; if at least half of the
+ * pages are free or compatible, we can still claim the whole block, so pages
+ * freed in the future will be put on the correct free list.
  */
 static struct page *
-try_to_steal_block(struct zone *zone, struct page *page,
+try_to_claim_block(struct zone *zone, struct page *page,
 		   int current_order, int order, int start_type,
 		   int block_type, unsigned int alloc_flags)
 {
@@ -2279,7 +2278,7 @@ __rmqueue_claim(struct zone *zone, int order, int start_migratetype,
 	int min_order = order;
 	struct page *page;
 	int fallback_mt;
-	bool can_steal;
+	bool claim_block;
 
 	/*
 	 * Do not steal pages from freelists belonging to other pageblocks
@@ -2298,15 +2297,15 @@ __rmqueue_claim(struct zone *zone, int order, int start_migratetype,
 				--current_order) {
 		area = &(zone->free_area[current_order]);
 		fallback_mt = find_suitable_fallback(area, current_order,
-				start_migratetype, false, &can_steal);
+				start_migratetype, false, &claim_block);
 		if (fallback_mt == -1)
 			continue;
 
-		if (!can_steal)
+		if (!claim_block)
 			break;
 
 		page = get_page_from_free_area(area, fallback_mt);
-		page = try_to_steal_block(zone, page, current_order, order,
+		page = try_to_claim_block(zone, page, current_order, order,
 					  start_migratetype, fallback_mt,
 					  alloc_flags);
 		if (page) {
