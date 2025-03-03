@@ -360,6 +360,8 @@ static void write_ttj(int user, unsigned int cpu_ttj, unsigned int gpu_ttj,
 {
 
 	pr_info("%s %d %d\n", __func__, user, cpu_ttj);
+	if(cpu_ttj < 80)return;//workaround ttj was set as 0 when screen off
+
 	mutex_lock(&tm_data.lock);
 
 	if (user == JATM_ON)
