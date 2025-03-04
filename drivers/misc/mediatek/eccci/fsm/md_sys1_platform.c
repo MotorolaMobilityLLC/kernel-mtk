@@ -158,9 +158,9 @@ void md_cd_lock_modem_clock_src(int locked)
 		CCCI_MEM_LOG_TAG(-1, TAG,
 			"a0 = 0x%lX; a1 = 0x%lX\n", res.a0, res.a1);
 
-		if (res.a1 == 0 && res.a0 > 0 && res.a0 < 10)
+		if (res.a1 == 0 && res.a0 > 0 && res.a0 < 40)
 			settle = res.a0; /* ATF */
-		else if (res.a0 == 0 && res.a1 > 0 && res.a1 < 10)
+		else if (res.a0 == 0 && res.a1 > 0 && res.a1 < 40)
 			settle = res.a1; /* TF-A */
 		else {
 			settle = 20;
