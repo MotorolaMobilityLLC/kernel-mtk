@@ -555,7 +555,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	usleep_range(5000,5001);
 
 #ifdef BIAS_OCP2138
-	ocp2138_BiasPower_enable(20,20,5);
+	ocp2138_BiasPower_enable(15,15,5);
 	usleep_range(1000,1001);
 #else
 	ctx->avdd_en_gpio = devm_gpiod_get_index(ctx->dev, "avdd", 0, GPIOD_OUT_HIGH);
