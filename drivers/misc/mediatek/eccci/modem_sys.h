@@ -153,6 +153,25 @@ struct ccci_modem {
 	void *ioremap_buff_src;
 };
 
+struct md_wdt_record {
+	unsigned int isr_cnt;
+	unsigned int routine_cnt;
+	/* When FSM receives a reset event followed by a WDT event
+	 * with an EPON flag, and the reset event precedes the WDT
+	 * event, md will reset and lost the EPON flag. so need a
+	 * reset_flg to record this scenario.
+	 */
+	unsigned int reset_flg;
+	/* used to save wdt key time
+	 * id setting:
+	 * 0: wdt isr time
+	 * 1: disable wdt irq time
+	 * 2: enable wdt irq time
+	 */
+	unsigned long long time[3];
+};
+
+extern struct md_wdt_record md_wdt_rec;
 extern struct ccci_modem *modem_sys;
 
 /****************************************************************************/

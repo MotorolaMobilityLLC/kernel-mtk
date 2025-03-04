@@ -33,6 +33,7 @@ atomic_t md_dapc_ke_occurred;
 atomic_t en_flight_timeout;
 atomic_t md_ee_occurred;
 struct ccci_fsm_ctl *ccci_fsm_entries;
+struct md_wdt_record md_wdt_rec;
 
 static void fsm_finish_command(struct ccci_fsm_ctl *ctl,
 	struct ccci_fsm_command *cmd, int result);
@@ -716,8 +717,6 @@ static void *ccci_md_get_time_info(struct ccci_runtime_feature *rt_feature,
 	return rt_element;
 }
 
-
-
 int ccci_md_prepare_runtime_data(unsigned char *data, int length)
 {
 	struct ccci_modem *md = ccci_get_modem();
@@ -1205,6 +1204,29 @@ int ccci_md_prepare_runtime_data(unsigned char *data, int length)
 	return 0;
 }
 
+static int ccci_md_epon_set(void)
+{
+	struct ccci_modem *md = ccci_get_modem();
+	struct ccci_smem_region *mdss_dbg
+			= ccci_md_get_smem_by_user_id(SMEM_USER_RAW_MDSS_DBG);
+	int ret = 0, in_md_l2sram = 0;
+
+	if (md->hw_info->md_l2sram_base) {
+		md_cd_lock_modem_clock_src(1);
+		ret = *((int *)(md->hw_info->md_l2sram_base
+			+ md->hw_info->md_epon_offset)) == 0xBAEBAE10;
+		md_cd_lock_modem_clock_src(0);
+		in_md_l2sram = 1;
+	} else if (mdss_dbg && mdss_dbg->base_ap_view_vir)
+		ret = *((int *)(mdss_dbg->base_ap_view_vir
+			+ md->hw_info->md_epon_offset)) == 0xBAEBAE10;
+
+	CCCI_NORMAL_LOG(0, FSM, "%s, 0x%x\n",
+		(in_md_l2sram?"l2sram":"mdssdbg"), ret);
+
+	return ret;
+}
+
 static void fsm_routine_start(struct ccci_fsm_ctl *ctl,
 	struct ccci_fsm_command *cmd)
 {
@@ -1370,6 +1392,9 @@ static void fsm_routine_stop(struct ccci_fsm_ctl *ctl,
 	struct ccci_modem *md = ccci_get_modem();
 	unsigned long flags;
 	int ret;
+	unsigned long long ns_0, ns_1, ns_2;
+	unsigned long long time_0, time_1, time_2;
+	char buf[128] = {0};
 
 	/* 1. state sanity check */
 	if (ctl->curr_state == CCCI_FSM_GATED)
@@ -1403,6 +1428,12 @@ static void fsm_routine_stop(struct ccci_fsm_ctl *ctl,
 	/*reset fsm poller*/
 	ctl->poller_ctl.poller_state = FSM_POLLER_RECEIVED_RESPONSE;
 	wake_up(&ctl->poller_ctl.status_rx_wq);
+
+	if (md_wdt_rec.isr_cnt != md_wdt_rec.routine_cnt && ccci_md_epon_set()) {
+		md_wdt_rec.reset_flg = 1;
+		CCCI_ERROR_LOG(0, FSM, "wdt routine cnt(%d) is diff isr cnt(%d)\n",
+			md_wdt_rec.routine_cnt, md_wdt_rec.isr_cnt);
+	}
 	/* 4. hardware stop */
 	ccci_md_stop(
 	cmd->flag & FSM_CMD_FLAG_FLIGHT_MODE
@@ -1448,6 +1479,23 @@ success:
 		CCCI_NORMAL_LOG(0, FSM,
 			"clear md wdt irq(%d) success\n", md->md_wdt_irq_id);
 
+	time_0 = md_wdt_rec.time[0];
+	time_1 = md_wdt_rec.time[1];
+	time_2 = md_wdt_rec.time[2];
+	ns_0 = do_div(time_0, NSEC_PER_SEC);
+	ns_1 = do_div(time_1, NSEC_PER_SEC);
+	ns_2 = do_div(time_2, NSEC_PER_SEC);
+	scnprintf(buf, sizeof(buf),
+		"last md wdt isr: %llu.%06llu, disable time: %llu.%06llu, enable time: %llu.%06llu",
+		time_0, ns_0/1000, time_1, ns_1/1000, time_2, ns_2/1000);
+	CCCI_NORMAL_LOG(0, FSM, "clear md wdt irq(%d) ret: %d, %s\n",
+		md->md_wdt_irq_id, ret, buf);
+
+#if IS_ENABLED(CONFIG_MTK_IRQ_DBG)
+	CCCI_NORMAL_LOG(0, FSM, "Dump md WDT IRQ status\n");
+	mt_irq_dump_status(md->md_wdt_irq_id);
+#endif
+
 	ctl->last_state = ctl->curr_state;
 	ctl->curr_state = CCCI_FSM_GATED;
 	fsm_broadcast_state(ctl, GATED);
@@ -1458,52 +1506,34 @@ success:
 	}
 }
 
-static int ccci_md_epon_set(void)
-{
-	struct ccci_modem *md = ccci_get_modem();
-	struct ccci_smem_region *mdss_dbg
-			= ccci_md_get_smem_by_user_id(SMEM_USER_RAW_MDSS_DBG);
-	int ret = 0, in_md_l2sram = 0;
-
-	if (md->hw_info->md_l2sram_base) {
-		md_cd_lock_modem_clock_src(1);
-		ret = *((int *)(md->hw_info->md_l2sram_base
-			+ md->hw_info->md_epon_offset)) == 0xBAEBAE10;
-		md_cd_lock_modem_clock_src(0);
-		in_md_l2sram = 1;
-	} else if (mdss_dbg && mdss_dbg->base_ap_view_vir)
-		ret = *((int *)(mdss_dbg->base_ap_view_vir
-			+ md->hw_info->md_epon_offset)) == 0xBAEBAE10;
-
-	CCCI_NORMAL_LOG(0, FSM, "reset MD after WDT, %s, 0x%x\n",
-		(in_md_l2sram?"l2sram":"mdssdbg"), ret);
-
-	return ret;
-}
-
 static void fsm_routine_wdt(struct ccci_fsm_ctl *ctl,
 	struct ccci_fsm_command *cmd)
 {
 	int reset_md = 0;
 	int is_epon_set = 0;
+	unsigned long long ns_0, time_0;
 
 	is_epon_set = ccci_md_epon_set();
 
-	if (is_epon_set)
+	if (is_epon_set || md_wdt_rec.reset_flg)
 		reset_md = 1;
 	else {
-		if (ccci_port_get_critical_user(
-				CRIT_USR_MDLOG) == 0) {
-			CCCI_NORMAL_LOG(0, FSM,
-				"mdlogger closed, reset MD after WDT\n");
+		if (ccci_port_get_critical_user(CRIT_USR_MDLOG) == 0) {
+			CCCI_NORMAL_LOG(0, FSM, "mdlogger closed, reset MD after WDT\n");
 			reset_md = 1;
 		} else {
 			fsm_routine_exception(ctl, NULL, EXCEPTION_WDT);
 		}
 	}
+
+	time_0 = md_wdt_rec.time[0];
+	ns_0 = do_div(time_0, NSEC_PER_SEC);
+	CCCI_NORMAL_LOG(0, FSM, "reset MD after WDT[reset_md: %d], wdt isr: %llu.%06llu\n",
+		reset_md, time_0, ns_0/1000);
 	if (reset_md)
 		fsm_monitor_send_message(CCCI_MD_MSG_RESET_REQUEST, 0);
 
+	md_wdt_rec.routine_cnt++;
 	fsm_finish_command(ctl, cmd, 1);
 }
 
