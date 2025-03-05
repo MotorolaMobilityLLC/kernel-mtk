@@ -409,4 +409,20 @@ extern int MOT_VEGAS_AW86006AF_GetFileName(unsigned char *pFileName);
 //End
 extern int aw86006_ois_init(struct i2c_client *pstI2Cclient);
 
+
+//Begin: Add lens driver interface for VEGAS
+#define MOT_VEGAS_AW86006VCMYOVA_SetI2Cclient MOT_VEGAS_AW86006VCMYOVAAF_SetI2Cclient
+#define MOT_VEGAS_AW86006VCMYOVA_Ioctl MOT_VEGAS_AW86006VCMYOVAAF_Ioctl
+#define MOT_VEGAS_AW86006VCMYOVA_Release MOT_VEGAS_AW86006VCMYOVAAF_Release
+#define MOT_VEGAS_AW86006VCMYOVA_PowerDown MOT_VEGAS_AW86006VCMYOVAAF_PowerDown
+#define MOT_VEGAS_AW86006VCMYOVA_GetFileName MOT_VEGAS_AW86006VCMYOVAAF_GetFileName
+extern int MOT_VEGAS_AW86006VCMYOVAAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_VEGAS_AW86006VCMYOVAAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+				unsigned long a_u4Param);
+extern int MOT_VEGAS_AW86006VCMYOVAAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_VEGAS_AW86006VCMYOVAAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int MOT_VEGAS_AW86006VCMYOVAAF_GetFileName(unsigned char *pFileName);
+//End
 #endif

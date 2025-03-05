@@ -1,5 +1,5 @@
 /*******************************************************************************
- * AW86006AF.c
+ * AW86006VCMYOVAAF.c
  *
  * Copyright (c) 2021 AWINIC Technology CO., LTD
  *
@@ -25,14 +25,14 @@
 #include <uapi/asm-generic/errno-base.h>
 #include "lens_info.h"
 #include "aw86006_ois.h"
-//#include "AW86006AF.h"
+//#include "AW86006VCMYOVAAF.h"
 
 #define SOC_OIS_I2C_ADDR		0x69
 
 #ifndef OIS_MAIN_H
 #define OIS_MAIN_H
 
-#define AF_DRVNAME		"AW86006AF_DRV"
+#define AF_DRVNAME		"AW86006VCMYOVAAF_DRV"
 
 /* register address */
 #define REG_AF_CODE	(0x0009)
@@ -113,7 +113,7 @@ static inline int AF_init(void)
 {
     int ret = 0;
     uint8_t data[1] = {0x1};
-    uint8_t dataSac[2] = {0x5, 0x3};
+    uint8_t dataSac[2] = {0x39, 0x0b};
 
     ret = aw86006_i2c_writes(0x0001, 2, data, 1);
     if(ret < 0) {
@@ -159,7 +159,7 @@ static inline int SetPos(unsigned long a_u4Position)
 	return 0;
 }
 
-static inline int AW86006AF_MoveVCM(unsigned long a_u4Position)
+static inline int AW86006VCMYOVAAF_MoveVCM(unsigned long a_u4Position)
 {
 	AW_LOGI("Start");
 
@@ -192,7 +192,7 @@ static inline int AW86006AF_MoveVCM(unsigned long a_u4Position)
 	return 0;
 }
 
-static inline int AW86006AF_SetMacro(unsigned long a_u4Param)
+static inline int AW86006VCMYOVAAF_SetMacro(unsigned long a_u4Param)
 {
 	AW_LOGI("Start");
 
@@ -205,7 +205,7 @@ static inline int AW86006AF_SetMacro(unsigned long a_u4Param)
 	return 0;
 }
 
-static inline int AW86006AF_SetInf(unsigned long a_u4Param)
+static inline int AW86006VCMYOVAAF_SetInf(unsigned long a_u4Param)
 {
 	AW_LOGI("Start");
 
@@ -218,7 +218,7 @@ static inline int AW86006AF_SetInf(unsigned long a_u4Param)
 	return 0;
 }
 
-static inline int AW86006AF_GetVCMInfo(
+static inline int AW86006VCMYOVAAF_GetVCMInfo(
 				__user struct stAF_MotorInfo *pstMotorInfo)
 {
 	struct stAF_MotorInfo stMotorInfo;
@@ -257,7 +257,7 @@ static inline int AW86006AF_GetVCMInfo(
 	return 0;
 }
 
-long MOT_VEGAS_AW86006AF_Ioctl(struct file *a_pstFile, uint32_t a_u4Command,
+long MOT_VEGAS_AW86006VCMYOVAAF_Ioctl(struct file *a_pstFile, uint32_t a_u4Command,
 							unsigned long a_u4Param)
 {
 	long ret = 0;
@@ -275,17 +275,17 @@ long MOT_VEGAS_AW86006AF_Ioctl(struct file *a_pstFile, uint32_t a_u4Command,
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
-		ret = AW86006AF_GetVCMInfo(
+		ret = AW86006VCMYOVAAF_GetVCMInfo(
 				(__user struct stAF_MotorInfo *) (a_u4Param));
 		break;
 	case AFIOC_T_MOVETO:
-		ret = AW86006AF_MoveVCM(a_u4Param);
+		ret = AW86006VCMYOVAAF_MoveVCM(a_u4Param);
 		break;
 	case AFIOC_T_SETMACROPOS:
-		ret = AW86006AF_SetMacro(a_u4Param);
+		ret = AW86006VCMYOVAAF_SetMacro(a_u4Param);
 		break;
 	case AFIOC_T_SETINFPOS:
-		ret = AW86006AF_SetInf(a_u4Param);
+		ret = AW86006VCMYOVAAF_SetInf(a_u4Param);
 		break;
 	case OISIOC_G_GYRO_OFFSET_CALI:
 		ret = gyro_offset_cali_run((struct motOISGOffsetResult *) a_u4Param);
@@ -321,7 +321,7 @@ long MOT_VEGAS_AW86006AF_Ioctl(struct file *a_pstFile, uint32_t a_u4Command,
 /* 2.Shut down the device on last close. */
 /* 3.Only called once on last time. */
 /* Q1 : Try release multiple times. */
-int MOT_VEGAS_AW86006AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
+int MOT_VEGAS_AW86006VCMYOVAAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	int ret = 0;
 	uint8_t data[2] = {0x0, 0x1};
@@ -360,7 +360,7 @@ int MOT_VEGAS_AW86006AF_Release(struct inode *a_pstInode, struct file *a_pstFile
 	return 0;
 }
 
-int MOT_VEGAS_AW86006AF_PowerDown(struct i2c_client *pstAF_I2Cclient, int *pAF_Opened)
+int MOT_VEGAS_AW86006VCMYOVAAF_PowerDown(struct i2c_client *pstAF_I2Cclient, int *pAF_Opened)
 {
 	AW_LOGI("Start");
 
@@ -381,7 +381,7 @@ int MOT_VEGAS_AW86006AF_PowerDown(struct i2c_client *pstAF_I2Cclient, int *pAF_O
 	return 0;
 }
 
-int MOT_VEGAS_AW86006AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+int MOT_VEGAS_AW86006VCMYOVAAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 				spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	AW_LOGI("Start");
@@ -405,7 +405,7 @@ int MOT_VEGAS_AW86006AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 	return 1;
 }
 
-int MOT_VEGAS_AW86006AF_GetFileName(uint8_t *pFileName)
+int MOT_VEGAS_AW86006VCMYOVAAF_GetFileName(uint8_t *pFileName)
 {
 	#if SUPPORT_GETTING_LENS_FOLDER_NAME
 	char FilePath[256];
@@ -424,6 +424,6 @@ int MOT_VEGAS_AW86006AF_GetFileName(uint8_t *pFileName)
 }
 
 MODULE_AUTHOR("<liangqing@awinic.com>");
-MODULE_DESCRIPTION("AW86006AF Driver");
+MODULE_DESCRIPTION("AW86006VCMYOVAAF Driver");
 MODULE_LICENSE("GPL v2");
 
