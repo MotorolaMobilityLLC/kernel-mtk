@@ -74,6 +74,9 @@
 //Begin: Add lens driver name for VEGAS
 #define MOT_VEGAS_AFDRV_AW86006 "MOT_VEGAS_AW86006AF"
 //End
+//Begin: Add lens driver name for VEGAS
+#define MOT_VEGAS_AFDRV_AW86006VCMYOVA "MOT_VEGAS_AW86006VCMYOVAAF"
+//End
 
 #define CONVERT_CCU_TIMESTAMP 0x1000
 
