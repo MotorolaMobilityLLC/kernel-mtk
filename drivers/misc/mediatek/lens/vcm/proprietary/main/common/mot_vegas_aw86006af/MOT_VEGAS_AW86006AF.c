@@ -63,7 +63,7 @@
 								##__VA_ARGS__)
 #endif
 
-struct i2c_client *g_pstAF_I2Cclient;
+static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
 static int hea_test_runing = 0;
