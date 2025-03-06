@@ -54,11 +54,9 @@ extern int g_qc3p_id;
 
 #if defined(CONFIG_MOTO_SWQC_SUPPORT)
 extern int wt6670f_en_hvdcp(void);
-static bool dbg_log_en = true;
 #define DELAY_TIME 1500
-#else
-static bool dbg_log_en;
 #endif
+static bool dbg_log_en;
 module_param(dbg_log_en, bool, 0644);
 #define mt_dbg(dev, fmt, ...) \
 	do { \
