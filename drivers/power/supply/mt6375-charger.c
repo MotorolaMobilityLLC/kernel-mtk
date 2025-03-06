@@ -3090,6 +3090,15 @@ static int mmi_set_dp_dm(struct charger_device *chgdev, int val)
 		else if (ddata->pulse_cnt > 0)
 			ddata->pulse_cnt--;
 		break;
+	case DP_DM_FORCE_QC3P_5V:
+		if (ddata->qc_dev) {
+			ret = adapter_dev_dp_dm(ddata->qc_dev, DP_DM_FORCE_QC3P_5V);
+			if (ret < 0)
+				dev_err(ddata->dev, "qc protocol ic force qc3 5V failed\n");
+			else
+				ddata->pulse_cnt = 0;
+		}
+		break;
 	default:
 		break;
 	}
