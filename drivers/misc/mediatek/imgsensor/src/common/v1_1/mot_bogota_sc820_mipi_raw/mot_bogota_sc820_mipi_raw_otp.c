@@ -442,16 +442,16 @@ unsigned int mot_bogota_sc820_read_region(struct i2c_client *client, unsigned in
             pr_err("mot_bogota_sc820 otp size != totalSize");
             size = totalSize;
         }
-    } else if (addr == 40 && size == 23) { //read single awb data
+    } else if (addr == 24 && size == 23) { //read single awb data
         memcpy(data,(mot_bogota_sc820_otp_info.awb_param), size);
         pr_err("add = 0x%x, read awb\n",addr);
-    } else if (size >=1868 && size < 2048 && addr == 69) {
+    } else if (size >=1868 && size < 2048 && addr == 48) {
         memcpy(data, mot_bogota_sc820_otp_info.lsc_param, size);
         pr_err("add = 0x%x, read lsc\n",addr);
     } else if (addr == 1937 && size == 1) {
         *(u8 *)data = mot_bogota_sc820_otp_info.lsc_checksum;
         pr_err("add = 0x%x, read lsc_checksum = %x\n",addr, *(u8 *)data);
-    } else if (addr == 68 && size == 1) {
+    } else if (addr == 47 && size == 1) {
         *(u8 *)data = mot_bogota_sc820_otp_info.awb_checksum;
         pr_err("add = 0x%x, read awb_checksum = %x\n",addr, *(u8 *)data);
     } else{
