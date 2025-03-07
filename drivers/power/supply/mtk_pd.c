@@ -63,7 +63,7 @@
 static int pd_dbg_level = PD_DEBUG_LEVEL;
 #define PD_VBUS_IR_DROP_THRESHOLD 1200
 
-#ifdef CONFIG_CHARGER_SC89890H
+#if IS_ENABLED(CONFIG_CHARGER_SC89890H)
 #define PD_IBUS_P_IBAT 55
 #endif
 
@@ -529,7 +529,7 @@ int mtk_pd_input_current_protection(struct chg_alg_device *alg, int vbus)
 int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 			int *newidx)
 {
-#ifndef CONFIG_CHARGER_SC89890H
+#if !IS_ENABLED(CONFIG_CHARGER_SC89890H)
 	int ret = 0;
 #endif
 	int idx, selected_idx;
@@ -554,7 +554,7 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 	if (cap->nr == 0)
 		return -1;
 
-#ifndef CONFIG_CHARGER_SC89890H
+#if !IS_ENABLED(CONFIG_CHARGER_SC89890H)
 	ret = pd_hal_get_ibus(alg, &ibus);
 	if (ret < 0) {
 		pd_err("[%s] get ibus fail, keep default voltage\n", __func__);
@@ -602,18 +602,7 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 	}
 
 	vbus = pd_hal_get_vbus(alg);
-#ifdef CONFIG_CHARGER_SC89890H
-	ibus = pd_hal_get_current(alg);
-	pd_err("[%s]vbus %d, ta %d, cur %d\n", __func__, vbus, cap->max_mv[idx], ibus);
-	if (ibus <= 0) {
-		pd_err("[%s] ibus<=0\n", __func__);
-		ibus = 1000;
-	} else {
-		if( (cap->max_mv[idx] > 5000) && ((cap->max_mv[idx] - abs(vbus))< 1000) )
-		ibus = (ibus * PD_IBUS_P_IBAT) / 100;
-		pd_err("[%s] ibus=%d\n", __func__, ibus);
-	}
-#else
+#if !IS_ENABLED(CONFIG_CHARGER_SC89890H)
 	ibus = ibus / 1000;
 	if (ibus == 0)
 		ibus = 1000;
@@ -627,6 +616,19 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 
 	if (idx < 0 || idx >= PD_CAP_MAX_NR)
 		idx = selected_idx = 0;
+
+#if IS_ENABLED(CONFIG_CHARGER_SC89890H)
+	ibus = pd_hal_get_current(alg);
+	pd_err("[%s]vbus %d, ta %d, cur %d\n", __func__, vbus, cap->max_mv[idx], ibus);
+	if (ibus <= 0) {
+		pd_err("[%s] ibus<=0\n", __func__);
+		ibus = 1000;
+	} else {
+		if( (cap->max_mv[idx] > 5000) && ((cap->max_mv[idx] - abs(vbus))< 1000) )
+		ibus = (ibus * PD_IBUS_P_IBAT) / 100;
+		pd_err("[%s] ibus=%d\n", __func__, ibus);
+}
+#endif
 
 	pd_dbg("idx:%d %d %d %d %d %d\n", idx,
 		cap->max_mv[idx],
