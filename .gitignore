@@ -171,3 +171,5 @@ sphinx_*/
 /kernel/configs/moto-mgk_64_k515-kansas.config
 /kernel/configs/moto-mgk_64_k515.config
 /kernel/configs/factory-mgk_64_k515.config
+/kernel/configs/debug-mgk_64_k515-nevada.config
+/kernel/configs/moto-mgk_64_k515-nevada.config
