@@ -1,4 +1,4 @@
-static kal_uint16 mot_bogota_imx882_init_setting[] = {
+static kal_uint16 mot_bogota_imx882_init_setting_part1[] = {
 	0x0136, 0x18,
 	0x0137, 0x00,
 	0x961C, 0x04,
@@ -42,6 +42,9 @@ static kal_uint16 mot_bogota_imx882_init_setting[] = {
 	0xFA11, 0x80,
 	0xFA12, 0x3A,
 	0xFA13, 0xC4,
+};
+
+static kal_uint16 mot_bogota_imx882_init_setting_part2[] = {
 	0xFC00, 0x4F,
 	0xFC01, 0x06,
 	0xFC02, 0xAC,
@@ -146,6 +149,9 @@ static kal_uint16 mot_bogota_imx882_init_setting[] = {
 	0xFC65, 0x09,
 	0xFC66, 0x00,
 	0xFC67, 0x00,
+};
+
+static kal_uint16 mot_bogota_imx882_init_setting_part3[] = {
 	0x4331, 0x01,
 	0x3304, 0x00,
 	0x33F0, 0x06,
@@ -491,6 +497,9 @@ static kal_uint16 mot_bogota_imx882_init_setting[] = {
 	0x76FD, 0x2A,
 	0x76FE, 0x2C,
 	0x76FF, 0x26,
+};
+
+static kal_uint16 mot_bogota_imx882_init_setting_part4[] = {
 	0x7700, 0x43,
 	0x7701, 0x2A,
 	0x7702, 0x2A,
@@ -673,6 +682,9 @@ static kal_uint16 mot_bogota_imx882_init_setting[] = {
 	0x77B3, 0x0A,
 	0x77B4, 0x0B,
 	0x77B5, 0x0B,
+};
+
+static kal_uint16 mot_bogota_imx882_init_setting_part5[] = {
 	0x77F4, 0x01,
 	0x77F5, 0x01,
 	0x77F6, 0x01,

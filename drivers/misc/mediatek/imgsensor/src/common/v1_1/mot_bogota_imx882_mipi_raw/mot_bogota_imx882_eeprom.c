@@ -53,7 +53,7 @@ static uint8_t BOGOTA_IMX882_eeprom[BOGOTA_IMX882_EEPROM_SIZE] = {0};
 static mot_calibration_status_t calibration_status = {CRC_FAILURE};
 static mot_calibration_mnf_t mnf_info = {0};
 
-extern kal_uint16 mot_bogota_imx882_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len);
+extern kal_uint16 mot_bogota_imx882_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len);
 extern void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para);
 
 static uint8_t crc_reverse_byte(uint32_t data)
@@ -339,15 +339,17 @@ static int mot_imx882_get_qsc_data()
 
 void imx882_qsc_spc_apply(void)
 {
+	LOG_INF("imx882_qsc_spc_apply E");
 	if (imx882_spc_data_ready) {
-		mot_bogota_imx882_table_write_cmos_sensor(imx882_SPC_setting, sizeof(imx882_SPC_setting) / sizeof(kal_uint16));
-		LOG_ERROR("SPC apply done.");
+		mot_bogota_imx882_burst_write_cmos_sensor(imx882_SPC_setting, sizeof(imx882_SPC_setting) / sizeof(kal_uint16));
+		LOG_INF("SPC apply done.");
 	}
 	if (imx882_qsc_data_ready) {
 		write_cmos_sensor_8(0x3206, 0x01);
-		mot_bogota_imx882_table_write_cmos_sensor(imx882_QSC_setting, sizeof(imx882_QSC_setting) / sizeof(kal_uint16));
-		LOG_ERROR("QSC apply done.");
+		mot_bogota_imx882_burst_write_cmos_sensor(imx882_QSC_setting, sizeof(imx882_QSC_setting) / sizeof(kal_uint16));
+		LOG_INF("QSC apply done.");
 	}
+	LOG_INF("imx882_qsc_spc_apply X");
 }
 
 void BOGOTA_IMX882_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)

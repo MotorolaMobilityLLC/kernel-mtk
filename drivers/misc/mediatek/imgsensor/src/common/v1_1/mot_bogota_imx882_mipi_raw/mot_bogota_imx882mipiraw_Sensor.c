@@ -46,9 +46,6 @@ extern void BOGOTA_IMX882_eeprom_format_calibration_data(struct imgsensor_struct
 extern void imx882_qsc_spc_apply(void);
 
 #undef VENDOR_EDIT
-
-#define USE_BURST_MODE 1
-
 /***************Modify Following Strings for Debug**********************/
 #define PFX "MOT_BOGOTA_IMX882_camera_sensor"
 /****************************   Modify end	**************************/
@@ -435,21 +432,41 @@ static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 sc
 	}
 }
 
+static struct IMGSENSOR_I2C_CFG *get_i2c_cfg(void)
+{
+	return &(((struct IMGSENSOR_SENSOR_INST *)
+		  (imgsensor.psensor_func->psensor_inst))->i2c_cfg);
+}
+
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
 	kal_uint16 get_byte = 0;
 	char pusendcmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF)};
 
-	iReadRegI2C(pusendcmd, 2, (u8 *)&get_byte, 2, imgsensor.i2c_write_id);
+	imgsensor_i2c_read(
+		get_i2c_cfg(),
+		pusendcmd,
+		2,
+		(u8 *)&get_byte,
+		2,
+		imgsensor.i2c_write_id,
+		imgsensor_info.i2c_speed);
 	return ((get_byte<<8)&0xff00) | ((get_byte>>8)&0x00ff);
 }
 
 static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 {
 	kal_uint16 get_byte = 0;
-	char pusendcmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+	char pusendcmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF)};
 
-	iReadRegI2C(pusendcmd, 2, (u8 *)&get_byte, 1, imgsensor.i2c_write_id);
+	imgsensor_i2c_read(
+		get_i2c_cfg(),
+		pusendcmd,
+		2,
+		(u8 *)&get_byte,
+		1,
+		imgsensor.i2c_write_id,
+		imgsensor_info.i2c_speed);
 	return get_byte;
 }
 
@@ -457,8 +474,13 @@ void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 {
 	char pusendcmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF),
 			(char)(para & 0xFF)};
-
-	iWriteRegI2C(pusendcmd, 3, imgsensor.i2c_write_id);
+	imgsensor_i2c_write(
+		get_i2c_cfg(),
+		pusendcmd,
+		3,
+		3,
+		imgsensor.i2c_write_id,
+		imgsensor_info.i2c_speed);
 }
 
 static kal_uint32 get_cur_exp_cnt(void)
@@ -476,20 +498,54 @@ static kal_uint32 get_cur_exp_cnt(void)
 	return exp_cnt;
 }
 
-#if USE_BURST_MODE
-#define I2C_BUFFER_LEN 255 /* trans# max is 255, each 3 bytes */
+#define I2C_BUFFER_LEN 765
+kal_uint16 mot_bogota_imx882_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
+{
+	char puSendCmd[I2C_BUFFER_LEN];
+	kal_uint32 tosend, IDX;
+	kal_uint16 addr = 0, data;
+	tosend = 0;
+	IDX = 0;
+
+	addr = para[IDX];
+	puSendCmd[tosend++] = (char)(addr >> 8);
+	puSendCmd[tosend++] = (char)(addr & 0xFF);
+	while (len > IDX) {
+		{
+			data = para[IDX + 1];
+			puSendCmd[tosend++] = (char)(data & 0xFF);
+			IDX += 2;
+		}
+		if ((I2C_BUFFER_LEN - tosend) < 3 || IDX == len) {
+			imgsensor_i2c_write(
+				get_i2c_cfg(),
+				puSendCmd,
+				tosend,
+				tosend,
+				imgsensor.i2c_write_id,
+				imgsensor_info.i2c_speed);
+			tosend = 0;
+			if(IDX < len) {
+				addr = para[IDX];
+				puSendCmd[tosend++] = (char)(addr >> 8);
+				puSendCmd[tosend++] = (char)(addr & 0xFF);
+			}
+
+		}
+ 	}
+	return 0;
+}
+
 kal_uint16 mot_bogota_imx882_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
 	kal_uint32 tosend, IDX;
 	kal_uint16 addr = 0, addr_last = 0, data;
-
 	tosend = 0;
 	IDX = 0;
 
 	while (len > IDX) {
 		addr = para[IDX];
-
 		{
 			puSendCmd[tosend++] = (char)(addr >> 8);
 			puSendCmd[tosend++] = (char)(addr & 0xFF);
@@ -497,55 +553,20 @@ kal_uint16 mot_bogota_imx882_table_write_cmos_sensor(kal_uint16 *para, kal_uint3
 			puSendCmd[tosend++] = (char)(data & 0xFF);
 			IDX += 2;
 			addr_last = addr;
-
 		}
-		/* Write when remain buffer size is less than 3 bytes
-		 * or reach end of data
-		 */
-		if ((I2C_BUFFER_LEN - tosend) < 3
-			|| IDX == len || addr != addr_last) {
-			iBurstWriteReg_multi(puSendCmd,
+		if ((I2C_BUFFER_LEN - tosend) < 3 || IDX == len || addr != addr_last) {
+			imgsensor_i2c_write(
+						get_i2c_cfg(),
+						puSendCmd,
 						tosend,
-						imgsensor.i2c_write_id,
 						3,
+						imgsensor.i2c_write_id,
 						imgsensor_info.i2c_speed);
 			tosend = 0;
 		}
 	}
 	return 0;
 }
-#else
-#define I2C_BUFFER_LEN 765 /* trans# max is 255, each 3 bytes */
-kal_uint16 mot_bogota_imx882_table_write_cmos_sensor(kal_uint16 *para,
-						 kal_uint32 len)
-{
-	char puSendCmd[I2C_BUFFER_LEN];
-	kal_uint32 tosend, IDX;
-	kal_uint16 addr = 0, addr_last = 0, data;
-
-
-	tosend = 0;
-	IDX = 0;
-
-	while (len > IDX) {
-		addr = para[IDX];
-
-		{
-			puSendCmd[tosend++] = (char)(addr >> 8);
-			puSendCmd[tosend++] = (char)(addr & 0xFF);
-			data = para[IDX + 1];
-			puSendCmd[tosend++] = (char)(data & 0xFF);
-			IDX += 2;
-			addr_last = addr;
-
-		}
-		iWriteRegI2C(puSendCmd, 3, imgsensor.i2c_write_id);
-		tosend = 0;
-	}
-
-	return 0;
-}
-#endif
 
 static void mot_bogota_imx882_get_pdaf_reg_setting(MUINT32 regNum, kal_uint16 *regDa)
 {
@@ -983,16 +1004,28 @@ static void extend_frame_length(kal_uint32 ns)
 
 static void sensor_init(void)
 {
-	LOG_INF("E\n");
-	mot_bogota_imx882_table_write_cmos_sensor(mot_bogota_imx882_init_setting,
-		sizeof(mot_bogota_imx882_init_setting)/sizeof(kal_uint16));
+	LOG_INF("MOT BOGOTA IMX882 init E\n");
+	mot_bogota_imx882_table_write_cmos_sensor(mot_bogota_imx882_init_setting_part1,
+		sizeof(mot_bogota_imx882_init_setting_part1)/sizeof(kal_uint16));
+
+	mot_bogota_imx882_burst_write_cmos_sensor(mot_bogota_imx882_init_setting_part2,
+		sizeof(mot_bogota_imx882_init_setting_part2)/sizeof(kal_uint16));
+
+	mot_bogota_imx882_table_write_cmos_sensor(mot_bogota_imx882_init_setting_part3,
+		sizeof(mot_bogota_imx882_init_setting_part3)/sizeof(kal_uint16));
+
+	mot_bogota_imx882_burst_write_cmos_sensor(mot_bogota_imx882_init_setting_part4,
+		sizeof(mot_bogota_imx882_init_setting_part4)/sizeof(kal_uint16));
+
+	mot_bogota_imx882_table_write_cmos_sensor(mot_bogota_imx882_init_setting_part5,
+		sizeof(mot_bogota_imx882_init_setting_part5)/sizeof(kal_uint16));
 
 	/*enable temperature sensor, TEMP_SEN_CTL:*/
 	//write_cmos_sensor_8(0x0138, 0x01);
 	imx882_qsc_spc_apply();
 	set_mirror_flip(imgsensor.mirror);
 
-	LOG_INF("X");
+	LOG_INF("MOT BOGOTA IMX882 init X");
 }	/*	  sensor_init  */
 
 static void preview_setting(void)
