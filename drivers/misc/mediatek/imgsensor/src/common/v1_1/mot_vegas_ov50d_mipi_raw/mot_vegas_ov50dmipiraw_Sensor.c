@@ -70,6 +70,9 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define OV50D_MAX_GAIN_30FPS_PLATFORM 7936           /*62*128, 128 GAINBASE*/
 #define OV50D_MAX_GAIN_120FPS_PLATFORM 1984          /*15.5*128, 128 GAINBASE*/
 
+#define OV50D_EEPROM_SLAVE_ID 0xA0
+#define EEPROM_ACTUATOR_ID_POSITION 11
+
 #define FPT_PDAF_SUPPORT 1
 
 #define BINNING_MODE 0
@@ -347,9 +350,33 @@ static void set_dummy(void)
 
 }	/*	set_dummy  */
 
+static uint8_t mot_vegas_ov50d_read_actuator_id_from_eeprom(kal_uint8 slave, kal_uint16 eeprom_addr)
+{
+	uint8_t actuator_id = 0;
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = slave;
+	spin_unlock(&imgsensor_drv_lock);
+
+	actuator_id = read_cmos_sensor_8(eeprom_addr);
+
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = 0x20;
+	spin_unlock(&imgsensor_drv_lock);
+
+	pr_debug("ov50d eeprom actuator id =0x%x\n", actuator_id);
+	return actuator_id;
+}
+
 static kal_uint32 return_sensor_id(void)
 {
-	return ((read_cmos_sensor_8(0x300a) << 16) | (read_cmos_sensor_8(0x300b) << 8) | read_cmos_sensor_8(0x300c));
+	uint8_t actuator_id = 0;
+	actuator_id = mot_vegas_ov50d_read_actuator_id_from_eeprom(OV50D_EEPROM_SLAVE_ID, EEPROM_ACTUATOR_ID_POSITION);
+	if(actuator_id == 0x31 || actuator_id == 0x30) {
+		return ((read_cmos_sensor_8(0x300a) << 16) | (read_cmos_sensor_8(0x300b) << 8) | read_cmos_sensor_8(0x300c));
+	} else {
+		pr_err("ov50d actuator id 0x31|0x30 not match, sensor probe failed; maybe ov50d_vcm actuator id 0x32 can match.\n");
+		return 0;
+	}
 }
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
