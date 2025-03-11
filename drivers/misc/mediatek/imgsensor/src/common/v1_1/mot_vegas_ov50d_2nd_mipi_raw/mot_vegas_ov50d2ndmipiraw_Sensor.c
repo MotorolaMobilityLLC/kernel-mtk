@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *	 mot_vegas_ov50dmipi_Sensor.c
+ *	 mot_vegas_ov50d2ndmipi_Sensor.c
  *
  * Project:
  * --------
@@ -30,7 +30,7 @@
  * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
  *============================================================================
  ****************************************************************************/
-#define PFX "MOT_VEGAS_OV50D_camera_sensor"
+#define PFX "MOT_VEGAS_OV50D_2ND_camera_sensor"
 #define pr_fmt(fmt) PFX "[%s] " fmt, __func__
 
 
@@ -49,28 +49,28 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "mot_vegas_ov50dmipiraw_Sensor.h"
-#include "mot_vegas_ov50d_Sensor_setting.h"
-#include "mot_vegas_ov50d_ana_gain_table.h"
+#include "mot_vegas_ov50d2ndmipiraw_Sensor.h"
+#include "mot_vegas_ov50d_2nd_Sensor_setting.h"
+#include "mot_vegas_ov50d_2nd_ana_gain_table.h"
 
 extern int aw86006_update_fw_sync(void);
 
-extern mot_calibration_status_t *VEGAS_OV50D_eeprom_get_calibration_status(void);
-extern mot_calibration_mnf_t *VEGAS_OV50D_eeprom_get_mnf_info(void);
-extern void VEGAS_OV50D_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+extern mot_calibration_status_t *VEGAS_OV50D_2ND_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *VEGAS_OV50D_2ND_eeprom_get_mnf_info(void);
+extern void VEGAS_OV50D_2ND_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
-extern void write_pdc_data(void);
-extern int pdc_data_valid;
+extern void write_pdc_data_2nd(void);
+extern int pdc_data_valid_2nd;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-#define OV50D_BASEGAIN 128
+#define OV50D_2ND_BASEGAIN 128
 
-#define OV50D_MAX_GAIN_BINNINGSIZE_PLATFORM 7936     /*62*128, 128 GAINBASE*/
-#define OV50D_MAX_GAIN_30FPS_PLATFORM 7936           /*62*128, 128 GAINBASE*/
-#define OV50D_MAX_GAIN_120FPS_PLATFORM 1984          /*15.5*128, 128 GAINBASE*/
+#define OV50D_2ND_MAX_GAIN_BINNINGSIZE_PLATFORM 7936     /*62*128, 128 GAINBASE*/
+#define OV50D_2ND_MAX_GAIN_30FPS_PLATFORM 7936           /*62*128, 128 GAINBASE*/
+#define OV50D_2ND_MAX_GAIN_120FPS_PLATFORM 1984          /*15.5*128, 128 GAINBASE*/
 
-#define OV50D_EEPROM_SLAVE_ID 0xA0
+#define OV50D_2ND_EEPROM_SLAVE_ID 0xA0
 #define EEPROM_ACTUATOR_ID_POSITION 11
 
 #define FPT_PDAF_SUPPORT 1
@@ -81,7 +81,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static int sensor_mode = 0;
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = MOT_VEGAS_OV50D_SENSOR_ID,
+	.sensor_id = MOT_VEGAS_OV50D_2ND_SENSOR_ID,
 
 	.checksum_value = 0x388c7147,
 	.pre = {
@@ -350,7 +350,7 @@ static void set_dummy(void)
 
 }	/*	set_dummy  */
 
-static uint8_t mot_vegas_ov50d_read_actuator_id_from_eeprom(kal_uint8 slave, kal_uint16 eeprom_addr)
+static uint8_t mot_vegas_ov50d_2nd_read_actuator_id_from_eeprom(kal_uint8 slave, kal_uint16 eeprom_addr)
 {
 	uint8_t actuator_id = 0;
 	spin_lock(&imgsensor_drv_lock);
@@ -363,18 +363,18 @@ static uint8_t mot_vegas_ov50d_read_actuator_id_from_eeprom(kal_uint8 slave, kal
 	imgsensor.i2c_write_id = 0x20;
 	spin_unlock(&imgsensor_drv_lock);
 
-	pr_debug("ov50d eeprom actuator id =0x%x\n", actuator_id);
+	pr_debug("ov50d_2nd eeprom actuator id =0x%x\n", actuator_id);
 	return actuator_id;
 }
 
 static kal_uint32 return_sensor_id(void)
 {
 	uint8_t actuator_id = 0;
-	actuator_id = mot_vegas_ov50d_read_actuator_id_from_eeprom(OV50D_EEPROM_SLAVE_ID, EEPROM_ACTUATOR_ID_POSITION);
-	if(actuator_id == 0x31 || actuator_id == 0x30) {
-		return ((read_cmos_sensor_8(0x300a) << 16) | (read_cmos_sensor_8(0x300b) << 8) | read_cmos_sensor_8(0x300c));
+	actuator_id = mot_vegas_ov50d_2nd_read_actuator_id_from_eeprom(OV50D_2ND_EEPROM_SLAVE_ID, EEPROM_ACTUATOR_ID_POSITION);
+	if(actuator_id == 0x32) {
+		return ((read_cmos_sensor_8(0x300a) << 16) | (read_cmos_sensor_8(0x300b) << 8) | read_cmos_sensor_8(0x300c)) + 1;
 	} else {
-		pr_err("ov50d actuator id 0x31|0x30 not match, sensor probe failed; maybe ov50d_vcm actuator id 0x32 can match.\n");
+		pr_err("ov50d actuator id 0x32 not match, sensor probe failed; maybe ov50d_2nd_vcm actuator id 0x31 can match.\n");
 		return 0;
 	}
 }
@@ -561,7 +561,7 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint16 iReg = 0x0000;
 
-	iReg = gain*256/OV50D_BASEGAIN;
+	iReg = gain*256/OV50D_2ND_BASEGAIN;
 	return iReg;		/* sensorGlobalGain */
 }
 
@@ -584,20 +584,20 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
-	kal_uint32 max_gain = OV50D_MAX_GAIN_BINNINGSIZE_PLATFORM;
+	kal_uint32 max_gain = OV50D_2ND_MAX_GAIN_BINNINGSIZE_PLATFORM;
 
 	if(sensor_mode == FPS30_MODE) {
-		max_gain = OV50D_MAX_GAIN_30FPS_PLATFORM;
+		max_gain = OV50D_2ND_MAX_GAIN_30FPS_PLATFORM;
 	}
 	if(sensor_mode == FPS120_MODE) {
-		max_gain = OV50D_MAX_GAIN_120FPS_PLATFORM;
+		max_gain = OV50D_2ND_MAX_GAIN_120FPS_PLATFORM;
 	}
 
-	if (gain < OV50D_BASEGAIN || gain > max_gain) {
+	if (gain < OV50D_2ND_BASEGAIN || gain > max_gain) {
 		pr_debug("Error max gain setting: %d\n", max_gain);
 
-		if (gain < OV50D_BASEGAIN)
-			gain = OV50D_BASEGAIN;
+		if (gain < OV50D_2ND_BASEGAIN)
+			gain = OV50D_2ND_BASEGAIN;
 		else if (gain > max_gain)
 			gain = max_gain;
 	}
@@ -657,7 +657,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 }
 
 #define I2C_BUFFER_LEN 765
-kal_uint16 mot_vegas_ov50d_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
+kal_uint16 mot_vegas_ov50d_2nd_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
 	kal_uint32 tosend, IDX;
@@ -694,7 +694,7 @@ kal_uint16 mot_vegas_ov50d_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 
 	return 0;
 }
 
-kal_uint16 mot_vegas_ov50d_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
+kal_uint16 mot_vegas_ov50d_2nd_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
 	kal_uint32 tosend, IDX;
@@ -728,43 +728,43 @@ kal_uint16 mot_vegas_ov50d_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 
 
 static void sensor_init(void)
 {
-	pr_debug("MOT VEGAS OV50D init start\n");
+	pr_debug("MOT VEGAS OV50D_2ND init start\n");
 
-	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_part1,
-		sizeof(addr_data_pair_init_mot_vegas_ov50d_part1)/sizeof(kal_uint16));
+	mot_vegas_ov50d_2nd_table_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_2nd_part1,
+		sizeof(addr_data_pair_init_mot_vegas_ov50d_2nd_part1)/sizeof(kal_uint16));
 
-	if (pdc_data_valid == 1) {
-		write_pdc_data();
+	if (pdc_data_valid_2nd == 1) {
+		write_pdc_data_2nd();
 	}
 	else
 	{
-		mot_vegas_ov50d_burst_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_part2,
-		sizeof(addr_data_pair_init_mot_vegas_ov50d_part2)/sizeof(kal_uint16));
+		mot_vegas_ov50d_2nd_burst_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_2nd_part2,
+		sizeof(addr_data_pair_init_mot_vegas_ov50d_2nd_part2)/sizeof(kal_uint16));
 	}
 
-	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_part3,
-		sizeof(addr_data_pair_init_mot_vegas_ov50d_part3)/sizeof(kal_uint16));
-	mot_vegas_ov50d_burst_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_part4,
-		sizeof(addr_data_pair_init_mot_vegas_ov50d_part4)/sizeof(kal_uint16));
-	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_part5,
-		sizeof(addr_data_pair_init_mot_vegas_ov50d_part5)/sizeof(kal_uint16));
-	mot_vegas_ov50d_burst_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_part6,
-		sizeof(addr_data_pair_init_mot_vegas_ov50d_part6)/sizeof(kal_uint16));
-	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_part7,
-		sizeof(addr_data_pair_init_mot_vegas_ov50d_part7)/sizeof(kal_uint16));
+	mot_vegas_ov50d_2nd_table_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_2nd_part3,
+		sizeof(addr_data_pair_init_mot_vegas_ov50d_2nd_part3)/sizeof(kal_uint16));
+	mot_vegas_ov50d_2nd_burst_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_2nd_part4,
+		sizeof(addr_data_pair_init_mot_vegas_ov50d_2nd_part4)/sizeof(kal_uint16));
+	mot_vegas_ov50d_2nd_table_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_2nd_part5,
+		sizeof(addr_data_pair_init_mot_vegas_ov50d_2nd_part5)/sizeof(kal_uint16));
+	mot_vegas_ov50d_2nd_burst_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_2nd_part6,
+		sizeof(addr_data_pair_init_mot_vegas_ov50d_2nd_part6)/sizeof(kal_uint16));
+	mot_vegas_ov50d_2nd_table_write_cmos_sensor(addr_data_pair_init_mot_vegas_ov50d_2nd_part7,
+		sizeof(addr_data_pair_init_mot_vegas_ov50d_2nd_part7)/sizeof(kal_uint16));
 
-	pr_debug("MOT VEGAS OV50D init end\n");
+	pr_debug("MOT VEGAS OV50D_2ND init end\n");
 
 }	/*	  sensor_init  */
 
 static void preview_setting(void)
 {
-	pr_debug("MOT VEGAS OV50D preview_setting start\n");
+	pr_debug("MOT VEGAS OV50D_2ND preview_setting start\n");
 
-	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_preview_mot_vegas_ov50d,
-		sizeof(addr_data_pair_preview_mot_vegas_ov50d)/sizeof(kal_uint16));
+	mot_vegas_ov50d_2nd_table_write_cmos_sensor(addr_data_pair_preview_mot_vegas_ov50d_2nd,
+		sizeof(addr_data_pair_preview_mot_vegas_ov50d_2nd)/sizeof(kal_uint16));
 
-	pr_debug("MOT VEGAS OV50D preview_setting end\n");
+	pr_debug("MOT VEGAS OV50D_2ND preview_setting end\n");
 
 } /* preview_setting */
 
@@ -772,50 +772,50 @@ static void preview_setting(void)
 /*full size 30fps*/
 static void capture_setting(kal_uint16 currefps)
 {
-	pr_debug("MOT VEGAS OV50D capture_setting start\n");
-	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_preview_mot_vegas_ov50d,
-		sizeof(addr_data_pair_preview_mot_vegas_ov50d)/sizeof(kal_uint16));
+	pr_debug("MOT VEGAS OV50D_2ND capture_setting start\n");
+	mot_vegas_ov50d_2nd_table_write_cmos_sensor(addr_data_pair_preview_mot_vegas_ov50d_2nd,
+		sizeof(addr_data_pair_preview_mot_vegas_ov50d_2nd)/sizeof(kal_uint16));
 
-	pr_debug("MOT VEGAS OV50D capture_setting end\n");
+	pr_debug("MOT VEGAS OV50D_2ND capture_setting end\n");
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	pr_debug("MOT VEGAS OV50D normal_video_setting start\n");
+	pr_debug("MOT VEGAS OV50D_2ND normal_video_setting start\n");
 
-	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_normal_video_mot_vegas_ov50d,
-		sizeof(addr_data_pair_normal_video_mot_vegas_ov50d)/sizeof(kal_uint16));
+	mot_vegas_ov50d_2nd_table_write_cmos_sensor(addr_data_pair_normal_video_mot_vegas_ov50d_2nd,
+		sizeof(addr_data_pair_normal_video_mot_vegas_ov50d_2nd)/sizeof(kal_uint16));
 
-	pr_debug("MOT VEGAS OV50D normal_video_setting end\n");
+	pr_debug("MOT VEGAS OV50D_2ND normal_video_setting end\n");
 }
 
 static void hs_video_setting(void)
 {
-	pr_debug("MOT VEGAS OV50D hs_video_setting start\n");
+	pr_debug("MOT VEGAS OV50D_2ND hs_video_setting start\n");
 
-	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_120fps_ov50d,
-		sizeof(addr_data_pair_120fps_ov50d)/sizeof(kal_uint16));
+	mot_vegas_ov50d_2nd_table_write_cmos_sensor(addr_data_pair_120fps_ov50d_2nd,
+		sizeof(addr_data_pair_120fps_ov50d_2nd)/sizeof(kal_uint16));
 
-	pr_debug("MOT VEGAS OV50D hs_video_setting end\n");
+	pr_debug("MOT VEGAS OV50D_2ND hs_video_setting end\n");
 }
 
 static void slim_video_setting(void)
 {
-	pr_debug("MOT VEGAS OV50D slim_video_setting start\n");
+	pr_debug("MOT VEGAS OV50D_2ND slim_video_setting start\n");
 
-	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_preview_mot_vegas_ov50d,
-		sizeof(addr_data_pair_preview_mot_vegas_ov50d)/sizeof(kal_uint16));
+	mot_vegas_ov50d_2nd_table_write_cmos_sensor(addr_data_pair_preview_mot_vegas_ov50d_2nd,
+		sizeof(addr_data_pair_preview_mot_vegas_ov50d_2nd)/sizeof(kal_uint16));
 
-	pr_debug("MOT VEGAS OV50D slim_video_setting end\n");
+	pr_debug("MOT VEGAS OV50D_2ND slim_video_setting end\n");
 }
 
 static void custom1_setting(void)
 {
-	pr_debug("MOT VEGAS OV50D custom1_setting start\n");
+	pr_debug("MOT VEGAS OV50D_2ND custom1_setting start\n");
 
-	mot_vegas_ov50d_table_write_cmos_sensor(addr_data_pair_30fps_ov50d,
-		sizeof(addr_data_pair_30fps_ov50d)/sizeof(kal_uint16));
-	pr_debug("MOT VEGAS OV50D custom1_setting end\n");
+	mot_vegas_ov50d_2nd_table_write_cmos_sensor(addr_data_pair_30fps_ov50d_2nd,
+		sizeof(addr_data_pair_30fps_ov50d_2nd)/sizeof(kal_uint16));
+	pr_debug("MOT VEGAS OV50D_2ND custom1_setting end\n");
 }
 
 /*************************************************************************
@@ -847,7 +847,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-				VEGAS_OV50D_eeprom_format_calibration_data(&imgsensor);
+				VEGAS_OV50D_2ND_eeprom_format_calibration_data(&imgsensor);
 				aw86006_update_fw_sync();
 				return ERROR_NONE;
 			}
@@ -1176,8 +1176,8 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->Custom1DelayFrame = imgsensor_info.custom1_delay_frame;
 
 	/*Apply calibration status and manufacture info*/
-	memcpy(&sensor_info->calibration_status, VEGAS_OV50D_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
-	memcpy(&sensor_info->mnf_calibration, VEGAS_OV50D_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, VEGAS_OV50D_2ND_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
+	memcpy(&sensor_info->mnf_calibration, VEGAS_OV50D_2ND_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
@@ -1560,11 +1560,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_ANA_GAIN_TABLE:
 		if ((*(feature_data + 0)) == 0) {
 			*(feature_data + 0) =
-				sizeof(mot_vegas_ov50d_ana_gain_table);
+				sizeof(mot_vegas_ov50d_2nd_ana_gain_table);
 		} else {
 			memcpy((void *)(uintptr_t) (*(feature_data + 1)),
-			(void *)mot_vegas_ov50d_ana_gain_table,
-			sizeof(mot_vegas_ov50d_ana_gain_table));
+			(void *)mot_vegas_ov50d_2nd_ana_gain_table,
+			sizeof(mot_vegas_ov50d_2nd_ana_gain_table));
 		}
 		break;
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
@@ -1939,7 +1939,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 MOT_VEGAS_OV50D_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 MOT_VEGAS_OV50D_2ND_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	sensor_func.arch = IMGSENSOR_ARCH_V2;
@@ -1948,4 +1948,4 @@ UINT32 MOT_VEGAS_OV50D_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFun
 	if (imgsensor.psensor_func == NULL)
 		imgsensor.psensor_func = &sensor_func;
 	return ERROR_NONE;
-} /* MOT_VEGAS_OV50D_MIPI_RAW_SensorInit */
+} /* MOT_VEGAS_OV50D_2ND_MIPI_RAW_SensorInit */
