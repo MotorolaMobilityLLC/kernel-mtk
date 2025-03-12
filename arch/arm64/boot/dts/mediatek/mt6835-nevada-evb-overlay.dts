@@ -23,7 +23,7 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "nevada";
-			mot,board-id = <0x41 0xB100>;
+			mot,board-id = <0x41 0xA100>;
 		};
 	};
 };
