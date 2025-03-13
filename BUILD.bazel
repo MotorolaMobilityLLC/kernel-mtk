@@ -99,6 +99,7 @@ filegroup(
     name = "aarch64_additional_kmi_symbol_lists",
     srcs = [
         # keep sorted
+        "android/abi_gki_aarch64_arg",
         "android/abi_gki_aarch64_asr",
         "android/abi_gki_aarch64_asus",
         "android/abi_gki_aarch64_bcmstb",
@@ -115,6 +116,7 @@ filegroup(
         "android/abi_gki_aarch64_mtk",
         "android/abi_gki_aarch64_nothing",
         "android/abi_gki_aarch64_oplus",
+        "android/abi_gki_aarch64_paragon",
         "android/abi_gki_aarch64_pasa",
         "android/abi_gki_aarch64_pixel",
         "android/abi_gki_aarch64_qcom",
