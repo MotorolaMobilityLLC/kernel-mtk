@@ -83,4 +83,8 @@
 #define DSC_RC_TGT_OFFSET_HI        3
 #define DSC_RC_TGT_OFFSET_LO        3
 
+int panel_gesture_register_client(const char *source, struct notifier_block *nb);
+int panel_gesture_unregister_client(struct notifier_block *nb);
+int panel_gesture_notifier_call_chain(unsigned long val, void *v);
+
 #endif //end of PANEL_MOT_TM_TD4376_672_DPHY_VDO_HFP_H

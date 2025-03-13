@@ -41,6 +41,7 @@
 extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
 #endif
+static BLOCKING_NOTIFIER_HEAD(panel_gesture_notifier_list);
 
 static int tp_gesture_flag = 0;
 
@@ -144,6 +145,27 @@ static void lcm_panel_get_data(struct lcm *ctx)
 }
 #endif
 
+int panel_gesture_register_client(const char *source, struct notifier_block *nb)
+{
+        if (!source)
+                return -EINVAL;
+
+        return blocking_notifier_chain_register(&panel_gesture_notifier_list, nb);
+}
+EXPORT_SYMBOL(panel_gesture_register_client);
+
+int panel_gesture_unregister_client(struct notifier_block *nb)
+{
+        return blocking_notifier_chain_unregister(&panel_gesture_notifier_list, nb);
+}
+EXPORT_SYMBOL(panel_gesture_unregister_client);
+
+int panel_gesture_notifier_call_chain(unsigned long val, void *v)
+{
+        return blocking_notifier_call_chain(&panel_gesture_notifier_list, val, v);
+}
+EXPORT_SYMBOL(panel_gesture_notifier_call_chain);
+
 static void lcm_panel_init(struct lcm *ctx)
 {
 	pr_info("disp: %s+, tm_td4376\n", __func__);
@@ -232,6 +254,10 @@ static int lcm_unprepare(struct drm_panel *panel)
 	msleep(100);
 
 	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
+
+	if (tp_gesture_flag)
+		panel_gesture_notifier_call_chain(0x01,NULL);
+
 	if(!tp_gesture_flag) {
 		ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 		if (IS_ERR(ctx->reset_gpio)) {
@@ -262,6 +288,19 @@ static int lcm_unprepare(struct drm_panel *panel)
 		gpiod_set_value(ctx->avdd_en_gpio, 0);
 		devm_gpiod_put(ctx->dev, ctx->avdd_en_gpio);
 #endif
+
+		ctx->tp_reset_gpio = devm_gpiod_get(ctx->dev, "tp_reset", GPIOD_OUT_HIGH);
+		if (IS_ERR(ctx->tp_reset_gpio)) {
+			dev_err(ctx->dev, "%s:tm_td4376: cannot get tp_reset_gpio %ld\n",
+				__func__, PTR_ERR(ctx->tp_reset_gpio));
+			//return;
+		}
+		else {
+			gpiod_set_value(ctx->tp_reset_gpio, 0);
+			usleep_range(3 * 1000, 3 * 1001);
+			devm_gpiod_put(ctx->dev, ctx->tp_reset_gpio);
+			pr_info("%s:tm_td4376: tp_reset_gpio 1\n", __func__);
+		}
 	}
 
 	ctx->error = 0;
