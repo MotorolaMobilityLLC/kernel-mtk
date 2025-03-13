@@ -940,6 +940,7 @@ static int pbm_probe(struct platform_device *pdev)
 	mt_pbm_create_procfs();
 
 	pm_notifier(_mt_pbm_pm_callback, 0);
+	INIT_DELAYED_WORK(&poll_queue, pbm_thread_handle);
 	pbm_nb.notifier_call = pbm_psy_event;
 	ret = power_supply_reg_notifier(&pbm_nb);
 	if (ret) {
@@ -1009,7 +1010,6 @@ static int pbm_probe(struct platform_device *pdev)
 		}
 	}
 
-	INIT_DELAYED_WORK(&poll_queue, pbm_thread_handle);
 	pbm_ctrl.pbm_drv_done = 1;
 
 	return ret;
