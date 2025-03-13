@@ -572,9 +572,13 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 
 	ctx->reset_gpio =
 		devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	gpiod_set_value(ctx->reset_gpio, on);
-	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-
+	if (!IS_ERR(ctx->reset_gpio)) {
+		gpiod_set_value(ctx->reset_gpio, on);
+		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+		pr_info("%s- reset %d done exit\n", __func__, on);
+		return 0;
+	}
+	pr_info("%s- exit\n", __func__);
 	return 0;
 }
 
