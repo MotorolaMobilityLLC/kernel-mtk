@@ -121,6 +121,8 @@ obj-$(CONFIG_DRM_PANEL_TM_NT36528_667_HDP_DPHY_VDO_120HZ) += dsi-panel-mot-tm-nt
 obj-$(CONFIG_DRM_PANEL_BOE_FT8057S_667_720_1604_DPHY_120HZ) += dsi-panel-mot-boe-ft8057s-667-hdp-dphy-vdo-120hz.o
 obj-$(CONFIG_DRM_PANEL_BOE_FT8057M_667_720_1604_DPHY_120HZ) += dsi-panel-mot-boe-ft8057m-667-hdp-dphy-vdo-120hz.o
 obj-$(CONFIG_DRM_PANEL_TM_NT36528A_667_HDP_DPHY_VDO_120HZ) += dsi-panel-mot-tm-nt36528a-667-hdp-dphy-vdo-120hz.o
+obj-$(CONFIG_DRM_PANEL_TM_NT36528A_667_720_HDPLUS_DPHY_VDO_120HZ) += dsi-panel-mot-tm-nt36528a-667-hdplus-dphy-vdo-120hz.o
+obj-$(CONFIG_DRM_PANEL_BOE_FT8057M_667_720_HDPLUS_DPHY_120HZ) += dsi-panel-mot-boe-ft8057m-667-hdplus-dphy-vdo-120hz.o
 
 mediatek-drm-gateic-y := mtk_drm_panel_i2c.o \
 		  mtk_drm_gateic_rt4801h.o \
