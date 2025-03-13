@@ -957,6 +957,7 @@ static void mtk_ovl_config(struct mtk_ddp_comp *comp,
 			   struct mtk_ddp_config *cfg, struct cmdq_pkt *handle)
 {
 	unsigned int width;
+	struct mtk_drm_private *priv = comp->mtk_crtc->base.dev->dev_private;
 
 	if (comp->mtk_crtc->is_dual_pipe)
 		width = cfg->w / 2;
@@ -974,6 +975,13 @@ static void mtk_ovl_config(struct mtk_ddp_comp *comp,
 		       ~0);
 
 	mtk_ovl_golden_setting(comp, cfg, handle);
+
+	if (priv && priv->data->mmsys_id == MMSYS_MT6855) {
+		/* In 6855 we need to set FBDC_FILTER_EN */
+		cmdq_pkt_write(handle, comp->cmdq_base,
+				comp->regs_pa + DISP_REG_OVL_FBDC_CFG1,
+				FBDC_FILTER_EN, FBDC_FILTER_EN);
+	}
 }
 
 static void mtk_ovl_layer_on(struct mtk_ddp_comp *comp, unsigned int idx,
@@ -2316,10 +2324,6 @@ static bool compr_l_config_PVRIC_V4_1(struct mtk_ddp_comp *comp,
 				       DISP_REG_OVL_LX_FBDC_CNST_CLR1(lye_idx),
 			       0x1000000, ~0);
 	}
-	/* In 6855 we need to set FBDC_FILTER_EN */
-	cmdq_pkt_write(handle, comp->cmdq_base,
-		       comp->regs_pa + DISP_REG_OVL_FBDC_CFG1,
-		       FBDC_FILTER_EN, FBDC_FILTER_EN);
 
 	return 0;
 }
