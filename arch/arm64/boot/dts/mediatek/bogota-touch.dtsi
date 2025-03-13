@@ -21,7 +21,7 @@
 
 		omnivision,irq-gpio = <&pio 22 0x00>;
 		omnivision,irq-on-state = <0>;
-		omnivision,reset-gpio = <&pio 3 0x00>;
+		/*omnivision,reset-gpio = <&pio 3 0x00>;*/
 		omnivision,reset-on-state = <0>;
 		omnivision,reset-active-ms = <20>;
 		omnivision,reset-delay-ms = <200>;
