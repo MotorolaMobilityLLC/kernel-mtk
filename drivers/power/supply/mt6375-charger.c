@@ -2426,7 +2426,7 @@ void get_qc_charger_type_func_work(struct work_struct *work)
 					msleep(100);
 					wait_count++;
 					adapter_dev_get_protocol(ddata->qc_dev, &early_chg_type);
-					if (early_chg_type == 0x06 || early_chg_type == 0x09) {
+					if (early_chg_type == 0x06 || early_chg_type == 0x09 || early_chg_type == 0x12) {
 						pr_err("[%s] z350 early type is QC3+/QC3: %d, skip detecting\n",__func__, early_chg_type);
 						break;
 					}
@@ -2438,6 +2438,9 @@ void get_qc_charger_type_func_work(struct work_struct *work)
 
 		adapter_dev_get_protocol(ddata->qc_dev, &ddata->qc_chg_type);
 
+		if (ddata->qc_chg_type == 0x12) {
+			ddata->qc_chg_type = USB_TYPE_QC3P_45;
+		}
 		if(ddata->qc_chg_type == USB_TYPE_OCP && !need_retry){
 			need_retry = true;
 		} else {

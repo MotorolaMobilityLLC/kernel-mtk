@@ -983,7 +983,7 @@ int wt6670f_get_protocol(void)
         }
 
 	if((data1 > 0x00 && data1 < 0x07) ||
-           (data1 > 0x07 && data1 < 0x0a) ||(QC3P_Z350 == g_qc3p_id && data1 == 0x10)) {
+           (data1 > 0x07 && data1 < 0x0a) ||(QC3P_Z350 == g_qc3p_id && ((data1 == 0x10) || (data1 == 0x12)))) {
 		ret = data1;
 	}
 	else {
