@@ -148,9 +148,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	//2048x1152@60fps
 	.custom1 = {
-		.pclk = 878400000,
+		.pclk = 444000000,
 		.linelength = 4024,
-		.framelength = 3632,
+		.framelength = 1832,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2048,
