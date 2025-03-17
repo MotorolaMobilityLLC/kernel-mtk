@@ -45,6 +45,9 @@ static BLOCKING_NOTIFIER_HEAD(panel_gesture_notifier_list);
 
 static int tp_gesture_flag = 0;
 
+//log for KPI
+const u8 kpi_log_level = 1;
+
 struct lcm {
 	struct device *dev;
 	struct drm_panel panel;
@@ -180,13 +183,15 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	lcm_dcs_write_seq_static(ctx, 0x55, 0x01);
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
+
+	if(kpi_log_level > 1) pr_info("disp:%s 0x11 start\n", __func__);
 	lcm_dcs_write_seq_static(ctx, 0x11);
-	msleep(100);
+	usleep_range(100*1000, 100*1000+1);
 	lcm_dcs_write_seq_static(ctx, 0x29);
 	lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xCF);
-	msleep(5);
+	usleep_range(5000,5001);
 
-	pr_info("%s-\n", __func__);
+	pr_info("disp: %s-\n", __func__);
 }
 
 static void tm_panel_tp_reset(struct lcm *ctx)
@@ -249,9 +254,9 @@ static int lcm_unprepare(struct drm_panel *panel)
 	pr_info("%s+, tm_td4376\n", __func__);
 
 	lcm_dcs_write_seq_static(ctx, 0x28);
-	msleep(5);
+	usleep_range(5000,5001);
 	lcm_dcs_write_seq_static(ctx, 0x10);
-	msleep(100);
+	usleep_range(100*1000, 100*1000+1);
 
 	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
 
@@ -266,7 +271,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 		}
 		gpiod_set_value(ctx->reset_gpio, 0);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-		msleep(5);
+		usleep_range(5000,5001);
 
 #ifdef BIAS_OCP2138
 		ocp2138_BiasPower_disable(5);
@@ -278,7 +283,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 		}
 		gpiod_set_value(ctx->avee_en_gpio, 0);
 		devm_gpiod_put(ctx->dev, ctx->avee_en_gpio);
-		msleep(5);
+		usleep_range(5000,5001);
 
 		ctx->avdd_en_gpio = devm_gpiod_get_index(ctx->dev, "avdd", 0, GPIOD_OUT_HIGH);
 		if (IS_ERR(ctx->avdd_en_gpio)) {
@@ -314,15 +319,17 @@ static int lcm_prepare(struct drm_panel *panel)
 	struct lcm *ctx = panel_to_lcm(panel);
 	int ret;
 
-	pr_info("%s+, tm_td4376\n", __func__);
+	pr_info("disp: %s+, tm_td4376\n", __func__);
 	if (ctx->prepared) {
 		pr_info("%s, already prepared, return\n", __func__);
 		return 0;
 	}
 
 #ifdef BIAS_OCP2138
+	if(kpi_log_level) pr_info("disp: %s bias en\n", __func__);
 	ocp2138_BiasPower_enable(15,15,5);
-	msleep(1);
+	usleep_range(1000,1001);
+	if(kpi_log_level > 1) pr_info("disp: %s bias en done\n", __func__);
 #else
 	ctx->avdd_en_gpio = devm_gpiod_get_index(ctx->dev, "avdd", 0, GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->avdd_en_gpio)) {
@@ -331,7 +338,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	}
 	gpiod_set_value(ctx->avdd_en_gpio, 1);
 	devm_gpiod_put(ctx->dev, ctx->avdd_en_gpio);
-	msleep(5);
+	usleep_range(5000,5001);
 
 	ctx->avee_en_gpio = devm_gpiod_get_index(ctx->dev, "avee", 0, GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->avee_en_gpio)) {
@@ -340,23 +347,25 @@ static int lcm_prepare(struct drm_panel *panel)
 	}
 	gpiod_set_value(ctx->avee_en_gpio, 1);
 	devm_gpiod_put(ctx->dev, ctx->avee_en_gpio);
-	msleep(5);
+	usleep_range(5000,5001);
 #endif
 
 	tm_panel_tp_reset(ctx);
 
+	if(kpi_log_level > 1) pr_info("disp: %s, lcd reset start\n", __func__);
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
 		dev_info(ctx->dev, "[error]%s: cannot get reset_gpio %ld\n", __func__, PTR_ERR(ctx->reset_gpio));
 		return PTR_ERR(ctx->reset_gpio);
 	}
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(5);
+	usleep_range(5000,5001);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	msleep(10);
+	usleep_range(10000,10001);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(20);
+	usleep_range(20*1000,20*1000+1);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+	if(kpi_log_level > 1) pr_info("disp: %s lcd reset done\n", __func__);
 
 	lcm_panel_init(ctx);
 	ctx->hbm_mode = 0;
@@ -392,6 +401,7 @@ static int lcm_enable(struct drm_panel *panel)
 
 	ctx->enabled = true;
 
+	if(kpi_log_level) pr_info("disp: %s-\n", __func__);
 	return 0;
 }
 
