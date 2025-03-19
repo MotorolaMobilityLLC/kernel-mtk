@@ -26,6 +26,12 @@
 #include <linux/kmemleak.h>
 #include <linux/time.h>
 
+#include <dvfsrc-exp.h>
+#include <linux/soc/mediatek/mtk_dvfsrc.h>
+#if IS_ENABLED(CONFIG_MTK_DRAMC)
+#include <soc/mediatek/dramc.h>
+#endif
+
 #ifndef DRM_CMDQ_DISABLE
 #include <linux/soc/mediatek/mtk-cmdq-ext.h>
 #else
@@ -3283,6 +3289,63 @@ static unsigned int overlap_to_bw(struct drm_crtc *crtc,
 	return bw;
 }
 
+static unsigned int mt6855_lp4_ratio_tb[8] = {
+	800, 800, 787, 750, 700, 700, 625, 700
+};
+static unsigned int mt6855_lp5_ratio_tb[8] = {
+	705, 659, 625, 625, 625, 625, 625, 625
+};
+
+static void update_bw_by_emi_hrt_ratio(struct mtk_drm_private *priv,
+				unsigned int *bw)
+{
+	int dram_opp = 0;
+	unsigned int old_bw = *bw;
+	unsigned int dram_type = 0;
+	unsigned int dram_data_rate = 0;
+	unsigned int delta_ratio = 0;
+
+	if (priv->data->mmsys_id != MMSYS_MT6855)
+		return;
+
+	dram_opp = mtk_dvfsrc_query_opp_info(MTK_DVFSRC_CURR_DRAM_OPP);
+
+#if IS_ENABLED(CONFIG_MTK_DRAMC)
+	dram_type = mtk_dramc_get_ddr_type();
+	dram_data_rate = mtk_dramc_get_data_rate();
+	if ((dram_type == TYPE_LPDDR4) ||
+		(dram_type == TYPE_LPDDR4X) ||
+		(dram_type == TYPE_LPDDR4P)) {
+		if (priv->data->mmsys_id == MMSYS_MT6855) {
+			if (dram_opp > sizeof(mt6855_lp4_ratio_tb) / sizeof(unsigned int) - 1) {
+				DDPMSG("%s, not found valid dram_opp:%d data_rate:%d\n",
+						__func__, dram_opp, dram_data_rate);
+				return;
+			}
+			delta_ratio = mt6855_lp4_ratio_tb[dram_opp] * 1000 / 500;
+			*bw = *bw * delta_ratio / 1000;
+			DDPINFO("%s, data_rate:%d, delta_ratio:%d/1000, old bw:%d, new bw:%d\n",
+					__func__, dram_data_rate, delta_ratio, old_bw, *bw);
+		}
+	} else if ((dram_type == TYPE_LPDDR5) ||
+		(dram_type == TYPE_LPDDR5X)) {
+		if (priv->data->mmsys_id == MMSYS_MT6855) {
+			if (dram_opp > sizeof(mt6855_lp5_ratio_tb) / sizeof(unsigned int) - 1) {
+				DDPMSG("%s, not found valid dram_opp:%d data_rate:%d\n",
+						__func__, dram_opp, dram_data_rate);
+				return;
+			}
+			delta_ratio = mt6855_lp5_ratio_tb[dram_opp] * 1000 / 500;
+			*bw = *bw * delta_ratio / 1000;
+			DDPINFO("%s, data_rate:%d, delta_ratio:%d/1000, old bw:%d, new bw:%d\n",
+					__func__, dram_data_rate, delta_ratio, old_bw, *bw);
+		}
+	} else {
+		DDPMSG("%s not found valid dram_type\n", __func__);
+	}
+#endif
+}
+
 static void mtk_crtc_update_hrt_state(struct drm_crtc *crtc,
 				      unsigned int frame_weight,
 				      struct mtk_drm_lyeblob_ids *lyeblob_ids,
@@ -3382,6 +3445,9 @@ static void mtk_crtc_update_hrt_state(struct drm_crtc *crtc,
 			}
 		}
 	}
+
+	// consider emi hrt ratio to avoid unbalanced throughput for emi channel
+	update_bw_by_emi_hrt_ratio(priv, &bw);
 
 	/* can't access backup slot since top clk off */
 	if (priv->power_state == false)
