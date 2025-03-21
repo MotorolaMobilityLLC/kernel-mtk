@@ -1,0 +1,189 @@
+@@OV08F_MIPI_3264x2448_2lane_1440M_30fps_eco2_V2.2
+				  
+;;Sensor revision: OV08F10
+;Input clock frequency: 24MHz
+;Pixel data format: RAW10
+;Frame timing and frame rate: VTS(read only P1:0x34&35&36)=0x9c5=2501,  HTS(read only P1:0x37&38)=0x1de=478
+;;row_clk=36.5M
+;frame rate = row_clk /HTS/VTS= 36500000/2501/478=30.010
+;Output interface and data rate: Mipi 2Lane, Mipi clk = 1440Mbps@2lane	
+
+100 99 3264 2448
+100 98 1 0
+102 84	1
+
+;110 80 08
+110 1d0 0 ;8bit
+110 c0 2400
+
+
+6c fd 00
+6c 20 0e 
+sl 3 3
+6c 20 0b
+6c fd 00
+6c 10 08
+6c 11 5e;
+6c 12 01
+6c 13 15
+6c 14 24 ;20;
+6c 1e 10
+
+
+
+6c fd 01
+6c 12 00 ;bit0=1 colorbar en
+6c 03 05 
+6c 04 08
+6c 06 56
+6c 07 05
+6c 24 20
+6c 32 03;mirror on flip on
+6c 33 03
+6c 01 03
+6c 19 40
+6c c0 00
+6c 42 5d
+6c 44 81
+6c 46 3f
+6c 47 0f
+6c 48 0c ;bit3 vb exp&frame_length psv en
+6c 4c 38 ;18
+6c b2 1e
+6c b3 1b
+6c c3 2c ;sa bias
+6c d2 fc
+
+6c fd 01 ;timing
+6c 50 1c
+6c 53 1c
+6c 54 04
+6c 55 04
+6c 57 87
+6c 5e 10
+6c 67 05
+6c 7a 02
+6c 7c 0a
+6c 90 3a ;rst d0
+6c 91 12 ;rst d1
+6c 92 16 ;col en1
+6c 94 12 ;sig d1
+6c 95 40 ;col en2
+6c 97 03
+6c 98 48
+6c 9a 02
+6c 9c 0c
+6c 9e 2d
+6c ca 0d;1x~1.5x
+6c cb 12;2x~3.88x
+6c cc 0f;11;12;1.525x~1.9375x
+6c cd 16;15;4x~15.5x
+6c ce 0d;1x~1.5x
+6c cf 10;2x~3.88x
+6c d0 0b ;0f;10;1.525x~1.9375x
+6c d1 14;13;4x~15.5x
+
+
+
+
+6c fd 07 ;blc tuning
+6c 2c 02 ;r_thres_man high 4bit
+6c 2d 00 ;r_thres_man low 8bit
+
+6c 00 f8 ;blc trigger en 
+6c 01 2b ;blc on
+6c 05 40
+6c 08 06 ;black row start
+6c 09 11 ;black row end
+6c 28 6f
+6c 2a 20
+6c 2b 05
+6c 5e 10 ;dither enable gain 4x
+6c 52 00;k
+6c 53 78 ;80
+6c 54 00
+6c 55 78 ;80
+6c 56 00
+6c 57 78 ;80
+6c 58 00
+6c 59 78 ;80
+6c 5c 3f
+
+6c fd 0f
+6c 00 27;psnc debug
+6c 01 34
+6c 02 88
+6c 1a 21
+6c 1b 4b
+6c 1c d5
+6c 1d db
+6c 1f 31
+6c 20 cc ;54 ;;;for 2x linearity
+
+6c fd 0f
+6c 03 07 ;bg_trim
+6c 05 0a ;adc range
+6c 12 00 ;rcnt_num low 8bit
+6c 13 00 ;scnt_num low 8bit
+6c 14 13 ;[5:4] rcnt_num high 2bit, [2:0] scnt_num high 3bit
+6c 08 28 ;dac d0 1280
+6c 16 0c ;rst_num1_1x
+6c 17 0c
+6c 18 0c
+6c 19 0c
+
+6c fd 02 
+6c 9a 30 ;bit 5 otp dpc on,bit 4 dynamic dpc on
+6c fd 04
+6c 12 01 ;;for 1x WP
+6c 0a 10 ;;03
+6c 0b 11 ;;0c
+6c 0c 12 ;;10
+6c 0d fd ;0f ;dpc_list[0]
+
+6c fd 03 ;OTP DPC
+6c 9d 0f ; 
+6c 9f 20 ;//otp load enable
+6c fd 05 ;OTPDPC end address
+6c 00 00 ; start address
+6c 01 1c
+6c 02 01 ; end address
+6c 03 ff
+6c 1a 20
+
+6c fd 02 ;cropping size
+6c a1 08
+6c a2 09 ;dem_v_size_4msb
+6c a3 90 ;dem_v_size_8lsb
+6c a5 08
+6c a6 0c ;dem_h_size_4msb
+6c a7 c0 ;dem_h_size_8lsb
+                                                               
+6c fd 00
+6c 24 01 ;mipi clk inv en
+6c c0 1f ;17
+6c c1 08
+6c c2 38 ;30
+6c 8e 0c ;mipi hsize msb
+6c 8f c0 ;mipi hsize lsb,  3264
+6c 90 09 ;mipi vsize msb
+6c 91 90 ;mipi vsize lsb,  2448
+6c b7 02
+
+
+@@stream on
+6c fd 01
+6c 01 03
+
+6c fd 00 ;must locate this group reg. at the end
+6c 20 0f ;soft reset
+6c e7 03
+6c e7 00
+6c a0 01 ;mipi stream on
+
+
+@@stream off
+6c fd 00
+6c a0 00
+6c 20 0b
+6c fd 01
