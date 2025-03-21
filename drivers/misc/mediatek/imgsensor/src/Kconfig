@@ -52,6 +52,11 @@ config IMGSENSOR_MAIN3
 	  imx258_mipi_mono are of same sensor ID. If not specifying sensor,
 	  imx258_mipi_mono may be recognized as imx258_mipi_raw.
 
+config  MOT_NEVADA_CAMERA_PROJECT
+        tristate "set nevada camera driver"
+        help
+          Used to distinguish project-driver code from other projects.
+
 config  MOT_KANSAS_CAMERA_PROJECT
         tristate "set kansas camera driver"
         help

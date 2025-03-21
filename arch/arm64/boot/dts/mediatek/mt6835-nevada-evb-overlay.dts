@@ -16,7 +16,7 @@
 /* NOTE: copied from mt6835-kansas-dvt-overlay.dts for reusing Kansas DVT or later HW */
 
 #include "mediatek/mt6835-nevada-common-overlay.dtsi"
-#include "mediatek/mt6835_kansas_camera_overlay_dvt.dtsi"
+#include "mediatek/mt6835_nevada_camera_overlay_evb.dtsi"
 /* Board match root node */
 / {
 	fragment@model {
