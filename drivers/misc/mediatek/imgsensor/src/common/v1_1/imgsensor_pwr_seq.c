@@ -12,6 +12,19 @@
 /* Legacy design */
 struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #if defined(CONFIG_MOT_NEVADA_CAMERA_PROJECT)
+#if defined(MOT_NEVADA_S5KKD1_MIPI_RAW)
+    {
+        SENSOR_DRVNAME_MOT_NEVADA_S5KKD1_MIPI_RAW,
+                {
+                        {RST, Vol_Low, 1},
+                        {SensorMCLK, Vol_High, 1},
+                        {DOVDD, Vol_1800, 1},
+                        {DVDD, Vol_High, 5},
+                        {AVDD, Vol_High, 4},
+                        {RST, Vol_High, 13},
+                },
+    },
+#endif
 #if defined(MOT_NEVADA_OV08F_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_MOT_NEVADA_OV08F_MIPI_RAW,
