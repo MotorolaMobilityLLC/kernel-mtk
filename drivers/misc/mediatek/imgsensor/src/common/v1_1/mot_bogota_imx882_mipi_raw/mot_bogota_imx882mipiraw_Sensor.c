@@ -2341,6 +2341,43 @@ static kal_uint32 set_max_framerate_by_scenario(
 	return ERROR_NONE;
 }
 
+static kal_uint32 imx882_set_awb_gain(struct SET_SENSOR_AWB_GAIN *pSetSensorAWB)
+{
+	#define MAX_WB_GAIN_BASE_512 0x0FFF//15.996*512
+	UINT32 rgain_32, grgain_32, gbgain_32, bgain_32;
+
+	LOG_INF("%s\n", __func__);
+
+	grgain_32 = (pSetSensorAWB->ABS_GAIN_GR << 8) >> 9;
+	rgain_32 = (pSetSensorAWB->ABS_GAIN_R << 8) >> 9;
+	bgain_32 = (pSetSensorAWB->ABS_GAIN_B << 8) >> 9;
+	gbgain_32 = (pSetSensorAWB->ABS_GAIN_GB << 8) >> 9;
+
+	LOG_INF(
+		"ABS_GAIN_GR:%d, grgain_32:%d\n, ABS_GAIN_R:%d, rgain_32:%d\n, ABS_GAIN_B:%d, bgain_32:%d,ABS_GAIN_GB:%d, gbgain_32:%d\n",
+			pSetSensorAWB->ABS_GAIN_GR, grgain_32,
+		pSetSensorAWB->ABS_GAIN_R, rgain_32,
+		pSetSensorAWB->ABS_GAIN_B, bgain_32,
+		pSetSensorAWB->ABS_GAIN_GB, gbgain_32);
+
+	//Avoid register data oveflow
+	grgain_32 = grgain_32>MAX_WB_GAIN_BASE_512 ? MAX_WB_GAIN_BASE_512 : grgain_32;
+	rgain_32 = rgain_32>MAX_WB_GAIN_BASE_512 ? MAX_WB_GAIN_BASE_512 : rgain_32;
+	bgain_32 = bgain_32>MAX_WB_GAIN_BASE_512 ? MAX_WB_GAIN_BASE_512 : bgain_32;
+	gbgain_32 = gbgain_32>MAX_WB_GAIN_BASE_512 ? MAX_WB_GAIN_BASE_512 : gbgain_32;
+
+	write_cmos_sensor_8(0x0b8e, (grgain_32 >> 8) & 0xFF);
+	write_cmos_sensor_8(0x0b8f, grgain_32 & 0xFF);
+	write_cmos_sensor_8(0x0b90, (rgain_32 >> 8) & 0xFF);
+	write_cmos_sensor_8(0x0b91, rgain_32 & 0xFF);
+	write_cmos_sensor_8(0x0b92, (bgain_32 >> 8) & 0xFF);
+	write_cmos_sensor_8(0x0b93, bgain_32 & 0xFF);
+	write_cmos_sensor_8(0x0b94, (gbgain_32 >> 8) & 0xFF);
+	write_cmos_sensor_8(0x0b95, gbgain_32 & 0xFF);
+
+	return ERROR_NONE;
+}
+
 
 static kal_uint32 get_default_framerate_by_scenario(
 		enum MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 *framerate)
@@ -2434,6 +2471,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
 
 	struct SENSOR_VC_INFO2_STRUCT *pvcinfo2;
+	struct SET_SENSOR_AWB_GAIN *pSetSensorAWB =
+		(struct SET_SENSOR_AWB_GAIN *) feature_para;
 
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data
 		= (MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
@@ -2967,7 +3006,27 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			(UINT16)*(feature_data+1),
 			(UINT16)*(feature_data+2));
 		break;
+	case SENSOR_FEATURE_GET_AWB_REQ_BY_SCENARIO:
+		switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CUSTOM3://apply WB gain for crop mode && remosaic mode
+			case MSDK_SCENARIO_ID_CUSTOM4:
+				*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 1;
+				break;
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			case MSDK_SCENARIO_ID_CUSTOM1:
+			case MSDK_SCENARIO_ID_CUSTOM2:
+			case MSDK_SCENARIO_ID_CUSTOM5:
+			default:
+				*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 0;
+				break;
+		}
+		break;
 	case SENSOR_FEATURE_SET_AWB_GAIN:
+		imx882_set_awb_gain(pSetSensorAWB);
 		break;
 	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
 		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
