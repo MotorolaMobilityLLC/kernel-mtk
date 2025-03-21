@@ -374,6 +374,20 @@
          mmi,min-cp-therm-current-ua = <1400000>;
 };
 
+&pdc {
+         min-charger-voltage = <4600000>;
+         pd-vbus-low-bound = <5000000>;
+         pd-vbus-upper-bound = <9000000>;
+         vsys-watt = <5000000>;
+         ibus-err = <14>;
+
+         pd-stop-battery-soc = <80>;
+
+         /* single charger */
+         sc-input-current = <3000000>;
+         sc-charger-current = <3000000>;
+};
+
 &pe5 {
 	start_soc_max = <90>;
 	vbat_cv = <4530>;
