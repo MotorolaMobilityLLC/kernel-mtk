@@ -307836,6 +307836,11 @@ function {
   parameter_id: 0x1d19a9d5
 }
 function {
+  id: 0x3d0bcda3
+  return_type_id: 0x23f6f3f6
+  parameter_id: 0x06835e9c
+}
+function {
   id: 0x3d0f6874
   return_type_id: 0x1c3dbe5a
   parameter_id: 0x3b04bead
@@ -347605,6 +347610,15 @@ elf_symbol {
   full_name: "__traceiter_android_vh_filemap_map_pages"
 }
 elf_symbol {
+  id: 0x4eda1196
+  name: "__traceiter_android_vh_filemap_map_pages_range"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x8911a474
+  type_id: 0x9bc01a31
+  full_name: "__traceiter_android_vh_filemap_map_pages_range"
+}
+elf_symbol {
   id: 0x158bf9d3
   name: "__traceiter_android_vh_filemap_read"
   is_defined: true
@@ -352553,6 +352567,15 @@ elf_symbol {
   crc: 0x6cc3b878
   type_id: 0x18ccbd2c
   full_name: "__tracepoint_android_vh_filemap_map_pages"
+}
+elf_symbol {
+  id: 0x223c9b64
+  name: "__tracepoint_android_vh_filemap_map_pages_range"
+  is_defined: true
+  symbol_type: OBJECT
+  crc: 0xc4246b92
+  type_id: 0x18ccbd2c
+  full_name: "__tracepoint_android_vh_filemap_map_pages_range"
 }
 elf_symbol {
   id: 0xf61927fd
@@ -389874,6 +389897,15 @@ elf_symbol {
   full_name: "page_reporting_unregister"
 }
 elf_symbol {
+  id: 0xb942a21f
+  name: "page_swap_info"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xb7074429
+  type_id: 0x3d0bcda3
+  full_name: "page_swap_info"
+}
+elf_symbol {
   id: 0xb681e6bc
   name: "page_symlink"
   is_defined: true
@@ -417258,6 +417290,7 @@ interface {
   symbol_id: 0x93a4717b
   symbol_id: 0x49c69e22
   symbol_id: 0xb7d91f76
+  symbol_id: 0x4eda1196
   symbol_id: 0x158bf9d3
   symbol_id: 0x1fca37bf
   symbol_id: 0xe6702595
@@ -417808,6 +417841,7 @@ interface {
   symbol_id: 0x50a83025
   symbol_id: 0x6d970e8c
   symbol_id: 0xb34d9200
+  symbol_id: 0x223c9b64
   symbol_id: 0xf61927fd
   symbol_id: 0xa3ede5d5
   symbol_id: 0x539bf337
@@ -421953,6 +421987,7 @@ interface {
   symbol_id: 0x3c537500
   symbol_id: 0x1b814fa6
   symbol_id: 0x9ca2e070
+  symbol_id: 0xb942a21f
   symbol_id: 0xb681e6bc
   symbol_id: 0x4271852e
   symbol_id: 0x0fe80546
