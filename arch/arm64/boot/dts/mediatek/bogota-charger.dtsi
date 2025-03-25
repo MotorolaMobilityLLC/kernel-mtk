@@ -551,4 +551,5 @@
 
 &mt6375_chg {
 	mmi,hvdcp-support;
+	cv = <4500>;
 };
