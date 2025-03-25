@@ -16,8 +16,8 @@
 #define FRAME_WIDTH                 1080
 #define FRAME_HEIGHT                2400
 
-#define PHYSICAL_WIDTH              69552
-#define PHYSICAL_HEIGHT            154560
+#define PHYSICAL_WIDTH              70081
+#define PHYSICAL_HEIGHT            155736
 
 #define HSA				8
 #define HBP				56
