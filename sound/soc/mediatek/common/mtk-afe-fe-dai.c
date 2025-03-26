@@ -41,6 +41,11 @@
 #include <mt-plat/aee.h>
 #endif
 
+/* ultra relate */
+#if IS_ENABLED(CONFIG_MTK_ULTRASND_PROXIMITY)
+#include "../ultrasound/ultra_common/mtk-scp-ultra.h"
+#endif
+
 #include "mtk-mmap-ion.h"
 
 
@@ -441,11 +446,8 @@ int mtk_afe_fe_hw_free(struct snd_pcm_substream *substream,
 #endif
 #if IS_ENABLED(CONFIG_MTK_ULTRASND_PROXIMITY)
 		// ultrasound uses reserve dram, ignore free
-		if (memif->scp_ultra_enable) {
-			kfree(substream->runtime->dma_buffer_p);
-			snd_pcm_set_runtime_buffer(substream, NULL);
+		if (is_ultra_reserved_dram_addr_valid(substream))
 			return 0;
-		}
 #endif
 #if IS_ENABLED(CONFIG_MTK_VOW_SUPPORT)
 		// vow uses reserve dram, ignore free

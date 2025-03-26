@@ -76,9 +76,10 @@ int mtk_scp_ultra_allocate_mem(struct snd_pcm_substream *substream,
 #endif
 
 	dev_info(scp_ultra->dev,
-		"%s(), ultra VA:0x%p,PA:0x%lx,size:%d,using_sram=0\n",
+		"%s(), mem_id=%d, allcate ultra VA:0x%lx,PA:0x%lx,size:%d,using_sram=0\n",
 		__func__,
-		dma_buf->area,
+		id,
+		(unsigned long)dma_buf->area,
 		dma_buf->addr,
 		dma_buf->bytes);
 	return 0;
@@ -105,6 +106,32 @@ int notify_ultrasound_event(struct notifier_block *nb, unsigned long event, void
 	}
 	return status;
 }
+
+bool is_ultra_reserved_dram_addr_valid(struct snd_pcm_substream *substream)
+{
+	unsigned long start = (unsigned long)substream->runtime->dma_area;
+	size_t size = substream->runtime->dma_bytes;
+	unsigned long end = start + size - 1;
+	struct mtk_base_scp_ultra *scp_ultra = get_scp_ultra_base();
+	bool found = false;
+	struct audio_ultra_dram *ultra_resv_mem;
+
+	if (scp_ultra == NULL)
+		return false;
+
+#if IS_ENABLED(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
+	ultra_resv_mem = &scp_ultra->ultra_reserve_dram;
+	if (ultra_resv_mem->size == 0)
+		return false;
+	if ((start >= (unsigned long)ultra_resv_mem->vir_addr) &&
+	    (start <= (unsigned long)(ultra_resv_mem->vir_addr + ultra_resv_mem->size)) ) {
+		if (end <= (unsigned long)(ultra_resv_mem->vir_addr + ultra_resv_mem->size))
+			found = true;
+	}
+#endif
+	return found;
+}
+EXPORT_SYMBOL(is_ultra_reserved_dram_addr_valid);
 
 /* define a notifier_block */
 static struct notifier_block ultrasound_init_notifier = {

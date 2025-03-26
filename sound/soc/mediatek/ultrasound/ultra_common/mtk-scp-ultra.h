@@ -44,4 +44,5 @@ int mtk_scp_ultra_allocate_mem(struct snd_pcm_substream *substream,
 			       unsigned char **virt_addr,
 			       unsigned int size);
 
+bool is_ultra_reserved_dram_addr_valid(struct snd_pcm_substream *substream);
 #endif
