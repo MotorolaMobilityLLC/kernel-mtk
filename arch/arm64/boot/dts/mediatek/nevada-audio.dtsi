@@ -1,0 +1,49 @@
+/*
+ * Copyright (c) 2019 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+&i2c6 {
+	status = "ok";
+	tfa98xx_0: tfa98xx@34 {
+		compatible = "tfa,tfa98xx";
+		reg = <0x34>;
+		reset-gpio = <&pio 170 0>;
+		reset-polarity = <1>;
+	};
+	tfa98xx_1: tfa98xx@35 {
+		compatible = "tfa,tfa98xx";
+		reg = <0x35>;
+		reset-gpio = <&pio 124 0>;
+		reset-polarity = <1>;
+	};
+	aw883xx_smartpa: aw883xx_smartpa@37 {
+		compatible = "awinic,aw883xx_smartpa";
+		#sound-dai-cells = <0>;
+		reg = <0x37>;
+		reset-gpio = <&pio 9 0>;
+		/*irq-gpio = <&pio 37 0x0>;*/
+		sync-load = <1>;
+		sound-channel = <0>;
+		re-min = <1000>;
+		re-max= <40000>;
+		status = "okay";
+	};
+};
+
+&spk{
+	status = "disabled";
+};
+
+&sound {
+	mediatek,speaker-codec {
+		sound-dai = <&tfa98xx_0 &tfa98xx_1 &aw883xx_smartpa>;
+	};
+};
