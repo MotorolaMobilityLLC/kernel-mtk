@@ -567,6 +567,15 @@ SND_SOC_DAILINK_DEFS(i2s0,
 	                   COMP_CODEC("tfa98xx.6-0035", "tfa98xx-aif-6-35")),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
 //kansas audio bring up end
+//nevada audio bring up begin
+#elif defined(CONFIG_SND_SOC_NEVADA_AUDIO)
+SND_SOC_DAILINK_DEFS(i2s0,
+	DAILINK_COMP_ARRAY(COMP_CPU("I2S0")),
+	DAILINK_COMP_ARRAY(COMP_CODEC("tfa98xx.6-0034", "tfa98xx-aif-6-34"),
+	                   COMP_CODEC("tfa98xx.6-0035", "tfa98xx-aif-6-35"),
+	                   COMP_CODEC("aw883xx_smartpa.6-0037", "aw883xx-aif-6-37")),
+	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+//nevada audio bring up end
 #else
 #ifdef CONFIG_SND_SOC_VEGAS_AUDIO
 //veags audio bringup begin
@@ -605,6 +614,15 @@ SND_SOC_DAILINK_DEFS(i2s3,
 	                   COMP_CODEC("tfa98xx.6-0035", "tfa98xx-aif-6-35")),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
 //kansas audio bring up end
+//nevada audio bring up begin
+#elif defined(CONFIG_SND_SOC_NEVADA_AUDIO)
+SND_SOC_DAILINK_DEFS(i2s3,
+	DAILINK_COMP_ARRAY(COMP_CPU("I2S3")),
+	DAILINK_COMP_ARRAY(COMP_CODEC("tfa98xx.6-0034", "tfa98xx-aif-6-34"),
+	                   COMP_CODEC("tfa98xx.6-0035", "tfa98xx-aif-6-35"),
+	                   COMP_CODEC("aw883xx_smartpa.6-0037", "aw883xx-aif-6-37")),
+	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+//nevada audio bring up end
 #else
 #ifdef CONFIG_SND_SOC_VEGAS_AUDIO
 SND_SOC_DAILINK_DEFS(i2s3,
