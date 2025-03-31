@@ -104,7 +104,7 @@
 	compatible = "mmi,pehv";
 	gauge = <&mtk_gauge>;
 	polling-interval = <10000>;
-	vbat-cv = <4550>;
+	vbat-cv = <4530>;
 	start-soc-min = <0>;
 	start-soc-max = <80>;
 	idvchg-cc = <3000>;
@@ -201,7 +201,7 @@
 		pinctrl-names = "mos_on","mos_off";
 		pinctrl-0 = <&mos_on>;
 		pinctrl-1 = <&mos_off>;
-	cv = <4500>;
+	cv = <4530>;
 	ircmp_r = <0>;
 	ircmp_v = <0>;
 	typecotp_chg = <1>;

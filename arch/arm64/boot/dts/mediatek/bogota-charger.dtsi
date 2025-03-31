@@ -21,9 +21,7 @@
 	non_std_ac_charger_current = <1000000>;
 	charging_host_input_current = <1500000>;
 	charging_host_charger_current = <1000000>;
-
 	temp_t4_threshold = <60>;
-
 	boot_battery_voltage = <3560000>;
 };
 
@@ -105,7 +103,7 @@
 	compatible = "mmi,pehv";
 	gauge = <&mtk_gauge>;
 	polling-interval = <10000>;
-	vbat-cv = <4550>;
+	vbat-cv = <4530>;
 	start-soc-min = <0>;
 	start-soc-max = <80>;
 	idvchg-cc = <3000>;
@@ -551,5 +549,7 @@
 
 &mt6375_chg {
 	mmi,hvdcp-support;
-	cv = <4500>;
+	cv = <4530>;
+	ircmp_r = <0>;
+	ircmp_v = <0>;
 };
