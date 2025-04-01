@@ -383,6 +383,8 @@
 #define OV16A10_SENSOR_ID                       0x561641
 #define GC02M1B_SENSOR_ID                       0x02e0
 
+#define MOT_NEVADA_OV50D_SENSOR_ID                       0x565044
+#define SENSOR_DRVNAME_MOT_NEVADA_OV50D_MIPI_RAW         "mot_nevada_ov50d_mipi_raw"
 #define MOT_NEVADA_OV08F_SENSOR_ID                       0x0846
 #define SENSOR_DRVNAME_MOT_NEVADA_OV08F_MIPI_RAW         "mot_nevada_ov08f_mipi_raw"
 #define MOT_NEVADA_S5KKD1_SENSOR_ID                      0x4841
