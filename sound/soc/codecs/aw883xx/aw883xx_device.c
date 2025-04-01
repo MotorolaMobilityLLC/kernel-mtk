@@ -1670,8 +1670,10 @@ static void aw_dev_cali_re_update(struct aw_cali_desc *cali_desc)
 		aw_dev->cali_desc.cali_re > aw_dev->re_range.re_min) {
 		aw883xx_cali_set_cali_re(&aw_dev->cali_desc);
 	} else {
+#ifndef CONFIG_SND_SOC_NEVADA_AUDIO
 		aw_dev_err(aw_dev->dev, "cali_re:%d out of range, no set",
 				aw_dev->cali_desc.cali_re);
+#endif
 	}
 }
 
