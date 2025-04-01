@@ -345,8 +345,10 @@ static int aw_cali_svc_get_cali_re_from_bin(struct aw_cali_desc *cali_desc, uint
 	}
 
 	if (cali_re < aw_dev->re_range.re_min || cali_re > aw_dev->re_range.re_max) {
+#ifndef CONFIG_SND_SOC_NEVADA_AUDIO
 		aw_dev_err(aw_dev->dev,
 				"out range re value: %d", cali_re);
+#endif
 		*re = AW_ERRO_CALI_RE_VALUE;
 		/*cali_result is error when aw-cali-check enable*/
 		if (aw_dev->cali_desc.cali_check_st)
