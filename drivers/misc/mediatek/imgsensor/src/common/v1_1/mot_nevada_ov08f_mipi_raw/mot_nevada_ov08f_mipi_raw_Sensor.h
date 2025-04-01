@@ -26,22 +26,6 @@
 #include "kd_imgsensor_errcode.h"
 #include "imgsensor_sensor.h"
 
-#define MOT_NEVADA_OV08F_MIRROR_NORMAL    1
-#define MOT_NEVADA_OV08F_MIRROR_H         0
-#define MOT_NEVADA_OV08F_MIRROR_V         0
-#define MOT_NEVADA_OV08F_MIRROR_HV        0
-
-#if MOT_NEVADA_OV08F_MIRROR_NORMAL
-#define MOT_NEVADA_OV08F_MIRROR	        0x00
-#elif MOT_NEVADA_OV08F_MIRROR_H
-#define MOT_NEVADA_OV08F_MIRROR	        0x01
-#elif MOT_NEVADA_OV08F_MIRROR_V
-#define MOT_NEVADA_OV08F_MIRROR	        0x02
-#elif MOT_NEVADA_OV08F_MIRROR_HV
-#define MOT_NEVADA_OV08F_MIRROR	        0x03
-#else
-#define MOT_NEVADA_OV08F_MIRROR	        0x00
-#endif
 enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
