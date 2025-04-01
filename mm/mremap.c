@@ -251,7 +251,7 @@ static inline void unlock_vma_ref_count(struct vm_area_struct *vma)
 static bool move_normal_pmd(struct vm_area_struct *vma, unsigned long old_addr,
 		  unsigned long new_addr, pmd_t *old_pmd, pmd_t *new_pmd)
 {
-	spinlock_t *old_ptl, *new_ptl;
+	spinlock_t *old_ptl, *new_ptl, *old_pte_ptl;
 	struct mm_struct *mm = vma->vm_mm;
 	pmd_t pmd;
 
@@ -282,14 +282,6 @@ static bool move_normal_pmd(struct vm_area_struct *vma, unsigned long old_addr,
 		return false;
 
 	/*
-	 * We hold both exclusive mmap_lock and rmap_lock at this point and
-	 * cannot block. If we cannot immediately take exclusive ownership
-	 * of the VMA fallback to the move_ptes().
-	 */
-	if (!trylock_vma_ref_count(vma))
-		return false;
-
-	/*
 	 * We don't have to worry about the ordering of src and dst
 	 * ptlocks because exclusive mmap_lock prevents deadlock.
 	 */
@@ -297,6 +289,24 @@ static bool move_normal_pmd(struct vm_area_struct *vma, unsigned long old_addr,
 	new_ptl = pmd_lockptr(mm, new_pmd);
 	if (new_ptl != old_ptl)
 		spin_lock_nested(new_ptl, SINGLE_DEPTH_NESTING);
+
+	/*
+	 * If SPF is enabled, take the ptl lock on the source page table
+	 * page, to prevent the entire pmd from being moved under a
+	 * concurrent SPF.
+	 *
+	 * There is no need to take the destination ptl lock since, mremap
+	 * has already created a hole at the destination and freed the
+	 * corresponding page tables in the process.
+	 *
+	 * NOTE: If USE_SPLIT_PTE_PTLOCKS is false, then the old_ptl, new_ptl,
+	 * and the old_pte_ptl; are all the same lock (mm->page_table_lock).
+	 * Check that the locks are different to avoid a deadlock.
+	 */
+	old_pte_ptl = pte_lockptr(mm, old_pmd);
+	if (IS_ENABLED(CONFIG_SPECULATIVE_PAGE_FAULT) && old_pte_ptl != old_ptl)
+		spin_lock(old_pte_ptl);
+
 
 	/* Clear the pmd */
 	pmd = *old_pmd;
@@ -307,11 +317,13 @@ static bool move_normal_pmd(struct vm_area_struct *vma, unsigned long old_addr,
 	/* Set the new pmd */
 	set_pmd_at(mm, new_addr, new_pmd, pmd);
 	flush_tlb_range(vma, old_addr, old_addr + PMD_SIZE);
+
+	if (IS_ENABLED(CONFIG_SPECULATIVE_PAGE_FAULT) && old_pte_ptl != old_ptl)
+		spin_unlock(old_pte_ptl);
 	if (new_ptl != old_ptl)
 		spin_unlock(new_ptl);
 	spin_unlock(old_ptl);
 
-	unlock_vma_ref_count(vma);
 	return true;
 }
 #else
@@ -343,14 +355,6 @@ static bool move_normal_pud(struct vm_area_struct *vma, unsigned long old_addr,
 		return false;
 
 	/*
-	 * We hold both exclusive mmap_lock and rmap_lock at this point and
-	 * cannot block. If we cannot immediately take exclusive ownership
-	 * of the VMA fallback to the move_ptes().
-	 */
-	if (!trylock_vma_ref_count(vma))
-		return false;
-
-	/*
 	 * We don't have to worry about the ordering of src and dst
 	 * ptlocks because exclusive mmap_lock prevents deadlock.
 	 */
@@ -372,7 +376,6 @@ static bool move_normal_pud(struct vm_area_struct *vma, unsigned long old_addr,
 		spin_unlock(new_ptl);
 	spin_unlock(old_ptl);
 
-	unlock_vma_ref_count(vma);
 	return true;
 }
 #else
