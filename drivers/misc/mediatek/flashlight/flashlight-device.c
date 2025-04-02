@@ -11,6 +11,12 @@ const struct flashlight_device_id flashlight_id[] = {
 	{0, 0, 0, "flashlights-aw36515",  0, 0},
 	{0, 0, 0, "flashlights-ocp81375", 0, 0},
 };
+#elif defined(CONFIG_MTK_FLASHLIGHT_NEVADA_AW36515) || defined(CONFIG_MTK_FLASHLIGHT_NEVADA_OCP81375)
+const struct flashlight_device_id flashlight_id[] = {
+	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
+	{0, 0, 0, "flashlights-aw36515",  0, 0},
+	{0, 0, 0, "flashlights-ocp81375", 0, 0},
+};
 #elif defined(CONFIG_MTK_FLASHLIGHT_VEGAS)
 const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
