@@ -263,18 +263,37 @@
 		sc,sc8541,pmid2out-ovp = <7>; /*150 + val * 50*/
 	};
 
-	nu2115: nu2115-standalone@6D {
-		compatible = "cp,nu2115";
+	sgm41606S: sgm41606S@65 {
 		status = "okay";
+		compatible = "sgm,sgm41606S-standalone";
+		reg = <0x65>;
+		sgm41606S,intr_gpio = <&pio 5 IRQ_TYPE_EDGE_FALLING>;
+
 		charger_name = "primary_dvchg";
-		reg = <0x6D>;
-		nu2115,intr-gpios = <&pio 5 0x0>;
-		ac_ovp = <13000000>;
-		vbus_ovp = <12000000>;
-		bat_ucp_alm = <9200000>;
-		ibat_sns_res = <2>;
-		watchdog_dis;
-	};
+		charger_name_v4_19 = "primary_divider_chg";
+
+		sgm,sgm41606S,vbat-ovp-dis = <1>;
+		sgm,sgm41606S,vbat-ovp = <120>;	//3.5V+ BATOVP [6:0]*0.01V1
+		sgm,sgm41606S,ibat-ocp-dis = <1>;
+		sgm,sgm41606S,ibat-ocp  = <82>; //BATOCP < 8.5A,[6:0]*0.1A;>8.5A,8.5A+(BATOCP[6:0]-1010101b) *0.3A
+		//sgm,sgm41606S,vac-ovp-en = <0>;
+		sgm,sgm41606S,vac1-ovp = <2>;//000 = 6.5V,001 = 10.5V,010 = 12V,011 = 14V,100 = 16V,101 = 18V
+		sgm,sgm41606S,vac2-ovp = <2>;//000 = 6.5V,001 = 10.5V,010 = 12V,011 = 14V,100 = 16V,101 = 18V
+		//sgm,sgm41606S,vbus-ovp-en = <0>;
+		sgm,sgm41606S,vbus-ovp = <80>; // 7V+BUSOVP[6:0]*0.05V  7V(0000000) – 12.75V(1110011)
+		sgm,sgm41606S,ibus-ocp  = <15>; // 1A+BUSOCP[4:0]*0.25A ,1A (00000) – 6.5A (10110)
+		sgm,sgm41606S,ibat-ucp-dis = <1>;
+		sgm,sgm41606S,ibat-ucp-alm = <40>; /*0~4.5A,BATUCP_ALM[6:0]*0.05A*/
+
+		sgm,sgm41606S,vbus-low-dis = <1>;
+		sgm,sgm41606S,vbus-high-dis = <1>;
+
+		sgm,sgm41606S,fsw-set = <5>;/*0:187.5kHz 1:250 2:300 3:375 4:500 5:750 6:1000 7:1500*/
+		sgm,sgm41606S,wdt-dis = <1>;
+		sgm,sgm41606S,wd-timeout = <3>; /*0:0.5s 1:1s 2:2s 3:5s 4:10s 5:20s 6:40s 7:80s*/
+		sgm,sgm41606S,chg-en = <0>;
+		sgm,sgm41606S,mode = <0>; /*0:off 1:bypass */
+    };
 };
 
 
