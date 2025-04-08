@@ -393,6 +393,8 @@
 #define SENSOR_DRVNAME_MOT_NEVADA_OV02F_MIPI_RAW         "mot_nevada_ov02f_mipi_raw"
 #define MOT_NEVADA_S5KKDS_FM_SENSOR_ID                    0x484f
 #define SENSOR_DRVNAME_MOT_NEVADA_S5KKDS_FM_MIPI_RAW      "mot_nevada_s5kkds_fm_mipi_raw"
+#define MOT_NEVADA_OV02B_SENSOR_ID                       0x002b
+#define SENSOR_DRVNAME_MOT_NEVADA_OV02B_MIPI_RAW         "mot_nevada_ov02b_mipi_raw"
 
 #define MOT_KANSAS_S5KJNS_SENSOR_ID                      0x38EE
 #define SENSOR_DRVNAME_MOT_KANSAS_S5KJNS_MIPI_RAW        "mot_kansas_s5kjns_mipi_raw"
