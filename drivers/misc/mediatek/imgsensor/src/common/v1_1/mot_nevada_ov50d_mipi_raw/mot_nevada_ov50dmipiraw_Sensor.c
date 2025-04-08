@@ -53,19 +53,18 @@
 #include "mot_nevada_ov50d_Sensor_setting.h"
 #include "mot_nevada_ov50d_ana_gain_table.h"
 
-//extern int aw86006_update_fw_sync(void);
 
-/*
-extern mot_calibration_status_t *NEVADA_OV50D_eeprom_get_calibration_status(void);
-extern mot_calibration_mnf_t *NEVADA_OV50D_eeprom_get_mnf_info(void);
+
+// extern mot_calibration_status_t *NEVADA_OV50D_eeprom_get_calibration_status(void);
+// extern mot_calibration_mnf_t *NEVADA_OV50D_eeprom_get_mnf_info(void);
 extern void NEVADA_OV50D_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
-extern void write_cross_talk_data(void);
+// extern void write_cross_talk_data(void);
 extern void write_pdc_data(void);
 
-extern int xtalk_data_valid;
+// extern int xtalk_data_valid;
 extern int pdc_data_valid;
-*/
+
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 #define OV50D_BASEGAIN 128
@@ -598,6 +597,42 @@ static kal_uint32 streaming_control(kal_bool enable)
 }
 
 #define I2C_BUFFER_LEN 765
+kal_uint16 mot_nevada_ov50d_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
+{
+	char puSendCmd[I2C_BUFFER_LEN];
+	kal_uint32 tosend, IDX;
+	kal_uint16 addr = 0, data;
+	tosend = 0;
+	IDX = 0;
+
+	addr = para[IDX];
+	puSendCmd[tosend++] = (char)(addr >> 8);
+	puSendCmd[tosend++] = (char)(addr & 0xFF);
+	while (len > IDX) {
+		{
+			data = para[IDX + 1];
+			puSendCmd[tosend++] = (char)(data & 0xFF);
+			IDX += 2;
+		}
+		if ((I2C_BUFFER_LEN - tosend) < 3 || IDX == len) {
+			imgsensor_i2c_write(
+				get_i2c_cfg(),
+				puSendCmd,
+				tosend,
+				tosend,
+				imgsensor.i2c_write_id,
+				imgsensor_info.i2c_speed);
+			tosend = 0;
+			if(IDX < len) {
+				addr = para[IDX];
+				puSendCmd[tosend++] = (char)(addr >> 8);
+				puSendCmd[tosend++] = (char)(addr & 0xFF);
+			}
+
+		}
+ 	}
+	return 0;
+}
 kal_uint16 mot_nevada_ov50d_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
@@ -636,6 +671,11 @@ static void sensor_init(void)
 
 	mot_nevada_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_nevada_ov50d,
 		sizeof(addr_data_pair_init_mot_nevada_ov50d)/sizeof(kal_uint16));
+
+	if (pdc_data_valid == 1) {
+		write_pdc_data();
+	}
+
 	LOG_INF("MOT NEVADA OV50D end\n");
 
 }	/*	  sensor_init  */
@@ -730,8 +770,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-				//NEVADA_OV50D_eeprom_format_calibration_data(&imgsensor);
-				//aw86006_update_fw_sync();
+				NEVADA_OV50D_eeprom_format_calibration_data(&imgsensor);
 				return ERROR_NONE;
 			}
 

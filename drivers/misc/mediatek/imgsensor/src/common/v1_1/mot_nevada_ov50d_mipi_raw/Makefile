@@ -3,4 +3,5 @@
 
 imgsensor_isp6s-objs += \
 	$(subdrv-rpath)/mot_nevada_ov50dmipiraw_Sensor.o \
+	$(subdrv-rpath)/mot_nevada_ov50d_eeprom.o
 
