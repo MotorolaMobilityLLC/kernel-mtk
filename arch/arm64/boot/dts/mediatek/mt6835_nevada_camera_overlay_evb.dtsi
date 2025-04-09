@@ -220,7 +220,7 @@
 	cam1_pin_vcamd = "gpio";
 	cam1_pin_vcama1 = "regulator";
 
-	cam0_enable_sensor = "mot_nevada_s5kkd1_mipi_raw";
+	cam0_enable_sensor = "mot_nevada_s5kkd1_mipi_raw mot_nevada_s5kkds_mipi_raw";
 	cam1_enable_sensor = "mot_nevada_ov08f_mipi_raw";
 	status = "okay";
 };
@@ -326,7 +326,7 @@
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_nevada_s5kkd1_mipi_raw mot_nevada_ov08f_mipi_raw";
+       cust-sensor = "mot_nevada_s5kkd1_mipi_raw mot_nevada_ov08f_mipi_raw mot_nevada_s5kkds_mipi_raw";
 };
 
 &pio {
