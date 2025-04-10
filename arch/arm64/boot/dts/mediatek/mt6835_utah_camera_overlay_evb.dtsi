@@ -30,6 +30,20 @@
 			output-high;
 		};
 	};
+	camera_pins_cam2_rst_0: cam2@4 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO27__FUNC_GPIO27>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam2_rst_1: cam2@5 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO27__FUNC_GPIO27>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 	camera_pins_cam0_avdd_gpio_0: cam0@6 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
@@ -54,6 +68,20 @@
 	camera_pins_cam0_dvdd_gpio_1: cam0@9 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO23__FUNC_GPIO23>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam2_avdd_gpio_0: cam2@10 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam2_avdd_gpio_1: cam2@11 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -160,6 +188,36 @@
 			drive-strength = <3>;
 		};
 	};
+	camera_pins_cam2_mclk_off: camera_pins_cam2_mclk_off {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
+			drive-strength = <1>;
+		};
+	};
+	camera_pins_cam2_mclk_2ma: camera_pins_cam2_mclk_2ma {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO90__FUNC_CMMCLK2>;
+			drive-strength = <0>;
+		};
+	};
+	camera_pins_cam2_mclk_4ma: camera_pins_cam2_mclk_4ma {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO90__FUNC_CMMCLK2>;
+			drive-strength = <1>;
+		};
+	};
+	camera_pins_cam2_mclk_6ma: camera_pins_cam2_mclk_6ma {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO90__FUNC_CMMCLK2>;
+			drive-strength = <2>;
+		};
+	};
+	camera_pins_cam2_mclk_8ma: camera_pins_cam2_mclk_8ma {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO90__FUNC_CMMCLK2>;
+			drive-strength = <3>;
+		};
+	};
 	camera_pins_default: camdefault {
 	};
 };
@@ -167,14 +225,19 @@
 	pinctrl-names = "default",
 			"cam0_rst0", "cam0_rst1",
 			"cam1_rst0", "cam1_rst1",
+			"cam2_rst0", "cam2_rst1",
 			"cam0_mclk_off",
 			"cam0_mclk_2mA", "cam0_mclk_4mA",
 			"cam0_mclk_6mA", "cam0_mclk_8mA",
 			"cam1_mclk_off",
 			"cam1_mclk_2mA", "cam1_mclk_4mA",
 			"cam1_mclk_6mA", "cam1_mclk_8mA",
+			"cam2_mclk_off",
+			"cam2_mclk_2mA", "cam2_mclk_4mA",
+			"cam2_mclk_6mA", "cam2_mclk_8mA",
 			"cam0_ldo_vcama_0",  "cam0_ldo_vcama_1",
 			"cam0_ldo_vcamd_0",  "cam0_ldo_vcamd_1",
+			"cam2_ldo_vcama_0",  "cam2_ldo_vcama_1",
 			"cam1_ldo_vcama_0",  "cam1_ldo_vcama_1",
 			"cam1_ldo_vcamd_0",  "cam1_ldo_vcamd_1";
 
@@ -183,27 +246,37 @@
 	pinctrl-2 = <&camera_pins_cam0_rst_1>;
 	pinctrl-3 = <&camera_pins_cam1_rst_0>;
 	pinctrl-4 = <&camera_pins_cam1_rst_1>;
-	pinctrl-5 = <&camera_pins_cam0_mclk_off>;
-	pinctrl-6 = <&camera_pins_cam0_mclk_2ma>;
-	pinctrl-7 = <&camera_pins_cam0_mclk_4ma>;
-	pinctrl-8 = <&camera_pins_cam0_mclk_6ma>;
-	pinctrl-9 = <&camera_pins_cam0_mclk_8ma>;
-	pinctrl-10 = <&camera_pins_cam1_mclk_off>;
-	pinctrl-11 = <&camera_pins_cam1_mclk_2ma>;
-	pinctrl-12 = <&camera_pins_cam1_mclk_4ma>;
-	pinctrl-13 = <&camera_pins_cam1_mclk_6ma>;
-	pinctrl-14 = <&camera_pins_cam1_mclk_8ma>;
-	pinctrl-15 = <&camera_pins_cam0_avdd_gpio_0>;
-	pinctrl-16 = <&camera_pins_cam0_avdd_gpio_1>;
-	pinctrl-17 = <&camera_pins_cam0_dvdd_gpio_0>;
-	pinctrl-18 = <&camera_pins_cam0_dvdd_gpio_1>;
-	pinctrl-19 = <&camera_pins_cam1_avdd_gpio_0>;
-	pinctrl-20 = <&camera_pins_cam1_avdd_gpio_1>;
-	pinctrl-21 = <&camera_pins_cam1_dvdd_gpio_0>;
-	pinctrl-22 = <&camera_pins_cam1_dvdd_gpio_1>;
+	pinctrl-5 = <&camera_pins_cam2_rst_0>;
+	pinctrl-6 = <&camera_pins_cam2_rst_1>;
+	pinctrl-7 = <&camera_pins_cam0_mclk_off>;
+	pinctrl-8 = <&camera_pins_cam0_mclk_2ma>;
+	pinctrl-9 = <&camera_pins_cam0_mclk_4ma>;
+	pinctrl-10 = <&camera_pins_cam0_mclk_6ma>;
+	pinctrl-11 = <&camera_pins_cam0_mclk_8ma>;
+	pinctrl-12 = <&camera_pins_cam1_mclk_off>;
+	pinctrl-13 = <&camera_pins_cam1_mclk_2ma>;
+	pinctrl-14 = <&camera_pins_cam1_mclk_4ma>;
+	pinctrl-15 = <&camera_pins_cam1_mclk_6ma>;
+	pinctrl-16 = <&camera_pins_cam1_mclk_8ma>;
+	pinctrl-17 = <&camera_pins_cam2_mclk_off>;
+	pinctrl-18 = <&camera_pins_cam2_mclk_2ma>;
+	pinctrl-19 = <&camera_pins_cam2_mclk_4ma>;
+	pinctrl-20 = <&camera_pins_cam2_mclk_6ma>;
+	pinctrl-21 = <&camera_pins_cam2_mclk_8ma>;
+	pinctrl-22 = <&camera_pins_cam0_avdd_gpio_0>;
+	pinctrl-23 = <&camera_pins_cam0_avdd_gpio_1>;
+	pinctrl-24 = <&camera_pins_cam0_dvdd_gpio_0>;
+	pinctrl-25 = <&camera_pins_cam0_dvdd_gpio_1>;
+	pinctrl-26 = <&camera_pins_cam2_avdd_gpio_0>;
+	pinctrl-27 = <&camera_pins_cam2_avdd_gpio_1>;
+	pinctrl-28 = <&camera_pins_cam1_avdd_gpio_0>;
+	pinctrl-29 = <&camera_pins_cam1_avdd_gpio_1>;
+	pinctrl-30 = <&camera_pins_cam1_dvdd_gpio_0>;
+	pinctrl-31 = <&camera_pins_cam1_dvdd_gpio_1>;
 	/* main (wide)*/
 	cam0_vcamio-supply = <&mt6377_vaud18>;
 	cam1_vcamio-supply = <&mt6377_vaud18>;
+	cam2_vcamio-supply = <&mt6377_vaud18>;
 
 	cam0_pin_mclk = "mclk";
 	cam0_pin_rst = "gpio";
@@ -219,9 +292,14 @@
 	cam1_pin_vcamio = "regulator";
 	cam1_pin_vcamd = "gpio";
 	cam1_pin_vcama1 = "regulator";
+	cam2_pin_mclk = "mclk";
+	cam2_pin_rst = "gpio";
+	cam2_pin_vcama = "gpio";
+	cam2_pin_vcamio = "regulator";
 
-	cam0_enable_sensor = "mot_nevada_s5kkd1_mipi_raw";
-	cam1_enable_sensor = "mot_nevada_ov08f_mipi_raw";
+	cam0_enable_sensor = "mot_nevada_ov50d_mipi_raw";
+	cam1_enable_sensor = "mot_nevada_s5kkds_fm_mipi_raw";
+	cam2_enable_sensor = "mot_nevada_ov02f_mipi_raw mot_nevada_ov02b_mipi_raw";
 	status = "okay";
 };
 /* CAMERA GPIO end */
@@ -229,7 +307,7 @@
 /* CAMERA EEPROM */
 &i2c2 {
 	status = "okay";
-	clock-frequency = <400000>;
+	clock-frequency = <1000000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
 
@@ -246,7 +324,24 @@
 		status = "okay";
 	};
 };
+&i2c4 {
+	status = "okay";
+	clock-frequency = <400000>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	mtk_camera_eeprom2:camera_eeprom2@50 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x50>;
+		status = "okay";
+	};
 
+	camera_main_two_mtk:camera_main_two@10 {
+		compatible = "mediatek,camera_main_two";
+		#thermal-sensor-cells = <0>;
+		reg = <0x10>;
+		status = "okay";
+	};
+};
 &i2c6 {
 	status = "okay";
 	clock-frequency = <400000>;
@@ -323,10 +418,15 @@
 		polling-delay-passive = <0>; /* milliseconds */
 		thermal-sensors = <&camera_sub_mtk>;
 	};
+	camera_main_two: camera_main_two {
+		polling-delay = <1000>; /* milliseconds */
+		polling-delay-passive = <0>; /* milliseconds */
+		thermal-sensors = <&camera_main_two_mtk>;
+	};
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_nevada_s5kkd1_mipi_raw mot_nevada_ov08f_mipi_raw";
+       cust-sensor = "mot_nevada_ov50d_mipi_raw mot_nevada_ov02f_mipi_raw mot_nevada_ov02b_mipi_raw mot_nevada_s5kkds_fm_mipi_raw";
 };
 
 &pio {
