@@ -16,7 +16,7 @@
 /* NOTE: copied from mt6835-kansas-dvt-overlay.dts for reusing Kansas DVT or later HW */
 
 #include "mediatek/mt6835-nevada-common-overlay.dtsi"
-#include "mediatek/mt6835_nevada_camera_overlay_evb.dtsi"
+#include "mediatek/mt6835_utah_camera_overlay_evb.dtsi"
 
 #define UTAH_RADIO_ID	1
 
