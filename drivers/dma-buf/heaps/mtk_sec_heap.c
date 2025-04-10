@@ -937,7 +937,7 @@ static int region_base_alloc(struct secure_heap_region *sec_heap,
 				    &refcount, &sec_handle,
 				    (uint8_t *)dma_heap_get_name(buffer->heap),
 				    0, NULL);
-	if (ret == -ENOMEM) { //return value ???????????????????
+	if (ret) { // ret != TMEM_OK
 		pr_err("%s error: security out of memory!! heap:%s\n",
 			__func__, dma_heap_get_name(buffer->heap));
 		return -ENOMEM;
@@ -960,10 +960,11 @@ static int region_base_alloc(struct secure_heap_region *sec_heap,
 	ret = trusted_mem_api_query_pa(sec_heap->tmem_type, 0, buffer->len, &refcount,
 				       &sec_handle, (u8 *)dma_heap_get_name(buffer->heap),
 				       0, 0, &phy_addr);
-	if (ret) {
+	if (ret) { // ret != TMEM_OK
 		/* free buffer */
 		pr_err("%s#%d Error. query pa failed.\n",
 			__func__, __LINE__);
+		ret = -EINVAL;
 		goto free_buffer_struct;
 	}
 	sg_set_page(table->sgl, phys_to_page(phy_addr), buffer->len, 0);
