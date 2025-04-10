@@ -32,4 +32,5 @@
 };
 
 #include <nevada_evb/cust.dtsi>
+#include "mediatek/utah-charger.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
