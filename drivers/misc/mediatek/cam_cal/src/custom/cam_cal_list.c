@@ -15,6 +15,10 @@
 extern unsigned int sc202acs_read_region(struct i2c_client *client, unsigned int addr,
 				unsigned char *data, unsigned int size);
 #endif
+#if defined(CONFIG_MOT_NEVADA_CAMERA_PROJECT)
+extern unsigned int ov08f_read_region(struct i2c_client *client, unsigned int addr,
+				unsigned char *data, unsigned int size);
+#endif
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
 #if defined(CONFIG_MOT_KANSAS_CAMERA_PROJECT)
@@ -26,6 +30,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{MOT_NEVADA_OV50D_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_NEVADA_S5KKDS_FM_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_NEVADA_S5KKDS_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_NEVADA_OV08F_SENSOR_ID, 0x20, ov08f_read_region}, // otp
 #elif defined(CONFIG_MOT_VEGAS_CAMERA_PROJECT)
 	{MOT_VEGAS_OV50D_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_VEGAS_OV50D_2ND_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
