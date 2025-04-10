@@ -190,6 +190,8 @@
 		reg = <0>;
 
 		reset-gpios = <&pio 86 0>;
+		tp_reset-gpios = <&pio 147 0>;
+
 		pinctrl-names = "default";
 		port {
 			panel_in1: endpoint {
