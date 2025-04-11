@@ -37,7 +37,7 @@
 #define PFX "OV02B_camera_sensor"
 #define LOG_INF(format, args...)    \
 	pr_err(PFX "[%s] " format, __func__, ##args)
-
+extern void ov02b_read_otp_data(struct imgsensor_struct *pImgsensor);
 #define MULTI_WRITE 1
 #define FPT_PDAF_SUPPORT 0
 #define _I2C_BUF_SIZE 4096
@@ -786,6 +786,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("[%s] i2c write id_v1-1: 0x%x, sensor id: 0x%x\n",
 					__func__, imgsensor.i2c_write_id, *sensor_id);
+				ov02b_read_otp_data(&imgsensor);
 				return ERROR_NONE;
 			}
 			retry--;
