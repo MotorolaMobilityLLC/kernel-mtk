@@ -18,7 +18,7 @@
 #include "mediatek/kansas-sensor.dtsi"
 #include "mediatek/kansas-msdc.dtsi"
 #include "mediatek/nevada-audio.dtsi"
-#include "mediatek/kansas-fmr.dtsi"
+#include "mediatek/nevada-fmr.dtsi"
 #include "mediatek/nevada-ntc.dtsi"
 //#include "mediatek/mt6835_kansas_camera_overlay.dtsi"
 / {
