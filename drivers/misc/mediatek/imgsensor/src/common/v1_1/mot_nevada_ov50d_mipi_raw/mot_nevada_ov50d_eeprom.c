@@ -34,7 +34,8 @@ static  struct imgsensor_struct *imgsensor;
 
 #define NEVADA_OV50D_EEPROM_SLAVE_ADDR 0xA0
 #define NEVADA_OV50D_SENSOR_IIC_SLAVE_ADDR 0x20
-#define NEVADA_OV50D_EEPROM_SIZE  0x1CC
+#define NEVADA_OV50D_EEPROM_SIZE  0x1F3
+#define NEVADA_OV50D_EEPROM_CRC_MANUFACTURING_SIZE 39
 #define NEVADA_OV50D_EEPROM_CRC_PDC_SIZE 458
 #define NEVADA_OV50D_EEPROM_CRC_PDC_WRITE_SIZE 450
 
@@ -43,6 +44,8 @@ static nevada_ov_cal_addr_data_t ov_pdc_data[NEVADA_OV50D_EEPROM_CRC_PDC_WRITE_S
 int pdc_data_valid = 0;
 
 static uint8_t NEVADA_OV50D_eeprom[NEVADA_OV50D_EEPROM_SIZE] = {0};
+static mot_calibration_status_t calibration_status = {CRC_FAILURE};
+static mot_calibration_mnf_t mnf_info = {0};
 
 extern kal_uint16 mot_nevada_ov50d_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len);
 
@@ -122,7 +125,7 @@ static kal_uint16 NEVADA_OV50D_read_cmos_sensor_8(kal_uint16 addr)
 	return get_byte;
 }
 
-static void NEVADA_OV50D_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size)
+static void NEVADA_OV50D_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size, kal_uint8* eeprom_data)
 {
 	int i = 0;
 	spin_lock(&imgsensor_lock);
@@ -130,13 +133,121 @@ static void NEVADA_OV50D_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start
 	spin_unlock(&imgsensor_lock);
 
 	for (i = 0; i < size; i ++) {
-		NEVADA_OV50D_eeprom[i] = NEVADA_OV50D_read_cmos_sensor_8(start_add);
+		eeprom_data[i] = NEVADA_OV50D_read_cmos_sensor_8(start_add);
 		start_add ++;
 	}
 
 	spin_lock(&imgsensor_lock);
 	imgsensor->i2c_write_id = NEVADA_OV50D_SENSOR_IIC_SLAVE_ADDR;
 	spin_unlock(&imgsensor_lock);
+}
+
+static calibration_status_t NEVADA_OV50D_check_manufacturing_data(void *data)
+{
+	struct NEVADA_OV50D_eeprom_t *eeprom = (struct NEVADA_OV50D_eeprom_t*)data;
+	LOG_INF("Manufacturing eeprom->mpn = %.8s !",eeprom->mpn);
+	if (!eeprom_util_check_crc16(eeprom->eeprom_table_version, NEVADA_OV50D_EEPROM_CRC_MANUFACTURING_SIZE-2,
+		convert_crc(eeprom->manufacture_crc16))) {
+		LOG_ERROR("Manufacturing CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("Manufacturing CRC Pass");
+	return NO_ERRORS;
+}
+
+static void NEVADA_OV50D_eeprom_get_mnf_data(void *data,
+		mot_calibration_mnf_t *mnf)
+{
+	int ret;
+	struct NEVADA_OV50D_eeprom_t *eeprom = (struct NEVADA_OV50D_eeprom_t*)data;
+
+	ret = snprintf(mnf->table_revision, MAX_CALIBRATION_STRING, "0x%x",
+		eeprom->eeprom_table_version[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->table_revision failed");
+		mnf->table_revision[0] = 0;
+	}
+
+	ret = snprintf(mnf->mot_part_number, MAX_CALIBRATION_STRING, "%c%c%c%c%c%c%c%c",
+		eeprom->mpn[0], eeprom->mpn[1], eeprom->mpn[2], eeprom->mpn[3],
+		eeprom->mpn[4], eeprom->mpn[5], eeprom->mpn[6], eeprom->mpn[7]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->mot_part_number failed");
+		mnf->mot_part_number[0] = 0;
+	}
+
+	ret = snprintf(mnf->actuator_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->actuator_id[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->actuator_id failed");
+		mnf->actuator_id[0] = 0;
+	}
+
+	if (eeprom->lens_id[0] == 0x80){
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "AAC 505265A02");
+	} else {
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
+		LOG_INF("unknown lens_id");
+	}
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->lens_id failed");
+		mnf->lens_id[0] = 0;
+	}
+
+	if (eeprom->manufacturer_id[0] == 'Q' && eeprom->manufacturer_id[1] == 'T') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Qtech");
+	} else if (eeprom->manufacturer_id[0] == 'S' && eeprom->manufacturer_id[1] == 'U') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Sunny");
+	} else {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Unknown");
+		LOG_INF("unknown manufacturer_id");
+	}
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->integrator failed");
+		mnf->integrator[0] = 0;
+	}
+
+	ret = snprintf(mnf->factory_id, MAX_CALIBRATION_STRING, "%c%c",
+		eeprom->factory_id[0], eeprom->factory_id[1]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->factory_id failed");
+		mnf->factory_id[0] = 0;
+	}
+
+	ret = snprintf(mnf->manufacture_line, MAX_CALIBRATION_STRING, "%u",
+		eeprom->manufacture_line[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->manufacture_line failed");
+		mnf->manufacture_line[0] = 0;
+	}
+
+	ret = snprintf(mnf->manufacture_date, MAX_CALIBRATION_STRING, "20%u/%u/%u",
+		eeprom->manufacture_date[0], eeprom->manufacture_date[1], eeprom->manufacture_date[2]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->manufacture_date failed");
+		mnf->manufacture_date[0] = 0;
+	}
+
+	ret = snprintf(mnf->serial_number, MAX_CALIBRATION_STRING, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+		eeprom->serial_number[0], eeprom->serial_number[1],
+		eeprom->serial_number[2], eeprom->serial_number[3],
+		eeprom->serial_number[4], eeprom->serial_number[5],
+		eeprom->serial_number[6], eeprom->serial_number[7],
+		eeprom->serial_number[8], eeprom->serial_number[9],
+		eeprom->serial_number[10], eeprom->serial_number[11],
+		eeprom->serial_number[12], eeprom->serial_number[13],
+		eeprom->serial_number[14], eeprom->serial_number[15]);
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->serial_number failed");
+		mnf->serial_number[0] = 0;
+	}
 }
 
 int get_ov_pdc_data(void *data)
@@ -167,8 +278,21 @@ int get_ov_pdc_data(void *data)
 void NEVADA_OV50D_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
 {
 	imgsensor = pImgsensor;
-	NEVADA_OV50D_read_data_from_eeprom(NEVADA_OV50D_EEPROM_SLAVE_ADDR, 0x192A, NEVADA_OV50D_EEPROM_SIZE);
+	NEVADA_OV50D_read_data_from_eeprom(NEVADA_OV50D_EEPROM_SLAVE_ADDR, 0x0000, NEVADA_OV50D_EEPROM_CRC_MANUFACTURING_SIZE, NEVADA_OV50D_eeprom);
+	NEVADA_OV50D_read_data_from_eeprom(NEVADA_OV50D_EEPROM_SLAVE_ADDR, 0x192A, NEVADA_OV50D_EEPROM_CRC_PDC_SIZE+2, NEVADA_OV50D_eeprom+NEVADA_OV50D_EEPROM_CRC_MANUFACTURING_SIZE);
+	calibration_status.mnf = NEVADA_OV50D_check_manufacturing_data(NEVADA_OV50D_eeprom);
+	NEVADA_OV50D_eeprom_get_mnf_data((void *)NEVADA_OV50D_eeprom, &mnf_info);
 	get_ov_pdc_data(NEVADA_OV50D_eeprom);
+}
+
+mot_calibration_status_t *NEVADA_OV50D_eeprom_get_calibration_status(void)
+{
+	return &calibration_status;
+}
+
+mot_calibration_mnf_t *NEVADA_OV50D_eeprom_get_mnf_info(void)
+{
+	return &mnf_info;
 }
 
 void write_pdc_data(void)
