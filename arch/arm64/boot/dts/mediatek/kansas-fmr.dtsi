@@ -2,7 +2,6 @@
 	fm_elna_default: fm_elna_default {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO10__FUNC_GPIO10>;
-			slew-rate = <1>;
 			output-low;
 		};
 	};
@@ -10,7 +9,6 @@
 	fm_elna_active: fm_elna_active {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO10__FUNC_GPIO10>;
-			slew-rate = <1>;
 			output-high;
 		};
 	};
@@ -18,7 +16,6 @@
 	fm_elna_suspend: fm_elna_suspend {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO10__FUNC_GPIO10>;
-			slew-rate = <1>;
 			output-low;
 		};
 	};
