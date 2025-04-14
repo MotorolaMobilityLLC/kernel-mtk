@@ -1012,6 +1012,7 @@
   iio_enum_available_read
   iio_enum_read
   iio_enum_write
+  iio_get_channel_type
   iio_get_time_ns
   iio_pollfunc_store_time
   iio_push_event
