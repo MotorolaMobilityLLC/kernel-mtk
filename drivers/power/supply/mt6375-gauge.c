@@ -4020,10 +4020,15 @@ static int __maybe_unused mt6375_gauge_resume(struct device *dev)
 {
 	struct mt6375_priv *priv = dev_get_drvdata(dev);
 	struct mtk_battery *gm = priv->gauge.gm;
+	struct mtk_gauge *gauge_dev = &priv->gauge;
+
+	int iavg;
 
 	if (gm->resume)
 		gm->resume(gm);
-
+        average_current_get(gauge_dev, NULL, &iavg);
+        do_div(iavg, 10);
+        bm_err("[%s] gauge_resume_average_current= %d\n", __func__, iavg);
 	return 0;
 }
 
