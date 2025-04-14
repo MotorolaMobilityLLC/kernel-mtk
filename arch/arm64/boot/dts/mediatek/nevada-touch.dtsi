@@ -7,7 +7,7 @@
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
-	mediatek,pad-select = <0>, <1>;
+	mediatek,pad-select = <0>, <1>, <2>;
 	pinctrl-names = "default", "nt36528_int_active",
 	"nt36528_reset_active", "nt36528_int_suspend",
 	"nt36528_reset_suspend", "nt36528_spi_mode";
@@ -59,6 +59,30 @@
                 focaltech,touch-charger-detect-psy-name = "battery";
                 focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
 	};
+
+	omnivision@2 {
+		compatible = "omnivision,tcm-spi";
+		reg = <2>; //Same as CS ID
+		status = "ok";
+		spi-max-frequency = <6000000>;
+		interrupt-parent = <&pio>;
+		interrupts = <4 0x2008>;
+
+		omnivision,irq-gpio = <&pio 4 0x00>;
+		omnivision,irq-on-state = <0>;
+		omnivision,reset-gpio = <&pio 147 0x00>;
+		omnivision,reset-on-state = <0>;
+		omnivision,reset-active-ms = <20>;
+		omnivision,reset-delay-ms = <200>;
+		omnivision,power-delay-ms = <200>;
+		omnivision,spi-mode = <3>;
+		omnivision,byte-delay-us = <0>;
+		omnivision,block-delay-us = <0>;
+		omnivision,ubl-max-freq = <3000000>;
+		omnivision,ubl-byte-delay-us = <20>;
+
+		omnivision,supported_gesture_type = <0x06>;
+        };
 };
 
 &pio {
