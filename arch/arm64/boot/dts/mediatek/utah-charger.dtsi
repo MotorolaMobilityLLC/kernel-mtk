@@ -473,7 +473,7 @@
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
 	CAR_TUNE_VALUE = <(101)>;
 
-	df-serialnum = "COSRA50COS";
-	#include "bat_setting/mt6835_battery_ra50_cos_5000mah.dtsi"
+	df-serialnum = "LWNSU52SWD";
+	#include "bat_setting/mt6835_battery_su52_swd_5200mah.dtsi"
 	#include "bat_setting/mt6835_battery_ra50_nvt_5000mah.dtsi"
 };
