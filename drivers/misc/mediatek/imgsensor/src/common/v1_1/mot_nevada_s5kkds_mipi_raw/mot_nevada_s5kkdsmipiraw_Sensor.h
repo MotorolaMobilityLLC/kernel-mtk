@@ -157,6 +157,29 @@ struct imgsensor_info_struct {
 #define AWB_GB_MAX 880
 #define AWB_B_MIN 200
 #define AWB_B_MAX 880
+
+typedef enum {
+	NO_ERRORS,
+	CRC_FAILURE,
+	LIMIT_FAILURE
+} calibration_status_t;
+
+struct NEVADA_S5KKDS_eeprom_t{
+	//MNF_DATA
+	uint8_t eeprom_table_version[1];
+	uint8_t cal_hw_ver[1];
+	uint8_t cal_sw_ver[1];
+	uint8_t mpn[8];
+	uint8_t actuator_id[1];
+	uint8_t lens_id[1];
+	uint8_t manufacturer_id[2];
+	uint8_t factory_id[2];
+	uint8_t manufacture_line[1];
+	uint8_t manufacture_date[3];
+	uint8_t serial_number[16];
+	uint8_t manufacture_crc16[2];
+};
+
 typedef struct {
 	uint16_t r;
 	uint16_t gr;
