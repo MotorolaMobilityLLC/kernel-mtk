@@ -353,7 +353,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 static void write_shutter(kal_uint32 shutter)
 {
 	kal_uint32 realtime_fps = 0;
-	kal_uint32 v_blank;
+	kal_uint32 v_blank = 0;
 
 	spin_lock(&imgsensor_drv_lock);
 
