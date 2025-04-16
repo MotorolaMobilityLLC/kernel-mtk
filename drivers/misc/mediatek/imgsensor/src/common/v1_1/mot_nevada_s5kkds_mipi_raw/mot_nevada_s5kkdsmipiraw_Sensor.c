@@ -52,6 +52,10 @@
 #include "mot_nevada_s5kkdsmipiraw_Sensor.h"
 #include "mot_nevada_s5kkds_Sensor_setting.h"
 
+extern mot_calibration_status_t *NEVADA_S5KKDS_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *NEVADA_S5KKDS_eeprom_get_mnf_info(void);
+extern void NEVADA_S5KKDS_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+
 //extern int aw86006_update_fw_sync(void);
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -748,6 +752,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+				NEVADA_S5KKDS_eeprom_format_calibration_data(&imgsensor);
 				//aw86006_update_fw_sync();
 				return ERROR_NONE;
 			}
@@ -1063,6 +1068,10 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->VideoDelayFrame = imgsensor_info.video_delay_frame;
 	sensor_info->HighSpeedVideoDelayFrame = imgsensor_info.hs_video_delay_frame;
 	sensor_info->SlimVideoDelayFrame = imgsensor_info.slim_video_delay_frame;
+
+        /*Apply calibration status and manufacture info*/
+	memcpy(&sensor_info->calibration_status, NEVADA_S5KKDS_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
+	memcpy(&sensor_info->mnf_calibration, NEVADA_S5KKDS_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
