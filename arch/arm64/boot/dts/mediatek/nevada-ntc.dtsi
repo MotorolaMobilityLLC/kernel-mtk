@@ -3,6 +3,7 @@
 	compatible = "mediatek,mt6377-tia-ntc";
 	io-channels = <&auxadc 6>;
 	io-channel-names = "QUIET_NTC";
+	ntc-pullup-v = <180000>;
 	#thermal-sensor-cells = <0>;
 	temperature-lookup-table = <
 		(-40000) 4397119
@@ -176,6 +177,7 @@
 	compatible = "mediatek,mt6377-tia-ntc";
 	io-channels = <&auxadc 5>;
 	io-channel-names = "CHG_NTC";
+	ntc-pullup-v = <180000>;
 	#thermal-sensor-cells = <0>;
 	temperature-lookup-table = <
 		(-40000) 4397119
@@ -349,6 +351,7 @@
 	compatible = "mediatek,mt6377-tia-ntc";
 	io-channels = <&auxadc 4>;
 	io-channel-names = "SPK_NTC";
+	ntc-pullup-v = <180000>;
 	#thermal-sensor-cells = <0>;
 	temperature-lookup-table = <
 		(-40000) 4397119
@@ -522,6 +525,7 @@
 	compatible = "mediatek,mt6377-tia-ntc";
 	io-channels = <&auxadc 3>;
 	io-channel-names = "CAM_NTC";
+	ntc-pullup-v = <180000>;
 	#thermal-sensor-cells = <0>;
 	temperature-lookup-table = <
 		(-40000) 4397119
@@ -695,6 +699,7 @@
 	compatible = "mediatek,mt6377-tia-ntc";
 	io-channels = <&auxadc 2>;
 	io-channel-names = "WCN_NTC";
+	ntc-pullup-v = <180000>;
 	#thermal-sensor-cells = <0>;
 	temperature-lookup-table = <
 		(-40000) 4397119

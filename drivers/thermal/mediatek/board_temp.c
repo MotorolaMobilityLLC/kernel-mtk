@@ -75,6 +75,7 @@ struct board_ntc_info {
 	struct iio_channel *chan_tspk_ntc;
 	struct iio_channel *chan_quiet_ntc;
 	struct iio_channel *chan_chg_ntc;
+	unsigned int default_pullup_v;
 };
 
 unsigned int tia2_rc_sel_to_value(unsigned int sel)
@@ -216,6 +217,7 @@ static int board_ntc_get_temp(void *data, int *temp)
 	unsigned long long v_in;
 	bool is_val_valid, is_rtype_valid;
 	static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ, 10);
+	unsigned int pullup_v;
 
 	ratelimit_set_flags(&ratelimit, RATELIMIT_MSG_ON_RELEASE);
 	if (!PTR_ERR_OR_ZERO(ntc_info->chan_wcn_ntc)){
@@ -284,11 +286,17 @@ RETRY:
 
 	if ((!PTR_ERR_OR_ZERO(ntc_info->chan_wcn_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_cam_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_tspk_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_quiet_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_chg_ntc))) {
 		v_in = (val * 145000) / 4096;
+		pullup_v = ntc_info->default_pullup_v;
+		dev_err(ntc_info->dev, "%s, get pullupv :%d\n",
+                        __func__, pullup_v);
 	} else {
 		v_in = ntc_info->adc_data->adc2volt(get_adc_data(val, tia_param->valid_bit - 1));
+		pullup_v = adc_data->pullup_v[r_type];
+		dev_err(ntc_info->dev, "%s, get default pullupv :%d\n",
+                        __func__, pullup_v);
 	}
 	r_ntc = calculate_r_ntc(v_in, adc_data->pullup_r[r_type],
-				adc_data->pullup_v[r_type]);
+				pullup_v);
 
 	if (!r_ntc) {
 		dev_err(ntc_info->dev,
@@ -310,6 +318,25 @@ RETRY:
 static const struct thermal_zone_of_device_ops board_ntc_ops = {
 	.get_temp = board_ntc_get_temp,
 };
+
+static int board_ntc_parse_cust_pullup_v(struct device *dev,
+                                struct board_ntc_info *ntc_info)
+{
+	struct device_node *np = dev->of_node;
+	u32 val = 0;
+
+	if (of_property_read_u32(np, "ntc-pullup-v", &val) >= 0) {
+		ntc_info->default_pullup_v = val;
+		dev_err(dev, "%s, set pullupv :%d\n",
+			__func__, ntc_info->default_pullup_v);
+	} else {
+		ntc_info->default_pullup_v = ntc_info->adc_data->default_pullup_v;
+		dev_err(dev, "%s, use default pullupv: %d\n",
+			__func__, ntc_info->default_pullup_v);
+	}
+
+	return 0;
+}
 
 static int board_ntc_init_auxadc_data(struct device *dev,
 				struct pmic_auxadc_data *adc_data)
@@ -424,8 +451,10 @@ static int board_ntc_probe(struct platform_device *pdev)
 			(!PTR_ERR_OR_ZERO(ntc_info->chan_cam_ntc)) ||
 			(!PTR_ERR_OR_ZERO(ntc_info->chan_tspk_ntc)) ||
 			(!PTR_ERR_OR_ZERO(ntc_info->chan_quiet_ntc)) ||
-			(!PTR_ERR_OR_ZERO(ntc_info->chan_chg_ntc)) )
+			(!PTR_ERR_OR_ZERO(ntc_info->chan_chg_ntc)) ) {
 		has_cust_ntc = true;
+		board_ntc_parse_cust_pullup_v(&pdev->dev, ntc_info);
+	}
 
 	platform_set_drvdata(pdev, ntc_info);
 
