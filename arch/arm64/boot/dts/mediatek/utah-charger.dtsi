@@ -269,7 +269,7 @@
 
                 mmi,batid_v_ref = <1800000>;
                 mmi,batid_r_pull = <100000>;
-                mmi,batt-ids-map = "1", "COSRA50COS", "2", "ATLRA50NVT";
+                mmi,batt-ids-map = "1", "LWNSU52SWD", "2", "ATLSU52NVT";
 
                 mmi,adc-channel-cpu = <0>;
                 mmi,adc-channel-charger = <2>;
@@ -475,5 +475,5 @@
 
 	df-serialnum = "LWNSU52SWD";
 	#include "bat_setting/mt6835_battery_su52_swd_5200mah.dtsi"
-	#include "bat_setting/mt6835_battery_ra50_nvt_5000mah.dtsi"
+	#include "bat_setting/mt6835_battery_su52_nvt_5200mah.dtsi"
 };
