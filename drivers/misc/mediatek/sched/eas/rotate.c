@@ -21,6 +21,7 @@
 #include "sched_sys_common.h"
 #include "eas_plus.h"
 #include "eas_trace.h"
+#include "vip.h"
 
 DEFINE_PER_CPU(struct task_rotate_work, task_rotate_works);
 bool big_task_rotation_enable = true;
@@ -213,6 +214,10 @@ void task_check_for_rotation(struct rq *src_rq)
 
 		run = wc - rq->curr->android_vendor_data1[3];
 
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+                if (task_is_vip(rq->curr, NOT_VIP))
+                    continue;
+#endif
 		if (run < TASK_ROTATION_THRESHOLD_NS)
 			continue;
 

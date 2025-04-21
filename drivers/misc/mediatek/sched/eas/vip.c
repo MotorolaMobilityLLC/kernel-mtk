@@ -180,6 +180,7 @@ bool task_is_vip(struct task_struct *p, int type)
 
 	return (vts->vip_prio != NOT_VIP);
 }
+EXPORT_SYMBOL_GPL(task_is_vip);
 
 static inline unsigned int vip_task_limit(struct task_struct *p)
 {
