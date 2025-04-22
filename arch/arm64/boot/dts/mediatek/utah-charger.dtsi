@@ -233,6 +233,7 @@
 
 		sc8541-addr = <0x65>;
 
+		mmi,disable_mux;
 		interrupt-parent = <&pio>;
 		interrupts = <5 IRQ_TYPE_EDGE_FALLING 5 0>;
 		interrupt-names = "bq25960_irq_standalone";
