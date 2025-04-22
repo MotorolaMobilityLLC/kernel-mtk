@@ -26,12 +26,6 @@
 #include <linux/kmemleak.h>
 #include <linux/time.h>
 
-#include <dvfsrc-exp.h>
-#include <linux/soc/mediatek/mtk_dvfsrc.h>
-#if IS_ENABLED(CONFIG_MTK_DRAMC)
-#include <soc/mediatek/dramc.h>
-#endif
-
 #ifndef DRM_CMDQ_DISABLE
 #include <linux/soc/mediatek/mtk-cmdq-ext.h>
 #else
@@ -3289,62 +3283,30 @@ static unsigned int overlap_to_bw(struct drm_crtc *crtc,
 	return bw;
 }
 
-static unsigned int mt6855_lp4_ratio_tb[8] = {
-	800, 800, 787, 750, 700, 700, 625, 700
-};
-static unsigned int mt6855_lp5_ratio_tb[8] = {
-	705, 659, 625, 625, 625, 625, 625, 625
-};
-
+/* to handle larb unbanlanced bw */
 static void update_bw_by_emi_hrt_ratio(struct mtk_drm_private *priv,
-				unsigned int *bw)
-{
-	int dram_opp = 0;
+				int max_larb_hrt_weight, unsigned int *bw) {
+	unsigned int new_bw = 0;
 	unsigned int old_bw = *bw;
-	unsigned int dram_type = 0;
-	unsigned int dram_data_rate = 0;
-	unsigned int delta_ratio = 0;
+	unsigned int larb_ratio = 20;
+	unsigned int max_larb_bw = overlap_to_bw(priv->crtc[0], max_larb_hrt_weight);
 
-	if (priv->data->mmsys_id != MMSYS_MT6855)
-		return;
+	if (old_bw != max_larb_bw)
+		larb_ratio = (max_larb_bw * 2 - old_bw) * 10 / (old_bw - max_larb_bw);
 
-	dram_opp = mtk_dvfsrc_query_opp_info(MTK_DVFSRC_CURR_DRAM_OPP);
+	if (10 <= larb_ratio && larb_ratio < 15)
+		new_bw = max_larb_bw * 100 / 70;
+	else if (15 <= larb_ratio && larb_ratio < 20)
+		new_bw = max_larb_bw * 100 / 65;
+	else if (20 <= larb_ratio)
+		new_bw = max_larb_bw * 100 / 60;
 
-#if IS_ENABLED(CONFIG_MTK_DRAMC)
-	dram_type = mtk_dramc_get_ddr_type();
-	dram_data_rate = mtk_dramc_get_data_rate();
-	if ((dram_type == TYPE_LPDDR4) ||
-		(dram_type == TYPE_LPDDR4X) ||
-		(dram_type == TYPE_LPDDR4P)) {
-		if (priv->data->mmsys_id == MMSYS_MT6855) {
-			if (dram_opp > sizeof(mt6855_lp4_ratio_tb) / sizeof(unsigned int) - 1) {
-				DDPMSG("%s, not found valid dram_opp:%d data_rate:%d\n",
-						__func__, dram_opp, dram_data_rate);
-				return;
-			}
-			delta_ratio = mt6855_lp4_ratio_tb[dram_opp] * 1000 / 500;
-			*bw = *bw * delta_ratio / 1000;
-			DDPINFO("%s, data_rate:%d, delta_ratio:%d/1000, old bw:%d, new bw:%d\n",
-					__func__, dram_data_rate, delta_ratio, old_bw, *bw);
-		}
-	} else if ((dram_type == TYPE_LPDDR5) ||
-		(dram_type == TYPE_LPDDR5X)) {
-		if (priv->data->mmsys_id == MMSYS_MT6855) {
-			if (dram_opp > sizeof(mt6855_lp5_ratio_tb) / sizeof(unsigned int) - 1) {
-				DDPMSG("%s, not found valid dram_opp:%d data_rate:%d\n",
-						__func__, dram_opp, dram_data_rate);
-				return;
-			}
-			delta_ratio = mt6855_lp5_ratio_tb[dram_opp] * 1000 / 500;
-			*bw = *bw * delta_ratio / 1000;
-			DDPINFO("%s, data_rate:%d, delta_ratio:%d/1000, old bw:%d, new bw:%d\n",
-					__func__, dram_data_rate, delta_ratio, old_bw, *bw);
-		}
-	} else {
-		DDPMSG("%s not found valid dram_type\n", __func__);
+	if (new_bw > old_bw) {
+		*bw = new_bw;
+		DDPMSG("%s, update bw from %d to %d\n", __func__, old_bw, new_bw);
 	}
-#endif
 }
+
 
 static void mtk_crtc_update_hrt_state(struct drm_crtc *crtc,
 				      unsigned int frame_weight,
@@ -3447,7 +3409,9 @@ static void mtk_crtc_update_hrt_state(struct drm_crtc *crtc,
 	}
 
 	// consider emi hrt ratio to avoid unbalanced throughput for emi channel
-	update_bw_by_emi_hrt_ratio(priv, &bw);
+	//update_bw_by_emi_hrt_ratio(priv, &bw);
+	if (priv->data->mmsys_id == MMSYS_MT6855 && lyeblob_ids && lyeblob_ids->larb_max_hrt_weight)
+		update_bw_by_emi_hrt_ratio(priv, lyeblob_ids->larb_max_hrt_weight, &bw);
 
 	/* can't access backup slot since top clk off */
 	if (priv->power_state == false)

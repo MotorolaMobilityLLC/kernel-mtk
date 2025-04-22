@@ -59,6 +59,7 @@ static enum MTK_LAYERING_CAPS query_MML(struct drm_device *dev, struct drm_crtc 
 					struct mml_frame_info *mml_info);
 static unsigned int roll_gpu_for_idle;
 static int g_emi_bound_table[HRT_LEVEL_NUM];
+static uint32_t g_larb_max_hrt_weight;
 
 static DEFINE_MUTEX(layering_info_lock);
 
@@ -1409,6 +1410,19 @@ static int _calc_hrt_num(struct drm_device *dev,
 	return sum_overlap_w;
 }
 
+static void calc_larb_max_overlap(struct drm_device *dev,
+			       struct drm_mtk_layering_info *disp_info)
+{
+	int larb0_overlap_w, larb1_overlap_w;
+	larb0_overlap_w = _calc_hrt_num(dev, disp_info, HRT_PRIMARY, HRT_TYPE_LARB0,
+					    true, l_rule_info->dal_enable);
+
+	larb1_overlap_w = _calc_hrt_num(dev, disp_info, HRT_PRIMARY, HRT_TYPE_LARB1,
+					    true, l_rule_info->dal_enable);
+	g_larb_max_hrt_weight = (larb0_overlap_w > larb1_overlap_w) ? larb0_overlap_w : larb1_overlap_w;
+	DDPMSG("%s, larb0: %d, larb1:%d\n", __func__, larb0_overlap_w, larb1_overlap_w);
+}
+
 #ifdef HAS_LARB_HRT
 static int calc_larb_hrt_level(struct drm_device *dev,
 			       struct drm_mtk_layering_info *disp_info)
@@ -1483,6 +1497,7 @@ static int calc_hrt_num(struct drm_device *dev,
 	 * So calculate larb bound only for HRT_LEVEL2.
 	 */
 	disp_info->hrt_num = emi_hrt_level;
+	calc_larb_max_overlap(dev, disp_info);
 #ifdef HRT_DEBUG_LEVEL1
 	DDPMSG("EMI hrt lv2:%d,overlap_w:%d\n", emi_hrt_level, sum_overlap_w);
 #endif
@@ -2338,6 +2353,7 @@ void lye_add_blob_ids(struct drm_mtk_layering_info *l_info,
 	lyeblob_ids->ref_cnt_mask = crtc_mask;
 	lyeblob_ids->free_cnt_mask = crtc_mask;
 	lyeblob_ids->hrt_valid = g_hrt_valid;
+	lyeblob_ids->larb_max_hrt_weight = g_larb_max_hrt_weight;
 	INIT_LIST_HEAD(&lyeblob_ids->list);
 	mutex_lock(&mtk_drm->lyeblob_list_mutex);
 	list_add_tail(&lyeblob_ids->list, &mtk_drm->lyeblob_head);
@@ -3162,6 +3178,7 @@ static int layering_rule_start(struct drm_mtk_layering_info *disp_info_user,
 		l_rule_info->addon_scn[HRT_PRIMARY] = NONE;
 		layering_info.hrt_num = HRT_LEVEL_LEVEL0;
 		layering_info.hrt_weight = 400;
+		g_larb_max_hrt_weight = 0;
 	}
 
 	lyeblob_ids = kzalloc(sizeof(struct mtk_drm_lyeblob_ids), GFP_KERNEL);

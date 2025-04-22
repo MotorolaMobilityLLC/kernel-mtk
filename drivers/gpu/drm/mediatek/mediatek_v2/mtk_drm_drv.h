@@ -77,6 +77,7 @@ struct mtk_drm_lyeblob_ids {
 	uint32_t lye_idx;
 	uint32_t frame_weight;
 	uint32_t hrt_num;
+	uint32_t larb_max_hrt_weight;
 	int32_t ddp_blob_id;
 	int32_t ref_cnt;
 	int32_t ref_cnt_mask;
