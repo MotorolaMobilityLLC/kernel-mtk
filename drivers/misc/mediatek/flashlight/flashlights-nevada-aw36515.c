@@ -142,9 +142,9 @@ struct aw36515_chip_data {
  * aw36515 operations
  *****************************************************************************/
 static const int aw36515_current[AW36515_LEVEL_NUM] = {
-         27,   66,  113,  168,  215,  262, 309, 356, 403, 450,
-        597,  544,  591,  638,  685,  732, 779, 826, 873, 920,
-        967, 1013, 1060, 1107, 1154, 1201
+         27,   74,  114,  161,  200,  247, 286, 333, 372, 419,
+        458,  505,  544,  583,  630,  669, 716, 756, 803, 842,
+        889,  928,  975, 1014, 1061, 1100
 };
 
 static const unsigned char aw36515_torch_level[AW36515_LEVEL_NUM] = {
@@ -153,9 +153,9 @@ static const unsigned char aw36515_torch_level[AW36515_LEVEL_NUM] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // I(mA) = level*1.96+0.98
 
 static const unsigned char aw36515_flash_level[AW36515_LEVEL_NUM] = {
-	0x03, 0x08, 0x0E, 0x15, 0x1B, 0x21, 0x27, 0x2D, 0x33, 0x39,
-	0x3F, 0x45, 0x4B, 0x51, 0x57, 0x5D, 0x63, 0x69, 0x6F, 0x75,
-	0x7B, 0x81, 0x87, 0x8D, 0x93, 0x99}; // I(mA) = level*7.83+3.91
+	0x03, 0x09, 0x0E, 0x14, 0x19, 0x1F, 0x24, 0x2A, 0x2F, 0x35,
+	0x3A, 0x40, 0x45, 0x4A, 0x50, 0x55, 0x5B, 0x60, 0x66, 0x6B,
+	0x71, 0x76, 0x7C, 0x81, 0x87, 0x8C}; // I(mA) = level*7.83+3.91
 
 static volatile unsigned char aw36515_reg_enable;
 static volatile int aw36515_level_ch1 = -1;
