@@ -3584,7 +3584,7 @@ static int mmi_check_power_watt(struct mtk_charger *info, bool force)
 		power_watt = mmi_get_pdc_power(info, force) / 1000;
 	} else if (info->mmi.charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO){
 		power_watt = MOTO_15W / 1000;
-	} else if (get_charger_type(info) == POWER_SUPPLY_TYPE_USB_DCP) {
+	} else if (get_charger_type(info) == POWER_SUPPLY_TYPE_USB_DCP && icl < TURBO_CHRG_THRSH) {
 		power_watt = MOTO_10W / 1000;
 	} else {
 		power_watt = 5 * icl /1000;
