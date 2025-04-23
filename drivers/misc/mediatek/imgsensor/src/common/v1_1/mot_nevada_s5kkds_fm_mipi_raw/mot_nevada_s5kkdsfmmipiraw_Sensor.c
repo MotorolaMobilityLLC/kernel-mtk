@@ -61,9 +61,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 #define S5KKDS_FM_BASEGAIN 128
 
-#define S5KKDS_FM_MAX_GAIN_BINNINGSIZE_PLATFORM 8192    /*64*128, 128 GAINBASE*/
-#define S5KKDS_FM_MAX_GAIN_120FPS_PLATFORM 2048          /*16*128, 128 GAINBASE*/
-#define S5KKDS_FM_MAX_GAIN_SLIM_PLATFORM 8192          /*64*128, 128 GAINBASE*/
+#define S5KKDS_FM_MAX_GAIN_BINNINGSIZE_PLATFORM 16384    /*128*128, 128 GAINBASE*/
 
 #define MULTI_WRITE 1
 
@@ -146,9 +144,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.min_shutter = 4,		//min shutter
 
 	.min_gain = 64, /*1x gain*/
-	.max_gain = 8192, /*64x gain*/
-	.max_gain_slim = 8192,
-	.max_gain_120fps = 1024,		/*16 * 64*/
+	.max_gain = 8192, /*128x gain*/
 	.min_gain_iso = 100,
 	.exp_step = 2,
 	.gain_step = 2, /*minimum step = 2 in 1x~2x gain*/
@@ -569,13 +565,6 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
 	kal_uint32 max_gain = S5KKDS_FM_MAX_GAIN_BINNINGSIZE_PLATFORM;
-
-	if(sensor_mode == FPS120_MODE) {
-		max_gain = S5KKDS_FM_MAX_GAIN_120FPS_PLATFORM;
-	}
-	if(sensor_mode == SLIM_MODE) {
-		max_gain = S5KKDS_FM_MAX_GAIN_SLIM_PLATFORM;
-	}
 
 	if (gain < S5KKDS_FM_BASEGAIN || gain > max_gain) {
 		pr_debug("Error gain setting");
@@ -1409,13 +1398,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_gain;
 		*(feature_data + 2) = imgsensor_info.max_gain;
-
-		if(sensor_mode == SLIM_MODE) {
-			*(feature_data + 2) = imgsensor_info.max_gain_slim;
-		}
-		if(sensor_mode == FPS120_MODE) {
-			*(feature_data + 2) = imgsensor_info.max_gain_120fps;
-		}
 		break;
 	case SENSOR_FEATURE_GET_BASE_GAIN_ISO_AND_STEP:
 		*(feature_data + 0) = imgsensor_info.min_gain_iso;
