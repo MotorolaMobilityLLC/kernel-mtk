@@ -36,6 +36,9 @@
 #include "mot_nevada_ov08f_mipi_raw_Sensor.h"
 #include "mot_nevada_ov08f_Sensor_setting.h"
 
+#define OV08F_BASEGAIN 128
+#define OV08F_MAX_GAIN_PLATFORM 1984     /* 15.5*128, 128 GAINBASE */
+
 #define PFX "OV08F_camera_sensor"
 #define LOG_INF(format, args...)    \
 	pr_err(PFX "[%s] " format, __func__, ##args)
@@ -433,21 +436,21 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint16 iReg = 0x0000;
 
-	//platform 1xgain = 64, sensor driver 1*gain = 0x100
-	iReg = gain*16/BASEGAIN;
+	//platform 1xgain = 128, sensor driver 1*gain = 0x100
+	iReg = gain * 16 / OV08F_BASEGAIN;
 	return iReg;		/* sensorGlobalGain */
 }
 
 static kal_uint16 set_gain(kal_uint16 gain)
 {
-	kal_uint16 reg_gain, max_gain = imgsensor_info.max_gain;
+	kal_uint16 reg_gain, max_gain = OV08F_MAX_GAIN_PLATFORM;
 	unsigned long flags;
 
-	if (gain < imgsensor_info.min_gain || gain > max_gain) {
-		LOG_INF("Error gain setting");
+	if (gain < OV08F_BASEGAIN || gain > max_gain) {
+		pr_debug("Error gain setting");
 
-		if (gain < imgsensor_info.min_gain)
-			gain = imgsensor_info.min_gain;
+		if (gain < OV08F_BASEGAIN)
+			gain = OV08F_BASEGAIN;
 		else if (gain > max_gain)
 			gain = max_gain;
 	}
@@ -1516,7 +1519,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_BINNING_TYPE:
 		switch (*(feature_data + 1)) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			*feature_return_para_32 = 2; /*BINNING_SUMMED*/
+			*feature_return_para_32 = 1; /*BINNING_SUMMED*/
 			break;
 		default:
 			*feature_return_para_32 = 1; /*BINNING_AVERAGED*/
