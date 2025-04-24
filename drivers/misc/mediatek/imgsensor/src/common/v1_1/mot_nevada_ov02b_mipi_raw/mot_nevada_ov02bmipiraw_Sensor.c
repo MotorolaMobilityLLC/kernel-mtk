@@ -420,9 +420,9 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint8  iReg;
 
-	if((gain >= 0x40) && (gain <= (15*0x40))) //base gain = 0x40
+	if((gain >= 0x80) && (gain <= (15.5*0x80))) //base gain = 0x80
 	{
-		iReg = 0x10 * gain/BASEGAIN;        //change mtk gain base to aptina gain base
+		iReg = 0x08 * gain/BASEGAIN;        //change mtk gain base to aptina gain base
 
 		if(iReg<=0x10)
 		{
@@ -436,7 +436,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 			write_cmos_sensor(0xfd, 0x01);
 			write_cmos_sensor(0x22,0xf8);
 			write_cmos_sensor(0xfe, 0x02);	//fresh
-			LOG_INF("OV02BMIPI_SetGain = 160");
+			LOG_INF("OV02BMIPI_SetGain = 248");
 		}
 		else
 		{
