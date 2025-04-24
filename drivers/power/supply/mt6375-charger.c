@@ -22,6 +22,7 @@
 #include <linux/regmap.h>
 #include <linux/regulator/driver.h>
 #include <linux/workqueue.h>
+#include <linux/pm_wakeup.h>
 
 #include "charger_class.h"
 #include "mtk_charger.h"
@@ -320,6 +321,7 @@ struct mt6375_chg_data {
 	struct pinctrl *mos_pinctrl;
 	struct pinctrl_state *mos_gpio_on;
 	struct pinctrl_state *mos_gpio_off;
+	struct wakeup_source *bc12_wakelock;
 
 };
 
@@ -1184,7 +1186,8 @@ static int mt6375_chg_enable_bc12(struct mt6375_chg_data *ddata, bool en)
 {
 	int i, ret, attach;
 	static const int max_wait_cnt = 250;
-
+	if (!ddata->bc12_wakelock->active)
+		__pm_stay_awake(ddata->bc12_wakelock);
 	mt_dbg(ddata->dev, "en=%d\n", en);
 	if (en) {
 		/* CDP port specific process */
@@ -1208,6 +1211,7 @@ static int mt6375_chg_enable_bc12(struct mt6375_chg_data *ddata, bool en)
 		else
 			dev_info(ddata->dev, "%s: CDP free\n", __func__);
 	}
+	__pm_relax(ddata->bc12_wakelock);
 	ret = mt6375_chg_set_usbsw(ddata, en ? USBSW_CHG : USBSW_USB);
 	if (ret)
 		return ret;
@@ -4217,6 +4221,7 @@ static int mt6375_chg_probe(struct platform_device *pdev)
 	struct mt6375_chg_data *ddata;
 	struct device *dev = &pdev->dev;
 	const struct mt6375_chg_field *fds = mt6375_chg_fields;
+	char *name = NULL;
 
 	dev_info(dev, "%s\n", __func__);
 	ddata = devm_kzalloc(dev, sizeof(*ddata), GFP_KERNEL);
@@ -4281,6 +4286,11 @@ static int mt6375_chg_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&ddata->detect_qc_dwork, get_qc_charger_type_func_work);
 	INIT_DELAYED_WORK(&ddata->mmi_hvdcp_detect_dwork, mmi_start_hvdcp_detect_work);
 #endif
+	name = devm_kasprintf(dev, GFP_KERNEL, "%s",
+		"bc12 suspend wakelock");
+	ddata->bc12_wakelock =
+		wakeup_source_register(NULL, name);
+
 	INIT_WORK(&ddata->bc12_work, mt6375_chg_bc12_work_func);
 	INIT_DELAYED_WORK(&ddata->pwr_rdy_dwork, mt6375_chg_pwr_rdy_dwork_func);
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && !defined(CONFIG_MOTO_CHARGER_SGM415XX)
@@ -4386,6 +4396,7 @@ static int mt6375_chg_remove(struct platform_device *pdev)
 		charger_device_unregister(ddata->chgdev);
 		device_remove_file(ddata->dev, &dev_attr_shipping_mode);
 		cancel_delayed_work_sync(&ddata->pwr_rdy_dwork);
+		wakeup_source_unregister(ddata->bc12_wakelock);
 		destroy_workqueue(ddata->wq);
 #if defined(CONFIG_MOTO_SWQC_SUPPORT)
 		mutex_destroy(&ddata->dpdm_lock);
