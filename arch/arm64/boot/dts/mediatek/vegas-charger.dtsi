@@ -290,6 +290,7 @@
          mmi,vfloat-comp-uv = <0>;
          mmi,enable-mux;
          fast_charging_indicator = <0x8014>;
+         mmi,power-max-design-mw = <30000>;
 };
 
 &pe5 {

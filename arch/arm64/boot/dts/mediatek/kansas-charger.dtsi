@@ -372,6 +372,7 @@
          mmi,lower-limit-capacity = <60>;
          mmi,vfloat-comp-uv = <0>;
          mmi,min-cp-therm-current-ua = <1400000>;
+         mmi,power-max-design-mw = <30000>;
 };
 
 &pdc {
