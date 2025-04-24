@@ -17,7 +17,7 @@
  ****************************************************************************/
 #ifndef _MOT_NEVADA_S5KKDS_SENSOR_SETTING_H
 #define _MOT_NEVADA_S5KKDS_SENSOR_SETTING_H
-#define FPT_PDAF_SUPPORT 0
+#define FPT_PDAF_SUPPORT 1
 
 kal_uint16 addr_data_pair_init_mot_nevada_s5kkds_part1[] = {
 	0x7B1C, 0x17,
