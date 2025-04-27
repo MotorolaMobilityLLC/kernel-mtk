@@ -300,6 +300,7 @@ int ov08f_iReadData(unsigned char *pinputdata)
 		}
 	} else {
 		LOG_INF("UNKOWN OTP ERR");
+		return -1;
 	}
 
 	return 0;
@@ -432,11 +433,7 @@ unsigned int ov08f_read_region(struct i2c_client *client, unsigned int addr,
 	}
 	if (addr == 0x0 && size == 3819) {
 		memcpy((void*)data, (void*)otp, size);
-	} else if (addr == 0x229 && size == 43) {
-		memcpy((void*)data, (void*)otp->awb_param, size);
-	} else if (addr == 0x988 && size == 1868) {
-		memcpy((void*)data, (void*)otp->mtk_lsc_param, size);
-	} else if (addr == 0x10d4 && size == 1) {
+	} else if (addr == 0xeed && size == 1) {
 		memcpy((void*)data, (void*)&calibration_status.lsc, size);
 	} else if (addr == 0xeec && size == 1) {
 		memcpy((void*)data, (void*)&schkSumResult, size);
