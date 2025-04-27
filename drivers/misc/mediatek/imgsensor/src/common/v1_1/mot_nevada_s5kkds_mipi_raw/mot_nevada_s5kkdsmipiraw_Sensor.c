@@ -317,6 +317,44 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 		IMGSENSOR_I2C_SPEED);
 }
 
+#define I2C_BURST_BUFFER_LEN 765
+kal_uint16 mot_nevada_s5kkds_burst_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
+{
+	char puSendCmd[I2C_BURST_BUFFER_LEN];
+	kal_uint32 tosend, IDX;
+	kal_uint16 addr = 0, data;
+	tosend = 0;
+	IDX = 0;
+
+	addr = para[IDX];
+	puSendCmd[tosend++] = (char)(addr >> 8);
+	puSendCmd[tosend++] = (char)(addr & 0xFF);
+	while (len > IDX) {
+		{
+			data = para[IDX + 1];
+			puSendCmd[tosend++] = (char)(data & 0xFF);
+			IDX += 2;
+		}
+		if ((I2C_BURST_BUFFER_LEN - tosend) < 3 || IDX == len) {
+			imgsensor_i2c_write(
+				get_i2c_cfg(),
+				puSendCmd,
+				tosend,
+				tosend,
+				imgsensor.i2c_write_id,
+				imgsensor_info.i2c_speed);
+			tosend = 0;
+			if(IDX < len) {
+				addr = para[IDX];
+				puSendCmd[tosend++] = (char)(addr >> 8);
+				puSendCmd[tosend++] = (char)(addr & 0xFF);
+			}
+
+		}
+	}
+	return 0;
+}
+
 #if MULTI_WRITE
 kal_uint16 mot_nevada_s5kkds_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
@@ -663,9 +701,14 @@ static void sensor_init(void)
 	write_cmos_sensor(0x6218, 0x0000);
 	write_cmos_sensor(0x6226, 0x0001);
 	write_cmos_sensor(0x0A02, 0x0078);
-	mot_nevada_s5kkds_table_write_cmos_sensor(addr_data_pair_init_mot_nevada_s5kkds,
-		sizeof(addr_data_pair_init_mot_nevada_s5kkds)/sizeof(kal_uint16));
-
+	write_cmos_sensor(0xFCFC, 0x2400);
+	mot_nevada_s5kkds_burst_write_cmos_sensor(addr_data_pair_init_mot_nevada_s5kkds_part1,
+		sizeof(addr_data_pair_init_mot_nevada_s5kkds_part1)/sizeof(kal_uint16));
+	mot_nevada_s5kkds_burst_write_cmos_sensor(addr_data_pair_init_mot_nevada_s5kkds_part2,
+		sizeof(addr_data_pair_init_mot_nevada_s5kkds_part2)/sizeof(kal_uint16));
+	mot_nevada_s5kkds_table_write_cmos_sensor(addr_data_pair_init_mot_nevada_s5kkds_part3,
+		sizeof(addr_data_pair_init_mot_nevada_s5kkds_part3)/sizeof(kal_uint16));
+	pr_debug("MOT NEVADA S5KKDS init end\n");
 /*	if (xtc_data_valid == 1)
 		write_xtc_data();
 	pr_debug("MOT NEVADA S5KKDS init end\n");
