@@ -1083,6 +1083,11 @@ static int aee_reset(struct notifier_block *nb, unsigned long action, void *data
 	return 0;
 }
 
+static struct notifier_block aee_restart_handler = {
+	.notifier_call = aee_reset,
+	.priority = 131,
+};
+
 static struct notifier_block aee_reboot_notify = {
 	.notifier_call = aee_reset,
 };
@@ -1092,10 +1097,13 @@ static void aee_reboot_hook_init(void)
 {
 	int ret = 0;
 
-	ret = register_reboot_notifier(&aee_reboot_notify);
+	ret = register_restart_handler(&aee_restart_handler);
 	if (ret)
 		pr_err("register restart handler failed: 0x%x.\n", ret);
 
+	ret = register_reboot_notifier(&aee_reboot_notify);
+	if (ret)
+		pr_err("register reboot handler failed: 0x%x.\n", ret);
 	/* set reboot flag */
 	reboot_set_flag(true);
 }
@@ -1104,10 +1112,13 @@ static void aee_reboot_hook_exit(void)
 {
 	int ret = 0;
 
-	ret = unregister_reboot_notifier(&aee_reboot_notify);
+	ret = unregister_restart_handler(&aee_restart_handler);
 	if (ret != 0)
 		pr_err("unregister restart handler failed: 0x%x.\n", ret);
 
+	ret = unregister_reboot_notifier(&aee_reboot_notify);
+	if (ret != 0)
+		pr_err("unregister reboot handler failed: 0x%x.\n", ret);
 	/* clear reboot flag */
 	reboot_set_flag(false);
 }
