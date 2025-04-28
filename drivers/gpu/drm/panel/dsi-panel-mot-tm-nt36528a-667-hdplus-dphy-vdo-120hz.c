@@ -184,6 +184,15 @@ static void tm_nt36528a_panel_init(struct tm_nt36528a *ctx)
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
 
+	tm_nt36528a_dcs_write_seq_static(ctx, 0xFF, 0x24);
+	tm_nt36528a_dcs_write_seq_static(ctx, 0xFB, 0x01);
+	tm_nt36528a_dcs_write_seq_static(ctx, 0xC2, 0xC6);
+
+
+	tm_nt36528a_dcs_write_seq_static(ctx, 0xFF, 0xD0);
+	tm_nt36528a_dcs_write_seq_static(ctx, 0xFB, 0x01);
+	tm_nt36528a_dcs_write_seq_static(ctx, 0xC9, 0x1C);
+
 	tm_nt36528a_dcs_write_seq_static(ctx, 0xFF, 0x10);
 	tm_nt36528a_dcs_write_seq_static(ctx, 0xFB, 0x01);
 
