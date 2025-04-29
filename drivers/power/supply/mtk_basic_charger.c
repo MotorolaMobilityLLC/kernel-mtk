@@ -148,7 +148,7 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 	pdata_dvchg = &info->chg_data[DVCHG1_SETTING];
 	pdata_dvchg2 = &info->chg_data[DVCHG2_SETTING];
 
-	if (info->atm_enabled == true) {
+	if (info->atm_enabled == true && !info->factory_fast_charging_enable) {
 		is_basic = true;
 		goto done;
 	}
@@ -388,7 +388,7 @@ done:
 	}
 
 	/* For TC_018, pleasae don't modify the format */
-	chr_err("m:%d chg1:%d,%d,%d,%d chg2:%d,%d,%d,%d dvchg1:%d sc:%d %d %d type:%d:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d bm:%d b:%d\n",
+	chr_err("m:%d chg1:%d,%d,%d,%d chg2:%d,%d,%d,%d dvchg1:%d sc:%d %d %d type:%d:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d bm:%d b:%d fac_c:%d\n",
 		info->config,
 		_uA_to_mA(pdata->thermal_input_current_limit),
 		_uA_to_mA(pdata->thermal_charging_current_limit),
@@ -406,7 +406,7 @@ done:
 		info->usb_unlimited,
 		IS_ENABLED(CONFIG_USBIF_COMPLIANCE), info->usb_state,
 		pdata->input_current_limit_by_aicl, info->atm_enabled,
-		info->bootmode, is_basic);
+		info->bootmode, is_basic, info->factory_fast_charging_enable);
 
 	return is_basic;
 }
