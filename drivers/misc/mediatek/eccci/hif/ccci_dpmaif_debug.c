@@ -239,9 +239,8 @@ static ssize_t dpmaif_debug_read(struct file *file, char __user *buf,
 
 static void dpmaif_sysfs_parse(char *buf, int size)
 {
-	char *psub = NULL, *pname = NULL, *pvalue = NULL, *pdata = NULL;
-	unsigned int debug_buf_len = 0, wake_up_flag = 0;
-	unsigned long flags = 0;
+	char *psub = NULL, *pname = NULL, *pvalue = NULL;
+	unsigned int wake_up_flag = 0;
 
 	if (!buf || size <= 0)
 		return;
@@ -265,10 +264,6 @@ static void dpmaif_sysfs_parse(char *buf, int size)
 			if (pvalue && *pvalue)
 				if (kstrtouint(pvalue, 16, &g_debug_flags))
 					return;
-		} else if (strstr(pname, "debug_buf_len")) {
-			if (pvalue && *pvalue)
-				if (kstrtouint(pvalue, 10, &debug_buf_len))
-					return;
 		} else if (strstr(pname, "run_wq")) {
 			if (pvalue && *pvalue)
 				if (kstrtouint(pvalue, 10, &wake_up_flag))
@@ -283,27 +278,6 @@ static void dpmaif_sysfs_parse(char *buf, int size)
 		pname = psub;
 	}
 
-	if ((debug_buf_len > 0) && (g_debug_buf_len != debug_buf_len)) {
-		spin_lock_irqsave(&g_debug_buf.dbg_lock, flags);
-
-		pdata = g_debug_buf.data;
-		g_debug_buf.data = NULL;
-		g_debug_buf.rd  = 0;
-		g_debug_buf.wr  = 0;
-		g_debug_buf.pre_call_wq = 0;
-		g_debug_buf_len = debug_buf_len;
-
-		spin_unlock_irqrestore(&g_debug_buf.dbg_lock, flags);
-
-		if (pdata)
-			vfree(pdata);
-
-		if (g_debug_buf_len > 0) {
-			g_debug_buf.data = vmalloc(g_debug_buf_len);
-			CCCI_NORMAL_LOG(-1, TAG, "[%s] vmalloc(%u): %p\n",
-				__func__, g_debug_buf_len, g_debug_buf.data);
-		}
-	}
 }
 
 #define MAX_WRITE_LEN 300
