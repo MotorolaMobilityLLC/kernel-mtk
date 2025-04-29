@@ -488,6 +488,7 @@ struct mtk_charger {
 	bool is_chg_done;
 	/* ATM */
 	bool atm_enabled;
+	bool factory_fast_charging_enable;
 
 	const char *algorithm_name;
 	struct mtk_charger_algorithm algo;

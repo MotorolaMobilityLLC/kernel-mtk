@@ -2718,7 +2718,7 @@ static bool charger_init_algo(struct mtk_charger *info)
 		charger_dev_set_drvdata(info->hvdvchg2_dev, info);
 	}
 
-	if (info->mmi.factory_mode) {
+	if (info->mmi.factory_mode && !info->factory_fast_charging_enable) {
 		/* Disable charging when enter ATM mode(factory mode) */
 		mtk_charger_tcmd_set_usb_current((void *)info, 2000);
 	}
@@ -4893,6 +4893,7 @@ static void mot_chg_get_atm_mode(struct mtk_charger *info)
 		if (!strncmp(value, "enable", strlen("enable"))) {
 			info->atm_enabled = true;
 			factory_charging_enable = false;
+			info->factory_fast_charging_enable = false;
 		}
 		chr_err("%s: value = %s  enable %d\n", __func__, value,info->atm_enabled);
 	}
@@ -5452,6 +5453,24 @@ static int  mtk_charger_tcmd_set_chg_enable(void *input, int  val)
 	return ret;
 }
 
+static int  mtk_charger_tcmd_set_fast_chg_enable(void *input, int  val)
+{
+	struct mtk_charger *cm = (struct mtk_charger *)input;
+	int ret = 0;
+
+	val = !!val;
+	charger_dev_enable(cm->dvchg1_dev, val);
+
+	cm->factory_fast_charging_enable = val;
+	cm->mmi.enable_charging_limit = !val;
+	val = val ? EVENT_RECHARGE : EVENT_DISCHARGE;
+	_wake_up_charger(cm);
+	//ret = mtk_charger_notifier(cm, val);
+	//charger_dev_do_event(info->chg1_dev,
+	//				val, 0);
+	return ret;
+}
+
 static int  mtk_charger_tcmd_set_usb_enable(void *input, int  val)
 {
 	struct mtk_charger *cm = (struct mtk_charger *)input;
@@ -5544,6 +5563,7 @@ static int  mtk_charger_tcmd_register(struct mtk_charger *cm)
 	cm->chg_tcmd_client.client_id = MOTO_CHG_TCMD_CLIENT_CHG;
 
 	cm->chg_tcmd_client.set_chg_enable = mtk_charger_tcmd_set_chg_enable;
+	cm->chg_tcmd_client.set_fast_chg_enable = mtk_charger_tcmd_set_fast_chg_enable;
 	cm->chg_tcmd_client.set_usb_enable = mtk_charger_tcmd_set_usb_enable;
 
 	cm->chg_tcmd_client.get_chg_current = mtk_charger_tcmd_get_chg_current;

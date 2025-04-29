@@ -73,6 +73,7 @@ struct moto_chg_tcmd_data {
 	int usb_current;
 
 	int force_chg_enable_flag;
+	int force_fast_chg_enable_flag;
 	int pre_chg_current;
 	int chg_current;
 	int chg_type;
@@ -424,6 +425,56 @@ end:
 }
 static DEVICE_ATTR(force_chg_auto_enable, S_IWUSR | S_IRUGO,
 	force_chg_auto_enable_show, force_chg_auto_enable_store);
+
+static ssize_t force_fast_chg_auto_enable_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", data->force_fast_chg_enable_flag);
+}
+
+static ssize_t force_fast_chg_auto_enable_store(struct device *dev, struct device_attribute *attr,
+									const char *buf, size_t count)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct  moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	int ret;
+	int val;
+
+	if (!chg_client) {
+		pr_err("%s chg_client is null\n", __func__);
+		goto end;
+	}
+
+	ret = kstrtouint(buf, 10, &val);
+	if (ret) {
+		pr_info("%s, %s not a valide buf(%d)\n", __func__, buf, ret);
+		goto end;
+	}
+
+	if (!!val) {
+		ret = chg_client->set_fast_chg_enable(chg_client->data,
+					val);
+		if (ret) {
+			pr_err("%s get chg type fail %d\n", __func__, ret);
+			goto end;
+		}
+		ret = chg_client->set_usb_current(chg_client->data,
+						val ? 3000 : 2000);
+		if (ret) {
+			pr_err("%s set usb cur fail %d\n", __func__, ret);
+			goto end;
+		}
+	}
+
+	data->force_fast_chg_enable_flag = val;
+
+end:
+	return count;
+}
+static DEVICE_ATTR(force_fast_chg_auto_enable, S_IWUSR | S_IRUGO,
+	force_fast_chg_auto_enable_show, force_fast_chg_auto_enable_store);
 
 static ssize_t force_chg_iusb_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -1212,6 +1263,7 @@ static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_data.attr,
 	&dev_attr_force_chg_usb_suspend.attr,
 	&dev_attr_force_chg_auto_enable.attr,
+	&dev_attr_force_fast_chg_auto_enable.attr,
 	&dev_attr_force_chg_iusb.attr,
 	&dev_attr_force_chg_ibatt.attr,
 	&dev_attr_force_chg_fail_clear.attr,
