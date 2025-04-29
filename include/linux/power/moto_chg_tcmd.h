@@ -26,6 +26,7 @@ struct moto_chg_tcmd_client {
 	int (*get_chg_current)(void *input, int* val);//unit mA
 	int (*set_chg_current)(void *input, int val);//unit mA
 	int (*set_chg_enable)(void *input, int val);
+	int (*set_fast_chg_enable)(void *input, int val);
 
 	int (*get_usb_current)(void *input, int* val);//unit mA
 	int (*set_usb_current)(void *input, int val);//unit mA
