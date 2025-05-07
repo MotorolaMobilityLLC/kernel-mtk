@@ -5946,12 +5946,6 @@ static void kill_css(struct cgroup_subsys_state *css)
 	if (css->flags & CSS_DYING)
 		return;
 
-	/*
-	 * Call css_killed(), if defined, before setting the CSS_DYING flag
-	 */
-	if (css->ss->css_killed)
-		css->ss->css_killed(css);
-
 	css->flags |= CSS_DYING;
 
 	/*
