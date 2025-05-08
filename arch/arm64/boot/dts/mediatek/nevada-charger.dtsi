@@ -258,7 +258,7 @@
          battery_cv = <4500000>;
          max_charger_voltage = <15000000>;
          min_charger_voltage = <4700000>;
-         max_dmivr_charger_current = <3000000>;
+         max_dmivr_charger_current = <4000000>;
          min_charger_voltage_1 = <4500000>;
          min_charger_voltage_2 = <4500000>;
          //enable_pe_plus;
@@ -321,7 +321,8 @@
 
          /* single charger */
          sc-input-current = <3000000>;
-         sc-charger-current = <3000000>;
+         sc-charger-current = <4000000>;
+         pd-9v-input-current-discrete-arch-mmi = <2000000>;
 };
 
 &pe5 {

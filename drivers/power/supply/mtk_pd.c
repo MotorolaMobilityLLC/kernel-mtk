@@ -517,7 +517,7 @@ int mtk_pd_input_current_protection(struct chg_alg_device *alg, int vbus)
 		pd->input_current_limit1 = 3000000;
 		break;
 	case 9000:
-		pd->input_current_limit1 = 1500000;
+		pd->input_current_limit1 = pd->pd_9v_input_current_discrete_arch_mmi;
 		break;
 	}
 	pd_hal_set_input_current(alg,
@@ -1235,6 +1235,11 @@ static void mtk_pd_parse_dt(struct mtk_pd *pd,
 			PD_VBUS_UPPER_BOUND);
 		pd->vbus_h = PD_VBUS_UPPER_BOUND / 1000;
 	}
+
+	if ( of_property_read_u32(np, "pd-9v-input-current-discrete-arch-mmi", &val) >= 0)
+		pd->pd_9v_input_current_discrete_arch_mmi = val;
+	else
+		pd->pd_9v_input_current_discrete_arch_mmi = PD_9V_INPUT_CURRENT_DISCRETE_ARCH_MMI_DEFAULT;
 
 	if (of_property_read_u32(np, "pd_vbus_low_bound", &val) >= 0)
 		pd->vbus_l = val / 1000;
