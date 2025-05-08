@@ -485,11 +485,11 @@ static void set_shutter(kal_uint32 shutter)
 	if (shutter > 0xFFF0) {
 
 		s5kkdsfm_bNeedSetNormalMode = KAL_TRUE;
-		if(shutter >= 4242424){
-			shutter = 4242424;
+		if(shutter >= 4923077){
+			shutter = 4923077;
 		}
 		CintR = ((unsigned long long)shutter) / 128;
-		Time_Frame = CintR + 0x000C;
+		Time_Frame = CintR + 0x000B;
 		pr_debug("CintR = %d\n", CintR);
 		write_cmos_sensor(0x0340, Time_Frame & 0xFFFF);
 		write_cmos_sensor(0x0202, CintR & 0xFFFF);
