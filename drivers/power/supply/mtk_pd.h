@@ -18,6 +18,7 @@
 
 #define PD_SC_INPUT_CURRENT		3000000	/* 3000mA */
 #define PD_SC_CHARGER_CURRENT	3000000	/* 3000mA */
+#define PD_9V_INPUT_CURRENT_DISCRETE_ARCH_MMI_DEFAULT	1500000 /* 1500mA */
 
 /* dual charger in series */
 #define PD_DCS_INPUT_CURRENT 3200000
@@ -123,6 +124,7 @@ struct mtk_pd {
 	int slave_mivr_diff;
 	int min_charger_voltage;
 	int pd_stop_battery_soc;
+	int pd_9v_input_current_discrete_arch_mmi;
 
 	/* single charger dtsi setting*/
 	int sc_input_current;
