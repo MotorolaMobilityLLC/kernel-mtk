@@ -166,7 +166,7 @@ static struct imgsensor_struct imgsensor = {
     .i2c_write_id = 0x20,
     .vblank_convert = 2504, /* vts to vblank*/
     .current_ae_effective_frame = 2,
-    .max_shutter = 76337,
+    .max_shutter = 76359,
 };
 
 /* Sensor output window information */
@@ -353,6 +353,7 @@ static int long_exposure_status = 0;
 static void write_shutter(kal_uint32 shutter)
 {
     kal_uint16 realtime_fps = 0;
+    kal_uint16 long_exposure_shutter = imgsensor.pclk / imgsensor.line_length / 4; // 250ms shutter threshold
 	LOG_INF("shutter1_from_external = %d, frame_length = %d\n", shutter, imgsensor.frame_length);
     spin_lock(&imgsensor_drv_lock);
     if (shutter > imgsensor.min_frame_length - imgsensor_info.margin) {
@@ -378,40 +379,42 @@ static void write_shutter(kal_uint32 shutter)
 		}
     }
 
-    if (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) {
-        if (shutter > imgsensor.max_shutter) {
-            shutter = imgsensor.max_shutter;
-        }
-        //Frame exposure mode customization for LE
-        imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
-        imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
-        write_cmos_sensor(0xfd, 0x01);
-        write_cmos_sensor(0x24, 0x10);
-        write_cmos_sensor(0x02, 0x02);
-        write_cmos_sensor(0x03, 0x63);
-        write_cmos_sensor(0x04, 0x69);
-        write_cmos_sensor(0x01, 0x01);
-        long_exposure_status = 1;
-    } else if(long_exposure_status == 1){
-        LOG_INF("le shutter is %d exit\n",shutter);
-        write_cmos_sensor(0xfd, 0x00);
-        write_cmos_sensor(0x24, 0x10);
-        write_cmos_sensor(0x02, 0x00);
-        write_cmos_sensor(0x03, 0x06);
-        write_cmos_sensor(0x04, 0x1D);
-        write_cmos_sensor(0x01, 0x01);
-        long_exposure_status = 0;
-    }
+	imgsensor.current_ae_effective_frame = 2;
 
-    imgsensor.current_ae_effective_frame = 2;
+	imgsensor.frame_length = (imgsensor.frame_length  >> 2) << 2;
+	write_cmos_sensor(0xfd, 0x01);
+	write_cmos_sensor(0x05, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2) & 0x7F00) >> 8);
+	write_cmos_sensor(0x06, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2)) & 0xFF);
+	write_cmos_sensor(0x01, 0x01);
 
-    if(long_exposure_status == 0){
-        imgsensor.frame_length = (imgsensor.frame_length  >> 2) << 2;
-	    write_cmos_sensor(0xfd, 0x01);
-	    write_cmos_sensor(0x05, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2) & 0x7F00) >> 8);
-	    write_cmos_sensor(0x06, (((imgsensor.frame_length - imgsensor.vblank_convert) * 2)) & 0xFF);
-	    write_cmos_sensor(0x01, 0x01);
-    }
+	if (shutter > long_exposure_shutter) {
+		LOG_INF("shutter is %d enter..., ", shutter);
+		//Frame exposure mode customization for LE
+		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
+		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
+		if (shutter >= imgsensor.max_shutter) {
+		    shutter = imgsensor.max_shutter;
+		}
+		write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x24, 0x10);
+		write_cmos_sensor(0x02, (shutter*2 >> 16) & 0xFF);
+		write_cmos_sensor(0x03, (shutter*2 >> 8) & 0xFF);
+		write_cmos_sensor(0x04,  shutter*2  & 0xFF);
+		write_cmos_sensor(0x01, 0x01);
+		long_exposure_status = 1;
+		return;
+	} else if (long_exposure_status == 1) {
+		LOG_INF("shutter is %d exit..., ", shutter);
+		write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x24, 0x10);
+		write_cmos_sensor(0x02, 0x00);
+		write_cmos_sensor(0x03, 0x05);
+		write_cmos_sensor(0x04, 0xE3);
+		write_cmos_sensor(0x01, 0x01);
+		long_exposure_status = 0;
+		return;
+	}
+
 	LOG_INF("shutter2_write_register = %d\n", shutter);
 	write_cmos_sensor(0xfd, 0x01);
 	write_cmos_sensor(0x02, (shutter*2 >> 16) & 0xFF);
