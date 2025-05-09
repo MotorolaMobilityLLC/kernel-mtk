@@ -44,6 +44,7 @@ extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u3
 static BLOCKING_NOTIFIER_HEAD(panel_gesture_notifier_list);
 
 static int tp_gesture_flag = 0;
+static int hdl_for_disp = 0;
 
 //log for KPI
 const u8 kpi_log_level = 1;
@@ -169,6 +170,14 @@ int panel_gesture_notifier_call_chain(unsigned long val, void *v)
 }
 EXPORT_SYMBOL(panel_gesture_notifier_call_chain);
 
+int set_hdl_for_disp(int val)
+{
+	hdl_for_disp = val;
+	pr_info("set hdl_for_disp = %d\n", hdl_for_disp);
+	return 0;
+}
+EXPORT_SYMBOL(set_hdl_for_disp);
+
 static void lcm_panel_init(struct lcm *ctx)
 {
 	pr_info("disp: %s+, tm_td4376\n", __func__);
@@ -246,6 +255,7 @@ static int panel_set_gesture_flag(int state)
 static int lcm_unprepare(struct drm_panel *panel)
 {
 	struct lcm *ctx = panel_to_lcm(panel);
+	int flag = 0;
 
 	if (!ctx->prepared) {
 		pr_info("%s, already unprepared, return\n", __func__);
@@ -253,6 +263,17 @@ static int lcm_unprepare(struct drm_panel *panel)
 	}
 	pr_info("%s+, tm_td4376\n", __func__);
 
+	pr_info("%s, hdl_for_disp before = %d\n", __func__, hdl_for_disp);
+	while(flag < 6){
+		if(hdl_for_disp)
+			usleep_range(50*1000, 50*1000+1);
+		else{
+			pr_info("%s, hdl done!", __func__);
+			break;
+		}
+		flag += 1;
+		pr_info("%s, hdl not ready, retry %d\n", __func__, flag);
+	}
 	lcm_dcs_write_seq_static(ctx, 0x28);
 	usleep_range(5000,5001);
 	lcm_dcs_write_seq_static(ctx, 0x10);

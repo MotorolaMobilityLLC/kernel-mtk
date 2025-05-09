@@ -87,4 +87,6 @@ int panel_gesture_register_client(const char *source, struct notifier_block *nb)
 int panel_gesture_unregister_client(struct notifier_block *nb);
 int panel_gesture_notifier_call_chain(unsigned long val, void *v);
 
+int set_hdl_for_disp(int val);
+
 #endif //end of PANEL_MOT_TM_TD4376_672_DPHY_VDO_HFP_H
