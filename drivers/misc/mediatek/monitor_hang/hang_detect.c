@@ -1498,8 +1498,7 @@ static void show_task_info(void)
 
 static void show_task_backtrace(void)
 {
-	struct task_struct *p, *system_server_task = NULL;
-	struct task_struct *monkey_task = NULL;
+	struct task_struct *p = NULL;
 	struct task_info task_info_arr[MAX_NR_SPECIAL_PROCESS];
 	int i = 0, task_array_idx = 0;
 	int size_special_process = ARRAY_SIZE(special_process);
@@ -1526,12 +1525,6 @@ static void show_task_backtrace(void)
 	rcu_read_lock();
 	for_each_process(p) {
 		get_task_struct(p);
-		if (Hang_first_done == false) {
-			if (!strcmp(p->comm, "system_server"))
-				system_server_task = p;
-			if (strstr(p->comm, "monkey"))
-				monkey_task = p;
-		}
 		/* specify process, need dump maps file and native backtrace */
 		if (!first_dump_blocked && (task_array_idx < MAX_NR_SPECIAL_PROCESS)) {
 			for (i = 0; i < size_special_process; i++) {
@@ -1577,12 +1570,6 @@ static void show_task_backtrace(void)
 		}
 	}
 	log_hang_info("dump backtrace end: %llu\n", local_clock());
-	if (Hang_first_done == false) {
-		if (system_server_task)
-			send_sig(SIGQUIT, system_server_task, 1);
-		if (monkey_task)
-			send_sig(SIGQUIT, monkey_task, 1);
-	}
 }
 
 #if IS_ENABLED(CONFIG_ANDROID_DEBUG_SYMBOLS)
