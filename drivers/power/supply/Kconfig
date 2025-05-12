@@ -686,6 +686,12 @@ config CHARGER_BQ25980
 	  Say Y to enable support for the TI BQ25980, BQ25975 and BQ25960
 	  series of fast battery chargers.
 
+config MOTO_SGM41606S_ENABLE_OTG
+        bool "SGM41606S  charger pump otg mos config"
+        default n
+        help
+          Say Y to enable support for the sgm41606s otg mos adcdrv1.
+
 config CHARGER_SC89890H
 	tristate "SC89890H battery charger driver"
 	depends on I2C
