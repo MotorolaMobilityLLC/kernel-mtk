@@ -334,8 +334,12 @@ static kal_uint32 streaming_control(kal_bool enable)
 {
     LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
 	if (enable) {
-               write_cmos_sensor(0xfd, 0x03);
-               write_cmos_sensor(0xc2, 0x01);
+		write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x10, 0x01);
+		write_cmos_sensor(0xfd, 0x03);
+		write_cmos_sensor(0xc2, 0x01);
+		write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x10, 0x00);
 	} else {
                write_cmos_sensor(0xfd, 0x03);
                write_cmos_sensor(0xc2, 0x00);
@@ -1333,33 +1337,27 @@ static kal_uint32 get_default_framerate_by_scenario(
 static kal_uint32 set_test_pattern_mode(kal_uint32 modes)
 {
 	LOG_INF("Test_Pattern modes: %d\n", modes);
-	if (modes == 2) {//colorbar
-		write_cmos_sensor(0xfd, 0x00);
-		write_cmos_sensor(0xb6, 0x21);
-	} else if (modes == 5) {
-		//sensor enter black view
-		write_cmos_sensor(0xfd, 0x01);
-		write_cmos_sensor(0x21, 0x00);
-		write_cmos_sensor(0x22, 0x00);
-		write_cmos_sensor(0x01, 0x01);
-		write_cmos_sensor(0xfd, 0x07);
-		write_cmos_sensor(0x04, 0x00);
-		write_cmos_sensor(0x05, 0x00);
-	}
 
-	if ((modes != 2) && (imgsensor.test_pattern == 2)) {
-		write_cmos_sensor(0xfd, 0x00);
-		write_cmos_sensor(0xb6, 0x20);
-	} else if (modes != 5 && (imgsensor.test_pattern == 5)) {
-		//sensor out black view
-		write_cmos_sensor(0xfd, 0x01);
-		write_cmos_sensor(0x21, 0x02);
-		write_cmos_sensor(0x22, 0x00);
-		write_cmos_sensor(0x01, 0x01);
-		write_cmos_sensor(0xfd, 0x07);
-		write_cmos_sensor(0x04, 0x00);
-		write_cmos_sensor(0x05, 0x40);
-	}
+    if(modes)
+    {
+        write_cmos_sensor(0xfd,0x03);
+        write_cmos_sensor(0x8c,0x00);
+        write_cmos_sensor(0x8e,0x00);
+        write_cmos_sensor(0x90,0x00);
+        write_cmos_sensor(0x92,0x00);
+        write_cmos_sensor(0x9b,0x00);
+        write_cmos_sensor(0xfe,0x02);
+    }
+    else
+    {
+        write_cmos_sensor(0xfd,0x03);
+        write_cmos_sensor(0x8c,0x40);
+        write_cmos_sensor(0x8e,0x40);
+        write_cmos_sensor(0x90,0x40);
+        write_cmos_sensor(0x92,0x40);
+        write_cmos_sensor(0x9b,0x40);
+        write_cmos_sensor(0xfe,0x02);
+    }
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = modes;
