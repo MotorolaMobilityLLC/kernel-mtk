@@ -92,4 +92,7 @@
 int panel_esd_register_client(const char *source, struct notifier_block *nb);
 int panel_esd_unregister_client(struct notifier_block *nb);
 int panel_esd_notifier_call_chain(unsigned long val, void *v);
+int panel_gesture_register_client(const char *source, struct notifier_block *nb);
+int panel_gesture_unregister_client(struct notifier_block *nb);
+int panel_gesture_notifier_call_chain(unsigned long val, void *v);
 #endif //end of PANEL_TD4160_667_HDPLUS_DSI_VDO_120HZ_CSOT

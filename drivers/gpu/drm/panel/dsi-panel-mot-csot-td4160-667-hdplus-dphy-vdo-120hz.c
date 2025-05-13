@@ -34,6 +34,7 @@
 extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
 extern int mtkfb_esd_get_recovery_flag(void);
+static BLOCKING_NOTIFIER_HEAD(panel_gesture_notifier_list);
 
 static int tp_gesture_flag = 0;
 
@@ -179,6 +180,27 @@ static void csot_panel_tp_reset(struct csot_td4160 *ctx)
 	}
 }
 
+int panel_gesture_register_client(const char *source, struct notifier_block *nb)
+{
+        if (!source)
+                return -EINVAL;
+
+        return blocking_notifier_chain_register(&panel_gesture_notifier_list, nb);
+}
+EXPORT_SYMBOL(panel_gesture_register_client);
+
+int panel_gesture_unregister_client(struct notifier_block *nb)
+{
+        return blocking_notifier_chain_unregister(&panel_gesture_notifier_list, nb);
+}
+EXPORT_SYMBOL(panel_gesture_unregister_client);
+
+int panel_gesture_notifier_call_chain(unsigned long val, void *v)
+{
+        return blocking_notifier_call_chain(&panel_gesture_notifier_list, val, v);
+}
+EXPORT_SYMBOL(panel_gesture_notifier_call_chain);
+
 static void csot_td4160_panel_init(struct csot_td4160 *ctx)
 {
 	pr_info("disp: %s+\n", __func__);
@@ -272,6 +294,34 @@ static int csot_td4160_unprepare(struct drm_panel *panel)
 	csot_td4160_dcs_write_seq_static(ctx, 0x10);
 	msleep(60);
 
+	if(tp_gesture_flag)
+		panel_gesture_notifier_call_chain(0x01,NULL);
+
+	if(!tp_gesture_flag){
+		ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
+		if (IS_ERR(ctx->reset_gpio)) {
+			dev_err(ctx->dev, "%s:csot_td4160: cannot get reset_gpio %ld\n",
+			__func__, PTR_ERR(ctx->reset_gpio));
+			return PTR_ERR(ctx->reset_gpio);
+		}
+		gpiod_set_value(ctx->reset_gpio, 0);
+		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+		usleep_range(5000,5001);
+		pr_info("%s:csot_td4160: reset_gpio 0\n", __func__);
+
+		ctx->tp_reset_gpio = devm_gpiod_get(ctx->dev, "tp_reset", GPIOD_OUT_HIGH);
+		if (IS_ERR(ctx->tp_reset_gpio)) {
+			dev_err(ctx->dev, "%s:csot_td4160: cannot get tp_reset_gpio %ld\n",
+				__func__, PTR_ERR(ctx->tp_reset_gpio));
+			//return PTR_ERR(ctx->tp_reset_gpio);
+		}
+		else{
+			gpiod_set_value(ctx->tp_reset_gpio, 0);
+			devm_gpiod_put(ctx->dev, ctx->tp_reset_gpio);
+			usleep_range(5000,5001);
+			pr_info("%s:csot_td4160: tp_reset_gpio 0\n", __func__);
+		}
+	}
 	pr_info("%s:disp: tp_gesture_flag:%d, esd_recovery_flg=%d \n",__func__, tp_gesture_flag, mtkfb_esd_get_recovery_flag());
 	if(!tp_gesture_flag || mtkfb_esd_get_recovery_flag()) {
 		ocp2138_BiasPower_disable(5);
