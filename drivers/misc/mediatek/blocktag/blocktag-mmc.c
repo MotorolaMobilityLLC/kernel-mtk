@@ -384,14 +384,10 @@ void set_mmc_perf_mode(struct mmc_host *mmc, bool boost)
 		return;
 
 	if (boost) {
-		if (host->bw_path)
-			icc_set_bw(host->bw_path, 0, host->peak_bw);
 		mmc_qos_cpu_cluster_freq_update(s_final_cpu_freq,
 			MAX_CPU_CLUSTER);
 		mmc_qos_enable = true;
 	} else {
-		if (host->bw_path)
-			icc_set_bw(host->bw_path, 0, 0);
 		mmc_qos_cpu_cluster_freq_update(s_free_cpu_freq,
 			MAX_CPU_CLUSTER);
 		mmc_qos_enable = false;
