@@ -41,6 +41,8 @@ extern void ov02b_read_otp_data(struct imgsensor_struct *pImgsensor);
 #define MULTI_WRITE 1
 #define FPT_PDAF_SUPPORT 0
 #define _I2C_BUF_SIZE 4096
+#define DEFAULT_VBLANK 1220
+#define VIDEO_VBLANK 920
 // #define SUPPORT_GET_TEMPERATURE
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -870,7 +872,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	LOG_INF("%s E\n", __func__);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
-        imgsensor.vblank_convert = 1220; //for 1632x1224 30fps
+        imgsensor.vblank_convert = DEFAULT_VBLANK;
 	imgsensor.pclk = imgsensor_info.pre.pclk;
 	//imgsensor.video_mode = KAL_FALSE;
 	imgsensor.line_length = imgsensor_info.pre.linelength;
@@ -889,7 +891,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	LOG_INF("%s E\n", __func__);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
-	imgsensor.vblank_convert = 1220; //for 3264x2448
+	imgsensor.vblank_convert = DEFAULT_VBLANK;
 	imgsensor.pclk = imgsensor_info.cap.pclk;
 	//imgsensor.video_mode = KAL_FALSE;
 	imgsensor.line_length = imgsensor_info.cap.linelength;
@@ -909,7 +911,7 @@ static kal_uint32 normal_video(
 	LOG_INF("%s E\n", __func__);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
-	imgsensor.vblank_convert = 1220; //for 3264x2448
+	imgsensor.vblank_convert = VIDEO_VBLANK;
 	imgsensor.pclk = imgsensor_info.normal_video.pclk;
 	imgsensor.line_length = imgsensor_info.normal_video.linelength;
 	imgsensor.frame_length = imgsensor_info.normal_video.framelength;
@@ -929,7 +931,7 @@ static kal_uint32 hs_video(
 	LOG_INF("%s E\n", __func__);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
-	imgsensor.vblank_convert = 1220;
+	imgsensor.vblank_convert = DEFAULT_VBLANK;
 	imgsensor.pclk = imgsensor_info.hs_video.pclk;
 	//imgsensor.video_mode = KAL_TRUE;
 	imgsensor.line_length = imgsensor_info.hs_video.linelength;
@@ -952,7 +954,7 @@ static kal_uint32 slim_video(
 	LOG_INF("%s E\n", __func__);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
-	imgsensor.vblank_convert = 1220;//776;//1280x720_90fps
+	imgsensor.vblank_convert = DEFAULT_VBLANK;
 	imgsensor.pclk = imgsensor_info.slim_video.pclk;
 	//imgsensor.video_mode = KAL_TRUE;
 	imgsensor.line_length = imgsensor_info.slim_video.linelength;
