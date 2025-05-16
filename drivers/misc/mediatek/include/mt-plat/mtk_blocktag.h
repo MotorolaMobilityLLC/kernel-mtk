@@ -326,8 +326,6 @@ void *mtk_btag_seq_debug_start(struct seq_file *seq, loff_t *pos);
 void *mtk_btag_seq_debug_next(struct seq_file *seq, void *v, loff_t *pos);
 void mtk_btag_seq_debug_stop(struct seq_file *seq, void *v);
 
-void set_mmc_perf_mode(struct mmc_host *mmc, bool boost);
-
 #else
 
 #define mtk_btag_mictx_enable(...)
@@ -345,7 +343,6 @@ void set_mmc_perf_mode(struct mmc_host *mmc, bool boost);
 #define mmc_mtk_biolog_init(...)
 #define mmc_mtk_biolog_exit(...)
 #define mmc_mtk_biolog_check(...)
-#define set_mmc_perf_mode(...)
 #endif
 
 #endif

@@ -15,7 +15,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/aee/mrdump/
 ccflags-y += -I$(srctree)/drivers/scsi/ufs/
 ccflags-y += -I$(srctree)/drivers/mmc/core
-ccflags-y += -I$(srctree)/drivers/mmc/host
 
 obj-$(CONFIG_MTK_BLOCK_IO_TRACER)	+= blocktag.o
 blocktag-y				+= blocktag-mictx.o blocktag-core.o blocktag-earaio.o blocktag-ufs.o blocktag-mmc.o
