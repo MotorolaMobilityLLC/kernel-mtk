@@ -1898,8 +1898,16 @@ static int __pkvm_use_dma_locked(phys_addr_t phys_addr, size_t size,
 	} else {
 		/* For VMs, we know if we reach this point the VM has access to the page. */
 		if (!hyp_vcpu) {
-			ret = ___host_check_page_state_range(phys_addr, size,
-							     PKVM_PAGE_OWNED, reg, false);
+			for (i = 0; i < nr_pages; i++) {
+				enum pkvm_page_state state;
+				phys_addr_t this_addr = phys_addr + i * PAGE_SIZE;
+
+				state = hyp_phys_to_page(this_addr)->host_state;
+				if (state != PKVM_PAGE_OWNED) {
+					ret = -EPERM;
+					break;
+				}
+			}
 			if (ret)
 				return ret;
 		}
@@ -2341,6 +2349,83 @@ int __pkvm_host_donate_sglist_guest(struct pkvm_hyp_vcpu *vcpu)
 
 unlock:
 	guest_unlock_component(vm);
+	host_unlock_component();
+
+	return ret;
+}
+
+int __pkvm_host_donate_sglist_hyp(struct pkvm_sglist_page *sglist, size_t nr_pages)
+{
+	int p, ret;
+
+	host_lock_component();
+	hyp_lock_component();
+
+	/* Checking we are reading hyp private memory */
+	if (IS_ENABLED(CONFIG_NVHE_EL2_DEBUG))
+		WARN_ON(__hyp_check_page_state_range((u64)sglist, nr_pages * sizeof(*sglist),
+						     PKVM_PAGE_OWNED));
+
+	for (p = 0; p < nr_pages; p++) {
+		u64 phys = hyp_pfn_to_phys(sglist[p].pfn);
+		size_t size;
+
+		if (check_shl_overflow(PAGE_SIZE, sglist[p].order, &size)) {
+			ret = -EINVAL;
+			goto unlock;
+		}
+
+		if (!addr_is_memory(phys)) {
+			ret = -EINVAL;
+			goto unlock;
+		}
+
+		ret = __host_check_page_state_range(phys, size, PKVM_PAGE_OWNED);
+		if (ret)
+			goto unlock;
+
+		if (IS_ENABLED(CONFIG_NVHE_EL2_DEBUG)) {
+			ret = __hyp_check_page_state_range((u64)__hyp_va(phys), size, PKVM_NOPAGE);
+			if (ret)
+				goto unlock;
+		}
+	}
+
+	for (p = 0; p < nr_pages; p++) {
+		size_t size = PAGE_SIZE << sglist[p].order;
+		u64 phys = hyp_pfn_to_phys(sglist[p].pfn);
+		enum kvm_pgtable_prot prot;
+
+		prot = pkvm_mkstate(PAGE_HYP, PKVM_PAGE_OWNED);
+		ret = pkvm_create_mappings_locked(__hyp_va(phys), __hyp_va(phys) + size, prot);
+		if (ret) {
+			WARN_ON(ret != -ENOMEM);
+
+			kvm_iommu_host_stage2_idmap_complete(false);
+
+			/* Rollback */
+			for (; p >= 0; p--) {
+				phys = hyp_pfn_to_phys(sglist[p].pfn);
+				size = PAGE_SIZE << sglist[p].order;
+
+				WARN_ON(host_stage2_idmap_locked(phys, size,
+								 PKVM_HOST_MEM_PROT, false));
+				kvm_iommu_host_stage2_idmap(phys, phys + size, PKVM_HOST_MEM_PROT);
+				pkvm_remove_mappings_locked(__hyp_va(phys), __hyp_va(phys) + size);
+			}
+			kvm_iommu_host_stage2_idmap_complete(true);
+
+			break;
+		}
+
+		WARN_ON(__host_stage2_set_owner_locked(phys, size, PKVM_ID_HYP, true, 0, false));
+		kvm_iommu_host_stage2_idmap(phys, phys + size, 0);
+	}
+
+	kvm_iommu_host_stage2_idmap_complete(false);
+
+unlock:
+	hyp_unlock_component();
 	host_unlock_component();
 
 	return ret;

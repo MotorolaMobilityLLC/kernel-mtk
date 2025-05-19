@@ -285,6 +285,7 @@
   clk_hw_is_prepared
   clk_hw_register
   clk_hw_round_rate
+  clk_hw_set_rate_range
   clk_hw_unregister
   __clk_is_enabled
   clk_is_match
@@ -296,6 +297,7 @@
   clk_register
   clk_restore_context
   clk_round_rate
+  clk_save_context
   clk_set_parent
   clk_set_rate
   clk_sync_state
@@ -697,8 +699,10 @@
   dev_pm_genpd_add_notifier
   dev_pm_genpd_get_next_hrtimer
   dev_pm_genpd_remove_notifier
+  dev_pm_genpd_resume
   dev_pm_genpd_set_next_wakeup
   dev_pm_genpd_set_performance_state
+  dev_pm_genpd_suspend
   dev_pm_opp_add_dynamic
   dev_pm_opp_adjust_voltage
   dev_pm_opp_clear_config
@@ -1642,6 +1646,8 @@
   irq_work_queue_on
   irq_work_sync
   is_vmalloc_addr
+  isolate_and_split_free_page
+  isolate_anon_lru_page
   iterate_fd
   jiffies
   jiffies_to_msecs
@@ -1899,6 +1905,7 @@
   memunmap
   metadata_dst_alloc
   metadata_dst_free
+  migrate_pages
   migrate_swap
   __migrate_task
   mipi_dsi_create_packet
@@ -2086,6 +2093,7 @@
   of_clk_del_provider
   of_clk_get_from_provider
   of_clk_get_parent_name
+  of_clk_hw_onecell_get
   of_clk_hw_simple_get
   of_clk_src_onecell_get
   of_clk_src_simple_get
@@ -2192,9 +2200,11 @@
   page_ext_get
   page_ext_put
   page_is_ram
+  page_pool_alloc_frag
   page_pool_alloc_pages
   page_pool_create
   page_pool_destroy
+  page_pool_put_unrefed_page
   panic
   panic_notifier_list
   panic_timeout
@@ -2497,6 +2507,7 @@
   put_device
   put_disk
   put_iova_domain
+  putback_movable_pages
   __put_net
   put_pid
   put_sg_io_hdr
@@ -2828,6 +2839,10 @@
   scsi_normalize_sense
   __scsi_print_sense
   scsi_register_interface
+  sdei_event_disable
+  sdei_event_enable
+  sdei_event_register
+  sdei_event_unregister
   sdev_prefix_printk
   __sdhci_add_host
   sdhci_add_host

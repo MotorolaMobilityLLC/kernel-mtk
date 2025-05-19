@@ -40,9 +40,9 @@ DECLARE_RESTRICTED_HOOK(android_rvh_can_migrate_task,
 	TP_ARGS(p, dst_cpu, can_migrate), 1);
 
 DECLARE_RESTRICTED_HOOK(android_rvh_find_lowest_rq,
-	TP_PROTO(struct task_struct *p, struct cpumask *local_cpu_mask,
-			int ret, int *lowest_cpu),
-	TP_ARGS(p, local_cpu_mask, ret, lowest_cpu), 1);
+	TP_PROTO(struct task_struct *sched_ctx, struct task_struct *exec_ctx,
+		 struct cpumask *local_cpu_mask, int ret, int *lowest_cpu),
+	TP_ARGS(sched_ctx, exec_ctx, local_cpu_mask, ret, lowest_cpu), 1);
 
 DECLARE_RESTRICTED_HOOK(android_rvh_prepare_prio_fork,
 	TP_PROTO(struct task_struct *p),
@@ -485,6 +485,15 @@ DECLARE_HOOK(android_vh_tick_nohz_idle_stop_tick,
 DECLARE_HOOK(android_vh_mmput,
 	TP_PROTO(struct mm_struct *mm),
 	TP_ARGS(mm));
+
+DECLARE_HOOK(android_vh_prio_inheritance,
+	TP_PROTO(struct task_struct *p, int *saved_prio, bool *prio_inherited),
+	TP_ARGS(p, saved_prio, prio_inherited));
+
+DECLARE_HOOK(android_vh_prio_restore,
+	TP_PROTO(int saved_prio),
+	TP_ARGS(saved_prio));
+
 /* macro versions of hooks are no longer required */
 
 #endif /* _TRACE_HOOK_SCHED_H */

@@ -31,6 +31,9 @@ int pkvm_init_devices(void)
 	size_t dev_sz;
 	int ret;
 
+	if (!registered_devices_nr)
+		return 0;
+
 	registered_devices = kern_hyp_va(registered_devices);
 	dev_sz = PAGE_ALIGN(size_mul(sizeof(struct pkvm_device),
 				     registered_devices_nr));
@@ -277,8 +280,9 @@ bool pkvm_device_request_mmio(struct pkvm_hyp_vcpu *hyp_vcpu, u64 *exit_code)
 	u64 token;
 	s8 level;
 
-	/* arg2 and arg3 reserved for future use. */
-	if (smccc_get_arg2(vcpu) || smccc_get_arg3(vcpu) || !PAGE_ALIGNED(ipa))
+	/* args 2..6 reserved for future use. */
+	if (smccc_get_arg2(vcpu) || smccc_get_arg3(vcpu) || smccc_get_arg4(vcpu) ||
+	    smccc_get_arg5(vcpu) || smccc_get_arg6(vcpu) || !PAGE_ALIGNED(ipa))
 		goto out_inval;
 
 	ret = pkvm_get_guest_pa_request(hyp_vcpu, ipa, PAGE_SIZE,

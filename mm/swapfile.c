@@ -16,6 +16,7 @@
 #include <linux/kernel_stat.h>
 #include <linux/swap.h>
 #include <linux/vmalloc.h>
+#include <linux/page_size_compat.h>
 #include <linux/pagemap.h>
 #include <linux/namei.h>
 #include <linux/shmem_fs.h>
@@ -2180,6 +2181,13 @@ out:
 	return ret;
 }
 
+int unuse_swap_pte(struct vm_area_struct *vma, pmd_t *pmd,
+		unsigned long addr, swp_entry_t entry, struct folio *folio)
+{
+	return unuse_pte(vma, pmd, addr, entry, folio);
+}
+EXPORT_SYMBOL_GPL(unuse_swap_pte);
+
 static int unuse_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
 			unsigned long addr, unsigned long end,
 			unsigned int type)
@@ -3451,6 +3459,13 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
 		error = -EINVAL;
 		goto bad_swap_unlock_inode;
 	}
+
+	error = __fixup_swap_header(swap_file, mapping);
+	if (error) {
+		pgcompat_err("Failed __fixup_swap_header");
+		goto bad_swap_unlock_inode;
+	}
+
 	folio = read_mapping_folio(mapping, 0, swap_file);
 	if (IS_ERR(folio)) {
 		error = PTR_ERR(folio);

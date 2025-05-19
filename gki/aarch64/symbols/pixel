@@ -1257,6 +1257,7 @@
   __ipv6_addr_type
   __irq_alloc_descs
   __irq_apply_affinity_hint
+  irq_check_status_bit
   irq_create_mapping_affinity
   irq_create_of_mapping
   irq_dispose_mapping
@@ -1269,6 +1270,7 @@
   irq_domain_xlate_twocell
   irq_force_affinity
   irq_get_irq_data
+  irq_get_percpu_devid_partition
   irq_modify_status
   irq_of_parse_and_map
   __irq_resolve_mapping
@@ -1280,6 +1282,7 @@
   irq_set_irq_type
   irq_set_irq_wake
   irq_to_desc
+  irq_work_run
   is_vmalloc_addr
   jiffies
   jiffies_to_msecs
@@ -1443,6 +1446,7 @@
   mctrl_gpio_get_outputs
   mctrl_gpio_init
   mctrl_gpio_set
+  mem_alloc_profiling_key
   __memcat_p
   memchr
   memcmp
@@ -1755,6 +1759,7 @@
   perf_aux_output_begin
   perf_aux_output_end
   perf_aux_output_flag
+  perf_aux_output_skip
   perf_event_addr_filters_sync
   perf_event_create_kernel_counter
   perf_event_disable
@@ -2017,6 +2022,7 @@
   regulator_put
   regulator_set_active_discharge_regmap
   regulator_set_load
+  regulator_set_mode
   regulator_set_voltage
   regulator_set_voltage_sel_regmap
   regulator_set_voltage_time_sel
@@ -2434,6 +2440,7 @@
   thermal_zone_for_each_trip
   thermal_zone_get_temp
   thermal_zone_get_zone_by_name
+  this_cpu_has_cap
   thread_group_cputime_adjusted
   time64_to_tm
   timer_delete
@@ -2452,6 +2459,7 @@
   trace_event_reg
   trace_handle_return
   __traceiter_android_rvh_do_read_fault
+  __traceiter_android_rvh_hw_protection_shutdown
   __traceiter_android_rvh_iommu_alloc_insert_iova
   __traceiter_android_rvh_iommu_iovad_init_alloc_algo
   __traceiter_android_rvh_iommu_limit_align_shift
@@ -2460,6 +2468,8 @@
   __traceiter_android_rvh_mapping_shrinkable
   __traceiter_android_rvh_meminfo_proc_show
   __traceiter_android_rvh_reclaim_folio_list
+  __traceiter_android_rvh_ufs_complete_init
+  __traceiter_android_rvh_ufs_reprogram_all_keys
   __traceiter_android_rvh_vmscan_kswapd_done
   __traceiter_android_rvh_vmscan_kswapd_wake
   __traceiter_android_trigger_vendor_lmk_kill
@@ -2512,6 +2522,7 @@
   __traceiter_workqueue_execute_start
   trace_output_call
   __tracepoint_android_rvh_do_read_fault
+  __tracepoint_android_rvh_hw_protection_shutdown
   __tracepoint_android_rvh_iommu_alloc_insert_iova
   __tracepoint_android_rvh_iommu_iovad_init_alloc_algo
   __tracepoint_android_rvh_iommu_limit_align_shift
@@ -2520,6 +2531,8 @@
   __tracepoint_android_rvh_mapping_shrinkable
   __tracepoint_android_rvh_meminfo_proc_show
   __tracepoint_android_rvh_reclaim_folio_list
+  __tracepoint_android_rvh_ufs_complete_init
+  __tracepoint_android_rvh_ufs_reprogram_all_keys
   __tracepoint_android_rvh_vmscan_kswapd_done
   __tracepoint_android_rvh_vmscan_kswapd_wake
   __tracepoint_android_trigger_vendor_lmk_kill

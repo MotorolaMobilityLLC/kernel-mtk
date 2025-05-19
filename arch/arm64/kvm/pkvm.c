@@ -753,6 +753,25 @@ void pkvm_host_reclaim_page(struct kvm *host_kvm, phys_addr_t ipa)
 	kfree(ppage);
 }
 
+int pkvm_enable_smc_forwarding(struct file *kvm_file)
+{
+	struct kvm *host_kvm;
+
+	if (!file_is_kvm(kvm_file))
+		return -EINVAL;
+
+	if (!kvm_get_kvm_safe(kvm_file->private_data))
+		return -EINVAL;
+
+	host_kvm = kvm_file->private_data;
+	if (!host_kvm)
+		return -EINVAL;
+
+	host_kvm->arch.pkvm.smc_forwarded = true;
+
+	return 0;
+}
+
 static int __init pkvm_firmware_rmem_err(struct reserved_mem *rmem,
 					 const char *reason)
 {
@@ -927,9 +946,26 @@ static int __init early_pkvm_modules_cfg(char *arg)
 }
 early_param("kvm-arm.protected_modules", early_pkvm_modules_cfg);
 
-static void free_modprobe_argv(struct subprocess_info *info)
+static void __init free_modprobe_argv(struct subprocess_info *info)
 {
 	kfree(info->argv);
+}
+
+static int __init init_modprobe(struct subprocess_info *info, struct cred *new)
+{
+	struct file *file = filp_open("/dev/kmsg", O_RDWR, 0);
+
+	if (IS_ERR(file)) {
+		pr_warn("Warning: unable to open /dev/kmsg, modprobe will be silent.\n");
+		return 0;
+	}
+
+	init_dup(file);
+	init_dup(file);
+	init_dup(file);
+	fput(file);
+
+	return 0;
 }
 
 /*
@@ -974,7 +1010,7 @@ static int __init __pkvm_request_early_module(char *module_name,
 	argv[idx++] = NULL;
 
 	info = call_usermodehelper_setup(modprobe_path, argv, envp, GFP_KERNEL,
-					 NULL, free_modprobe_argv, NULL);
+					 init_modprobe, free_modprobe_argv, NULL);
 	if (!info)
 		goto err;
 
