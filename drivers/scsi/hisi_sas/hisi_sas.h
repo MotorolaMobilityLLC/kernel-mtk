@@ -9,6 +9,7 @@
 
 #include <linux/acpi.h>
 #include <linux/blk-mq.h>
+#include <linux/blk-mq-pci.h>
 #include <linux/clk.h>
 #include <linux/debugfs.h>
 #include <linux/dmapool.h>
