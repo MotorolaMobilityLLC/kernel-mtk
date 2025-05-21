@@ -1373,7 +1373,7 @@ struct xhci_ring {
 	unsigned int		num_trbs_free; /* used only by xhci DbC */
 	unsigned int		bounce_buf_len;
 	enum xhci_ring_type	type;
-	u32			old_trb_comp_code;
+	bool			last_td_was_short;
 	struct radix_tree_root	*trb_address_map;
 
 	ANDROID_KABI_RESERVE(1);
