@@ -44,10 +44,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		{
 			{RST, Vol_Low, 1},
 			{DOVDD, Vol_1800, 4},
+			{SensorMCLK, Vol_High, 1},
 			{AVDD, Vol_2800, 4},
-			{DVDD, Vol_1200, 8},
-			{RST, Vol_High, 1},
-			{SensorMCLK, Vol_High, 11},
+			{DVDD, Vol_1200, 9},
+			{RST, Vol_High, 11},
 		},
     },
 #endif
@@ -81,9 +81,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                SENSOR_DRVNAME_MOT_NEVADA_OV02B_MIPI_RAW,
                {
                         {RST, Vol_Low, 1},
-                        {DOVDD, Vol_1800, 3},
-                        {AVDD, Vol_High, 8},
+                        {DOVDD, Vol_1800, 4},
                         {SensorMCLK, Vol_High, 1},
+                        {AVDD, Vol_High, 9},
                         {RST, Vol_High, 12},
                },
        },
