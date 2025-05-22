@@ -311996,6 +311996,10 @@ enumeration {
       name: "PERR_ACCESS"
       value: 9
     }
+    enumerator {
+      name: "PERR_REMOTE"
+      value: 10
+    }
   }
 }
 enumeration {

@@ -1,0 +1,5 @@
+# How to use this file: http://go/approve-abi-break
+# ABI freeze commit: 0690b3438b4acb24f7ecfd946cf9a9ac5954ef20
+
+type 'enum prs_errcode' changed
+  enumerator 'PERR_REMOTE' (10) was added
