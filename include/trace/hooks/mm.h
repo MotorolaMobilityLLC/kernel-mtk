@@ -52,18 +52,13 @@ DECLARE_RESTRICTED_HOOK(android_rvh_bitmap_find_best_next_area,
 DECLARE_HOOK(android_vh_madvise_cold_pageout_skip,
 	     TP_PROTO(struct vm_area_struct *vma, struct folio *folio, bool pageout, bool *need_skip),
 	     TP_ARGS(vma, folio, pageout, need_skip));
-/*
 
-DECLARE_RESTRICTED_HOOK(android_rvh_set_skip_swapcache_flags,
-			TP_PROTO(gfp_t *flags),
-			TP_ARGS(flags), 1);
 DECLARE_RESTRICTED_HOOK(android_rvh_set_gfp_zone_flags,
-			TP_PROTO(gfp_t *flags),
+			TP_PROTO(unsigned int *flags),	/* gfp_t *flags */
 			TP_ARGS(flags), 1);
 DECLARE_RESTRICTED_HOOK(android_rvh_set_readahead_gfp_mask,
-			TP_PROTO(gfp_t *flags),
+			TP_PROTO(unsigned int *flags),	/* gfp_t *flags */
 			TP_ARGS(flags), 1);
-*/
 struct mem_cgroup;
 DECLARE_HOOK(android_vh_mem_cgroup_alloc,
 	TP_PROTO(struct mem_cgroup *memcg),
@@ -323,6 +318,11 @@ DECLARE_HOOK(android_vh_alloc_pages_slowpath_end,
 DECLARE_HOOK(android_vh_add_lazyfree_bypass,
 	TP_PROTO(struct lruvec *lruvec, struct folio *folio, bool *bypass),
 	TP_ARGS(lruvec, folio, bypass));
+
+DECLARE_HOOK(android_vh_do_async_mmap_readahead,
+	TP_PROTO(struct vm_fault *vmf, struct folio *folio, bool *skip),
+	TP_ARGS(vmf, folio, skip));
+
 DECLARE_HOOK(android_vh_alloc_contig_range_not_isolated,
 	TP_PROTO(unsigned long start, unsigned end),
 	TP_ARGS(start, end));
@@ -479,6 +479,24 @@ DECLARE_HOOK(android_vh_lruvec_del_folio,
 DECLARE_HOOK(android_vh_rmqueue_pcplist_override_batch,
 	TP_PROTO(int *batch),
 	TP_ARGS(batch));
+DECLARE_HOOK(android_vh_do_group_exit,
+	TP_PROTO(struct task_struct *tsk),
+	TP_ARGS(tsk));
+DECLARE_HOOK(android_vh_swapmem_gather_init,
+	TP_PROTO(struct mm_struct *mm),
+	TP_ARGS(mm));
+DECLARE_HOOK(android_vh_swapmem_gather_add_bypass,
+	TP_PROTO(struct mm_struct *mm, swp_entry_t entry, int nr, bool *bypass),
+	TP_ARGS(mm, entry, nr, bypass));
+DECLARE_HOOK(android_vh_swapmem_gather_finish,
+	TP_PROTO(struct mm_struct *mm),
+	TP_ARGS(mm));
+DECLARE_HOOK(android_vh_oom_swapmem_gather_init,
+	TP_PROTO(struct mm_struct *mm),
+	TP_ARGS(mm));
+DECLARE_HOOK(android_vh_oom_swapmem_gather_finish,
+	TP_PROTO(struct mm_struct *mm),
+	TP_ARGS(mm));
 #endif /* _TRACE_HOOK_MM_H */
 
 /* This part must be outside protection */
