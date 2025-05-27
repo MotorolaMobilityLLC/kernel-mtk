@@ -1199,6 +1199,15 @@ static struct task_struct *detach_a_hint_task(struct rq *src_rq, int dst_cpu)
 		if (task_running(src_rq, p))
 			continue;
 
+		if (task_is_vip(p, NOT_VIP)
+		        && cpumask_test_cpu(src_rq->cpu, &bcpus)
+				&& !cpumask_test_cpu(dst_cpu, &bcpus)
+				&& num_vip_in_cpu(src_rq->cpu) <= 1
+				&& src_rq->rt.rt_nr_running == 0) {
+			trace_sched_skip_force_migrate_vip(p, src_rq->cpu, dst_cpu);
+			continue;
+		}
+
 		task_util = uclamp_task_util(p);
 
 		if (!uclamp_min_ls)

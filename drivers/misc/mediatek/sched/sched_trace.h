@@ -359,6 +359,33 @@ TRACE_EVENT(sched_force_migrate,
 );
 
 /*
+ * Tracepoint for skip force migrate vip task.
+ */
+TRACE_EVENT(sched_skip_force_migrate_vip,
+
+	TP_PROTO(struct task_struct *tsk, int cpu, int des_cpu),
+	TP_ARGS(tsk, cpu, des_cpu),
+
+	TP_STRUCT__entry(
+		__array(char, comm, TASK_COMM_LEN)
+	        __field(pid_t, pid)
+                __field(int,  cpu)
+                __field(int,  des_cpu)
+                ),
+
+        TP_fast_assign(
+		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
+                __entry->pid = tsk->pid;
+                __entry->cpu = cpu;
+                __entry->des_cpu = des_cpu;
+                ),
+
+        TP_printk("comm=%s pid=%d cpu=%d des_cpu=%d",
+                __entry->comm, __entry->pid,
+                __entry->cpu, __entry->des_cpu)
+);
+
+/*
  * Tracepoint for task force migrations.
  */
 TRACE_EVENT(sched_next_new_balance,
