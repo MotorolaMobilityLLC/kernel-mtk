@@ -248,7 +248,24 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.iMirrorFlip = 0,
 	.i4BlockNumX = 408,
 	.i4BlockNumY = 306,
-	.i4Crop = { {0, 2}, {0, 0}, {0, 308}, {0, 0}, {0, 2},
+	.i4Crop = { {0, 0}, {0, 0}, {0, 306}, {0, 0}, {0, 0},
+		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
+};
+
+static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info_video = {
+	.i4OffsetX = 8,
+	.i4OffsetY = 4,
+	.i4PitchX = 8,
+	.i4PitchY = 8,
+	.i4PairNum = 4,
+	.i4SubBlkW = 8,
+	.i4SubBlkH = 2,
+	.i4PosL = {{9, 4}, {11, 7}, {15, 8}, {13, 11} },
+	.i4PosR = {{8, 4}, {10, 7}, {14, 8}, {12, 11} },
+	.iMirrorFlip = 0,
+	.i4BlockNumX = 408,
+	.i4BlockNumY = 230,
+	.i4Crop = { {0, 0}, {0, 0}, {0, 306}, {0, 0}, {0, 0},
 		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
 };
 #endif
@@ -1651,9 +1668,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-				imgsensor_pd_info.i4BlockNumX = 408;
-				imgsensor_pd_info.i4BlockNumY = 229;
-				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+				imgsensor_pd_info_video.i4BlockNumX = 408;
+				imgsensor_pd_info_video.i4BlockNumY = 230;
+				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info_video,
 					sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
 			default:
