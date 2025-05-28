@@ -328,21 +328,31 @@ static kal_uint32 streaming_control(kal_bool enable)
 {
     LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
     if (enable){
+        write_cmos_sensor(0xfd, 0x00);
+        write_cmos_sensor(0x21, 0x06);
+        write_cmos_sensor(0x21, 0x04);
+        write_cmos_sensor(0x21, 0x00);
+        write_cmos_sensor(0xfd, 0x00);
+        write_cmos_sensor(0xc2, 0x38);
+        mdelay(5);
         write_cmos_sensor(0xfd, 0x01);
+        write_cmos_sensor(0x33, 0x03);
         write_cmos_sensor(0x01, 0x03);
         write_cmos_sensor(0xfd, 0x00);
-        write_cmos_sensor(0x20, 0x0f);
+        write_cmos_sensor(0xfd, 0x00);
+        write_cmos_sensor(0xa0, 0x01);
         write_cmos_sensor(0xe7, 0x03);
         write_cmos_sensor(0xe7, 0x00);
-        write_cmos_sensor(0xa0, 0x01);
+        write_cmos_sensor(0x20, 0x0f);
     }
     else{
         write_cmos_sensor(0xfd, 0x00);
         write_cmos_sensor(0xa0, 0x00);
+        write_cmos_sensor(0xfd, 0x00);
         write_cmos_sensor(0x20, 0x0b);
-        write_cmos_sensor(0x21, 0x07); // set fast standby
-        write_cmos_sensor(0xfd, 0x01);
-        mdelay(10);
+        write_cmos_sensor(0xc2, 0x3a);
+        write_cmos_sensor(0xfd, 0x00);
+        write_cmos_sensor(0x21, 0x07);
     }
 
     return ERROR_NONE;
