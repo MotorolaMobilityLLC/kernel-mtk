@@ -1220,6 +1220,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	//LOG_INF("feature_id = %d\n", feature_id);
 	switch (feature_id) {
+	case SENSOR_FEATURE_GET_OFFSET_TO_START_OF_EXPOSURE:
+		*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 942800; //uint is ns
+		break;
 	case SENSOR_FEATURE_GET_ANA_GAIN_TABLE:
 		LOG_INF("use_my_gain_table,feature_id = %d\n", feature_id);
 		if ((void *)(uintptr_t) (*(feature_data + 1)) == NULL) {
