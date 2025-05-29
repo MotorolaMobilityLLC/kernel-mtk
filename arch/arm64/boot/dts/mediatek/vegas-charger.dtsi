@@ -225,6 +225,7 @@
 
 &lk_charger {
         temp_t4_threshold = <59>;
+        boot_battery_voltage = <3560000>;
 };
 
 &extcon_usb {
