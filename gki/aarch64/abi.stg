@@ -328971,6 +328971,17 @@ function {
   parameter_id: 0x13580d6c
 }
 function {
+  id: 0x1db4c81b
+  return_type_id: 0x48b5725f
+  parameter_id: 0x32a623d7
+  parameter_id: 0x6720d32f
+  parameter_id: 0x6720d32f
+  parameter_id: 0x1095dd7d
+  parameter_id: 0x6720d32f
+  parameter_id: 0x6720d32f
+  parameter_id: 0x1a748d39
+}
+function {
   id: 0x1db50e9d
   return_type_id: 0x48b5725f
   parameter_id: 0x32a623d7
@@ -418218,6 +418229,15 @@ elf_symbol {
   full_name: "netdev_set_tc_queue"
 }
 elf_symbol {
+  id: 0x5e43f44d
+  name: "netdev_stat_queue_sum"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x1325cc8d
+  type_id: 0x1db4c81b
+  full_name: "netdev_stat_queue_sum"
+}
+elf_symbol {
   id: 0x13d32ab6
   name: "netdev_state_change"
   is_defined: true
@@ -454749,6 +454769,7 @@ interface {
   symbol_id: 0xb78d7b09
   symbol_id: 0xd0f388bf
   symbol_id: 0xc32be078
+  symbol_id: 0x5e43f44d
   symbol_id: 0x13d32ab6
   symbol_id: 0xbd1de982
   symbol_id: 0x598e4dae
