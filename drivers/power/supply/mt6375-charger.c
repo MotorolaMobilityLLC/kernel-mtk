@@ -52,7 +52,7 @@ bool wt6670f_is_detect = false;
 EXPORT_SYMBOL_GPL(wt6670f_is_detect);
 extern int g_qc3p_id;
 #endif
-
+static bool wait_done;
 #if defined(CONFIG_MOTO_SWQC_SUPPORT)
 extern int wt6670f_en_hvdcp(void);
 #define DELAY_TIME 1500
@@ -1193,7 +1193,7 @@ static int mt6375_chg_enable_bc12(struct mt6375_chg_data *ddata, bool en)
 		/* CDP port specific process */
 		dev_info(ddata->dev, "check CDP block\n");
 		for (i = 0; i < max_wait_cnt; i++) {
-			if (is_usb_rdy(ddata->dev))
+			if (is_usb_rdy(ddata->dev) || wait_done)
 				break;
 			attach = atomic_read(&ddata->attach[0]);
 			if (attach == ATTACH_TYPE_PWR_RDY ||
@@ -1206,9 +1206,10 @@ static int mt6375_chg_enable_bc12(struct mt6375_chg_data *ddata, bool en)
 				break;
 			}
 		}
-		if (i == max_wait_cnt)
+		if (i == max_wait_cnt) {
+			wait_done = true;
 			dev_notice(ddata->dev, "%s: CDP timeout\n", __func__);
-		else
+                } else
 			dev_info(ddata->dev, "%s: CDP free\n", __func__);
 	}
 	__pm_relax(ddata->bc12_wakelock);
@@ -4222,6 +4223,7 @@ static int mt6375_chg_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	const struct mt6375_chg_field *fds = mt6375_chg_fields;
 	char *name = NULL;
+	wait_done = false;
 
 	dev_info(dev, "%s\n", __func__);
 	ddata = devm_kzalloc(dev, sizeof(*ddata), GFP_KERNEL);
