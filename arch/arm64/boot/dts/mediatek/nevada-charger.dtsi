@@ -242,6 +242,7 @@
         ac_charger_input_current = <2000000>;
         non_std_ac_charger_current = <1000000>;
         charging_host_charger_current = <1500000>;
+        boot_battery_voltage = <3560000>;
 };
 
 &extcon_usb {
