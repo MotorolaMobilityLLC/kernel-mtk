@@ -24994,6 +24994,11 @@ pointer_reference {
   pointee_type_id: 0xebd0f567
 }
 pointer_reference {
+  id: 0x3064f970
+  kind: POINTER
+  pointee_type_id: 0xebd3035e
+}
+pointer_reference {
   id: 0x30650ba6
   kind: POINTER
   pointee_type_id: 0xebd4c806
@@ -38407,6 +38412,11 @@ qualified {
   id: 0xebd0f567
   qualifier: CONST
   qualified_type_id: 0xdf046314
+}
+qualified {
+  id: 0xebd3035e
+  qualifier: CONST
+  qualified_type_id: 0xdf0bbbf0
 }
 qualified {
   id: 0xebd4c806
@@ -330948,6 +330958,11 @@ function {
   parameter_id: 0xa52a0930
 }
 function {
+  id: 0x1fcce445
+  return_type_id: 0x48b5725f
+  parameter_id: 0x3d52d75b
+}
+function {
   id: 0x1fcd1693
   return_type_id: 0x48b5725f
   parameter_id: 0x3d551c03
@@ -339534,6 +339549,12 @@ function {
   parameter_id: 0x3382a638
 }
 function {
+  id: 0x9115c860
+  return_type_id: 0x6720d32f
+  parameter_id: 0x31b5a66f
+  parameter_id: 0x3e10b518
+}
+function {
   id: 0x9115faa6
   return_type_id: 0x6720d32f
   parameter_id: 0x32a623d7
@@ -340567,6 +340588,13 @@ function {
   parameter_id: 0x3399c453
   parameter_id: 0x3de3f5a1
   parameter_id: 0x268136e5
+}
+function {
+  id: 0x919a2688
+  return_type_id: 0x6720d32f
+  parameter_id: 0x3064f970
+  parameter_id: 0x04a6a89c
+  parameter_id: 0x4585663f
 }
 function {
   id: 0x919a7322
@@ -397584,6 +397612,15 @@ elf_symbol {
   full_name: "disk_live"
 }
 elf_symbol {
+  id: 0x80814925
+  name: "display_timings_release"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x59264646
+  type_id: 0x1fcce445
+  full_name: "display_timings_release"
+}
+elf_symbol {
   id: 0x20b7a39e
   name: "divider_determine_rate"
   is_defined: true
@@ -400368,6 +400405,15 @@ elf_symbol {
   full_name: "drm_connector_set_panel_orientation"
 }
 elf_symbol {
+  id: 0xcf3c9405
+  name: "drm_connector_set_path_property"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x20c28775
+  type_id: 0x9115c860
+  full_name: "drm_connector_set_path_property"
+}
+elf_symbol {
   id: 0x2009a9ee
   name: "drm_connector_set_vrr_capable_property"
   is_defined: true
@@ -401691,6 +401737,15 @@ elf_symbol {
   full_name: "drm_hdmi_vendor_infoframe_from_display_mode"
 }
 elf_symbol {
+  id: 0x80d03c2c
+  name: "drm_helper_connector_dpms"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xecca004e
+  type_id: 0x907109f8
+  full_name: "drm_helper_connector_dpms"
+}
+elf_symbol {
   id: 0xf8c3c062
   name: "drm_helper_disable_unused_functions"
   is_defined: true
@@ -401734,6 +401789,15 @@ elf_symbol {
   crc: 0xd477552f
   type_id: 0x1e597e38
   full_name: "drm_helper_move_panel_connectors_to_head"
+}
+elf_symbol {
+  id: 0x06afbf8f
+  name: "drm_helper_probe_detect"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x281599d7
+  type_id: 0x91f8e2fb
+  full_name: "drm_helper_probe_detect"
 }
 elf_symbol {
   id: 0x25989156
@@ -402292,6 +402356,15 @@ elf_symbol {
   crc: 0xb8e04fdb
   type_id: 0x9dad5a62
   full_name: "drm_of_component_probe"
+}
+elf_symbol {
+  id: 0xdb6eae3a
+  name: "drm_of_crtc_port_mask"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x8be47ac8
+  type_id: 0x3d0f6874
+  full_name: "drm_of_crtc_port_mask"
 }
 elf_symbol {
   id: 0x122e3e9f
@@ -447392,6 +447465,15 @@ elf_symbol {
   full_name: "videomode_from_timing"
 }
 elf_symbol {
+  id: 0x6d215713
+  name: "videomode_from_timings"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xa7040131
+  type_id: 0x919a2688
+  full_name: "videomode_from_timings"
+}
+elf_symbol {
   id: 0x31e3b07f
   name: "virtio_balloon_hyp_ops"
   is_defined: true
@@ -453168,6 +453250,7 @@ interface {
   symbol_id: 0xdbc4a0bb
   symbol_id: 0x1db2229b
   symbol_id: 0x71602ed9
+  symbol_id: 0x80814925
   symbol_id: 0x20b7a39e
   symbol_id: 0x9c5fb17e
   symbol_id: 0xedd83590
@@ -453475,6 +453558,7 @@ interface {
   symbol_id: 0x8bd15036
   symbol_id: 0xbe9b3f22
   symbol_id: 0xb9cc9c24
+  symbol_id: 0xcf3c9405
   symbol_id: 0x2009a9ee
   symbol_id: 0xe4a41c47
   symbol_id: 0x33f2cc93
@@ -453622,11 +453706,13 @@ interface {
   symbol_id: 0x2a53ebba
   symbol_id: 0xfaa70ce5
   symbol_id: 0xebe5f6cf
+  symbol_id: 0x80d03c2c
   symbol_id: 0xf8c3c062
   symbol_id: 0xc00007fe
   symbol_id: 0x213004ed
   symbol_id: 0xc62eba2d
   symbol_id: 0x0869dd10
+  symbol_id: 0x06afbf8f
   symbol_id: 0x25989156
   symbol_id: 0x3a6e27e9
   symbol_id: 0xc9aa2ffd
@@ -453689,6 +453775,7 @@ interface {
   symbol_id: 0x0cf86849
   symbol_id: 0x6f8184d5
   symbol_id: 0x8aa099dd
+  symbol_id: 0xdb6eae3a
   symbol_id: 0x122e3e9f
   symbol_id: 0xc0d6517a
   symbol_id: 0xd479c471
@@ -458697,6 +458784,7 @@ interface {
   symbol_id: 0xbd9fe5b6
   symbol_id: 0x76ec943c
   symbol_id: 0x1a4e4142
+  symbol_id: 0x6d215713
   symbol_id: 0x31e3b07f
   symbol_id: 0x1bf9e9e5
   symbol_id: 0xec6b2b3d
