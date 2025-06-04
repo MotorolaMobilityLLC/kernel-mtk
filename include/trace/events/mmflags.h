@@ -136,12 +136,12 @@ IF_HAVE_PG_HWPOISON(PG_hwpoison,	"hwpoison"	)		\
 IF_HAVE_PG_IDLE(PG_young,		"young"		)		\
 IF_HAVE_PG_IDLE(PG_idle,		"idle"		)		\
 IF_HAVE_PG_ARCH_2(PG_arch_2,		"arch_2"	)		\
+IF_HAVE_PG_DEBUG(PG_debug,		"debug"		)		\
 IF_HAVE_PG_OEM_RESERVED(PG_oem_reserved_1,"oem_reserved_1")		\
 IF_HAVE_PG_OEM_RESERVED(PG_oem_reserved_2,"oem_reserved_2")		\
 IF_HAVE_PG_OEM_RESERVED(PG_oem_reserved_3,"oem_reserved_3")		\
 IF_HAVE_PG_OEM_RESERVED(PG_oem_reserved_4,"oem_reserved_4")		\
-IF_HAVE_PG_SKIP_KASAN_POISON(PG_skip_kasan_poison, "skip_kasan_poison") \
-IF_HAVE_PG_DEBUG(PG_debug,		"debug"		)
+IF_HAVE_PG_SKIP_KASAN_POISON(PG_skip_kasan_poison, "skip_kasan_poison")
 
 #define show_page_flags(flags)						\
 	(flags) ? __print_flags(flags, "|",				\
