@@ -827,8 +827,8 @@ static void disable_hw_reboot_interrupt(struct lvts_data *lvts_data, int tc_id)
 	 * offset to MSR_RAW.
 	 * When MSR_RAW is larger, SW will convert lower temperature/
 	 */
-	temp = readl(LVTSPROTCTL_0 + base);
-	writel(temp | 0x3FF, LVTSPROTCTL_0 + base);
+
+	writel(readl(LVTSPROTCTL_0 + base) | 0x3FFF, LVTSPROTCTL_0 + base);
 
 	/* Disable the interrupt of AP SW */
 	temp = readl(LVTSMONINT_0 + base);
@@ -877,8 +877,8 @@ static void enable_hw_reboot_interrupt(struct lvts_data *lvts_data, int tc_id)
 	writel(temp, LVTSMONINT_0 + base);
 
 	/* Clear the offset */
-	temp = readl(LVTSPROTCTL_0 + base);
-	writel(temp & ~0xFFF, LVTSPROTCTL_0 + base);
+
+	writel(readl(LVTSPROTCTL_0 + base) & ~0xFFF, LVTSPROTCTL_0 + base);
 }
 
 static void set_tc_hw_reboot_threshold(struct lvts_data *lvts_data,
