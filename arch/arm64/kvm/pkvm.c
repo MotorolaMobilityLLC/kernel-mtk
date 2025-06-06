@@ -733,10 +733,10 @@ void pkvm_host_reclaim_page(struct kvm *host_kvm, phys_addr_t ipa)
 	ppage = kvm_pinned_pages_iter_first(&host_kvm->arch.pkvm.pinned_pages,
 					   ipa, ipa + PAGE_SIZE - 1);
 	if (ppage) {
+		WARN_ON_ONCE(ppage->pins != 1);
+
 		if (ppage->pins)
 			ppage->pins--;
-		else
-			WARN_ON(1);
 
 		pins = ppage->pins;
 		if (!pins)
@@ -1113,7 +1113,7 @@ static struct module *pkvm_el2_mod_to_module(struct pkvm_el2_module *hyp_mod)
 	return container_of(arch, struct module, arch);
 }
 
-#ifdef CONFIG_PROTECTED_NVHE_STACKTRACE
+#ifdef CONFIG_PKVM_STACKTRACE
 unsigned long pkvm_el2_mod_kern_va(unsigned long addr)
 {
 	struct pkvm_el2_module *mod;
@@ -1485,7 +1485,7 @@ EXPORT_SYMBOL(__pkvm_register_el2_call);
 
 void pkvm_el2_mod_frob_sections(Elf_Ehdr *ehdr, Elf_Shdr *sechdrs, char *secstrings)
 {
-#ifdef CONFIG_PROTECTED_NVHE_FTRACE
+#ifdef CONFIG_PKVM_FTRACE
 	int i;
 
 	for (i = 0; i < ehdr->e_shnum; i++) {
@@ -1841,8 +1841,7 @@ kvm_pte_t *pkvm_pgtable_stage2_create_unlinked(struct kvm_pgtable *pgt, u64 phys
 	return NULL;
 }
 
-int pkvm_pgtable_stage2_split(struct kvm_pgtable *pgt, u64 addr, u64 size,
-			      struct kvm_mmu_memory_cache *mc)
+int pkvm_pgtable_stage2_split(struct kvm_pgtable *pgt, u64 addr, u64 size, void *mc)
 {
 	WARN_ON_ONCE(1);
 	return -EINVAL;
