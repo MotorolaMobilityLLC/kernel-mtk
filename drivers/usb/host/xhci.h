@@ -212,9 +212,6 @@ struct xhci_op_regs {
 #define CONFIG_CIE		(1 << 9)
 /* bits 10:31 - reserved and should be preserved */
 
-/* bits 15:0 - HCD page shift bit */
-#define XHCI_PAGE_SIZE_MASK     0xffff
-
 /**
  * struct xhci_intr_reg - Interrupt Register Set
  * @irq_pending:	IMAN - Interrupt Management Register.  Used to enable
@@ -1523,7 +1520,10 @@ struct xhci_hcd {
 	u16		max_interrupters;
 	/* imod_interval in ns (I * 250ns) */
 	u32		imod_interval;
-	u32		page_size;
+	/* 4KB min, 128MB max */
+	int		page_size;
+	/* Valid values are 12 to 20, inclusive */
+	int		page_shift;
 	/* MSI-X/MSI vectors */
 	int		nvecs;
 	/* optional clocks */
