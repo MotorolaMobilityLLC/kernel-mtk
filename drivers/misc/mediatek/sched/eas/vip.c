@@ -622,6 +622,9 @@ static void account_vip_runtime(struct rq *rq, struct task_struct *curr)
 	limit = vip_task_limit(curr);
 	if (vts->total_exec > limit) {
 		deactivate_vip_task(curr, rq);
+		if (trace_sched_vip_throttled_enabled())
+			trace_sched_vip_throttled(curr->pid, cpu_of(rq), vts->vip_prio,
+			    vts->throttle_time/1000000, vts->total_exec/1000000);
 		return;
 	}
 

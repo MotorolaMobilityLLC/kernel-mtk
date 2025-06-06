@@ -649,6 +649,33 @@ TRACE_EVENT(sched_vip_replace_next_task_fair,
 		__entry->vip_prio, __entry->cpu, __entry->exec,
 		__entry->limit)
 );
+
+TRACE_EVENT(sched_vip_throttled,
+	TP_PROTO(pid_t pid, int cpu, int vip_prio, int throttle_time, int exec_time),
+
+	TP_ARGS(pid, cpu, vip_prio, throttle_time, exec_time),
+
+	TP_STRUCT__entry(
+		__field(int, pid)
+		__field(int, cpu)
+		__field(int, vip_prio)
+		__field(int, throttle_time)
+		__field(int, exec_time)
+	),
+
+	TP_fast_assign(
+		__entry->pid       = pid;
+		__entry->cpu       = cpu;
+		__entry->vip_prio  = vip_prio;
+		__entry->throttle_time  = throttle_time;
+		__entry->exec_time   = exec_time;
+	),
+
+	TP_printk("pid=%d cpu=%d vip_prio=%d throttle_time=%d exec_time=%d",
+		  __entry->pid, __entry->cpu, __entry->vip_prio,
+		  __entry->throttle_time, __entry->exec_time)
+);
+
 #endif /* CONFIG_MTK_SCHED_VIP_TASK */
 
 #if IS_ENABLED(CONFIG_MTK_CORE_PAUSE)
