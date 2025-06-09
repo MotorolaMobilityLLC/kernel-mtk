@@ -334226,6 +334226,13 @@ function {
   parameter_id: 0x13580d6c
 }
 function {
+  id: 0x5634c0ce
+  return_type_id: 0x18bd6530
+  parameter_id: 0x064d6086
+  parameter_id: 0x4585663f
+  parameter_id: 0x9cf21ab5
+}
+function {
   id: 0x5641d9bd
   return_type_id: 0x18bd6530
   parameter_id: 0x052fac00
@@ -447937,6 +447944,15 @@ elf_symbol {
   full_name: "vmap"
 }
 elf_symbol {
+  id: 0xe6c94717
+  name: "vmap_pfn"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x23e70459
+  type_id: 0x5634c0ce
+  full_name: "vmap_pfn"
+}
+elf_symbol {
   id: 0xdd7d73a5
   name: "vmemdup_user"
   is_defined: true
@@ -458328,6 +458344,7 @@ interface {
   symbol_id: 0xa1a341df
   symbol_id: 0x7ab04a6e
   symbol_id: 0x8119b492
+  symbol_id: 0xe6c94717
   symbol_id: 0xdd7d73a5
   symbol_id: 0xe4441605
   symbol_id: 0x7d46f112
