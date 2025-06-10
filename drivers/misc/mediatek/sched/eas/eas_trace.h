@@ -492,6 +492,27 @@ TRACE_EVENT(sched_headroom_interval_tick,
 		__entry->tick)
 );
 
+TRACE_EVENT(sched_skip_select_ls_cpu,
+        TP_PROTO(struct task_struct *task, int cpu),
+        TP_ARGS(task, cpu),
+        TP_STRUCT__entry(
+                __array(char, comm, TASK_COMM_LEN)
+                __field(int, pid)
+                __field(int, cpu)
+        ),
+
+        TP_fast_assign(
+                memcpy(__entry->comm, task->comm, TASK_COMM_LEN);
+                __entry->pid = task->pid;
+                __entry->cpu = cpu;
+        ),
+
+        TP_printk("comm=%s pid=%d cpu=%d",
+                __entry->comm,
+                __entry->pid,
+                __entry->cpu)
+);
+
 #if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
 
 TRACE_EVENT(sched_find_imbalanced_vvip_gear,
