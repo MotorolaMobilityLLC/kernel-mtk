@@ -404284,6 +404284,15 @@ elf_symbol {
   full_name: "eventfd_signal_mask"
 }
 elf_symbol {
+  id: 0x9fefc82d
+  name: "ext_sched_class"
+  is_defined: true
+  symbol_type: OBJECT
+  crc: 0x1c3428ff
+  type_id: 0xeae74d43
+  full_name: "ext_sched_class"
+}
+elf_symbol {
   id: 0x62840a61
   name: "extcon_dev_register"
   is_defined: true
@@ -453989,6 +453998,7 @@ interface {
   symbol_id: 0x9fc520e2
   symbol_id: 0xfb855519
   symbol_id: 0x245323e8
+  symbol_id: 0x9fefc82d
   symbol_id: 0x62840a61
   symbol_id: 0xfc27a781
   symbol_id: 0x26cb4760
