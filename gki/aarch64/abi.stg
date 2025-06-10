@@ -86289,6 +86289,13 @@ member {
   bitsize: 1
 }
 member {
+  id: 0xea97a196
+  name: "dl_server_idle"
+  type_id: 0x4585663f
+  offset: 681
+  bitsize: 1
+}
+member {
   id: 0xa4b04617
   name: "dl_throttled"
   type_id: 0x4585663f
@@ -278839,6 +278846,7 @@ struct_union {
     member_id: 0xd4c38c2c
     member_id: 0x312229bb
     member_id: 0xf8de4a8a
+    member_id: 0xea97a196
     member_id: 0x372017ff
     member_id: 0xda403afa
     member_id: 0x0d1ed794
