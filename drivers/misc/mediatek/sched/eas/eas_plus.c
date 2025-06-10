@@ -997,6 +997,7 @@ void mtk_select_task_rq_rt(void *data, struct task_struct *p, int source_cpu,
 	unsigned long max_cap = uclamp_eff_value(p, UCLAMP_MAX);
 	unsigned int cfs_cpus = 0;
 	unsigned int idle_cpus = 0;
+	bool best_cpu_has_lt, cpu_has_lt;
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 	u64 ts[2];
 
@@ -1041,6 +1042,7 @@ void mtk_select_task_rq_rt(void *data, struct task_struct *p, int source_cpu,
 		min_exit_lat = UINT_MAX;
 		occupied_cap_per_gear = ULONG_MAX;
 		best_idle_cpu_per_gear = -1;
+		best_cpu_has_lt = true;
 		for_each_cpu_and(cpu, perf_domain_span(pd), cpu_active_mask) {
 			if (!cpumask_test_cpu(cpu, p->cpus_ptr))
 				continue;
@@ -1050,6 +1052,25 @@ void mtk_select_task_rq_rt(void *data, struct task_struct *p, int source_cpu,
 
 			if (!mtk_rt_task_fits_capacity(p, cpu, min_cap, max_cap))
 				continue;
+
+			/* RT task skips cpu that runs latency_sensitive or vip tasks */
+#if IS_ENABLED(CONFIG_MTK_SCHED_VIP_TASK)
+			cpu_has_lt = is_task_latency_sensitive(cpu_rq(cpu)->curr)
+				||  num_vip_in_cpu(cpu);
+#else
+			cpu_has_lt = is_task_latency_sensitive(cpu_rq(cpu)->curr);
+#endif
+
+			/*
+			 * When the best cpu is suitable and the current is not,
+			 * skip it
+			 */
+			if (cpu_has_lt && !best_cpu_has_lt) {
+				if (trace_sched_skip_select_ls_cpu_enabled()) {
+					trace_sched_skip_select_ls_cpu(p, cpu);
+				}
+				continue;
+			}
 
 			if (idle_cpu(cpu)) {
 				/* WFI > non-WFI */
@@ -1089,6 +1110,7 @@ void mtk_select_task_rq_rt(void *data, struct task_struct *p, int source_cpu,
 				lowest_cpu = cpu;
 				cfs_cpus = (cfs_cpus | (1 << cpu));
 			}
+			best_cpu_has_lt = cpu_has_lt;
 		}
 		if (best_idle_cpu_per_gear != -1) {
 			cpu_util = occupied_cap_per_gear;
