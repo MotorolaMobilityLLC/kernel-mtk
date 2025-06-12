@@ -20,11 +20,11 @@
 #define PHYSICAL_WIDTH              67716
 #define PHYSICAL_HEIGHT            150480
 
-#define DATA_RATE                   1080
+#define DATA_RATE                   1138
 #define HSA                         4
 #define HBP                         24
 #define HFP                         36
-#define VSA                         5
+#define VSA                         4
 #define VBP                         32
 
 /*Parameter setting for mode 0 Start*/
