@@ -427,7 +427,7 @@ static const struct drm_display_mode performance_mode_120hz = {
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 static struct mtk_panel_params ext_params_60hz = {
-	.pll_clk = 540,
+	.pll_clk = 569,
 	//.data_rate = DATA_RATE,
 	//.vfp_low_power = 880,
 	.cust_esd_check = 1,
