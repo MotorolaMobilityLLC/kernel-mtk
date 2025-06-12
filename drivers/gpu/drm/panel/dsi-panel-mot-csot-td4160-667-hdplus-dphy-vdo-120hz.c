@@ -226,12 +226,14 @@ static void csot_td4160_panel_init(struct csot_td4160 *ctx)
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
 
-	csot_td4160_dcs_write_seq_static(ctx, 0xB0, 0x04);
+	csot_td4160_dcs_write_seq_static(ctx, 0xB0, 0x00);
+	csot_td4160_dcs_write_seq_static(ctx, 0xD6, 0x00);
+	csot_td4160_dcs_write_seq_static(ctx, 0xC1, 0x30, 0x61, 0x50, 0xfa, 0x01, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x40, 0x0f,0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x08, 0x47, 0x0B, 0xD7, 0x0F, 0x3C);
 	csot_td4160_dcs_write_seq_static(ctx, 0xB8, 0x02, 0x4A, 0x06, 0x00, 0x04, 0x28);
 	csot_td4160_dcs_write_seq_static(ctx, 0xB9, 0x02, 0x4A, 0x18, 0x00, 0x09, 0x56);
 	csot_td4160_dcs_write_seq_static(ctx, 0xBA, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00);
 	csot_td4160_dcs_write_seq_static(ctx, 0xCE, 0x5d, 0x40, 0x43, 0x49, 0x55, 0x62, 0x71, 0x82, 0x94, 0xa8, 0xb9, 0xcb, 0xdb, 0xe9, 0xf5, 0xfc, 0xff, 0x0b, 0x0f, 0x04, 0x04, 0x00, 0x03, 0x6c);
-	csot_td4160_dcs_write_seq_static(ctx, 0xD6, 0x00);
 
 	csot_td4160_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	csot_td4160_dcs_write_seq_static(ctx, 0x55, 0x00);
@@ -459,11 +461,11 @@ static struct mtk_panel_params ext_params_60hz = {
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 
-	.dyn = {
+	/*.dyn = {
 		.switch_en = 1,
 		.pll_clk = 620,
 		.hfp = 30,
-	},
+	},*/
 
 /*
 
@@ -476,7 +478,6 @@ static struct mtk_panel_params ext_params_60hz = {
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
 */
-
 };
 
 static struct mtk_panel_params ext_params_90hz = {
@@ -513,11 +514,11 @@ static struct mtk_panel_params ext_params_90hz = {
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 
-	.dyn = {
+	/*.dyn = {
 		.switch_en = 1,
 		.pll_clk = 620,
 		.hfp = 30,
-	},
+	},*/
 
 /*
 	.ssc_enable = 0,
@@ -529,7 +530,6 @@ static struct mtk_panel_params ext_params_90hz = {
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
 */
-
 };
 
 static struct mtk_panel_params ext_params_120hz = {
@@ -566,11 +566,11 @@ static struct mtk_panel_params ext_params_120hz = {
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 
-	.dyn = {
+	/*.dyn = {
 		.switch_en = 1,
 		.pll_clk = 620,
 		.hfp = 30,
-	},
+	},*/
 
 /*
 	.ssc_enable = 0,
@@ -582,7 +582,6 @@ static struct mtk_panel_params ext_params_120hz = {
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
 */
-
 };
 
 static int csot_td4160_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
@@ -913,7 +912,7 @@ static int csot_td4160_probe(struct mipi_dsi_device *dsi)
 	ctx->dev = dev;
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
-	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE;
+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE |  MIPI_DSI_MODE_VIDEO_BURST;
 //			 | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET
 //			 | MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
