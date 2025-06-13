@@ -356067,6 +356067,14 @@ function {
   parameter_id: 0x21003da7
 }
 function {
+  id: 0x9bd01103
+  return_type_id: 0x6720d32f
+  parameter_id: 0x18bd6530
+  parameter_id: 0x1d19a9d5
+  parameter_id: 0x2e029f76
+  parameter_id: 0x13580d6c
+}
+function {
   id: 0x9bd01b5c
   return_type_id: 0x6720d32f
   parameter_id: 0x18bd6530
@@ -377820,6 +377828,15 @@ elf_symbol {
   full_name: "__traceiter_android_vh_security_audit_log_setid"
 }
 elf_symbol {
+  id: 0x874fcdb2
+  name: "__traceiter_android_vh_set_tsk_need_resched_lazy"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xb784e293
+  type_id: 0x9bd01103
+  full_name: "__traceiter_android_vh_set_tsk_need_resched_lazy"
+}
+elf_symbol {
   id: 0xaa3f6a65
   name: "__traceiter_android_vh_set_wake_flags"
   is_defined: true
@@ -383632,6 +383649,15 @@ elf_symbol {
   crc: 0x7c5aa8a7
   type_id: 0x18ccbd2c
   full_name: "__tracepoint_android_vh_security_audit_log_setid"
+}
+elf_symbol {
+  id: 0xb6de2d88
+  name: "__tracepoint_android_vh_set_tsk_need_resched_lazy"
+  is_defined: true
+  symbol_type: OBJECT
+  crc: 0x7c5aa8a7
+  type_id: 0x18ccbd2c
+  full_name: "__tracepoint_android_vh_set_tsk_need_resched_lazy"
 }
 elf_symbol {
   id: 0xd7ceb15f
@@ -450461,6 +450487,7 @@ interface {
   symbol_id: 0x26dcb47e
   symbol_id: 0xc4e90767
   symbol_id: 0x537d5581
+  symbol_id: 0x874fcdb2
   symbol_id: 0xaa3f6a65
   symbol_id: 0xa2fe718f
   symbol_id: 0x98a943de
@@ -451107,6 +451134,7 @@ interface {
   symbol_id: 0xfbb545c8
   symbol_id: 0xb5ce3771
   symbol_id: 0xffae3bcf
+  symbol_id: 0xb6de2d88
   symbol_id: 0xd7ceb15f
   symbol_id: 0x923147c1
   symbol_id: 0x5cfdecb8
