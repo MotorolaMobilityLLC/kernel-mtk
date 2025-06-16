@@ -14114,6 +14114,11 @@ pointer_reference {
   pointee_type_id: 0xb0510713
 }
 pointer_reference {
+  id: 0x2684ad87
+  kind: POINTER
+  pointee_type_id: 0xb0525083
+}
+pointer_reference {
   id: 0x269228ef
   kind: POINTER
   pointee_type_id: 0xb0084520
@@ -35742,6 +35747,11 @@ typedef {
   id: 0x732d9646
   name: "z_streamp"
   referred_type_id: 0x3aac87ab
+}
+typedef {
+  id: 0x02521dc5
+  name: "zap_flags_t"
+  referred_type_id: 0x4585663f
 }
 typedef {
   id: 0x8061720d
@@ -93483,6 +93493,12 @@ member {
   name: "evbit"
   type_id: 0xb914bfab
   offset: 320
+}
+member {
+  id: 0xbc025ad7
+  name: "even_cows"
+  type_id: 0x6d7f5ff6
+  offset: 64
 }
 member {
   id: 0x0a28c0b3
@@ -195305,6 +195321,11 @@ member {
   offset: 192
 }
 member {
+  id: 0x2105ea66
+  name: "single_folio"
+  type_id: 0x2170d06d
+}
+member {
   id: 0x70b795c3
   name: "single_lun"
   type_id: 0x4585663f
@@ -229180,6 +229201,12 @@ member {
   name: "ywrapstep"
   type_id: 0xe8034002
   offset: 352
+}
+member {
+  id: 0x3d8d0583
+  name: "zap_flags"
+  type_id: 0x02521dc5
+  offset: 96
 }
 member {
   id: 0x8aa8a217
@@ -297843,6 +297870,17 @@ struct_union {
   }
 }
 struct_union {
+  id: 0xb0525083
+  kind: STRUCT
+  name: "zap_details"
+  definition {
+    bytesize: 16
+    member_id: 0x2105ea66
+    member_id: 0xbc025ad7
+    member_id: 0x3d8d0583
+  }
+}
+struct_union {
   id: 0x03cc00a2
   kind: STRUCT
   name: "zone"
@@ -321288,6 +321326,14 @@ function {
   parameter_id: 0x0930c6d9
   parameter_id: 0x054f691a
   parameter_id: 0x6d7f5ff6
+}
+function {
+  id: 0x12dd131b
+  return_type_id: 0x48b5725f
+  parameter_id: 0x0a134144
+  parameter_id: 0x33756485
+  parameter_id: 0x33756485
+  parameter_id: 0x2684ad87
 }
 function {
   id: 0x12dd8909
@@ -450419,6 +450465,15 @@ elf_symbol {
   full_name: "yield"
 }
 elf_symbol {
+  id: 0x5056757e
+  name: "zap_page_range_single"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xe25df7f5
+  type_id: 0x12dd131b
+  full_name: "zap_page_range_single"
+}
+elf_symbol {
   id: 0x0fc8c78d
   name: "zap_vma_ptes"
   is_defined: true
@@ -459602,6 +459657,7 @@ interface {
   symbol_id: 0x7a3f2cd6
   symbol_id: 0x807b9318
   symbol_id: 0x2407d2bf
+  symbol_id: 0x5056757e
   symbol_id: 0x0fc8c78d
   symbol_id: 0xe3bd2eb2
   symbol_id: 0xe8e0ea6a
