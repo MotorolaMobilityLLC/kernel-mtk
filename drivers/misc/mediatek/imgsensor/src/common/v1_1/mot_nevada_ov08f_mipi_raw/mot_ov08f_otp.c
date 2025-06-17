@@ -259,14 +259,14 @@ static u8 ov08f_otp_read_group(u8 block_start, u8 block_end, unsigned char *data
 	int index = 0;
 
 	for (j = block_start; j < block_end; ++j) {
+		ov08f_sensor_otp_set_block(j);
 		for (i = 0; i < BLOCK_DATA_SIZE; i++) {
-			ov08f_sensor_otp_set_block(j);
 			data[index++] = read_cmos_sensor(i);
 		}
 	}
 
+	ov08f_sensor_otp_set_block(block_end);
 	for (i = 0; i < LAST_BLOCK_DATA_SIZE; i++) {
-		ov08f_sensor_otp_set_block(block_end);
 		data[index++] = read_cmos_sensor(i);
 	}
 
