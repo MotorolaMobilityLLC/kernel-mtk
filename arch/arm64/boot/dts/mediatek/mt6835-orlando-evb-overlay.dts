@@ -26,6 +26,7 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "vegas";
+			mot,hab_product = "orlando";
 			mot,board-id = <(ORLANDO_RADIO_ID << 8 | 0x41) 0xA100>;
 		};
 	};
