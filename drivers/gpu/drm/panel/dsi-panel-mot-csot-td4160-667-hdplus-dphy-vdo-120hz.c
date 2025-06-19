@@ -221,17 +221,19 @@ static void csot_td4160_panel_init(struct csot_td4160 *ctx)
 		gpiod_set_value(ctx->reset_gpio, 0);
 		udelay(10 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(12);
+		msleep(20);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
 
-	csot_td4160_dcs_write_seq_static(ctx, 0xB0, 0x04);
+	csot_td4160_dcs_write_seq_static(ctx, 0xB0, 0x00);
+	csot_td4160_dcs_write_seq_static(ctx, 0xD6, 0x00);
+	csot_td4160_dcs_write_seq_static(ctx, 0xC1, 0x30, 0x11, 0x50, 0xfa, 0x01, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x40, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x08, 0x47, 0x0B, 0xD7, 0x0F, 0x3C);
 	csot_td4160_dcs_write_seq_static(ctx, 0xB8, 0x02, 0x4A, 0x06, 0x00, 0x04, 0x28);
 	csot_td4160_dcs_write_seq_static(ctx, 0xB9, 0x02, 0x4A, 0x18, 0x00, 0x09, 0x56);
 	csot_td4160_dcs_write_seq_static(ctx, 0xBA, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00);
 	csot_td4160_dcs_write_seq_static(ctx, 0xCE, 0x5d, 0x40, 0x43, 0x49, 0x55, 0x62, 0x71, 0x82, 0x94, 0xa8, 0xb9, 0xcb, 0xdb, 0xe9, 0xf5, 0xfc, 0xff, 0x0b, 0x0f, 0x04, 0x04, 0x00, 0x03, 0x6c);
-        csot_td4160_dcs_write_seq_static(ctx, 0xD6, 0x00);
 
 	csot_td4160_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	csot_td4160_dcs_write_seq_static(ctx, 0x55, 0x00);
@@ -458,7 +460,8 @@ static struct mtk_panel_params ext_params_60hz = {
 	.lcm_index = 2,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
-
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
 	/*.dyn = {
 		.switch_en = 1,
 		.pll_clk = 620,
@@ -470,8 +473,6 @@ static struct mtk_panel_params ext_params_60hz = {
 	//.ssc_enable = 0,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
-	.physical_width_um = PHYSICAL_WIDTH,
-	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
@@ -511,7 +512,8 @@ static struct mtk_panel_params ext_params_90hz = {
 	.lcm_index = 2,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
-
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
 	/*.dyn = {
 		.switch_en = 1,
 		.pll_clk = 620,
@@ -522,8 +524,6 @@ static struct mtk_panel_params ext_params_90hz = {
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
-	.physical_width_um = PHYSICAL_WIDTH,
-	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
@@ -563,7 +563,8 @@ static struct mtk_panel_params ext_params_120hz = {
 	.lcm_index = 2,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
-
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
 	/*.dyn = {
 		.switch_en = 1,
 		.pll_clk = 620,
@@ -574,8 +575,6 @@ static struct mtk_panel_params ext_params_120hz = {
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
-	.physical_width_um = PHYSICAL_WIDTH,
-	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
