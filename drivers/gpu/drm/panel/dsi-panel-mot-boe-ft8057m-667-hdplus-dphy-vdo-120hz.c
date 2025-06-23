@@ -169,7 +169,7 @@ static void boe_ft8057m_panel_init(struct boe_ft8057m *ctx)
 	boe_ft8057m_dcs_write_seq_static(ctx, 0x11);
 	msleep(90);
 	boe_ft8057m_dcs_write_seq_static(ctx, 0x29);
-//	boe_ft8057m_dcs_write_seq_static(ctx, 0x35,0x00);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0x35,0x00);
 	boe_ft8057m_dcs_write_seq_static(ctx, 0x51,0xFC,0x0F);
 	boe_ft8057m_dcs_write_seq_static(ctx, 0x53,0x2C);
 	boe_ft8057m_dcs_write_seq_static(ctx, 0x55,0x01);
@@ -355,7 +355,8 @@ static struct mtk_panel_params ext_params_60hz = {
 	.lcm_index = 3,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
-
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
 	.dyn = {
 		.switch_en = 1,
 		.pll_clk = 620,
@@ -367,8 +368,6 @@ static struct mtk_panel_params ext_params_60hz = {
 	//.ssc_enable = 0,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
-	.physical_width_um = PHYSICAL_WIDTH,
-	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
@@ -402,7 +401,8 @@ static struct mtk_panel_params ext_params_90hz = {
 	.lcm_index = 3,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
-
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
 	.dyn = {
 		.switch_en = 1,
 		.pll_clk = 620,
@@ -413,8 +413,6 @@ static struct mtk_panel_params ext_params_90hz = {
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
-	.physical_width_um = PHYSICAL_WIDTH,
-	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
@@ -448,7 +446,8 @@ static struct mtk_panel_params ext_params_120hz = {
 	.lcm_index = 3,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
-
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
 	.dyn = {
 		.switch_en = 1,
 		.pll_clk = 620,
@@ -459,8 +458,6 @@ static struct mtk_panel_params ext_params_120hz = {
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
-	.physical_width_um = PHYSICAL_WIDTH,
-	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
