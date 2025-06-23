@@ -114,6 +114,7 @@
   __tracepoint_android_rvh_set_cpus_allowed_comm
   __tracepoint_android_rvh_dequeue_task
   cpufreq_update_policy
+  cgroup_threadgroup_rwsem
 
 #required by millet.ko
   __traceiter_android_rvh_refrigerator
