@@ -59,9 +59,9 @@ static struct imgsensor_info_struct imgsensor_info = {
     .checksum_value = 0x43daf615, /*checksum value for Camera Auto Test*/
 
     .pre = {
-		.pclk = 36500000,    /*record different mode's pclk*/
-		.linelength  =  478,    /*record different mode's linelength*/
-		.framelength = 2544,    /*record different mode's framelength*/
+		.pclk = 36000000,    /*record different mode's pclk*/
+		.linelength  =  472,    /*record different mode's linelength*/
+		.framelength = 2541,    /*record different mode's framelength*/
 		.startx = 0, /*record different mode's startx of grabwindow*/
 		.starty = 0,    /*record different mode's starty of grabwindow*/
 		.grabwindow_width  = 3264,
@@ -71,9 +71,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 288000000,
     },
     .cap = {
-		.pclk = 36500000,    /*record different mode's pclk*/
-		.linelength  =  478,    /*record different mode's linelength*/
-		.framelength = 2544,    /*record different mode's framelength*/
+		.pclk = 36000000,    /*record different mode's pclk*/
+		.linelength  =  472,    /*record different mode's linelength*/
+		.framelength = 2541,    /*record different mode's framelength*/
 		.startx = 0, /*record different mode's startx of grabwindow*/
 		.starty = 0,    /*record different mode's starty of grabwindow*/
 		.grabwindow_width  = 3264,
@@ -83,9 +83,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 288000000,
     },
     .normal_video = {
-		.pclk = 36500000,    /*record different mode's pclk*/
-		.linelength  =  478,    /*record different mode's linelength*/
-		.framelength = 2544,    /*record different mode's framelength*/
+		.pclk = 36000000,    /*record different mode's pclk*/
+		.linelength  =  472,    /*record different mode's linelength*/
+		.framelength = 2541,    /*record different mode's framelength*/
 		.startx = 0, /*record different mode's startx of grabwindow*/
 		.starty = 0, /*record different mode's starty of grabwindow*/
 		.grabwindow_width  = 3264,
@@ -95,9 +95,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 288000000,
     },
     .hs_video = {
-		.pclk = 36500000,    /*record different mode's pclk*/
-		.linelength  =  478,    /*record different mode's linelength*/
-		.framelength = 2544,    /*record different mode's framelength*/
+		.pclk = 36000000,    /*record different mode's pclk*/
+		.linelength  =  472,    /*record different mode's linelength*/
+		.framelength = 2541,    /*record different mode's framelength*/
 		.startx = 0, /*record different mode's startx of grabwindow*/
 		.starty = 0,    /*record different mode's starty of grabwindow*/
 		.grabwindow_width  = 3264,
@@ -107,9 +107,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 288000000,
     },
     .slim_video = {
-		.pclk = 36500000,    /*record different mode's pclk*/
-		.linelength  =  478,    /*record different mode's linelength*/
-		.framelength = 2544,    /*record different mode's framelength*/
+		.pclk = 36000000,    /*record different mode's pclk*/
+		.linelength  =  472,    /*record different mode's linelength*/
+		.framelength = 2541,    /*record different mode's framelength*/
 		.startx = 0, /*record different mode's startx of grabwindow*/
 		.starty = 0,    /*record different mode's starty of grabwindow*/
 		.grabwindow_width  = 3264,
@@ -329,6 +329,7 @@ static kal_uint32 streaming_control(kal_bool enable)
     LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
     if (enable){
         write_cmos_sensor(0xfd, 0x00);
+        write_cmos_sensor(0x19, 0x40);
         write_cmos_sensor(0x21, 0x06);
         write_cmos_sensor(0x21, 0x04);
         write_cmos_sensor(0x21, 0x00);
@@ -338,7 +339,6 @@ static kal_uint32 streaming_control(kal_bool enable)
         write_cmos_sensor(0xfd, 0x01);
         write_cmos_sensor(0x33, 0x03);
         write_cmos_sensor(0x01, 0x03);
-        write_cmos_sensor(0xfd, 0x00);
         write_cmos_sensor(0xfd, 0x00);
         write_cmos_sensor(0xa0, 0x01);
         write_cmos_sensor(0xe7, 0x03);
@@ -504,6 +504,31 @@ static void night_mode(kal_bool enable)
 {
 }
 
+static void common_settings(void)
+{
+	write_cmos_sensor(0xfd, 0x00);
+	write_cmos_sensor(0xc2, 0x32);
+	write_cmos_sensor(0x21, 0x0f);
+	write_cmos_sensor(0xfd, 0x00);
+	write_cmos_sensor(0xc2, 0x30);
+	write_cmos_sensor(0x21, 0x0e);
+	write_cmos_sensor(0x21, 0x00);
+	write_cmos_sensor(0xfd, 0x00);
+	write_cmos_sensor(0x20, 0x0e);
+	mdelay(3);
+	write_cmos_sensor(0x20, 0x0b);
+	write_cmos_sensor(0xfd, 0x00);
+	write_cmos_sensor(0x10, 0xe8);
+	write_cmos_sensor(0x11, 0x5e);
+	write_cmos_sensor(0x12, 0x01);
+	write_cmos_sensor(0x13, 0x15);
+	write_cmos_sensor(0x14, 0x20);
+	write_cmos_sensor(0x1e, 0x13);
+	write_cmos_sensor(0x19, 0x40);
+	write_cmos_sensor(0x21, 0x00);
+	mdelay(3);
+}
+
 static void sensor_init(void)
 {
 	LOG_INF("%s E\n", __func__);
@@ -515,9 +540,7 @@ static void preview_setting(void)
 {
     LOG_INF("%s start\n", __func__);
 	//3264X2448_30fps
-	write_cmos_sensor(0xfd, 0x00);
-	write_cmos_sensor(0x20, 0x0e);
-	mdelay(3);
+	common_settings();
 	ov08f_table_write_cmos_sensor(addr_data_pair_preview_mot_nevada_ov08f,
 		sizeof(addr_data_pair_preview_mot_nevada_ov08f)/sizeof(kal_uint16));
     LOG_INF("%s end\n", __func__);
@@ -527,9 +550,7 @@ static void capture_setting(kal_uint16 currefps)
 {
     LOG_INF("%s start currefps = %d\n", __func__, currefps);
 	//3264X2448_30fps
-	write_cmos_sensor(0xfd, 0x00);
-	write_cmos_sensor(0x20, 0x0e);
-	mdelay(3);
+	common_settings();
 	ov08f_table_write_cmos_sensor(addr_data_pair_preview_mot_nevada_ov08f,
 		sizeof(addr_data_pair_preview_mot_nevada_ov08f)/sizeof(kal_uint16));
     LOG_INF("%s end\n", __func__);
@@ -539,9 +560,7 @@ static void normal_video_setting(void)
 {
     LOG_INF("%s start\n", __func__);
 	//3264X1836_30fps
-	write_cmos_sensor(0xfd, 0x00);
-	write_cmos_sensor(0x20, 0x0e);
-	mdelay(3);
+	common_settings();
 	ov08f_table_write_cmos_sensor(addr_data_pair_normal_video_mot_nevada_ov08f,
 		sizeof(addr_data_pair_normal_video_mot_nevada_ov08f)/sizeof(kal_uint16));
     LOG_INF("%s end\n", __func__);
@@ -550,9 +569,7 @@ static void normal_video_setting(void)
 static void hs_video_setting(void)
 {
     LOG_INF("%s start\n", __func__);
-	write_cmos_sensor(0xfd, 0x00);
-	write_cmos_sensor(0x20, 0x0e);
-	mdelay(3);
+	common_settings();
 	ov08f_table_write_cmos_sensor(addr_data_pair_preview_mot_nevada_ov08f,
 		sizeof(addr_data_pair_preview_mot_nevada_ov08f)/sizeof(kal_uint16));
     LOG_INF("%s end\n", __func__);
@@ -561,15 +578,11 @@ static void hs_video_setting(void)
 static void slim_video_setting(void)
 {
     LOG_INF("%s start\n", __func__);
-	write_cmos_sensor(0xfd, 0x00);
-	write_cmos_sensor(0x20, 0x0e);
-	mdelay(3);
+	common_settings();
 	ov08f_table_write_cmos_sensor(addr_data_pair_preview_mot_nevada_ov08f,
 		sizeof(addr_data_pair_preview_mot_nevada_ov08f)/sizeof(kal_uint16));
     LOG_INF("%s end\n", __func__);
 }
-
-
 
 static kal_uint32 return_sensor_id(void)
 {
