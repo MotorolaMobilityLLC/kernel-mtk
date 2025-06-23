@@ -390874,6 +390874,15 @@ elf_symbol {
   full_name: "cgroup_taskset_next"
 }
 elf_symbol {
+  id: 0xb7533de5
+  name: "cgroup_threadgroup_rwsem"
+  is_defined: true
+  symbol_type: OBJECT
+  crc: 0x15fe2f01
+  type_id: 0x6c952252
+  full_name: "cgroup_threadgroup_rwsem"
+}
+elf_symbol {
   id: 0xb86aeda2
   name: "check_move_unevictable_folios"
   is_defined: true
@@ -453814,6 +453823,7 @@ interface {
   symbol_id: 0xd7e100b7
   symbol_id: 0x6d77f512
   symbol_id: 0xb3cbf3c8
+  symbol_id: 0xb7533de5
   symbol_id: 0xb86aeda2
   symbol_id: 0x65e5fa26
   symbol_id: 0x7787a65e
