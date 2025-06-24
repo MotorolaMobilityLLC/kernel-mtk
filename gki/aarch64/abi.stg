@@ -324703,6 +324703,11 @@ function {
   parameter_id: 0x4585663f
 }
 function {
+  id: 0x1700e5ae
+  return_type_id: 0x48b5725f
+  parameter_id: 0x1e62d0f5
+}
+function {
   id: 0x1701cc60
   return_type_id: 0x48b5725f
   parameter_id: 0x1e6677cf
@@ -408289,6 +408294,15 @@ elf_symbol {
   full_name: "get_each_kmemcache_object"
 }
 elf_symbol {
+  id: 0xf247c34c
+  name: "get_file_active"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xdd387a45
+  type_id: 0x42b840c9
+  full_name: "get_file_active"
+}
+elf_symbol {
   id: 0xd98cefe6
   name: "get_file_rcu"
   is_defined: true
@@ -413299,6 +413313,15 @@ elf_symbol {
   crc: 0x5e1fe77c
   type_id: 0x68eb59dc
   full_name: "iommu_group_ref_get"
+}
+elf_symbol {
+  id: 0x87342c78
+  name: "iommu_group_remove_device"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x84dc4e90
+  type_id: 0x100e6fc8
+  full_name: "iommu_group_remove_device"
 }
 elf_symbol {
   id: 0x1f9ceb72
@@ -446532,6 +446555,15 @@ elf_symbol {
   full_name: "utf8s_to_utf16s"
 }
 elf_symbol {
+  id: 0xb0c1eaf9
+  name: "uuid_gen"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x40224a20
+  type_id: 0x1700e5ae
+  full_name: "uuid_gen"
+}
+elf_symbol {
   id: 0xe7b3f166
   name: "uuid_null"
   is_defined: true
@@ -455782,6 +455814,7 @@ interface {
   symbol_id: 0x08e235b1
   symbol_id: 0x53fa69e4
   symbol_id: 0x6f713df1
+  symbol_id: 0xf247c34c
   symbol_id: 0xd98cefe6
   symbol_id: 0xd2727579
   symbol_id: 0x4579b2cf
@@ -456338,6 +456371,7 @@ interface {
   symbol_id: 0xadf1bba5
   symbol_id: 0x1a299344
   symbol_id: 0xe52a90e5
+  symbol_id: 0x87342c78
   symbol_id: 0x1f9ceb72
   symbol_id: 0x119c23e5
   symbol_id: 0x9aea043a
@@ -460029,6 +460063,7 @@ interface {
   symbol_id: 0xa459c02b
   symbol_id: 0x4b0dcba7
   symbol_id: 0xa040d5a9
+  symbol_id: 0xb0c1eaf9
   symbol_id: 0xe7b3f166
   symbol_id: 0xb21b47da
   symbol_id: 0x4e2f55da
