@@ -115,6 +115,11 @@
   __tracepoint_android_rvh_dequeue_task
   cpufreq_update_policy
 
+#required by millet.ko
+  __traceiter_android_rvh_refrigerator
+  __tracepoint_android_rvh_refrigerator
+  freezer_cgrp_subsys
+
 # required by trace_hook.ko
   android_rvh_probe_register
 
