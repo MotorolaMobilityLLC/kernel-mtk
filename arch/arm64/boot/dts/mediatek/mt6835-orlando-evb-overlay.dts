@@ -17,6 +17,7 @@
 
 #include "mediatek/mt6835-vegas-common-overlay.dtsi"
 #include "mediatek/vegas-audio-dvt2.dtsi"
+#include "mediatek/mt6835_orlando_camera_overlay.dtsi"
 
 #define ORLANDO_RADIO_ID	2
 

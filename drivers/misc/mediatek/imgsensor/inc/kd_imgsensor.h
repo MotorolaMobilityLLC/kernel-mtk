@@ -416,6 +416,14 @@
 #define MOT_VEGAS_OV08D_SENSOR_ID                        0x0847
 #define SENSOR_DRVNAME_MOT_VEGAS_OV08D_MIPI_RAW          "mot_vegas_ov08d_mipi_raw"
 
+//orlando bring up
+#define MOT_ORLANDO_OV50D_SENSOR_ID_OFFSET               0x2
+#define MOT_ORLANDO_OV08D_SENSOR_ID_OFFSET               0x1
+#define MOT_ORLANDO_OV50D_SENSOR_ID                      0x565046   /*(0x565044 + MOT_ORLANDO_OV50D_SENSOR_ID_OFFSET)*/
+#define SENSOR_DRVNAME_MOT_ORLANDO_OV50D_MIPI_RAW        "mot_orlando_ov50d_mipi_raw"
+#define MOT_ORLANDO_OV08D_SENSOR_ID                      0x0848     /*(0x0847 + MOT_ORLANDO_OV08D_SENSOR_ID_OFFSET)*/
+#define SENSOR_DRVNAME_MOT_ORLANDO_OV08D_MIPI_RAW        "mot_orlando_ov08d_mipi_raw"
+
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */

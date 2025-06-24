@@ -15,6 +15,7 @@
 
 #include "mediatek/mt6835-vegas-common-overlay.dtsi"
 #include "mediatek/vegas-audio-evb.dtsi"
+#include "mediatek/mt6835_vegas_camera_overlay.dtsi"
 
 /* Board match root node */
 / {
