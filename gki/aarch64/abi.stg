@@ -437163,6 +437163,15 @@ elf_symbol {
   full_name: "snd_soc_dai_get_channel_map"
 }
 elf_symbol {
+  id: 0x28879ca0
+  name: "snd_soc_dai_is_dummy"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xc3d1ca52
+  type_id: 0x921e0ac6
+  full_name: "snd_soc_dai_is_dummy"
+}
+elf_symbol {
   id: 0x19c0e537
   name: "snd_soc_dai_name_get"
   is_defined: true
@@ -459019,6 +459028,7 @@ interface {
   symbol_id: 0x9af14c7a
   symbol_id: 0x2c45f8ab
   symbol_id: 0x21ecd4de
+  symbol_id: 0x28879ca0
   symbol_id: 0x19c0e537
   symbol_id: 0x1d763a17
   symbol_id: 0x407cd33b
