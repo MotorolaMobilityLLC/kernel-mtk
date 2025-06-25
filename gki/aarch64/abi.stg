@@ -352228,6 +352228,16 @@ function {
   parameter_id: 0x22b36393
 }
 function {
+  id: 0x9ab73d46
+  return_type_id: 0x6720d32f
+  parameter_id: 0x18bd6530
+  parameter_id: 0x4585663f
+  parameter_id: 0x3e10b518
+  parameter_id: 0x4585663f
+  parameter_id: 0x064d6086
+  parameter_id: 0x4585663f
+}
+function {
   id: 0x9ab82f4e
   return_type_id: 0x6720d32f
   parameter_id: 0x10504678
@@ -377524,6 +377534,15 @@ elf_symbol {
   full_name: "__traceiter_android_vh_gic_v3_suspend"
 }
 elf_symbol {
+  id: 0x175cdae9
+  name: "__traceiter_android_vh_health_report"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xca003726
+  type_id: 0x9ab73d46
+  full_name: "__traceiter_android_vh_health_report"
+}
+elf_symbol {
   id: 0x089c5048
   name: "__traceiter_android_vh_hibernate_save_cmp_len"
   is_defined: true
@@ -383624,6 +383643,15 @@ elf_symbol {
   crc: 0x7c5aa8a7
   type_id: 0x18ccbd2c
   full_name: "__tracepoint_android_vh_gic_v3_suspend"
+}
+elf_symbol {
+  id: 0x101d0b0b
+  name: "__tracepoint_android_vh_health_report"
+  is_defined: true
+  symbol_type: OBJECT
+  crc: 0x7c5aa8a7
+  type_id: 0x18ccbd2c
+  full_name: "__tracepoint_android_vh_health_report"
 }
 elf_symbol {
   id: 0xc388a58e
@@ -452510,6 +452538,7 @@ interface {
   symbol_id: 0x9fe60f0c
   symbol_id: 0x83b45f32
   symbol_id: 0x88586647
+  symbol_id: 0x175cdae9
   symbol_id: 0x089c5048
   symbol_id: 0x1ba2e410
   symbol_id: 0x2e323991
@@ -453188,6 +453217,7 @@ interface {
   symbol_id: 0x828646be
   symbol_id: 0x4756cfec
   symbol_id: 0xf18e312d
+  symbol_id: 0x101d0b0b
   symbol_id: 0xc388a58e
   symbol_id: 0xc62a97aa
   symbol_id: 0xee2c17ff
