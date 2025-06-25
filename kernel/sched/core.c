@@ -1136,11 +1136,15 @@ void wake_up_q(struct wake_q_head *head)
 void resched_curr(struct rq *rq)
 {
 	struct task_struct *curr = rq->curr;
-	int cpu;
+	int cpu, need_lazy = 0;
 
 	lockdep_assert_rq_held(rq);
 
 	if (test_tsk_need_resched(curr))
+		return;
+
+	trace_android_vh_set_tsk_need_resched_lazy(curr, rq, &need_lazy);
+	if (need_lazy)
 		return;
 
 	cpu = cpu_of(rq);
@@ -2746,6 +2750,7 @@ out_unlock:
 	put_task_struct(p);
 	return 0;
 }
+EXPORT_SYMBOL_GPL(push_cpu_stop);
 
 /*
  * sched_class::set_cpus_allowed must do the below, but is not required to
@@ -8264,6 +8269,7 @@ void rt_mutex_setprio(struct task_struct *p, struct task_struct *pi_task)
 
 	p->sched_class = next_class;
 	p->prio = prio;
+	trace_android_rvh_setscheduler_prio(p);
 
 	check_class_changing(rq, p, prev_class);
 
@@ -11128,6 +11134,7 @@ const int sched_prio_to_weight[40] = {
  /*  10 */       110,        87,        70,        56,        45,
  /*  15 */        36,        29,        23,        18,        15,
 };
+EXPORT_SYMBOL_GPL(sched_prio_to_weight);
 
 /*
  * Inverse (2^32/x) values of the sched_prio_to_weight[] array, pre-calculated.
@@ -11146,6 +11153,7 @@ const u32 sched_prio_to_wmult[40] = {
  /*  10 */  39045157,  49367440,  61356676,  76695844,  95443717,
  /*  15 */ 119304647, 148102320, 186737708, 238609294, 286331153,
 };
+EXPORT_SYMBOL_GPL(sched_prio_to_wmult);
 
 void call_trace_sched_update_nr_running(struct rq *rq, int count)
 {
