@@ -3360,6 +3360,7 @@ static int mt6377_gauge_resume(struct platform_device *pdev)
 {
 	struct mtk_battery *gm;
 	struct mtk_gauge *gauge;
+        int iavg;
 
 	gauge = dev_get_drvdata(&pdev->dev);
 	gm = gauge->gm;
@@ -3367,7 +3368,11 @@ static int mt6377_gauge_resume(struct platform_device *pdev)
 	if (gm->resume != NULL)
 		gm->resume(gm);
 
-	return 0;
+        average_current_get(gauge, NULL, &iavg);
+        iavg = iavg/10;
+        bm_err("[%s] gauge_resume_average_current= %d\n", __func__, iavg);
+
+        return 0;
 }
 
 
