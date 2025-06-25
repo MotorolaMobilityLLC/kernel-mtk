@@ -128,7 +128,7 @@ void get_stagger_target_scenario(struct subdrv_ctx *ctx,
 		enum IMGSENSOR_HDR_MODE_ENUM hdr_mode, u32 *pScenarios);
 void get_frame_ctrl_info_by_scenario(struct subdrv_ctx *ctx,
 		enum SENSOR_SCENARIO_ID_ENUM scenario_id, u32 *margin);
-void get_feature_get_4cell_data(struct subdrv_ctx *ctx, u16 type, char *data);
+void get_feature_get_4cell_data(struct subdrv_ctx *ctx, u16 type, char *data, u16 size);
 void get_stagger_max_exp_time(struct subdrv_ctx *ctx,
 		enum SENSOR_SCENARIO_ID_ENUM scenario_id,
 		enum VC_FEATURE vc, u64 *exposure_max);
