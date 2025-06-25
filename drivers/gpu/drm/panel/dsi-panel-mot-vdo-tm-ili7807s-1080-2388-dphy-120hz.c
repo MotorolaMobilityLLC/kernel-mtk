@@ -1074,7 +1074,11 @@ static void lcm_shutdown(struct mipi_dsi_device *dsi)
 
 static const struct of_device_id tianma_of_match[] = {
 	{
+#if defined(CONFIG_DRM_PANEL_NUM_NO_LIMIT)
+		.compatible = "tm_ili7807s_vid_1080_2388",
+#else
 		.compatible = "tm,ili7807s,vdo,120hz",
+#endif
 	},
 	{}
 };

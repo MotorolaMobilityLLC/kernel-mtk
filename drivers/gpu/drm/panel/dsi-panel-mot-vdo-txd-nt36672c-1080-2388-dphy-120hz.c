@@ -1052,7 +1052,11 @@ static void lcm_shutdown(struct mipi_dsi_device *dsi)
 
 static const struct of_device_id tongxd_of_match[] = {
 	{
+#if defined(CONFIG_DRM_PANEL_NUM_NO_LIMIT)
+		.compatible = "txd_nt36672c_vid_1080_2388",
+#else
 		.compatible = "txd,nt36672c,vdo,120hz",
+#endif
 	},
 	{}
 };
