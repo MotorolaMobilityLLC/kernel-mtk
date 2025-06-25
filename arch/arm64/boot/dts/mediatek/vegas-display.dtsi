@@ -198,7 +198,7 @@
 		/delete-property/ reset-gpios;
 		/delete-property/gate-ic;
 
-		compatible = "mot,dummy,vdo,60hz";
+		reset-gpios = <&pio 86 0>;
 		reg = <0>;
 		pinctrl-names = "default";
 		port {
@@ -208,48 +208,6 @@
 		};
 
 	};
-
-	panel2@0 {
-		compatible = "tm,ili7807s,vdo,120hz";
-		reg = <1>;
-		reset-gpios = <&pio 86 0>;
-		//bias_n-gpios = <&pio 124 0>;
-		//bias_p-gpios = <&pio 150 0>;
-		pinctrl-names = "default";
-		port {
-			panel_in2: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-	};
-
-	panel3@0 {
-		compatible = "txd,nt36672c,vdo,120hz";
-		reg = <2>;
-		reset-gpios = <&pio 86 0>;
-		//bias_n-gpios = <&pio 124 0>;
-		//bias_p-gpios = <&pio 150 0>;
-		pinctrl-names = "default";
-		port {
-			panel_in3: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-	};
-
-        panel4@0 {
-                compatible = "tm,ili77600a,vdo,120hz";
-                reg = <3>;
-                reset-gpios = <&pio 86 0>;
-                //bias_n-gpios = <&pio 124 0>;
-                //bias_p-gpios = <&pio 150 0>;
-                pinctrl-names = "default";
-                port {
-                        panel_in4: endpoint {
-                                remote-endpoint = <&dsi_out>;
-                        };
-                };
-        };
 
 	ports {
 		port {
