@@ -25,7 +25,7 @@
 #if defined(CONFIG_MTK_PANEL_EXT)
 #include "../mediatek/mediatek_v2/mtk_panel_ext.h"
 #include "../mediatek/mediatek_v2/mtk_drm_graphics_base.h"
-#include "include/dsi-panel-mot-vdo-txd-nt36672c-1080-2388-dphy-120hz.h"
+#include "include/dsi-panel-mot-vdo-tm-ili77600a-1080-2388-dphy-fhd-120hz.h"
 #endif
 
 #define PANEL_LDO_VTP_EN
@@ -49,12 +49,17 @@ extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u3
 //TM EVT panel v0 support. to be disabled before PVT
 //#define TM_PANEL_EVT_V0_SUPPORT		1
 
-#define TM_ILI_PANEL_VENDOR_ID    0x65011000
+#define TM_ILI_PANEL_VENDOR_ID    0x91070501
 //#define TM_ILI_PANEL_V0_VENDOR_ID  	(TM_ILI_PANEL_VENDOR_ID | (0xF << 24))
-
+#if 0
+enum panel_version {
+        PANEL_V1,  //DVT, PVT
+        PANEL_V0,  //EVT
+};
+#endif
 static int tp_gesture_flag = 0;
 
-struct tongxd {
+struct tianma {
 	struct device *dev;
 	struct drm_panel panel;
 	struct backlight_device *backlight;
@@ -72,58 +77,53 @@ struct tongxd {
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
-	{2, {0xFF, 0x10}},
-	{2, {0xFB, 0x01}},
+	{4, {0xFF, 0x5A, 0xA5, 0x00}},
 	{2, {0x55, 0x01}},
 };
 
 static struct mtk_panel_para_table panel_cabc_mv[] = {
-	{2, {0xFF, 0x10}},
-	{2, {0xFB, 0x01}},
+	{4, {0xFF, 0x5A, 0xA5, 0x00}},
 	{2, {0x55, 0x03}},
 };
 
 static struct mtk_panel_para_table panel_cabc_disable[] = {
-	{2, {0xFF, 0x10}},
-	{2, {0xFB, 0x01}},
+	{4, {0xFF, 0x5A, 0xA5, 0x00}},
 	{2, {0x55, 0x00}},
 };
 
 #if 0
 static struct mtk_panel_para_table panel_hbm_on[] = {
-	{2, {0xFF, 0x10}},
-	{2, {0xFB, 0x01}},
-	{3, {0x51, 0x07, 0xFF}},
+	{4, {0xFF, 0x5A, 0xA5, 0x00}},
+	{3, {0x51, 0x07, 0xAC}},
 };
 
 static struct mtk_panel_para_table panel_hbm_off[] = {
-	{2, {0xFF, 0x10}},
-	{2, {0xFB, 0x01}},
-	{3, {0x51, 0x06, 0x66}},
+	{4, {0xFF, 0x5A, 0xA5, 0x00}},
+	{3, {0x51, 0x06, 0x23}},
 };
 #endif
 
-#define tongxd_dcs_write_seq(ctx, seq...)                                     \
+#define tianma_dcs_write_seq(ctx, seq...)                                     \
 	({                                                                     \
 		const u8 d[] = {seq};                                          \
 		BUILD_BUG_ON_MSG(ARRAY_SIZE(d) > 64,                           \
 				 "DCS sequence too big for stack");            \
-		tongxd_dcs_write(ctx, d, ARRAY_SIZE(d));                      \
+		tianma_dcs_write(ctx, d, ARRAY_SIZE(d));                      \
 	})
 
-#define tongxd_dcs_write_seq_static(ctx, seq...)                              \
+#define tianma_dcs_write_seq_static(ctx, seq...)                              \
 	({                                                                     \
 		static const u8 d[] = {seq};                                   \
-		tongxd_dcs_write(ctx, d, ARRAY_SIZE(d));                      \
+		tianma_dcs_write(ctx, d, ARRAY_SIZE(d));                      \
 	})
 
-static inline struct tongxd *panel_to_tongxd(struct drm_panel *panel)
+static inline struct tianma *panel_to_tianma(struct drm_panel *panel)
 {
-	return container_of(panel, struct tongxd, panel);
+	return container_of(panel, struct tianma, panel);
 }
 
 #ifdef PANEL_SUPPORT_READBACK
-static int tongxd_dcs_read(struct tongxd *ctx, u8 cmd, void *data, size_t len)
+static int tianma_dcs_read(struct tianma *ctx, u8 cmd, void *data, size_t len)
 {
 	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
 	ssize_t ret;
@@ -140,13 +140,13 @@ static int tongxd_dcs_read(struct tongxd *ctx, u8 cmd, void *data, size_t len)
 	return ret;
 }
 
-static void tongxd_panel_get_data(struct tongxd *ctx)
+static void tianma_panel_get_data(struct tianma *ctx)
 {
 	u8 buffer[3] = {0};
 	static int ret;
 
 	if (ret == 0) {
-		ret = tongxd_dcs_read(ctx, 0x0A, buffer, 1);
+		ret = tianma_dcs_read(ctx, 0x0A, buffer, 1);
 		pr_info("disp: %s 0x%08x\n", __func__, buffer[0] | (buffer[1] << 8));
 		dev_info(ctx->dev, "return %d data(0x%08x) to dsi engine\n",
 			 ret, buffer[0] | (buffer[1] << 8));
@@ -154,7 +154,7 @@ static void tongxd_panel_get_data(struct tongxd *ctx)
 }
 #endif
 
-static void tongxd_dcs_write(struct tongxd *ctx, const void *data, size_t len)
+static void tianma_dcs_write(struct tianma *ctx, const void *data, size_t len)
 {
 	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
 	ssize_t ret;
@@ -175,7 +175,7 @@ static void tongxd_dcs_write(struct tongxd *ctx, const void *data, size_t len)
 }
 
 
-static void tongxd_panel_init(struct tongxd *ctx)
+static void tianma_panel_init(struct tianma *ctx)
 {
 	pr_info("disp: %s+\n", __func__);
 
@@ -186,51 +186,79 @@ static void tongxd_panel_init(struct tongxd *ctx)
 		//return;
 	}
 	else {
-		gpiod_set_value(ctx->reset_gpio, 0);
-		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
 		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 0);
-		usleep_range(10 * 1000, 12 * 1000);
+		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
 		usleep_range(10 * 1000, 12 * 1000);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
 
-	pr_info("txd nt36672c init start!\n");
-	tongxd_dcs_write_seq_static(ctx,0xFF, 0x25);
-	tongxd_dcs_write_seq_static(ctx,0xFB, 0x01);
-	tongxd_dcs_write_seq_static(ctx,0x18, 0x20);
-	tongxd_dcs_write_seq_static(ctx,0xFF, 0xE0);
-	tongxd_dcs_write_seq_static(ctx,0xFB, 0x01);
-	tongxd_dcs_write_seq_static(ctx,0x35, 0x82);
-	tongxd_dcs_write_seq_static(ctx,0xFF, 0xF0);
-	tongxd_dcs_write_seq_static(ctx,0xFB, 0x01);
-	tongxd_dcs_write_seq_static(ctx,0x1C, 0x01);
-	tongxd_dcs_write_seq_static(ctx,0x33, 0x01);
-	tongxd_dcs_write_seq_static(ctx,0x5A, 0x00);
-	tongxd_dcs_write_seq_static(ctx,0x9C, 0x17);
-	tongxd_dcs_write_seq_static(ctx,0xFF, 0x10);
-	tongxd_dcs_write_seq_static(ctx,0xFB, 0x01);
-	tongxd_dcs_write_seq_static(ctx,0x68, 0x03,0x01);
-	tongxd_dcs_write_seq_static(ctx,0x51, 0x07,0xFF);
-	tongxd_dcs_write_seq_static(ctx,0x53, 0x2C);
-	tongxd_dcs_write_seq_static(ctx,0x55, 0x01);
-	tongxd_dcs_write_seq_static(ctx,0xB0, 0x00);
-	tongxd_dcs_write_seq_static(ctx,0xC0, 0x03);
-	tongxd_dcs_write_seq_static(ctx,0xC1, 0x89,0x28,0x00,0x0C,0x02,0x00,0x02,0x0E,0x01,0x1F,0x00,0x07,0x08,0xBB,0x08,0x7A);
-	tongxd_dcs_write_seq_static(ctx,0x11, 0x00);
-	msleep(100);
-	tongxd_dcs_write_seq_static(ctx,0x29, 0x00);
+	pr_info("tm ili77600a fhd init start!\n");
+	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x06);
+	tianma_dcs_write_seq_static(ctx,0x3E,0xE2);
+	tianma_dcs_write_seq_static(ctx,0x79,0x00);
+	tianma_dcs_write_seq_static(ctx,0xC6,0x40);
+
+	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x06);
+	tianma_dcs_write_seq_static(ctx,0x08,0x20);
+	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x03);
+	tianma_dcs_write_seq_static(ctx,0x83,0xC8);
+	tianma_dcs_write_seq_static(ctx,0x84,0x05);
+
+	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x03);
+	tianma_dcs_write_seq_static(ctx,0x85,0x30);
+	tianma_dcs_write_seq_static(ctx,0x88,0xE6);
+	tianma_dcs_write_seq_static(ctx,0x89,0xF0);
+	tianma_dcs_write_seq_static(ctx,0x8A,0xF6);
+	tianma_dcs_write_seq_static(ctx,0x8B,0xFF);
+
+	tianma_dcs_write_seq_static(ctx,0x87,0x4D);
+	tianma_dcs_write_seq_static(ctx,0x8C,0xD2);
+	tianma_dcs_write_seq_static(ctx,0x8D,0xD6);
+	tianma_dcs_write_seq_static(ctx,0x8E,0xDA);
+	tianma_dcs_write_seq_static(ctx,0x8F,0xDE);
+	tianma_dcs_write_seq_static(ctx,0x90,0xDF);
+
+	tianma_dcs_write_seq_static(ctx,0x91,0xE6);
+	tianma_dcs_write_seq_static(ctx,0x92,0xE9);
+	tianma_dcs_write_seq_static(ctx,0x93,0xED);
+	tianma_dcs_write_seq_static(ctx,0x94,0xF0);
+	tianma_dcs_write_seq_static(ctx,0x95,0xFF);
+
+	tianma_dcs_write_seq_static(ctx,0x96,0xB5);
+	tianma_dcs_write_seq_static(ctx,0x97,0xBA);
+	tianma_dcs_write_seq_static(ctx,0x98,0xBF);
+	tianma_dcs_write_seq_static(ctx,0x99,0xC4);
+	tianma_dcs_write_seq_static(ctx,0x9A,0xC9);
+
+	tianma_dcs_write_seq_static(ctx,0x9B,0xCD);
+	tianma_dcs_write_seq_static(ctx,0x9C,0xD5);
+	tianma_dcs_write_seq_static(ctx,0x9D,0xE6);
+	tianma_dcs_write_seq_static(ctx,0x9E,0xF6);
+	tianma_dcs_write_seq_static(ctx,0x9F,0xF7);
+	tianma_dcs_write_seq_static(ctx,0xAF,0x18);
+
+	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x02);
+	tianma_dcs_write_seq_static(ctx,0xBE,0x00);
+	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x00);
+	tianma_dcs_write_seq_static(ctx,0x53,0x2C);
+	tianma_dcs_write_seq_static(ctx,0x55,0x01);
+	tianma_dcs_write_seq_static(ctx,0x35,0x00);
+	tianma_dcs_write_seq_static(ctx,0x11,0x00);
+	msleep(65);
+	tianma_dcs_write_seq_static(ctx,0x29,0x00);
+	tianma_dcs_write_seq_static(ctx,0x51,0x07,0xFF);
 	msleep(20);
 
 	pr_info("disp:init code %s, data_rate=%d end!\n", __func__, DATA_RATE);
 }
 
-static int tongxd_disable(struct drm_panel *panel)
+static int tianma_disable(struct drm_panel *panel)
 {
-	struct tongxd *ctx = panel_to_tongxd(panel);
+	struct tianma *ctx = panel_to_tianma(panel);
 	pr_info("%s\n", __func__);
 
 	if (!ctx->enabled)
@@ -257,9 +285,9 @@ static int panel_set_gesture_flag(int state)
 	return 0;
 }
 
-static int tongxd_unprepare(struct drm_panel *panel)
+static int tianma_unprepare(struct drm_panel *panel)
 {
-	struct tongxd *ctx = panel_to_tongxd(panel);
+	struct tianma *ctx = panel_to_tianma(panel);
 
 	if (!ctx->prepared) {
 		pr_info("%s, already unprepared, return\n", __func__);
@@ -267,10 +295,10 @@ static int tongxd_unprepare(struct drm_panel *panel)
 	}
 	pr_info("%s\n", __func__);
 	printk("[%d  %s]_check_dsi !!\n",__LINE__, __FUNCTION__);
-
-	tongxd_dcs_write_seq_static(ctx, 0x28);
+	msleep(1);
+	tianma_dcs_write_seq_static(ctx, 0x28);
 	msleep(20);
-	tongxd_dcs_write_seq_static(ctx, 0x10);
+	tianma_dcs_write_seq_static(ctx, 0x10);
 	msleep(80);
 
 	ctx->prepared = false;
@@ -287,9 +315,9 @@ static int tongxd_unprepare(struct drm_panel *panel)
 	return 0;
 }
 
-static int tongxd_prepare(struct drm_panel *panel)
+static int tianma_prepare(struct drm_panel *panel)
 {
-	struct tongxd *ctx = panel_to_tongxd(panel);
+	struct tianma *ctx = panel_to_tianma(panel);
 	int ret;
 
 	pr_info("%s\n", __func__);
@@ -305,14 +333,14 @@ static int tongxd_prepare(struct drm_panel *panel)
 	msleep(1);
 #endif
 
-	tongxd_panel_init(ctx);
+	tianma_panel_init(ctx);
 	//ctx->hbm_mode = 0;
 	ctx->cabc_mode = 0;
 
 	ret = ctx->error;
 	if (ret < 0) {
 		pr_info("disp: %s error ret=%d\n", __func__, ret);
-		tongxd_unprepare(panel);
+		tianma_unprepare(panel);
 	}
 
 	ctx->prepared = true;
@@ -321,15 +349,15 @@ static int tongxd_prepare(struct drm_panel *panel)
 #endif
 
 #ifdef PANEL_SUPPORT_READBACK
-	tongxd_panel_get_data(ctx);
+	tianma_panel_get_data(ctx);
 #endif*/
 	pr_info("disp: %s-\n", __func__);
 	return ret;
 }
 
-static int tongxd_enable(struct drm_panel *panel)
+static int tianma_enable(struct drm_panel *panel)
 {
-	struct tongxd *ctx = panel_to_tongxd(panel);
+	struct tianma *ctx = panel_to_tianma(panel);
 
 	pr_info("disp: %s+\n", __func__);
 	if (ctx->enabled)
@@ -347,7 +375,7 @@ static int tongxd_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode performance_mode_120hz = {
-	.clock		= 332075,
+	.clock	= ((FRAME_WIDTH + MODE_120_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_120_VFP + VSA + VBP)*MODE_120_FPS)/1000,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
@@ -359,7 +387,7 @@ static const struct drm_display_mode performance_mode_120hz = {
 };
 
 static const struct drm_display_mode performance_mode_60hz = {
-	.clock		= 332075,
+	.clock	= ((FRAME_WIDTH + MODE_60_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_60_VFP + VSA + VBP)*MODE_60_FPS)/1000,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -371,7 +399,7 @@ static const struct drm_display_mode performance_mode_60hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 332108,
+	.clock	= ((FRAME_WIDTH + MODE_90_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_90_VFP + VSA + VBP)*MODE_90_FPS)/1000,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -382,8 +410,20 @@ static const struct drm_display_mode performance_mode_90hz = {
 	.vtotal = FRAME_HEIGHT + MODE_90_VFP + VSA + VBP,
 };
 
+static const struct drm_display_mode performance_mode_30hz = {
+        .clock  = ((FRAME_WIDTH + MODE_30_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_30_VFP + VSA + VBP)*MODE_30_FPS)/1000,
+        .hdisplay = FRAME_WIDTH,
+        .hsync_start = FRAME_WIDTH + MODE_30_HFP,
+        .hsync_end = FRAME_WIDTH + MODE_30_HFP + HSA,
+        .htotal = FRAME_WIDTH + MODE_30_HFP + HSA + HBP,
+        .vdisplay = FRAME_HEIGHT,
+        .vsync_start = FRAME_HEIGHT + MODE_30_VFP,
+        .vsync_end = FRAME_HEIGHT + MODE_30_VFP + VSA,
+        .vtotal = FRAME_HEIGHT + MODE_30_VFP + VSA + VBP,
+};
+
 #if defined(CONFIG_MTK_PANEL_EXT)
-static struct mtk_panel_params ext_params_mode_60 = {
+static struct mtk_panel_params ext_params_mode_30 = {
 	//.change_fps_by_vfp_send_cmd = 0,
 	//.vfp_low_power = 20,
 	.data_rate = DATA_RATE,
@@ -394,32 +434,24 @@ static struct mtk_panel_params ext_params_mode_60 = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
-	.lcm_esd_check_table[1] = {
-		.cmd = 0xAB,
-		.count = 2,
-		.para_list[0] = 0x00,
-	},
 	.lcm_cellid = {
-		.panel_cellid_reg = 0xF1,
-		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 8,
+		.panel_cellid_reg = 0x10,
 		.panel_cellid_reg_seq = 1,
-		.panel_cellid_len_sub = 16,
-		//.panel_cellid_esd_dis = 1,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 1,
+		.panel_cellid_esd_dis = 1,
 		.page_table = {
-			{0x15,0x02,0xFF,0x21},
-			{0x15,0x02,0xFB,0x01}
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x0B},
 		},
 		.page_post_table = {
-			{0x15,0x02,0xFF,0x10},
-			{0x15,0x02,0xFB,0x01}
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x00},
 		},
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x01050791,
-	.panel_name = "txd_nt36672c_vid_1080_2388",
-	.panel_supplier = "txd",
-	.lcm_index = 1,
+	.panel_name = "tm_ili77600a_vid_1080_2388_fhd_120hz",
+	.panel_supplier = "tm",
+	.lcm_index = 2,
 	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
@@ -464,7 +496,84 @@ static struct mtk_panel_params ext_params_mode_60 = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
+	.lfr_minimum_fps = MODE_30_FPS,
+
+};
+
+static struct mtk_panel_params ext_params_mode_60 = {
+	//.change_fps_by_vfp_send_cmd = 0,
+	//.vfp_low_power = 20,
+	.data_rate = DATA_RATE,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.lcm_cellid = {
+		.panel_cellid_reg = 0x10,
+		.panel_cellid_reg_seq = 1,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 1,
+		.panel_cellid_esd_dis = 1,
+		.page_table = {
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x0B},
+		},
+		.page_post_table = {
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x00},
+		},
+	},
+	.panel_ver = 1,
+	//.panel_id = 0x01050791,
+	.panel_name = "tm_ili77600a_vid_1080_2388_fhd_120hz",
+	.panel_supplier = "tm",
+	.lcm_index = 2,
+	.hbm_type = HBM_MODE_RAMPING,
+	.max_bl_level = 2047,
+	.ssc_enable = 1,
+	.lane_swap_en = 0,
+	.lp_perline_en = 0,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable                =  DSC_ENABLE,
+		.ver                   =  DSC_VER,
+		.slice_mode            =  DSC_SLICE_MODE,
+		.rgb_swap              =  DSC_RGB_SWAP,
+		.dsc_cfg               =  DSC_DSC_CFG,
+		.rct_on                =  DSC_RCT_ON,
+		.bit_per_channel       =  DSC_BIT_PER_CHANNEL,
+		.dsc_line_buf_depth    =  DSC_DSC_LINE_BUF_DEPTH,
+		.bp_enable             =  DSC_BP_ENABLE,
+		.bit_per_pixel         =  DSC_BIT_PER_PIXEL,
+		.pic_height            =  FRAME_HEIGHT,
+		.pic_width             =  FRAME_WIDTH,
+		.slice_height          =  DSC_SLICE_HEIGHT,
+		.slice_width           =  DSC_SLICE_WIDTH,
+		.chunk_size            =  DSC_CHUNK_SIZE,
+		.xmit_delay            =  DSC_XMIT_DELAY,
+		.dec_delay             =  DSC_DEC_DELAY,
+		.scale_value           =  DSC_SCALE_VALUE,
+		.increment_interval    =  DSC_INCREMENT_INTERVAL,
+		.decrement_interval    =  DSC_DECREMENT_INTERVAL,
+		.line_bpg_offset       =  DSC_LINE_BPG_OFFSET,
+		.nfl_bpg_offset        =  DSC_NFL_BPG_OFFSET,
+		.slice_bpg_offset      =  DSC_SLICE_BPG_OFFSET,
+		.initial_offset        =  DSC_INITIAL_OFFSET,
+		.final_offset          =  DSC_FINAL_OFFSET,
+		.flatness_minqp        =  DSC_FLATNESS_MINQP,
+		.flatness_maxqp        =  DSC_FLATNESS_MAXQP,
+		.rc_model_size         =  DSC_RC_MODEL_SIZE,
+		.rc_edge_factor        =  DSC_RC_EDGE_FACTOR,
+		.rc_quant_incr_limit0  =  DSC_RC_QUANT_INCR_LIMIT0,
+		.rc_quant_incr_limit1  =  DSC_RC_QUANT_INCR_LIMIT1,
+		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
+		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
+	},
+	.lfr_enable = LFR_EN,
+	.lfr_minimum_fps = MODE_30_FPS,
 
 };
 
@@ -478,32 +587,24 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
-	.lcm_esd_check_table[1] = {
-		.cmd = 0xAB,
-		.count = 2,
-		.para_list[0] = 0x00,
-	},
 	.lcm_cellid = {
-		.panel_cellid_reg = 0xF1,
-		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 8,
+		.panel_cellid_reg = 0x10,
 		.panel_cellid_reg_seq = 1,
-		.panel_cellid_len_sub = 16,
-		//.panel_cellid_esd_dis = 1,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 1,
+		.panel_cellid_esd_dis = 1,
 		.page_table = {
-			{0x15,0x02,0xFF,0x21},
-			{0x15,0x02,0xFB,0x01}
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x0B},
 		},
 		.page_post_table = {
-			{0x15,0x02,0xFF,0x10},
-			{0x15,0x02,0xFB,0x01}
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x00},
 		},
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x10050a91,
-	.panel_name = "txd_nt36672c_vid_1080_2388",
-	.panel_supplier = "txd",
-	.lcm_index = 1,
+	.panel_name = "tm_ili77600a_vid_1080_2388_fhd_120hz",
+	.panel_supplier = "tm",
+	.lcm_index = 2,
 	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
@@ -548,7 +649,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
+	.lfr_minimum_fps = MODE_30_FPS,
 };
 
 static struct mtk_panel_params ext_params_mode_120 = {
@@ -561,32 +662,24 @@ static struct mtk_panel_params ext_params_mode_120 = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
-	.lcm_esd_check_table[1] = {
-		.cmd = 0xAB,
-		.count = 2,
-		.para_list[0] = 0x00,
-	},
 	.lcm_cellid = {
-		.panel_cellid_reg = 0xF1,
-		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 8,
+		.panel_cellid_reg = 0x10,
 		.panel_cellid_reg_seq = 1,
-		.panel_cellid_len_sub = 16,
-		//.panel_cellid_esd_dis = 1,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 1,
+		.panel_cellid_esd_dis = 1,
 		.page_table = {
-			{0x15,0x02,0xFF,0x21},
-			{0x15,0x02,0xFB,0x01}
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x0B},
 		},
 		.page_post_table = {
-			{0x15,0x02,0xFF,0x10},
-			{0x15,0x02,0xFB,0x01}
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x00},
 		},
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x10050a91,
-	.panel_name = "txd_nt36672c_vid_1080_2388",
-	.panel_supplier = "txd",
-	.lcm_index = 1,
+	.panel_name = "tm_ili77600a_vid_1080_2388_fhd_120hz",
+	.panel_supplier = "tm",
+	.lcm_index = 2,
 	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
@@ -631,11 +724,11 @@ static struct mtk_panel_params ext_params_mode_120 = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
+	.lfr_minimum_fps = MODE_30_FPS,
 
 };
 
-static int tongxd_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
+static int tianma_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
 	pr_info("%s: skip for using bl ic, level=%d\n", __func__, level);
@@ -682,7 +775,9 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 		return ret;
 
 	pr_info("%s:disp: mode fps=%d", __func__, drm_mode_vrefresh(m));
-	if (drm_mode_vrefresh(m) == MODE_60_FPS)
+	if (drm_mode_vrefresh(m) == MODE_30_FPS)
+		ext->params = &ext_params_mode_30;
+	else if (drm_mode_vrefresh(m) == MODE_60_FPS)
 		ext->params = &ext_params_mode_60;
 	else if (drm_mode_vrefresh(m) == MODE_90_FPS)
 		ext->params = &ext_params_mode_90;
@@ -695,7 +790,7 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 
 static int panel_ext_reset(struct drm_panel *panel, int on)
 {
-	struct tongxd *ctx = panel_to_tongxd(panel);
+	struct tianma *ctx = panel_to_tianma(panel);
 
 	ctx->reset_gpio =
 		devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
@@ -710,7 +805,7 @@ static enum mtk_lcm_version panel_get_lcm_version(void)
 	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
 }
 
-static int panel_cabc_set_cmdq(struct tongxd *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
+static int panel_cabc_set_cmdq(struct tianma *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
 {
 	unsigned int para_count = 0;
 	struct mtk_panel_para_table *pTable = NULL;
@@ -748,7 +843,7 @@ static int panel_cabc_set_cmdq(struct tongxd *ctx, void *dsi, dcs_grp_write_gce 
 }
 
 #if 0 // HBM RAMPING
-static int panel_hbm_set_cmdq(struct tongxd *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+static int panel_hbm_set_cmdq(struct tianma *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
 	unsigned int para_count = 0;
 	struct mtk_panel_para_table *pTable = NULL;
@@ -786,7 +881,7 @@ static int panel_hbm_set_cmdq(struct tongxd *ctx, void *dsi, dcs_grp_write_gce c
 static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
 {
-	struct tongxd *ctx = panel_to_tongxd(panel);
+	struct tianma *ctx = panel_to_tianma(panel);
 	int ret = -1;
 
 	if (!cb)
@@ -822,7 +917,7 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 }
 
 static struct mtk_panel_funcs ext_funcs = {
-	.set_backlight_cmdq = tongxd_setbacklight_cmdq,
+	.set_backlight_cmdq = tianma_setbacklight_cmdq,
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.get_lcm_version = panel_get_lcm_version,
@@ -832,11 +927,11 @@ static struct mtk_panel_funcs ext_funcs = {
 };
 #endif
 
-static int tongxd_get_modes(struct drm_panel *panel,
+static int tianma_get_modes(struct drm_panel *panel,
 						struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
-	//struct drm_display_mode *mode_1;
+	struct drm_display_mode *mode_1;
 	struct drm_display_mode *mode_2;
 	struct drm_display_mode *mode_3;
 
@@ -849,11 +944,12 @@ static int tongxd_get_modes(struct drm_panel *panel,
 			drm_mode_vrefresh(&performance_mode_120hz));
 		return -ENOMEM;
 	}
+
 	drm_mode_set_name(mode);
 	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
 	drm_mode_probed_add(connector, mode);
 
-#if 0
+
 	mode_1 = drm_mode_duplicate(connector->dev, &performance_mode_30hz);
 	printk("[%d  %s]disp mode:%d\n",__LINE__, __FUNCTION__,mode_1);
 	if (!mode_1) {
@@ -866,7 +962,7 @@ static int tongxd_get_modes(struct drm_panel *panel,
 	drm_mode_set_name(mode_1);
 	mode_1->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(connector, mode_1);
-#endif
+
 
 	mode_2 = drm_mode_duplicate(connector->dev, &performance_mode_60hz);
 	printk("[%d  %s]disp mode:%d\n",__LINE__, __FUNCTION__,mode_2);
@@ -899,15 +995,16 @@ static int tongxd_get_modes(struct drm_panel *panel,
 	return 1;
 }
 
-static const struct drm_panel_funcs tongxd_drm_funcs = {
-	.disable = tongxd_disable,
-	.unprepare = tongxd_unprepare,
-	.prepare = tongxd_prepare,
-	.enable = tongxd_enable,
-	.get_modes = tongxd_get_modes,
+static const struct drm_panel_funcs tianma_drm_funcs = {
+	.disable = tianma_disable,
+	.unprepare = tianma_unprepare,
+	.prepare = tianma_prepare,
+	.enable = tianma_enable,
+	.get_modes = tianma_get_modes,
 };
+
 #if 0
-static void tongxd_parse_panel_version(struct tongxd *ctx)
+static void tianma_parse_panel_version(struct tianma *ctx)
 {
 #if TM_PANEL_EVT_V0_SUPPORT
 	int rc;
@@ -915,39 +1012,39 @@ static void tongxd_parse_panel_version(struct tongxd *ctx)
 
 	ctx->version = PANEL_V1;
 	if(chosen) {
-		u32 txdp_id = 0;
+		u32 tmp_id = 0;
 
-		rc = of_property_read_u32(chosen, "mmi,panel_vendor_id", &txdp_id);
+		rc = of_property_read_u32(chosen, "mmi,panel_vendor_id", &tmp_id);
 		if (!rc) {
-			if (TM_ILI_PANEL_V0_VENDOR_ID == txdp_id) {
+			if (TM_ILI_PANEL_V0_VENDOR_ID == tmp_id) {
 				ctx->version = PANEL_V0;
-				pr_info("tongxd panel version v0, ver=%d, vendor_id=0x%x\n", ctx->version, txdp_id);
+				pr_info("tianma panel version v0, ver=%d, vendor_id=0x%x\n", ctx->version, tmp_id);
 			}
 			else
-				pr_info("tongxd get vendor_id:0x%x\n", txdp_id);
+				pr_info("tianma get vendor_id:0x%x\n", tmp_id);
 		}
 		else
-			pr_info("tongxd mmi,panel_vendor_id not get\n");
+			pr_info("tianma mmi,panel_vendor_id not get\n");
 	}
 	else
-		pr_info("tongxd_parse_panel_version: chosen node null\n");
+		pr_info("tianma_parse_panel_version: chosen node null\n");
 
-	pr_info("parse tongxd panel version:%d\n", ctx->version);
+	pr_info("parse tianma panel version:%d\n", ctx->version);
 #endif
 
 	return;
 }
 #endif
 
-static int tongxd_probe(struct mipi_dsi_device *dsi)
+static int tianma_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
 	struct device_node *dsi_node, *remote_node = NULL, *endpoint = NULL;
-	struct tongxd *ctx;
+	struct tianma *ctx;
 	struct device_node *backlight;
 	int ret;
 
-	pr_info("%s+ disp:zkd tongxd_probe start!\n", __func__);
+	pr_info("%s+ disp:zkd tianma_probe start!\n", __func__);
 
 	dsi_node = of_get_parent(dev->of_node);
 	if (dsi_node) {
@@ -966,7 +1063,7 @@ static int tongxd_probe(struct mipi_dsi_device *dsi)
 		return -ENODEV;
 	}
 
-	ctx = devm_kzalloc(dev, sizeof(struct tongxd), GFP_KERNEL);
+	ctx = devm_kzalloc(dev, sizeof(struct tianma), GFP_KERNEL);
 	if (!ctx)
 		return -ENOMEM;
 
@@ -998,12 +1095,12 @@ static int tongxd_probe(struct mipi_dsi_device *dsi)
 	ctx->prepared = true;
 	ctx->enabled = true;
 
-	drm_panel_init(&ctx->panel, dev, &tongxd_drm_funcs, DRM_MODE_CONNECTOR_DSI);
+	drm_panel_init(&ctx->panel, dev, &tianma_drm_funcs, DRM_MODE_CONNECTOR_DSI);
 
 	drm_panel_add(&ctx->panel);
 
 	//parse panel version for evt/dvt
-	//tongxd_parse_panel_version(ctx);
+	//tianma_parse_panel_version(ctx);
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
@@ -1016,14 +1113,14 @@ static int tongxd_probe(struct mipi_dsi_device *dsi)
 		return ret;
 #endif
 
-	pr_info("[%d  %s]- txd,nt36672c,vdo,120hz ret:%d\n", __LINE__, __func__,ret);
+	pr_info("[%d  %s]- tm,ili77600a,vdo,fhd,120hz ret:%d\n", __LINE__, __func__,ret);
 
 	return ret;
 }
 
-static int tongxd_remove(struct mipi_dsi_device *dsi)
+static int tianma_remove(struct mipi_dsi_device *dsi)
 {
-	struct tongxd *ctx = mipi_dsi_get_drvdata(dsi);
+	struct tianma *ctx = mipi_dsi_get_drvdata(dsi);
 #if defined(CONFIG_MTK_PANEL_EXT)
 	struct mtk_panel_ctx *ext_ctx = find_panel_ctx(&ctx->panel);
 #endif
@@ -1047,36 +1144,35 @@ static void lcm_shutdown(struct mipi_dsi_device *dsi)
                 pr_info("%s: ocp2138_BiasPower_disable\n", __func__);
                 ocp2138_BiasPower_disable(5);
 #endif
-
 }
 
-static const struct of_device_id tongxd_of_match[] = {
+static const struct of_device_id tianma_of_match[] = {
 	{
 #if defined(CONFIG_DRM_PANEL_NUM_NO_LIMIT)
-		.compatible = "txd_nt36672c_vid_1080_2388",
+		.compatible = "tm_ili77600a_vid_1080_2388_fhd_120hz",
 #else
-		.compatible = "txd,nt36672c,vdo,120hz",
+		.compatible = "tm,ili77600a,vdo,fhd,120hz",
 #endif
 	},
 	{}
 };
 
-MODULE_DEVICE_TABLE(of, tongxd_of_match);
+MODULE_DEVICE_TABLE(of, tianma_of_match);
 
-static struct mipi_dsi_driver tongxd_driver = {
-	.probe = tongxd_probe,
-	.remove = tongxd_remove,
+static struct mipi_dsi_driver tianma_driver = {
+	.probe = tianma_probe,
+	.remove = tianma_remove,
 	.shutdown = lcm_shutdown,
 	.driver = {
-		.name = "txd_nt36672c_vid_1080_2388",
+		.name = "tm_ili77600a_vid_1080_2388_fhd_120hz",
 		.owner = THIS_MODULE,
-		.of_match_table = tongxd_of_match,
+		.of_match_table = tianma_of_match,
 	},
 };
 
-module_mipi_dsi_driver(tongxd_driver);
+module_mipi_dsi_driver(tianma_driver);
 
 MODULE_AUTHOR("mediatek");
-MODULE_DESCRIPTION("txd nt36672c incell 120hz Panel Driver");
+MODULE_DESCRIPTION("tm ili77600a incell 120hz Panel Driver");
 MODULE_LICENSE("GPL v2");
 
