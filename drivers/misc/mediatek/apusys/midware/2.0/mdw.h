@@ -104,6 +104,7 @@ struct mdw_mem {
 	/* control */
 	int handle;
 	bool belong_apu;
+	bool belong_list;
 	bool need_handle;
 	struct list_head maps;
 	struct mdw_fpriv *mpriv;
