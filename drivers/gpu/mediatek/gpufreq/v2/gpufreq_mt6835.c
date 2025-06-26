@@ -3556,9 +3556,9 @@ static void __gpufreq_init_opp_table(void)
 	/* 24E GPU FREQ: 1072MHz */
 	else if (segment_id == MT6835_24_SEGMENT)
 		g_gpu.segment_upbound = 2;
-	/* 24E+ GPU FREQ: 1100MHz */
+	/* 25E(24E+) GPU FREQ: 1072MHz */
 	else if (segment_id == MT6835_24P_SEGMENT)
-		g_gpu.segment_upbound = 0;
+		g_gpu.segment_upbound = 2;
 	/* 24E++ GPU FREQ: 1100MHz */
 	else if (segment_id == MT6835_24PP_SEGMENT)
 		g_gpu.segment_upbound = 0;
