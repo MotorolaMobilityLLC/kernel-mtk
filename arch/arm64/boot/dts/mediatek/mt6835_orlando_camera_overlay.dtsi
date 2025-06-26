@@ -374,7 +374,7 @@
 	cam2_pin_vcamaf = "regulator";
 
 	cam0_enable_sensor = "mot_orlando_ov50d_mipi_raw";
-	cam1_enable_sensor = "mot_orlando_s5k3p9_mipi_raw";
+	cam1_enable_sensor = "mot_orlando_s5kkds_mipi_raw";
 	cam2_enable_sensor = "mot_orlando_ov08d_mipi_raw";
 	status = "okay";
 };
@@ -481,7 +481,7 @@
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_orlando_ov50d_mipi_raw mot_orlando_s5k3p9_mipi_raw mot_orlando_ov08d_mipi_raw";
+       cust-sensor = "mot_orlando_ov50d_mipi_raw mot_orlando_s5kkds_mipi_raw mot_orlando_ov08d_mipi_raw";
 };
 
 /* CAMERA Flashlight */

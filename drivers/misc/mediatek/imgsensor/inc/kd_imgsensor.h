@@ -423,6 +423,8 @@
 #define SENSOR_DRVNAME_MOT_ORLANDO_OV50D_MIPI_RAW        "mot_orlando_ov50d_mipi_raw"
 #define MOT_ORLANDO_OV08D_SENSOR_ID                      0x0848     /*(0x0847 + MOT_ORLANDO_OV08D_SENSOR_ID_OFFSET)*/
 #define SENSOR_DRVNAME_MOT_ORLANDO_OV08D_MIPI_RAW        "mot_orlando_ov08d_mipi_raw"
+#define MOT_ORLANDO_S5KKDS_SENSOR_ID                     0x484f
+#define SENSOR_DRVNAME_MOT_ORLANDO_S5KKDS_MIPI_RAW       "mot_orlando_s5kkds_mipi_raw"
 
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
