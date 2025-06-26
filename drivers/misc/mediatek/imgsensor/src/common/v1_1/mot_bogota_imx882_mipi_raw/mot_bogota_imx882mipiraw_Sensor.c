@@ -2503,13 +2503,49 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*(feature_data + 2) = imgsensor_info.gain_type;
 		break;
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
-		if (!imgsensor.min_shutter){
-				*(feature_data + 1) = imgsensor_info.min_shutter;
-				*(feature_data + 2) = imgsensor_info.exp_step;
-			} else {
-				*(feature_data + 1) = imgsensor.min_shutter;
-				*(feature_data + 2) = imgsensor.exp_step;
-			}
+		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+				*(feature_data + 1) = 6;
+				*(feature_data + 2) = 4;
+			break;
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+				*(feature_data + 1) = 6;
+				*(feature_data + 2) = 4;
+			break;
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+				*(feature_data + 1) = 8;
+				*(feature_data + 2) = 2;
+			break;
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+				*(feature_data + 1) = 6;
+				*(feature_data + 2) = 4;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM1:
+				*(feature_data + 1) = 12;
+				*(feature_data + 2) = 8;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM2:
+				*(feature_data + 1) = 12;
+				*(feature_data + 2) = 8;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM3:
+				*(feature_data + 1) = 10;
+				*(feature_data + 2) = 2;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM4:
+				*(feature_data + 1) = 10;
+				*(feature_data + 2) = 2;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM5:
+				*(feature_data + 1) = 6;
+				*(feature_data + 2) = 4;
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		default:
+				*(feature_data + 1) = 6;
+				*(feature_data + 2) = 4;
+			break;
+		}
 		break;
 	case SENSOR_FEATURE_GET_OFFSET_TO_START_OF_EXPOSURE:
 		*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 3000000;
