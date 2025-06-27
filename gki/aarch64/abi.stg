@@ -357070,6 +357070,10 @@ enumeration {
       name: "GUNYAH_RM_VM_STATUS_RESET"
       value: 11
     }
+    enumerator {
+      name: "GUNYAH_RM_VM_STATUS_RESET_FAILED"
+      value: 12
+    }
   }
 }
 enumeration {
