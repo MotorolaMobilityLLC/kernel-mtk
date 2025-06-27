@@ -380,7 +380,7 @@
 &pdc {
          min-charger-voltage = <4600000>;
          pd-vbus-low-bound = <5000000>;
-         pd-vbus-upper-bound = <9000000>;
+         pd_vbus_upper_bound = <9000000>;
          vsys-watt = <5000000>;
          ibus-err = <14>;
 
