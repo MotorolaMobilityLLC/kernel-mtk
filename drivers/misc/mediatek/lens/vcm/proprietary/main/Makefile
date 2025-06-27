@@ -73,4 +73,5 @@ mainaf-y  += common/bu63169af/OIS_user.o
 mainaf-y  += common/bu64253gwzaf/BU64253GWZAF.o
 mainaf-y  += common/mot_vegas_aw86006af/MOT_VEGAS_AW86006AF.o
 mainaf-y  += common/mot_vegas_aw86006vcmyovaaf/MOT_VEGAS_AW86006VCMYOVAAF.o
+mainaf-y  += common/mot_orlando_aw86006vcmyovaaf/MOT_ORLANDO_AW86006VCMYOVAAF.o
 mainaf-y  += common/aw86006ois/aw86006_ois.o

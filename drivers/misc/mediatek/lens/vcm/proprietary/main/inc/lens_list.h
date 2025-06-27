@@ -426,6 +426,22 @@ extern int MOT_VEGAS_AW86006VCMYOVAAF_PowerDown(struct i2c_client *pstAF_I2Cclie
 extern int MOT_VEGAS_AW86006VCMYOVAAF_GetFileName(unsigned char *pFileName);
 //End
 
+//Begin: Add lens driver interface for ORLANDO
+#define MOT_ORLANDO_AW86006VCMYOVA_SetI2Cclient MOT_ORLANDO_AW86006VCMYOVAAF_SetI2Cclient
+#define MOT_ORLANDO_AW86006VCMYOVA_Ioctl MOT_ORLANDO_AW86006VCMYOVAAF_Ioctl
+#define MOT_ORLANDO_AW86006VCMYOVA_Release MOT_ORLANDO_AW86006VCMYOVAAF_Release
+#define MOT_ORLANDO_AW86006VCMYOVA_PowerDown MOT_ORLANDO_AW86006VCMYOVAAF_PowerDown
+#define MOT_ORLANDO_AW86006VCMYOVA_GetFileName MOT_ORLANDO_AW86006VCMYOVAAF_GetFileName
+extern int MOT_ORLANDO_AW86006VCMYOVAAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_ORLANDO_AW86006VCMYOVAAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+				unsigned long a_u4Param);
+extern int MOT_ORLANDO_AW86006VCMYOVAAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_ORLANDO_AW86006VCMYOVAAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int MOT_ORLANDO_AW86006VCMYOVAAF_GetFileName(unsigned char *pFileName);
+//End
+
 
 //Begin: Add lens driver interface for Nevada
 #define MOT_NEVADA_GT9764V_SetI2CClient MOT_NEVADA_GT9764VAF_SetI2Cclient
