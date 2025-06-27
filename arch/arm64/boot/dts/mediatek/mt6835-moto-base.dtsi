@@ -27,6 +27,7 @@
 	tboard_thermistor9: thermal-ntc9 { };
 	moto_wlc: moto_wlc {};
 	flashlights_vegas: flashlights_vegas { };
+	flashlights_orlando: flashlights_orlando { };
 };
 
 &extcon_usb {

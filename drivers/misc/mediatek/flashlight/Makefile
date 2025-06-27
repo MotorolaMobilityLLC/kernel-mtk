@@ -24,6 +24,7 @@ obj-$(CONFIG_MTK_FLASHLIGHT_NEVADA_OCP81375)    += flashlights-nevada-ocp81375.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY)       += flashlights-dummy.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY_GPIO)  += flashlights-dummy-gpio.o
 obj-$(CONFIG_MTK_FLASHLIGHT_VEGAS)     += flashlights-ocp8135-pwm.o
+obj-$(CONFIG_MTK_FLASHLIGHT_ORLANDO)     += flashlights-orlando-ocp8135-pwm.o
 
 ccflags-$(CONFIG_MTK_FLASHLIGHT_DEBUG)     := -DDEBUG
 ccflags-$(CONFIG_MTK_FLASHLIGHT_PT)        += -DCONFIG_MTK_FLASHLIGHT_PT
@@ -49,6 +50,9 @@ ccflags-y += -DCONFIG_MTK_FLASHLIGHT_NEVADA_OCP81375
 endif
 ifeq ($(CONFIG_MTK_FLASHLIGHT_VEGAS),m)
 ccflags-y += -DCONFIG_MTK_FLASHLIGHT_VEGAS
+endif
+ifeq ($(CONFIG_MTK_FLASHLIGHT_ORLANDO),m)
+ccflags-y += -DCONFIG_MTK_FLASHLIGHT_ORLANDO
 endif
 subdir-ccflags-y += \
 	-I$(MTK_CUSTOM_PATH)/power_throttling

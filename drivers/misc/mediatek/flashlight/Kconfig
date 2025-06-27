@@ -227,6 +227,18 @@ config MTK_FLASHLIGHT_VEGAS
 
 	  Say M here if you want to compile this driver as a module.
 
+config MTK_FLASHLIGHT_ORLANDO
+	tristate "Mediatek flashlight orlando pwm driver"
+	depends on MTK_FLASHLIGHT
+	default n
+	help
+	  This is flashlight vegas pwm driver for camera.
+
+	  Say Y here if you want a vegas driver IC with GPIO interface.
+	  Select this only if your board has this IC.
+
+	  Say M here if you want to compile this driver as a module.
+
 config MTK_FLASHLIGHT_NEVADA_AW36515
         tristate "Mediatek flashlight nevada aw36515 flashlight driver"
         depends on MTK_FLASHLIGHT
