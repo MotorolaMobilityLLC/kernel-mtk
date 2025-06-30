@@ -144,14 +144,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.margin = 11,			//sensor framelength & shutter margin
-	.min_shutter = 4,		//min shutter
+	.min_shutter = 5,		//min shutter
 
 	.min_gain = 64, /*1x gain*/
 	.max_gain = 8192, /*64x gain*/
 	.max_gain_slim = 8192,
 	.max_gain_120fps = 1024,		/*16 * 64*/
 	.min_gain_iso = 100,
-	.exp_step = 2,
+	.exp_step = 1,
 	.gain_step = 2, /*minimum step = 2 in 1x~2x gain*/
 	.gain_type = 2,/*to be modify,no gain table for sony*/
 	.max_frame_length = 0xffff,     /* max framelength by sensor register's limitation */
