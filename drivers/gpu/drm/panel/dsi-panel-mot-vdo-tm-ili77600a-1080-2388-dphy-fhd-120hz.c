@@ -198,51 +198,14 @@ static void tianma_panel_init(struct tianma *ctx)
 
 	pr_info("tm ili77600a fhd init start!\n");
 	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x06);
-	tianma_dcs_write_seq_static(ctx,0x3E,0xE2);
+	tianma_dcs_write_seq_static(ctx,0x3E,0x62);
 	tianma_dcs_write_seq_static(ctx,0x79,0x00);
 	tianma_dcs_write_seq_static(ctx,0xC6,0x40);
 
-	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x06);
-	tianma_dcs_write_seq_static(ctx,0x08,0x20);
 	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x03);
-	tianma_dcs_write_seq_static(ctx,0x83,0xC8);
-	tianma_dcs_write_seq_static(ctx,0x84,0x05);
+	tianma_dcs_write_seq_static(ctx,0x83,0xB8);
+	tianma_dcs_write_seq_static(ctx,0x84,0x02);
 
-	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x03);
-	tianma_dcs_write_seq_static(ctx,0x85,0x30);
-	tianma_dcs_write_seq_static(ctx,0x88,0xE6);
-	tianma_dcs_write_seq_static(ctx,0x89,0xF0);
-	tianma_dcs_write_seq_static(ctx,0x8A,0xF6);
-	tianma_dcs_write_seq_static(ctx,0x8B,0xFF);
-
-	tianma_dcs_write_seq_static(ctx,0x87,0x4D);
-	tianma_dcs_write_seq_static(ctx,0x8C,0xD2);
-	tianma_dcs_write_seq_static(ctx,0x8D,0xD6);
-	tianma_dcs_write_seq_static(ctx,0x8E,0xDA);
-	tianma_dcs_write_seq_static(ctx,0x8F,0xDE);
-	tianma_dcs_write_seq_static(ctx,0x90,0xDF);
-
-	tianma_dcs_write_seq_static(ctx,0x91,0xE6);
-	tianma_dcs_write_seq_static(ctx,0x92,0xE9);
-	tianma_dcs_write_seq_static(ctx,0x93,0xED);
-	tianma_dcs_write_seq_static(ctx,0x94,0xF0);
-	tianma_dcs_write_seq_static(ctx,0x95,0xFF);
-
-	tianma_dcs_write_seq_static(ctx,0x96,0xB5);
-	tianma_dcs_write_seq_static(ctx,0x97,0xBA);
-	tianma_dcs_write_seq_static(ctx,0x98,0xBF);
-	tianma_dcs_write_seq_static(ctx,0x99,0xC4);
-	tianma_dcs_write_seq_static(ctx,0x9A,0xC9);
-
-	tianma_dcs_write_seq_static(ctx,0x9B,0xCD);
-	tianma_dcs_write_seq_static(ctx,0x9C,0xD5);
-	tianma_dcs_write_seq_static(ctx,0x9D,0xE6);
-	tianma_dcs_write_seq_static(ctx,0x9E,0xF6);
-	tianma_dcs_write_seq_static(ctx,0x9F,0xF7);
-	tianma_dcs_write_seq_static(ctx,0xAF,0x18);
-
-	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x02);
-	tianma_dcs_write_seq_static(ctx,0xBE,0x00);
 	tianma_dcs_write_seq_static(ctx,0xFF,0x5A,0xA5,0x00);
 	tianma_dcs_write_seq_static(ctx,0x53,0x2C);
 	tianma_dcs_write_seq_static(ctx,0x55,0x01);
