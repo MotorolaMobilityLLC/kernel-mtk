@@ -926,6 +926,8 @@ impl Process {
                 refs.by_handle.remove(&handle);
                 refs.by_node.remove(&id);
             }
+        } else {
+            pr_warn!("{}: no such ref {handle}\n", kernel::current!().pid());
         }
         Ok(())
     }
@@ -1141,11 +1143,10 @@ impl Process {
             return Err(EPERM);
         }
 
-        let node_ref = self
-            .get_node_from_handle(out.handle, true)
-            .or(Err(EINVAL))?;
-        // Get the counts from the node.
         {
+            let mut node_refs = self.node_refs.lock();
+            let node_info = node_refs.by_handle.get_mut(&out.handle).ok_or(ENOENT)?;
+            let node_ref = node_info.node_ref();
             let owner_inner = node_ref.node.owner.inner.lock();
             node_ref.node.populate_counts(&mut out, &owner_inner);
         }
@@ -1634,7 +1635,7 @@ impl Process {
     pub(crate) fn poll(
         this: ArcBorrow<'_, Process>,
         file: &File,
-        table: &mut PollTable,
+        table: PollTable<'_>,
     ) -> Result<u32> {
         let thread = this.get_current_thread()?;
         let (from_proc, mut mask) = thread.poll(file, table);
