@@ -53,6 +53,9 @@
 #include "mot_orlando_s5kkds_Sensor_setting.h"
 
 //extern int aw86006_update_fw_sync(void);
+extern mot_calibration_status_t *ORLANDO_S5KKDS_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *ORLANDO_S5KKDS_eeprom_get_mnf_info(void);
+extern void ORLANDO_S5KKDS_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -86,7 +89,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3280,
 		.grabwindow_height = 2460,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 715200000,
+		.mipi_pixel_rate = 720000000,
 		.max_framerate = 300,
 	},
 	.cap = {
@@ -98,7 +101,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3280,
 		.grabwindow_height = 2460,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 715200000,
+		.mipi_pixel_rate = 720000000,
 		.max_framerate = 300,
 	},
 	.normal_video = {
@@ -110,7 +113,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3280,
 		.grabwindow_height = 1848,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 715200000,
+		.mipi_pixel_rate = 720000000,
 		.max_framerate = 300,
 	},
 	.hs_video = {
@@ -122,7 +125,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3280,
 		.grabwindow_height = 2460,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 715200000,
+		.mipi_pixel_rate = 720000000,
 		.max_framerate = 300,
 	},
 	.slim_video = {
@@ -134,16 +137,16 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3280,
 		.grabwindow_height = 2460,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 715200000,
+		.mipi_pixel_rate = 720000000,
 		.max_framerate = 300,
 	},
 	.margin = 11,			//sensor framelength & shutter margin
-	.min_shutter = 4,		//min shutter
+	.min_shutter = 5,		//min shutter
 
 	.min_gain = 64, /*1x gain*/
 	.max_gain = 8192, /*128x gain*/
 	.min_gain_iso = 100,
-	.exp_step = 2,
+	.exp_step = 1,
 	.gain_step = 2, /*minimum step = 2 in 1x~2x gain*/
 	.gain_type = 2,/*to be modify,no gain table for sony*/
 	.max_frame_length = 0xffff,     /* max framelength by sensor register's limitation */
@@ -781,6 +784,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				//aw86006_update_fw_sync();
+				ORLANDO_S5KKDS_eeprom_format_calibration_data(&imgsensor);
 				return ERROR_NONE;
 			}
 
@@ -1095,6 +1099,10 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->VideoDelayFrame = imgsensor_info.video_delay_frame;
 	sensor_info->HighSpeedVideoDelayFrame = imgsensor_info.hs_video_delay_frame;
 	sensor_info->SlimVideoDelayFrame = imgsensor_info.slim_video_delay_frame;
+
+        /*Apply manufacture info*/
+	memcpy(&sensor_info->mnf_calibration, ORLANDO_S5KKDS_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, ORLANDO_S5KKDS_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
