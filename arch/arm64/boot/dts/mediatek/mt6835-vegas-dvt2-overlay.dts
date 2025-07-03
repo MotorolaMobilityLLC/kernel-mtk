@@ -17,6 +17,7 @@
 #include "mediatek/vegas-audio-dvt2.dtsi"
 #include "mediatek/mt6835_vegas_camera_overlay.dtsi"
 #include "mediatek/vegas-charger.dtsi"
+#include "mediatek/vegas-touch.dtsi"
 
 /* Board match root node */
 / {
