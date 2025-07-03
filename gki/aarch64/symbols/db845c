@@ -173,6 +173,7 @@
   devm_pm_opp_of_add_table
   devm_pm_opp_set_config
   devm_pm_runtime_enable
+  devm_register_sys_off_handler
   devm_regmap_add_irq_chip
   devm_regmap_field_alloc
   __devm_regmap_init
