@@ -19,6 +19,7 @@
 #include "mediatek/vegas-audio-dvt2.dtsi"
 #include "mediatek/mt6835_orlando_camera_overlay.dtsi"
 #include "mediatek/orlando-charger.dtsi"
+#include "mediatek/orlando-touch.dtsi"
 
 #define ORLANDO_RADIO_ID	2
 
