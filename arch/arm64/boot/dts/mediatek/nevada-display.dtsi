@@ -71,7 +71,7 @@
                 ktd,bl-fscal-led = <0xE1>; /* 27.4mA */
                 ktd,turn-on-ramp = <0x00>;
                 ktd,turn-off-ramp = <0x04>;
-                ktd,pwm-trans-dim = <0>;
+                ktd,pwm-trans-dim = <4>;
                 ktd,i2c-trans-dim = <128>;
                 ktd,skip-first-trans;
                 ktd,reset-trans-delay;
@@ -84,13 +84,13 @@
                 ktd,map-type = <0>; /* 0 exponential, 1 linear */
                 ktd,current-align-type = <0x03>; /* 0-none,  1-450nit,  2-1000nit align aw99703,  3-gamma1.5 1000nit align aw99703 */
                 ktd3136,init-seq-enable = <1>;
-                ktd3136,init-seq = <0x02 0xE1>,
-				<0x03 0x08>,
+                ktd3136,init-seq = <0x03 0x08>,
 				<0x06 0x1F>,
 				<0x04 0x05>,
 				<0x05 0xb6>,
 				<0x07 0x03>,
-				<0x08 0x71>;
+				<0x08 0x11>,
+				<0x02 0xE1>;
 
 	};
 };
