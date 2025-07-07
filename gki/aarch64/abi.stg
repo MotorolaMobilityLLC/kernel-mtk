@@ -409304,6 +409304,33 @@ elf_symbol {
   full_name: "gether_setup_name_default"
 }
 elf_symbol {
+  id: 0x596931c4
+  name: "gic_v3_cpu_init"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xd272d446
+  type_id: 0x10985193
+  full_name: "gic_v3_cpu_init"
+}
+elf_symbol {
+  id: 0x390427e4
+  name: "gic_v3_dist_init"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xd272d446
+  type_id: 0x10985193
+  full_name: "gic_v3_dist_init"
+}
+elf_symbol {
+  id: 0x53ba530f
+  name: "gic_v3_dist_wait_for_rwp"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xd272d446
+  type_id: 0x10985193
+  full_name: "gic_v3_dist_wait_for_rwp"
+}
+elf_symbol {
   id: 0x365c2930
   name: "glob_match"
   is_defined: true
@@ -456607,6 +456634,9 @@ interface {
   symbol_id: 0xf7264f57
   symbol_id: 0x370e3283
   symbol_id: 0xe87161bc
+  symbol_id: 0x596931c4
+  symbol_id: 0x390427e4
+  symbol_id: 0x53ba530f
   symbol_id: 0x365c2930
   symbol_id: 0xb096071e
   symbol_id: 0x7990bc50
