@@ -69,6 +69,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define OV50D_MAX_GAIN_BINNINGSIZE_PLATFORM 7936     /*62*128, 128 GAINBASE*/
 #define OV50D_MAX_GAIN_30FPS_PLATFORM 7936           /*62*128, 128 GAINBASE*/
 #define OV50D_MAX_GAIN_120FPS_PLATFORM 1984          /*15.5*128, 128 GAINBASE*/
+#define OV50D_MAX_GAIN_60FPS_PLATFORM 7936          /*62*128, 128 GAINBASE*/
 
 #define OV50D_EEPROM_SLAVE_ID 0xA0
 #define EEPROM_ACTUATOR_ID_POSITION 11
@@ -78,6 +79,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define BINNING_MODE 0
 #define FPS30_MODE 1
 #define FPS120_MODE 2
+#define FPS60_MODE 3
 static int sensor_mode = 0;
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -156,12 +158,25 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.mipi_pixel_rate = 760800000,
 	},
+	.custom2 = {
+		.pclk = 100000000,
+		.linelength = 850,
+		.framelength = 1960,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 2048,
+		.grabwindow_height = 1152,
+		.mipi_data_lp2hs_settle_dc = 85,
+		.max_framerate = 600,
+		.mipi_pixel_rate = 760800000,
+	},
 	.margin = 16,					/* sensor framelength & shutter margin */
 	.min_shutter = 20,				/* min shutter */
 	.min_gain = BASEGAIN, /*1x gain*/
 	.max_gain = 3968, 				/*62 * 64*/
 	.max_gain_30fps = 3968,			/*62 * 64*/
 	.max_gain_120fps = 992,		    /*15.5 * 64*/
+	.max_gain_60fps = 3968,			/*62 * 64*/
 	.min_gain_iso = 100,
 	.exp_step = 1,
 	.gain_step = 2, /*minimum step = 2 in 1x~2x gain*/
@@ -180,6 +195,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.hs_video_delay_frame = 2,		//enter high speed video  delay frame num
 	.slim_video_delay_frame = 2,	//enter slim video delay frame num
 	.custom1_delay_frame = 2,		//enter custom1 delay frame num
+	.custom2_delay_frame = 2,		//enter custom2 delay frame num
 	.frame_time_delay_frame = 2,
 
 	.isp_driving_current = ISP_DRIVING_8MA,
@@ -212,7 +228,7 @@ static struct imgsensor_struct imgsensor = {
 };
 
 /* Sensor output window information */
-static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
+static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] = {
 	/* Preview*/
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* capture */
@@ -225,10 +241,12 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* custom1 */
 	{8192, 6144,    0,    0, 8192, 6144, 2048, 1536,  0,   0, 2048, 1536, 0, 0, 2048, 1536},
+	/* custom2 */
+	{8192, 6144,    0,    768, 8192, 4608, 2048, 1152,  0,   0, 2048, 1152, 0, 0, 2048, 1152},
 };
 
 #if FPT_PDAF_SUPPORT
-static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[4]=
+static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[5]=
 {
 	/* Preview mode setting 30fps */
 	{
@@ -253,6 +271,12 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[4]=
 		0x03, 0x0A, 0x00, 0x08, 0x40, 0x00,
 		0x00, 0x2B, 0x800, 0x600, 0x00, 0x00, 0x0000, 0x0000,
 		0x01, 0x2B, 0x3E0, 0x2F8, 0x00, 0x00, 0x0000, 0x0000
+	},
+	/* Custom2 mode setting */
+	{
+		0x03, 0x0A, 0x00, 0x08, 0x40, 0x00,
+		0x00, 0x2B, 0x800, 0x480, 0x00, 0x00, 0x0000, 0x0000,
+		0x01, 0x2B, 0x3E0, 0x240, 0x00, 0x00, 0x0000, 0x0000
 	},
 };
 static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
@@ -587,6 +611,9 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	if(sensor_mode == FPS120_MODE) {
 		max_gain = OV50D_MAX_GAIN_120FPS_PLATFORM;
 	}
+	if(sensor_mode == FPS60_MODE) {
+		max_gain = OV50D_MAX_GAIN_60FPS_PLATFORM;
+	}
 
 	if (gain < OV50D_BASEGAIN || gain > max_gain) {
 		pr_debug("Error max gain setting: %d\n", max_gain);
@@ -811,6 +838,16 @@ static void custom1_setting(void)
 	mot_orlando_ov50d_table_write_cmos_sensor(addr_data_pair_30fps_ov50d_orlando,
 		sizeof(addr_data_pair_30fps_ov50d_orlando)/sizeof(kal_uint16));
 	pr_debug("MOT ORLANDO OV50D custom1_setting end\n");
+}
+
+static void custom2_setting(void)
+{
+	pr_debug("MOT ORLANDO OV50D custom2_setting start\n");
+
+	mot_orlando_ov50d_table_write_cmos_sensor(addr_data_pair_60fps_ov50d_orlando,
+		sizeof(addr_data_pair_60fps_ov50d_orlando)/sizeof(kal_uint16));
+
+	pr_debug("MOT ORLANDO OV50D custom2_setting end\n");
 }
 
 /*************************************************************************
@@ -1106,6 +1143,28 @@ static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	return ERROR_NONE;
 }
 
+static kal_uint32 custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+{
+	pr_debug("E\n");
+
+	sensor_mode = FPS60_MODE;
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM2;
+	imgsensor.pclk = imgsensor_info.custom2.pclk;
+	/*imgsensor.video_mode = KAL_TRUE;*/
+	imgsensor.line_length = imgsensor_info.custom2.linelength;
+	imgsensor.frame_length = imgsensor_info.custom2.framelength;
+	imgsensor.min_frame_length = imgsensor_info.custom2.framelength;
+	/*imgsensor.current_fps = 300;*/
+	imgsensor.autoflicker_en = KAL_FALSE;
+	spin_unlock(&imgsensor_drv_lock);
+
+	custom2_setting();
+
+	return ERROR_NONE;
+}	/*	custom2   */
+
 static kal_uint32
 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
 {
@@ -1140,6 +1199,11 @@ get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
 	sensor_resolution->SensorCustom1Height =
 		imgsensor_info.custom1.grabwindow_height;
 
+	sensor_resolution->SensorCustom2Width =
+		imgsensor_info.custom2.grabwindow_width;
+	sensor_resolution->SensorCustom2Height =
+		imgsensor_info.custom2.grabwindow_height;
+
 	return ERROR_NONE;
 } /* get_resolution */
 
@@ -1169,6 +1233,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->HighSpeedVideoDelayFrame = imgsensor_info.hs_video_delay_frame;
 	sensor_info->SlimVideoDelayFrame = imgsensor_info.slim_video_delay_frame;
 	sensor_info->Custom1DelayFrame = imgsensor_info.custom1_delay_frame;
+	sensor_info->Custom2DelayFrame = imgsensor_info.custom2_delay_frame;
 
 	/*Apply calibration status and manufacture info*/
 	memcpy(&sensor_info->calibration_status, ORLANDO_OV50D_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
@@ -1243,6 +1308,12 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount = imgsensor_info.custom1.mipi_data_lp2hs_settle_dc;
 
 		break;
+	case MSDK_SCENARIO_ID_CUSTOM2:
+		sensor_info->SensorGrabStartX = imgsensor_info.custom2.startx;
+		sensor_info->SensorGrabStartY = imgsensor_info.custom2.starty;
+		sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount = imgsensor_info.custom2.mipi_data_lp2hs_settle_dc;
+
+		break;
 	default:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
 		sensor_info->SensorGrabStartY = imgsensor_info.pre.starty;
@@ -1280,6 +1351,9 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		break;
 	case MSDK_SCENARIO_ID_CUSTOM1:
 		Custom1(image_window, sensor_config_data);
+		break;
+	case MSDK_SCENARIO_ID_CUSTOM2:
+		custom2(image_window, sensor_config_data);
 		break;
 	default:
 		pr_debug("Error ScenarioId setting");
@@ -1437,6 +1511,22 @@ static kal_uint32 set_max_framerate_by_scenario(
 		if (imgsensor.frame_length > imgsensor.shutter)
 			set_dummy();
 		break;
+	case MSDK_SCENARIO_ID_CUSTOM2:
+		frame_length = imgsensor_info.custom2.pclk / framerate * 10
+				/ imgsensor_info.custom2.linelength;
+		spin_lock(&imgsensor_drv_lock);
+		imgsensor.dummy_line =
+			(frame_length > imgsensor_info.custom2.framelength)
+			  ? (frame_length - imgsensor_info.custom2.framelength)
+			  : 0;
+		imgsensor.frame_length =
+			imgsensor_info.custom2.framelength
+				+ imgsensor.dummy_line;
+		imgsensor.min_frame_length = imgsensor.frame_length;
+		spin_unlock(&imgsensor_drv_lock);
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		break;
 	default:  /*coding with  preview scenario by default*/
 		frame_length = imgsensor_info.pre.pclk / framerate * 10
 			/ imgsensor_info.pre.linelength;
@@ -1481,6 +1571,9 @@ static kal_uint32 get_default_framerate_by_scenario(
 		break;
 	case MSDK_SCENARIO_ID_CUSTOM1:
 		*framerate = imgsensor_info.custom1.max_framerate;
+		break;
+	case MSDK_SCENARIO_ID_CUSTOM2:
+		*framerate = imgsensor_info.custom2.max_framerate;
 		break;
 	default:
 		*framerate = imgsensor_info.pre.max_framerate;
@@ -1546,6 +1639,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		if(sensor_mode == FPS120_MODE) {
 			*(feature_data + 2) = imgsensor_info.max_gain_120fps;
 		}
+		if(sensor_mode == FPS60_MODE) {
+			*(feature_data + 2) = imgsensor_info.max_gain_60fps;
+		}
 		break;
 	case SENSOR_FEATURE_GET_BASE_GAIN_ISO_AND_STEP:
 		*(feature_data + 0) = imgsensor_info.min_gain_iso;
@@ -1588,6 +1684,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= imgsensor_info.custom1.pclk;
 			break;
+		case MSDK_SCENARIO_ID_CUSTOM2:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
+				= imgsensor_info.custom2.pclk;
+			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
@@ -1621,6 +1721,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 			= (imgsensor_info.custom1.framelength << 16)
 				+ imgsensor_info.custom1.linelength;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM2:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
+			= (imgsensor_info.custom2.framelength << 16)
+				+ imgsensor_info.custom2.linelength;
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
@@ -1742,6 +1847,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				   (void *)&imgsensor_winsize_info[5],
 				   sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 			break;
+		case MSDK_SCENARIO_ID_CUSTOM2:
+			memcpy((void *)wininfo,
+			(void *)&imgsensor_winsize_info[6],
+			sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
+			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			memcpy((void *)wininfo,
@@ -1772,6 +1882,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			case MSDK_SCENARIO_ID_CUSTOM2:
 				imgsensor_pd_info.i4BlockNumX = 248;
 				imgsensor_pd_info.i4BlockNumY = 144;
 				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
@@ -1792,6 +1903,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		case MSDK_SCENARIO_ID_CUSTOM1:
+		case MSDK_SCENARIO_ID_CUSTOM2:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		default:
@@ -1886,6 +1998,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) =
 				imgsensor_info.custom1.mipi_pixel_rate;
 			break;
+		case MSDK_SCENARIO_ID_CUSTOM2:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
+				= imgsensor_info.custom2.mipi_pixel_rate;
+			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
@@ -1911,6 +2027,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				break;
 			case MSDK_SCENARIO_ID_CUSTOM1:
 				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[3], sizeof(struct SENSOR_VC_INFO_STRUCT));
+				break;
+			case MSDK_SCENARIO_ID_CUSTOM2:
+				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[4], sizeof(struct SENSOR_VC_INFO_STRUCT));
 				break;
 		default:
 			pr_info("error: get wrong vc_INFO id = %d",
