@@ -256,7 +256,7 @@ impl MiscDevice for Ashmem {
                 me.pin_unpin(cmd, UserSlice::new(arg, size).reader())
             }
             bindings::ASHMEM_PURGE_ALL_CACHES => me.purge_all_caches(),
-            _ => Err(EINVAL),
+            _ => Err(ENOTTY),
         }
     }
 
