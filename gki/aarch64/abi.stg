@@ -356822,6 +356822,44 @@ enumeration {
   }
 }
 enumeration {
+  id: 0x168da7aa
+  name: "gcma_stat_type"
+  definition {
+    underlying_type_id: 0x4585663f
+    enumerator {
+      name: "ALLOCATED_PAGE"
+    }
+    enumerator {
+      name: "STORED_PAGE"
+      value: 1
+    }
+    enumerator {
+      name: "LOADED_PAGE"
+      value: 2
+    }
+    enumerator {
+      name: "EVICTED_PAGE"
+      value: 3
+    }
+    enumerator {
+      name: "CACHED_PAGE"
+      value: 4
+    }
+    enumerator {
+      name: "DISCARDED_PAGE"
+      value: 5
+    }
+    enumerator {
+      name: "TOTAL_PAGE"
+      value: 6
+    }
+    enumerator {
+      name: "NUM_OF_GCMA_STAT"
+      value: 7
+    }
+  }
+}
+enumeration {
   id: 0x42ebe6bd
   name: "geni_se_xfer_mode"
   definition {
@@ -388567,6 +388605,11 @@ function {
   parameter_id: 0x356691bc
   parameter_id: 0x6720d32f
   parameter_id: 0x4585663f
+}
+function {
+  id: 0x5278baa1
+  return_type_id: 0x92233392
+  parameter_id: 0x168da7aa
 }
 function {
   id: 0x5281433c
@@ -463839,6 +463882,15 @@ elf_symbol {
   full_name: "gcma_free_range"
 }
 elf_symbol {
+  id: 0xc60a070d
+  name: "gcma_stat_get"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x3ee65e01
+  type_id: 0x5278baa1
+  full_name: "gcma_stat_get"
+}
+elf_symbol {
   id: 0xc3be8e53
   name: "gen_pool_add_owner"
   is_defined: true
@@ -512841,6 +512893,7 @@ interface {
   symbol_id: 0x4e154d27
   symbol_id: 0xd338db76
   symbol_id: 0x2e290469
+  symbol_id: 0xc60a070d
   symbol_id: 0xc3be8e53
   symbol_id: 0xc0d67a7b
   symbol_id: 0x838e302b
