@@ -345695,6 +345695,13 @@ function {
   parameter_id: 0x0a52df14
 }
 function {
+  id: 0x94cb16e5
+  return_type_id: 0x6720d32f
+  parameter_id: 0x25b73daa
+  parameter_id: 0x0258f96e
+  parameter_id: 0xbd6515b8
+}
+function {
   id: 0x94cce46c
   return_type_id: 0x6720d32f
   parameter_id: 0x25782362
@@ -432319,6 +432326,15 @@ elf_symbol {
   full_name: "round_jiffies_up"
 }
 elf_symbol {
+  id: 0x8d5c9fe1
+  name: "rpmsg_chrdev_eptdev_create"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x90e13585
+  type_id: 0x94cb16e5
+  full_name: "rpmsg_chrdev_eptdev_create"
+}
+elf_symbol {
   id: 0x641a30d7
   name: "rpmsg_chrdev_eptdev_destroy"
   is_defined: true
@@ -459214,6 +459230,7 @@ interface {
   symbol_id: 0x0e66eaf7
   symbol_id: 0x81bce56b
   symbol_id: 0x01a1f5e7
+  symbol_id: 0x8d5c9fe1
   symbol_id: 0x641a30d7
   symbol_id: 0x28967786
   symbol_id: 0xa3ee1393
