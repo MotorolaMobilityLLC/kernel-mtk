@@ -294,7 +294,7 @@ static int csot_td4160_unprepare(struct drm_panel *panel)
 	csot_td4160_dcs_write_seq_static(ctx, 0x28);
 	udelay(10 * 1000);
 	csot_td4160_dcs_write_seq_static(ctx, 0x10);
-	msleep(60);
+	msleep(100);
 
 	if(tp_gesture_flag)
 		panel_gesture_notifier_call_chain(0x01,NULL);
@@ -970,6 +970,27 @@ static int csot_td4160_remove(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
+static void lcm_shutdown(struct mipi_dsi_device *dsi)
+{
+        struct csot_td4160 *ctx = mipi_dsi_get_drvdata(dsi);
+
+        pr_info("%s\n", __func__);
+        ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->reset_gpio)) {
+	    dev_err(ctx->dev, "%s:csot_td4160: cannot get reset_gpio %ld\n",
+	    __func__, PTR_ERR(ctx->reset_gpio));
+	} else {
+	    gpiod_set_value(ctx->reset_gpio, 0);
+	    devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+	    pr_info("%s:csot_td4160: reset_gpio 0\n", __func__);
+	    usleep_range(5000,5001);
+	}
+
+        pr_info("%s: ocp2138_BiasPower_disable\n", __func__);
+        ocp2138_BiasPower_disable(5);
+
+}
+
 static const struct of_device_id csot_td4160_of_match[] = {
 	{
 #if defined(CONFIG_DRM_PANEL_NUM_NO_LIMIT)
@@ -986,6 +1007,7 @@ MODULE_DEVICE_TABLE(of, csot_td4160_of_match);
 static struct mipi_dsi_driver csot_td4160_driver = {
 	.probe = csot_td4160_probe,
 	.remove = csot_td4160_remove,
+	.shutdown = lcm_shutdown,
 	.driver = {
 		.name = "csot_td4160_vid_667_720_120hz",
 		.owner = THIS_MODULE,
