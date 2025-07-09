@@ -56,6 +56,22 @@
                 ilitek,report_gesture_key;
                 ilitek,supported_gesture_type = <0x06>;
 	};
+
+	focaltech@1 {
+		compatible = "focaltech,fts";
+                reg = <1>; //Same as CS ID
+                status = "ok";
+                spi-max-frequency = <9600000>;
+                focaltech,reset-gpio = <&pio 147 0x0>;
+                focaltech,irq-gpio = <&pio 4 0x0>;
+                focaltech,max-touch-number = <10>;
+                focaltech,display-coords = <0 0 1080 2388>;
+                focaltech,report_gesture_key = <59>;
+                focaltech,supported_gesture_type = <0x06>;
+                focaltech,panel-supplier = "txd_ft8725";
+                focaltech,touch-charger-detect-psy-name = "battery";
+                focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
+	};
 };
 
 &pio {
