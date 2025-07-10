@@ -173,37 +173,6 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&bq25960_int_default_standalone>;
 	};
-
-	nu2115: nu2115-standalone@6D {
-		compatible = "cp,nu2115";
-		status = "okay";
-		charger_name = "primary_dvchg";
-		reg = <0x6D>;
-		nu2115,intr-gpios = <&pio 5 0x0>;
-		ac_ovp = <13000000>;
-		vbus_ovp = <12000000>;
-		bat_ucp_alm = <9200000>;
-		ibat_sns_res = <2>;
-		watchdog_dis;
-	};
-
-	cps_wls_charger@38 {
-               compatible = "cps,wls-charger-cps4038";
-               wireless-fw-name = "cps4038.bin";
-               enable_stop_epp = <1>;
-               enable_rx_offset_detect = <1>;
-               /*stop rx offset detect battery soc*/
-               rod_stop_battery_soc = <90>;
-               bootmode = <&chosen>;
-               reg = <0x38>;
-               cps_wls_int = <&pio 9 0x0>;
-               cps_det_int = <&pio 18 0x0>;
-               wls_mode_select = <&pio 34 0x0>;
-               pinctrl-names = "default";
-               pinctrl-0 = <&wls_cps4035_int_default>;
-               status = "okay";
-       };
-
 };
 
 &moto_wlc {
@@ -236,7 +205,7 @@
 
                 mmi,batid_v_ref = <1800000>;
                 mmi,batid_r_pull = <100000>;
-                mmi,batt-ids-map = "1", "ATLRW50NVT", "2", "COSRW50FMT";
+                mmi,batt-ids-map = "1", "LWNRB52SWD", "2", "VEKRB52FMT";
                 mmi,adc-channel-cpu = <0>;
                 mmi,adc-channel-charger = <2>;
                 mmi,adc-channel-pa = <1>;
