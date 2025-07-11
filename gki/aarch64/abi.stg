@@ -49726,6 +49726,11 @@ member {
   offset: 928
 }
 member {
+  id: 0x3b2a0ab9
+  type_id: 0x638666c6
+  offset: 20832
+}
+member {
   id: 0x3b320430
   type_id: 0x63e6543d
   offset: 32
@@ -53802,6 +53807,11 @@ member {
   id: 0x289a9b79
   name: "__iov"
   type_id: 0x3ea6bd8c
+}
+member {
+  id: 0x936cb8af
+  name: "__kabi_ignored0"
+  type_id: 0x5d8155a5
 }
 member {
   id: 0x4140f02a
@@ -206820,6 +206830,11 @@ member {
   offset: 32
 }
 member {
+  id: 0xd56180a7
+  name: "reserved_pin_section"
+  type_id: 0x4585663f
+}
+member {
   id: 0xcbc32f04
   name: "reserved_segments"
   type_id: 0x4585663f
@@ -270998,6 +271013,15 @@ struct_union {
   }
 }
 struct_union {
+  id: 0x638666c6
+  kind: UNION
+  definition {
+    bytesize: 4
+    member_id: 0xd56180a7
+    member_id: 0x936cb8af
+  }
+}
+struct_union {
   id: 0x63891ef9
   kind: UNION
   definition {
@@ -303050,6 +303074,7 @@ struct_union {
     member_id: 0x8bdb6595
     member_id: 0x81b511b8
     member_id: 0x1f9d16da
+    member_id: 0x3b2a0ab9
     member_id: 0x22d5b74c
     member_id: 0xb05ca32a
     member_id: 0x57292a6b
