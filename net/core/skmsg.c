@@ -683,6 +683,8 @@ start:
 				if (ret == -EAGAIN) {
 					sk_psock_skb_state(psock, state, skb,
 							   len, off);
+					/* Restore redir info we cleared before */
+					skb_bpf_set_redir(skb, psock->sk, ingress);
 					goto end;
 				}
 				/* Hard errors break pipe and stop xmit. */
