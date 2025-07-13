@@ -302,6 +302,7 @@
   firmware_request_nowarn
   flush_work
   __flush_workqueue
+  fput
   __fortify_panic
   free_io_pgtable_ops
   free_irq
