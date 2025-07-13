@@ -45,6 +45,8 @@
 #undef CREATE_TRACE_POINTS
 #include <trace/hooks/ufshcd.h>
 
+EXPORT_TRACEPOINT_SYMBOL_GPL(ufshcd_command);
+
 #define UFSHCD_ENABLE_INTRS	(UTP_TRANSFER_REQ_COMPL |\
 				 UTP_TASK_REQ_COMPL |\
 				 UFSHCD_ERROR_MASK)
@@ -7186,6 +7188,11 @@ static irqreturn_t ufshcd_intr(int irq, void *__hba)
 		ufshcd_writel(hba, intr_status, REG_INTERRUPT_STATUS);
 		if (enabled_intr_status)
 			retval |= ufshcd_sl_intr(hba, enabled_intr_status);
+
+		if (hba->android_quirks &
+			    UFSHCD_ANDROID_QUIRK_NO_IS_READ_ON_H8 &&
+		    intr_status & UIC_HIBERNATE_ENTER)
+			break;
 
 		intr_status = ufshcd_readl(hba, REG_INTERRUPT_STATUS);
 	}

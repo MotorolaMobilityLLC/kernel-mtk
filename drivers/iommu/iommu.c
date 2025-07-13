@@ -2640,7 +2640,7 @@ static int __iommu_add_sg(struct iommu_map_cookie_sg *cookie_sg,
 	struct iommu_domain *domain = cookie_sg->domain;
 	const struct iommu_domain_ops *ops = domain->ops;
 	unsigned int min_pagesz;
-	size_t pgsize, count;
+	int ret = 0;
 
 	if (unlikely(!(domain->type & __IOMMU_DOMAIN_PAGING)))
 		return -EINVAL;
@@ -2661,8 +2661,22 @@ static int __iommu_add_sg(struct iommu_map_cookie_sg *cookie_sg,
 		       iova, &paddr, size, min_pagesz);
 		return -EINVAL;
 	}
-	pgsize = iommu_pgsize(domain, iova, paddr, size, &count);
-	return ops->add_deferred_map_sg(cookie_sg, paddr, pgsize, count);
+
+	while (size) {
+		size_t pgsize, count, added;
+
+		pgsize = iommu_pgsize(domain, iova, paddr, size, &count);
+		ret = ops->add_deferred_map_sg(cookie_sg, paddr, pgsize, count);
+		if (ret)
+			break;
+
+		added = pgsize * count;
+		size -= added;
+		iova += added;
+		paddr += added;
+	}
+
+	return ret;
 }
 
 ssize_t iommu_map_sg(struct iommu_domain *domain, unsigned long iova,
@@ -2722,9 +2736,9 @@ next:
 		size_t consumed;
 
 		consumed = ops->consume_deferred_map_sg(cookie_sg);
-		if (consumed != mapped) {
+		if (WARN_ON(consumed != mapped)) {
 			mapped = consumed;
-			ret = EINVAL;
+			ret = -EINVAL;
 			goto out_err;
 		}
 	}
