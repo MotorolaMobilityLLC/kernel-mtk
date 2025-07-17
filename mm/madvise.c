@@ -1685,6 +1685,7 @@ int do_madvise(struct mm_struct *mm, unsigned long start, size_t len_in, int beh
 	int write;
 	size_t len;
 	struct blk_plug plug;
+	bool bypass = false;
 
 	if (!madvise_behavior_valid(behavior))
 		return -EINVAL;
@@ -1708,6 +1709,11 @@ int do_madvise(struct mm_struct *mm, unsigned long start, size_t len_in, int beh
 	if (behavior == MADV_HWPOISON || behavior == MADV_SOFT_OFFLINE)
 		return madvise_inject_error(behavior, start, start + len_in);
 #endif
+
+	trace_android_vh_mm_do_madvise_bypass(mm, start, len, behavior,
+					      &error, &bypass);
+	if (bypass)
+		return error;
 
 	write = madvise_need_mmap_write(behavior);
 	if (write) {
