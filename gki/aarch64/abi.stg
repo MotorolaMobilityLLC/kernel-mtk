@@ -426496,6 +426496,15 @@ elf_symbol {
   full_name: "I_BDEV"
 }
 elf_symbol {
+  id: 0x26c56443
+  name: "LZ4_compress_HC"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x2cf136fa
+  type_id: 0x920e8cef
+  full_name: "LZ4_compress_HC"
+}
+elf_symbol {
   id: 0x6ea63025
   name: "LZ4_compress_default"
   is_defined: true
@@ -508940,11 +508949,30 @@ elf_symbol {
   type_id: 0xf3d624ec
   full_name: "zstd_is_error"
 }
+elf_symbol {
+  id: 0x0b36a725
+  name: "zstd_max_clevel"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x7851be11
+  type_id: 0x9d80e32f
+  full_name: "zstd_max_clevel"
+}
+elf_symbol {
+  id: 0x3b5116ed
+  name: "zstd_min_clevel"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x7851be11
+  type_id: 0x9d80e32f
+  full_name: "zstd_min_clevel"
+}
 interface {
   id: 0x84ea5130
   symbol_id: 0x698a526c
   symbol_id: 0x4203f861
   symbol_id: 0x2dddbe52
+  symbol_id: 0x26c56443
   symbol_id: 0x6ea63025
   symbol_id: 0x7c322a62
   symbol_id: 0x38116da8
@@ -518101,4 +518129,6 @@ interface {
   symbol_id: 0xae02eaa9
   symbol_id: 0x0d8da27c
   symbol_id: 0x19c14ad0
+  symbol_id: 0x0b36a725
+  symbol_id: 0x3b5116ed
 }
