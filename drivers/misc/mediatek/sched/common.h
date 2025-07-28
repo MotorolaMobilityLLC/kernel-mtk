@@ -47,9 +47,17 @@ struct vip_task_struct {
 	bool			vvip;
 };
 
+/* moto stat task statistics for performance monitoring*/
+struct moto_stats_task_struct {
+	unsigned long	runnable_start_ns;
+	unsigned long	stats_private_ts;
+	unsigned long	direct_reclaim_ts;
+};
+
 struct mtk_task {
 	u64 reserved0[MTK_TASK_FLAG];
 	struct vip_task_struct	vip_task;
+	struct moto_stats_task_struct moto_stats_task;
 };
 
 struct vip_task_group {
@@ -100,6 +108,11 @@ extern int set_turn_point_freq(int gearid, unsigned long freq);
 #if IS_ENABLED(CONFIG_MTK_SCHEDULER)
 extern bool sysctl_util_est;
 #endif
+
+static inline struct moto_stats_task_struct *get_moto_stats_task_struct(struct task_struct *p)
+{
+	return &((struct mtk_task *)p->android_vendor_data1)->moto_stats_task;
+}
 
 static inline bool is_util_est_enable(void)
 {
