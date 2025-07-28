@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (c) 2023 MediaTek Inc.
+ * Copyright (c) 2025 MediaTek Inc.
  */
 
 #ifndef PANEL_MOT_VDO_TXD_FT8725_1080_2388_DPHY_FHD_120HZ
@@ -20,7 +20,7 @@
 #define PHYSICAL_WIDTH              70956
 #define PHYSICAL_HEIGHT             156892
 
-#define DATA_RATE                   876
+#define DATA_RATE                   1034
 #define HSA                         8
 #define HBP                         56
 #define VSA                         10
@@ -31,7 +31,7 @@
 #define MODE_120_VFP                51
 #define MODE_120_HFP                70
 
-#define MODE_120_DATA_RATE          876
+#define MODE_120_DATA_RATE          1034
 /*Parameter setting for mode 3 End*/
 
 //Parameter setting for mode 2 Start
@@ -39,7 +39,7 @@
 #define MODE_90_VFP                 870
 #define MODE_90_HFP                 70
 
-#define MODE_90_DATA_RATE           876
+#define MODE_90_DATA_RATE           1034
 //Parameter setting for mode 2 End
 
 //Parameter setting for mode 0 Start
@@ -47,14 +47,14 @@
 #define MODE_60_VFP                 2510
 #define MODE_60_HFP                 70
 
-#define MODE_60_DATA_RATE            876
+#define MODE_60_DATA_RATE           1034
 //Parameter setting for mode 0 End
 
 #define MODE_30_FPS                 30
 #define MODE_30_VFP                 7440
 #define MODE_30_HFP                 70
 
-#define MODE_30_DATA_RATE           876
+#define MODE_30_DATA_RATE           1034
 
 #define LFR_EN                      1
 /* DSC RELATED */
