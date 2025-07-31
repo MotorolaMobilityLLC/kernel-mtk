@@ -49,8 +49,6 @@ struct vip_task_struct {
 
 /* moto stat task statistics for performance monitoring*/
 struct moto_stats_task_struct {
-	unsigned long	runnable_start_ns;
-	unsigned long	stats_private_ts;
 	unsigned long	direct_reclaim_ts;
 };
 
