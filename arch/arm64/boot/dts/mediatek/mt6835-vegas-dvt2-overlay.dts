@@ -18,6 +18,7 @@
 #include "mediatek/mt6835_vegas_camera_overlay.dtsi"
 #include "mediatek/vegas-charger.dtsi"
 #include "mediatek/vegas-touch.dtsi"
+#include "mediatek/vegas-sensor.dtsi"
 
 /* Board match root node */
 / {
