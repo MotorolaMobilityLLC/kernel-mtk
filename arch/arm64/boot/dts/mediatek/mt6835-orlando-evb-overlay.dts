@@ -20,6 +20,7 @@
 #include "mediatek/mt6835_orlando_camera_overlay.dtsi"
 #include "mediatek/orlando-charger.dtsi"
 #include "mediatek/orlando-touch.dtsi"
+#include "mediatek/orlando-sensor.dtsi"
 
 #define ORLANDO_RADIO_ID	2
 
