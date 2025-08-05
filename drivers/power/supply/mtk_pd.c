@@ -67,6 +67,8 @@ static int pd_dbg_level = PD_DEBUG_LEVEL;
 #define PD_IBUS_P_IBAT 55
 #endif
 
+#define MIVR_VBUS_DIFF_THR 2000000
+
 static bool algo_waiver_test;
 module_param(algo_waiver_test, bool, 0644);
 
@@ -380,11 +382,20 @@ int __mtk_pdc_setup(struct chg_alg_device *alg, int idx)
 	unsigned int oldmA = 3000000;
 	bool force_update = false;
 	int chg_cnt, is_chip_enabled, i;
+	bool chg1_mivr = false;
+	int vbus = 0;
 
 	struct mtk_pd *pd = dev_get_drvdata(&alg->dev);
 
 	if (pd->pd_idx == idx) {
 		pd_hal_get_mivr(alg, CHG1, &oldmivr);
+
+                pd_hal_get_mivr_state(alg, CHG1, &chg1_mivr);
+                vbus = pd_hal_get_vbus(alg);
+                pd_err("[%s]vbus %d, currmivr %d, chg1_mivr %d\n", __func__, vbus, oldmivr, chg1_mivr);
+                if (oldmivr > vbus - MIVR_VBUS_DIFF_THR && chg1_mivr) {
+		    pd_hal_set_mivr(alg, CHG1, pd->min_charger_voltage);
+                }
 
 		if (pd->cap.max_mv[idx] - oldmivr / 1000 >
 			PD_VBUS_IR_DROP_THRESHOLD)
