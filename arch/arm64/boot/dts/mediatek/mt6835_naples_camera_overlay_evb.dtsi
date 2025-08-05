@@ -58,34 +58,6 @@
 			output-high;
 		};
 	};
-	camera_pins_cam1_dvdd_gpio_0: cam0@12 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO34__FUNC_GPIO34>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	camera_pins_cam1_dvdd_gpio_1: cam0@13 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO34__FUNC_GPIO34>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	camera_pins_cam1_avdd_gpio_0: cam0@14 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	camera_pins_cam1_avdd_gpio_1: cam0@15 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
 	camera_pins_cam0_af_0: vcamaf0@16 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
@@ -197,13 +169,13 @@
 	pinctrl-16 = <&camera_pins_cam0_avdd_gpio_1>;
 	pinctrl-17 = <&camera_pins_cam0_dvdd_gpio_0>;
 	pinctrl-18 = <&camera_pins_cam0_dvdd_gpio_1>;
-	pinctrl-19 = <&camera_pins_cam1_avdd_gpio_0>;
-	pinctrl-20 = <&camera_pins_cam1_avdd_gpio_1>;
-	pinctrl-21 = <&camera_pins_cam1_dvdd_gpio_0>;
-	pinctrl-22 = <&camera_pins_cam1_dvdd_gpio_1>;
+
 	/* main (wide)*/
 	cam0_vcamio-supply = <&mt6377_vaud18>;
-	cam1_vcamio-supply = <&mt6377_vaud18>;
+	cam1_vcamio-supply = <&mt6377_vio18>;
+	cam1_vcama-supply = <&cam_avdd_front>;
+	cam1_vcamd-supply = <&cam_dvdd_front>;
+
 
 	cam0_pin_mclk = "mclk";
 	cam0_pin_rst = "gpio";
@@ -215,13 +187,12 @@
 	cam0_pin_vcamaf = "gpio";
 	cam1_pin_mclk = "mclk";
 	cam1_pin_rst = "gpio";
-	cam1_pin_vcama = "gpio";
+	cam1_pin_vcama = "regulator";
 	cam1_pin_vcamio = "regulator";
-	cam1_pin_vcamd = "gpio";
-	cam1_pin_vcama1 = "regulator";
+	cam1_pin_vcamd = "regulator";
 
 	cam0_enable_sensor = "mot_nevada_s5kkd1_mipi_raw mot_nevada_s5kkds_mipi_raw";
-	cam1_enable_sensor = "mot_nevada_ov08f_mipi_raw";
+	cam1_enable_sensor = "mot_naples_s5kkds_mipi_raw";
 	status = "okay";
 };
 /* CAMERA GPIO end */
@@ -229,7 +200,7 @@
 /* CAMERA EEPROM */
 &i2c2 {
 	status = "okay";
-	clock-frequency = <400000>;
+	clock-frequency = <1000000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
 
@@ -326,7 +297,7 @@
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_nevada_s5kkd1_mipi_raw mot_nevada_ov08f_mipi_raw mot_nevada_s5kkds_mipi_raw";
+       cust-sensor = "mot_naples_s5kkds_mipi_raw";
 };
 
 &pio {
