@@ -57,6 +57,11 @@ config  MOT_NEVADA_CAMERA_PROJECT
         help
           Used to distinguish project-driver code from other projects.
 
+config  MOT_NAPLES_CAMERA_PROJECT
+        tristate "set naples camera driver"
+        help
+          Used to distinguish project-driver code from other projects.
+
 config  MOT_KANSAS_CAMERA_PROJECT
         tristate "set kansas camera driver"
         help
