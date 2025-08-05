@@ -55,7 +55,7 @@
 		sc,sc8989x,vsys-min = <5>; /*3500mV*/
 		sc,sc8989x,vbatmin-sel = <0>; /*0:2.9V 1:2.5V*/
 		sc,sc8989x,itrick = <3>; /*60 + val *60*/
-		sc,sc8989x,iterm = <3>; /*30 + val * 60*/
+		sc,sc8989x,iterm = <2>; /*30 + val * 60*/
 		sc,sc8989x,vbat-cv = <38>; /*3840 + val * 16*/
 		sc,sc8989x,vbat-low = <1>; /*0:2.8V 1:3V*/
 		sc,sc8989x,vrechg = <0>; /*0:100mV 1:200mV*/
