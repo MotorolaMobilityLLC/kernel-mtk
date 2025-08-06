@@ -1441,6 +1441,33 @@ static int aw883xx_volume_set(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
+static int aw883xx_pa_status_info(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_info *uinfo)
+{
+	/* set kcontrol info */
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 128;
+
+	return 0;
+}
+
+static int aw883xx_pa_status_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	aw_snd_soc_codec_t *codec =
+		aw_componet_codec_ops.kcontrol_codec(kcontrol);
+	struct aw883xx *aw883xx =
+		aw_componet_codec_ops.codec_get_drvdata(codec);
+	struct aw_device *aw_dev = aw883xx->aw_pa;
+	ucontrol->value.integer.value[0] = aw_dev->pa_st;
+	aw_dev_info(aw_dev->dev, "ucontrol->value.integer.value[0]=%d",
+				aw_dev->pa_st);
+	aw_dev->pa_st = 0;
+	return 0;
+}
+
 static int aw883xx_dynamic_create_controls(struct aw883xx *aw883xx)
 {
 	struct snd_kcontrol_new *aw883xx_dev_control = NULL;
@@ -1499,6 +1526,17 @@ static int aw883xx_dynamic_create_controls(struct aw883xx *aw883xx)
 	aw883xx_dev_control[3].info = aw883xx_volume_info;
 	aw883xx_dev_control[3].get = aw883xx_volume_get;
 	aw883xx_dev_control[3].put = aw883xx_volume_set;
+
+	kctl_name = devm_kzalloc(aw883xx->codec->dev, AW_NAME_BUF_MAX, GFP_KERNEL);
+	if (!kctl_name)
+		return -ENOMEM;
+
+	snprintf(kctl_name, AW_NAME_BUF_MAX, "smartpa_%u_status", aw883xx->aw_pa->channel);
+
+	aw883xx_dev_control[4].name = kctl_name;
+	aw883xx_dev_control[4].iface = SNDRV_CTL_ELEM_IFACE_MIXER;
+	aw883xx_dev_control[4].info = aw883xx_pa_status_info;
+	aw883xx_dev_control[4].get = aw883xx_pa_status_get;
 
 	aw_componet_codec_ops.add_codec_controls(aw883xx->codec,
 						aw883xx_dev_control, AW_KCONTROL_NUM);

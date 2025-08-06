@@ -93,6 +93,24 @@ static int aw_monitor_get_chip_temperature(struct aw_device *aw_dev, int *temp)
 }
 #endif
 
+static void aw_dev_monitor_status(struct aw_device *aw_dev)
+{
+	int ret = -1;
+	uint16_t reg_val = 0;
+	struct aw_sysst_desc *desc = &aw_dev->sysst_desc;
+
+	ret = aw_dev->ops.aw_reg_read(aw_dev, desc->reg, &reg_val);
+	if (ret) {
+		aw_dev_err(aw_dev->dev, "get sysst failed!");
+		reg_val = 0;
+	}
+
+	if (reg_val & 0x0008) {
+		aw_dev->pa_st = aw_dev->pa_st|0x0002;
+		aw_dev_info(aw_dev->dev, "sysst check: %x",reg_val);
+	}
+}
+
 static int aw_monitor_get_battery_state(struct aw_device *aw_dev,
 			int *data, int data_type)
 {
@@ -507,6 +525,13 @@ static int aw_monitor_work(struct aw_device *aw_dev)
 		aw_dev_info(aw_dev->dev, "done nothing during calibration");
 		return 0;
 	}
+
+#ifdef CONFIG_SND_SOC_VEGAS_AUDIO
+	if (aw_dev->channel != 2)
+		aw_dev_monitor_status(aw_dev);
+#else
+	aw_dev_monitor_status(aw_dev);
+#endif
 
 	ret = aw_monitor_get_temp_and_vol(aw_dev);
 	if (ret < 0)

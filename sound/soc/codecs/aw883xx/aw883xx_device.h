@@ -519,6 +519,7 @@ struct aw_device {
 	unsigned int fade_step;
 	unsigned int dither_st;
 	unsigned int txen_st;
+	unsigned int pa_st;
 
 	struct i2c_client *i2c;
 	struct device *dev;

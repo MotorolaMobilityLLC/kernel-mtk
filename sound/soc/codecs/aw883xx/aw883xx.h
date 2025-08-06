@@ -68,7 +68,7 @@ MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 #define AW883XX_DSP_16_DATA_MASK	(0x0000ffff)
 
 #define AW_GET_IV_CNT_MAX		(6)
-#define AW_KCONTROL_NUM			(4)
+#define AW_KCONTROL_NUM			(5)
 #define AW_DSP_MONITOR_DELAY		(1000)
 
 enum aw883xx_id {
