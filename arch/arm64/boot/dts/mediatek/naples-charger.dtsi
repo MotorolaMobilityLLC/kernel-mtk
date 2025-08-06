@@ -18,10 +18,10 @@
 
 &i2c5 {
 	clock-frequency = <400000>;
-	sgm4154x_chg: sgm41542@3B {
+	sgm4154x_chg: sgm41542@6B {
 		status = "okay";
 		compatible = "sgm,sgm41542";
-		reg = <0x3B>;
+		reg = <0x6B>;
                 io-channels = <&pmic_adc AUXADC_VCDT>;
 		io-channel-names = "pmic_vbus";
  		phys = <&u2port0 PHY_TYPE_USB2>;

@@ -716,6 +716,14 @@ config MMI_SGM41543D_CHARGER
 	help
 	  support SGM41543D
 
+config MMI_SGM41542S_CHARGER
+	tristate "SGM41542S battery charger driver"
+	depends on I2C
+	depends on GPIOLIB || COMPILE_TEST
+	select REGMAP_I2C
+	help
+	  Say Y here to enable support for the SGM41542S charger IC
+
 config MMI_AW35615_WATERPROOF
 	tristate "AW35615 WATERPROOF FUNC"
 	depends on I2C
