@@ -104,6 +104,9 @@
 #include <linux/kfence.h>
 #include <linux/kmemleak.h>
 #include <linux/memory_hotplug.h>
+#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
+#include <linux/kallsyms.h>
+#endif
 
 /*
  * Kmemleak configuration and common defines.
@@ -349,6 +352,48 @@ static bool unreferenced_object(struct kmemleak_object *object)
  * Printing of the unreferenced objects information to the seq file. The
  * print_unreferenced function must be called with the object->lock held.
  */
+#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
+static int print_unreferenced(struct seq_file *seq,
+			       struct kmemleak_object *object)
+{
+	int i;
+	unsigned long *entries;
+	unsigned int nr_entries;
+	unsigned int msecs_age = jiffies_to_msecs(jiffies - object->jiffies);
+	int need_to_panic = 0;
+
+	nr_entries = stack_depot_fetch(object->trace_handle, &entries);
+	warn_or_seq_printf(seq, "unreferenced object 0x%08lx (size %zu):\n",
+			  object->pointer, object->size);
+	warn_or_seq_printf(seq, "  comm \"%s\", pid %d, jiffies %lu (age %d.%03ds)\n",
+			   object->comm, object->pid, object->jiffies,
+			   msecs_age / 1000, msecs_age % 1000);
+	hex_dump_object(seq, object);
+	warn_or_seq_printf(seq, "  backtrace:\n");
+
+	for (i = 0; i < nr_entries; i++) {
+		void *ptr = (void *)entries[i];
+		char symname[KSYM_SYMBOL_LEN];
+
+		sprint_symbol(symname, (unsigned long)ptr);
+		if (strstr(symname, "[irq_monitor]"))
+			need_to_panic = 1;
+		warn_or_seq_printf(seq, "    %pS\n", ptr);
+	}
+
+	if (need_to_panic) {
+		pr_info("unreferenced object 0x%08lx (size %zu):\n", object->pointer, object->size);
+		pr_info("  comm \"%s\", pid %d, jiffies %lu (age %d.%03ds)\n", object->comm, object->pid,
+				object->jiffies, msecs_age / 1000, msecs_age % 1000);
+		pr_info("  backtrace:\n");
+
+		for (i = 0; i < nr_entries; i++)
+			pr_info("    %pS\n", (void *)entries[i]);
+	}
+
+	return need_to_panic;
+}
+#else /* CONFIG_MTK_VM_DEBUG */
 static void print_unreferenced(struct seq_file *seq,
 			       struct kmemleak_object *object)
 {
@@ -371,6 +416,7 @@ static void print_unreferenced(struct seq_file *seq,
 		warn_or_seq_printf(seq, "    %pS\n", ptr);
 	}
 }
+#endif /* CONFIG_MTK_VM_DEBUG */
 
 /*
  * Print the kmemleak_object information. This function is used mainly for
@@ -1525,6 +1571,192 @@ unlock_put:
  * kernel's standard allocators. This function must be called with the
  * scan_mutex held.
  */
+#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
+static void kmemleak_scan(void)
+{
+	struct kmemleak_object *object;
+	struct zone *zone;
+	int __maybe_unused i;
+	int new_leaks = 0;
+	int need_to_panic = 0;
+
+	jiffies_last_scan = jiffies;
+
+	/* prepare the kmemleak_object's */
+	rcu_read_lock();
+	list_for_each_entry_rcu(object, &object_list, object_list) {
+		raw_spin_lock_irq(&object->lock);
+#ifdef DEBUG
+		/*
+		 * With a few exceptions there should be a maximum of
+		 * 1 reference to any object at this point.
+		 */
+		if (atomic_read(&object->use_count) > 1) {
+			pr_debug("object->use_count = %d\n",
+				 atomic_read(&object->use_count));
+			dump_object_info(object);
+		}
+#endif
+
+		/* ignore objects outside lowmem (paint them black) */
+		if ((object->flags & OBJECT_PHYS) &&
+		   !(object->flags & OBJECT_NO_SCAN)) {
+			unsigned long phys = object->pointer;
+
+			if (PHYS_PFN(phys) < min_low_pfn ||
+			    PHYS_PFN(phys + object->size) > max_low_pfn)
+				__paint_it(object, KMEMLEAK_BLACK);
+		}
+
+		/* reset the reference count (whiten the object) */
+		object->count = 0;
+		if (color_gray(object) && get_object(object))
+			list_add_tail(&object->gray_list, &gray_list);
+
+		raw_spin_unlock_irq(&object->lock);
+
+		if (need_resched())
+			kmemleak_cond_resched(object);
+	}
+	rcu_read_unlock();
+
+#ifdef CONFIG_SMP
+	/* per-cpu sections scanning */
+	for_each_possible_cpu(i)
+		scan_large_block(__per_cpu_start + per_cpu_offset(i),
+				 __per_cpu_end + per_cpu_offset(i));
+#endif
+
+	/*
+	 * Struct page scanning for each node.
+	 */
+	get_online_mems();
+	for_each_populated_zone(zone) {
+		unsigned long start_pfn = zone->zone_start_pfn;
+		unsigned long end_pfn = zone_end_pfn(zone);
+		unsigned long pfn;
+
+		for (pfn = start_pfn; pfn < end_pfn; pfn++) {
+			struct page *page = pfn_to_online_page(pfn);
+
+			if (!(pfn & 63))
+				cond_resched();
+
+			if (!page)
+				continue;
+
+			/* only scan pages belonging to this zone */
+			if (page_zone(page) != zone)
+				continue;
+			/* only scan if page is in use */
+			if (page_count(page) == 0)
+				continue;
+			scan_block(page, page + 1, NULL);
+		}
+	}
+	put_online_mems();
+
+	/*
+	 * Scanning the task stacks (may introduce false negatives).
+	 */
+	if (kmemleak_stack_scan) {
+		struct task_struct *p, *g;
+
+		rcu_read_lock();
+		for_each_process_thread(g, p) {
+			void *stack = try_get_task_stack(p);
+			if (stack) {
+				scan_block(stack, stack + THREAD_SIZE, NULL);
+				put_task_stack(p);
+			}
+		}
+		rcu_read_unlock();
+	}
+
+	/*
+	 * Scan the objects already referenced from the sections scanned
+	 * above.
+	 */
+	scan_gray_list();
+
+	/*
+	 * Check for new or unreferenced objects modified since the previous
+	 * scan and color them gray until the next scan.
+	 */
+	rcu_read_lock();
+	list_for_each_entry_rcu(object, &object_list, object_list) {
+		if (need_resched())
+			kmemleak_cond_resched(object);
+
+		/*
+		 * This is racy but we can save the overhead of lock/unlock
+		 * calls. The missed objects, if any, should be caught in
+		 * the next scan.
+		 */
+		if (!color_white(object))
+			continue;
+		raw_spin_lock_irq(&object->lock);
+		if (color_white(object) && (object->flags & OBJECT_ALLOCATED)
+		    && update_checksum(object) && get_object(object)) {
+			/* color it gray temporarily */
+			object->count = object->min_count;
+			list_add_tail(&object->gray_list, &gray_list);
+		}
+		raw_spin_unlock_irq(&object->lock);
+	}
+	rcu_read_unlock();
+
+	/*
+	 * Re-scan the gray list for modified unreferenced objects.
+	 */
+	scan_gray_list();
+
+	/*
+	 * If scanning was stopped do not report any new unreferenced objects.
+	 */
+	if (scan_should_stop())
+		return;
+
+	/*
+	 * Scanning result reporting.
+	 */
+	rcu_read_lock();
+	list_for_each_entry_rcu(object, &object_list, object_list) {
+		if (need_resched())
+			kmemleak_cond_resched(object);
+
+		/*
+		 * This is racy but we can save the overhead of lock/unlock
+		 * calls. The missed objects, if any, should be caught in
+		 * the next scan.
+		 */
+		if (!color_white(object))
+			continue;
+		raw_spin_lock_irq(&object->lock);
+		if (unreferenced_object(object) &&
+		    !(object->flags & OBJECT_REPORTED)) {
+			object->flags |= OBJECT_REPORTED;
+
+			if (kmemleak_verbose)
+				need_to_panic = print_unreferenced(NULL, object) ? 1 : need_to_panic;
+
+			new_leaks++;
+		}
+		raw_spin_unlock_irq(&object->lock);
+	}
+	rcu_read_unlock();
+
+	if (new_leaks) {
+		kmemleak_found_leaks = true;
+
+		pr_info("%d new suspected memory leaks (see /sys/kernel/debug/kmemleak)\n",
+			new_leaks);
+	}
+
+	if (need_to_panic)
+		panic("kmemleak: [irq_monitor] in backtrace!");
+}
+#else /* CONFIG_MTK_VM_DEBUG */
 static void kmemleak_scan(void)
 {
 	struct kmemleak_object *object;
@@ -1706,6 +1938,7 @@ static void kmemleak_scan(void)
 	}
 
 }
+#endif /* CONFIG_MTK_VM_DEBUG */
 
 /*
  * Thread function performing automatic memory scanning. Unreferenced objects
@@ -1841,6 +2074,24 @@ static void kmemleak_seq_stop(struct seq_file *seq, void *v)
 /*
  * Print the information for an unreferenced object to the seq file.
  */
+#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
+static int kmemleak_seq_show(struct seq_file *seq, void *v)
+{
+	struct kmemleak_object *object = v;
+	unsigned long flags;
+	int need_to_panic = 0;
+
+	raw_spin_lock_irqsave(&object->lock, flags);
+	if ((object->flags & OBJECT_REPORTED) && unreferenced_object(object))
+		need_to_panic = print_unreferenced(seq, object) ? 1 : need_to_panic;
+	raw_spin_unlock_irqrestore(&object->lock, flags);
+
+	if (need_to_panic)
+		panic("kmemleak: [irq_monitor] in backtrace!");
+
+	return 0;
+}
+#else /* CONFIG_MTK_VM_DEBUG */
 static int kmemleak_seq_show(struct seq_file *seq, void *v)
 {
 	struct kmemleak_object *object = v;
@@ -1852,6 +2103,7 @@ static int kmemleak_seq_show(struct seq_file *seq, void *v)
 	raw_spin_unlock_irqrestore(&object->lock, flags);
 	return 0;
 }
+#endif /* CONFIG_MTK_VM_DEBUG */
 
 static const struct seq_operations kmemleak_seq_ops = {
 	.start = kmemleak_seq_start,
