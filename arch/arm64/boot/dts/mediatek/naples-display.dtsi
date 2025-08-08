@@ -31,10 +31,10 @@
 		compatible = "awinic,aw99703-bl","ktd,ktd3136";
 		reg = <0x36>;
 		id = <6>;
-		lk_hwen-gpio = <151>;
+		/*lk_hwen-gpio = <151>;*/
 		status = "okay";
 
-		aw99703,hwen-gpio = <&pio 151 1>;
+		/*aw99703,hwen-gpio = <&pio 151 1>;*/
 		aw99703,bl-map = <3>; /* brightness map level 1:256,2:1024,3:2048 */
 		aw99703,using-lsb;
 		aw99703,ovp-level = <1>; /* 0:17.5V, 1:24V, 2:31V, 3:38V, 4:41.5V */
@@ -65,7 +65,7 @@
 				<0x07 0xb6>,
 				<0x02 0x01>;
 
-                ktd,hwen-gpio = <&pio 151 1>;
+                /*ktd,hwen-gpio = <&pio 151 1>;*/
                 ktd,using-lsb;
                 ktd,pwm-frequency = <1>; /* 1MHZ */
                 ktd,bl-fscal-led = <0xE1>; /* 27.4mA */
