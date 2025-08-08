@@ -16,6 +16,15 @@
 	status = "disabled";
 };
 
+&pio {
+     chargerpump_int_default_master: chargerpump_int_default_master {
+		pinmux = <PINMUX_GPIO5__FUNC_GPIO5>;
+		slew-rate= <0>;
+		input-enable;
+		bias-pull-up;
+     };
+};
+
 &i2c5 {
 	clock-frequency = <400000>;
 	sgm4154x_chg: sgm41542@6B {
@@ -27,7 +36,7 @@
  		phys = <&u2port0 PHY_TYPE_USB2>;
  		phy-names = "usb2-phy";
 		sgm,irq-gpio = <&pio 3 IRQ_TYPE_EDGE_FALLING>;     //irq num base on hardware design
-		sgm,chg-en-gpio = <&pio 148 0>;   //gpio num base on hardware design  1.MTK parent node name is pio  2.QUALCOMM parent node name is tlmm or other
+		sgm,chg-en-gpio = <&pio 151 0>;   //gpio num base on hardware design  1.MTK parent node name is pio  2.QUALCOMM parent node name is tlmm or other
 	};
 	sc8989x_chg: chg@6A {
 		compatible = "southchip,sc89890h";
@@ -62,9 +71,9 @@
 		sc,sc8989x,force_vindpm = <0>;
 		sc,sc8989x,vindpm = <18>; /*2600 + val * 100*/
 	};
-        aw35615@22 {
+        aw35615@24 {
                 compatible = "awinic,aw35615";
-                reg = <0x22>;
+                reg = <0x24>;
                 status = "okay";
                 awinic,int_n = <&pio 8 1>;
                 aw35615,snk_pdo_size = <1>; /* set sink pdo num*/
@@ -213,6 +222,26 @@
 			};
 		};
         };
+};
+
+&i2c0 {
+	clock-frequency = <400000>;
+	sgm41606s_standalone:bq25960-standalone@65 {
+		status = "okay";
+		compatible = "ti,bq25960-standalone";
+		reg = <0x65>;
+
+		sc8541-addr = <0x65>;
+
+		mmi,disable_mux;
+		interrupt-parent = <&pio>;
+		interrupts = <5 IRQ_TYPE_EDGE_FALLING 5 0>;
+		interrupt-names = "bq25960_irq_standalone";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&chargerpump_int_default_master>;
+
+	};
 };
 
 &moto_chg_tcmd {
