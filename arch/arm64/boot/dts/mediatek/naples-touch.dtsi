@@ -3,66 +3,34 @@
  * Copyright (c) 2024, Motorola Mobility Inc. All rights reserved.
 */
 
-&spi3 {
+&spi0{
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
 	mediatek,pad-select = <0>, <1>, <2>;
-	pinctrl-names = "default", "nt36528_int_active",
-	"nt36528_reset_active", "nt36528_int_suspend",
-	"nt36528_reset_suspend", "nt36528_spi_mode";
 
-	pinctrl-0 = <&ctp_nt36528_pins_default>;
-	pinctrl-1 = <&ctp_nt36528_int_active>;
-	pinctrl-2 = <&ctp_nt36528_reset_active>;
-	pinctrl-3 = <&ctp_nt36528_int_suspend>;
-	pinctrl-4 = <&ctp_nt36528_reset_suspend>;
-	pinctrl-5 = <&ctp_nt36528_spi_mode>;
-
-	/* Novatek device tree node */
-	novatek@0 {
-		compatible = "novatek,NVT-ts-spi";
-		reg = <0>; //Same as CS ID
-		status = "ok";
-		spi-max-frequency = <9600000>;	//4800000,9600000,15000000,19200000
-		novatek,reset-gpio = <&pio 147 0x0>;
-		novatek,irq-gpio = <&pio 4 0x1>;
-		novatek,def-max-resolution = <720 1604>;
-		novatek,panel-supplier = "nt36528a", "nt36528";
-		novatek,gesture-wait-pm;
-		novatek,usb_charger;
-		novatek,psy-name = "battery";
-		novatek,report_gesture_key;
-		novatek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
-
-		// 525
-		//novatek,swrst-n8-addr = <0x01F01A>;
-
-		// 672A, 525B, 675, 526, 672C, 523
-		//novatek,swrst-n8-addr = <0x03F0FE>;
-		//novatek,spi-rd-fast-addr = <0x03F310>;
-
-	};
-
-	focaltech@1 {
+	focaltech@0 {
 		compatible = "focaltech,fts";
-                reg = <1>; //Same as CS ID
+                reg = <0>; //Same as CS ID
                 status = "ok";
+		mmi,status = "/chosen","mmi,panel_name","contains","boe_nt37713_vid_1080_2352";
                 spi-max-frequency = <9600000>;
-                focaltech,reset-gpio = <&pio 147 0x0>;
+		vdd-supply= <&mt6377_vtp>;
+		vcc_i2c-supply = <&mt6377_vaud18>;
+                focaltech,reset-gpio = <&pio 150 0x0>;
                 focaltech,irq-gpio = <&pio 4 0x0>;
                 focaltech,max-touch-number = <10>;
-                focaltech,display-coords = <0 0 720 1604>;
+                focaltech,display-coords = <0 0 1272 2772>;
                 focaltech,report_gesture_key = <59>;
                 focaltech,supported_gesture_type = <0x06>;
-                focaltech,panel-supplier = "boe_ft8057s", "boe_ft8057m";
+                focaltech,panel-supplier = "boe";
                 focaltech,touch-charger-detect-psy-name = "battery";
                 focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
 	};
 
-	omnivision@2 {
+	omnivision@1 {
 		compatible = "omnivision,tcm-spi";
-		reg = <2>; //Same as CS ID
+		reg = <1>; //Same as CS ID
 		status = "ok";
 		spi-max-frequency = <9600000>;
 		interrupt-parent = <&pio>;
@@ -85,41 +53,8 @@
         };
 };
 
-&pio {
-	ctp_nt36528_pins_default: pins-default {
-	};
-	ctp_nt36528_int_active: int1-active {
-		pins-cmd-dat {
-			pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
-			input-enable;
-		};
-	};
-	ctp_nt36528_reset_active: reset1-active {
-		pins-cmd-dat {
-			pinmux = <PINMUX_GPIO147__FUNC_GPIO147>;
-			output-high;
-		};
-	};
-	ctp_nt36528_int_suspend: int1-suspend {
-		pins-cmd-dat {
-			pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
-			output-low;
-		};
-	};
-	ctp_nt36528_reset_suspend: reset1-suspend {
-		pins-cmd-dat {
-			pinmux = <PINMUX_GPIO147__FUNC_GPIO147>;
-			output-low;
-		};
-	};
-	ctp_nt36528_spi_mode: spimode-default {
-		pins-cmd-dat {
-			pinmux = <PINMUX_GPIO68__FUNC_SPI3_CLK>,
-				<PINMUX_GPIO69__FUNC_SPI3_CSB>,
-				<PINMUX_GPIO70__FUNC_SPI3_MO>,
-				<PINMUX_GPIO71__FUNC_SPI3_MI>;
-		};
-	};
+&mt6377_vtp {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
 };
-
 /* TOUCH end */
