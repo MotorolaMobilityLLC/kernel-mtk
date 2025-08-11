@@ -10,28 +10,50 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+&odm {
+	frsm_amp: frsm_amp  {
+		compatible = "foursemi,frsm-amp";
+		frsm,amp-ndev = <2>;
+		frsm,class-enable;
+		status = "okay";
+	};
+
+	frsm_amp_mngr: frsm_amp_mngr {
+		compatible = "audio,spkr-amp-mngr";
+		audio,amp-ndev = <2>;
+		audio,register-dapm = <0>;
+		status = "okay";
+	};
+};
+
 &i2c6 {
 	status = "ok";
-	tfa98xx_0: tfa98xx@34 {
-		compatible = "tfa,tfa98xx";
-		reg = <0x34>;
-		reset-gpio = <&pio 170 0>;
-		reset-polarity = <1>;
-	};
-	tfa98xx_1: tfa98xx@35 {
-		compatible = "tfa,tfa98xx";
+	spk_amp1: fs18xx@35 {
+		compatible = "foursemi,fs1815";
 		reg = <0x35>;
-		reset-gpio = <&pio 124 0>;
-		reset-polarity = <1>;
+		spkr-id = <1>;
+		fwm-name = "frsm-spk1.bin";
+		//mntr-enable;
+		//mntr-period = <2000>;
+		status = "okay";
+	};
+
+	spk_amp2: fs18xx@34 {
+		compatible = "foursemi,fs1815";
+		reg = <0x34>;
+		spkr-id = <2>;
+		fwm-name = "frsm-spk2.bin";
+		//mntr-enable;
+		//mntr-period = <2000>;
+		status = "okay";
+	};
+	fsa4480: fsa4480@42 {
+		compatible = "fsa,fsa4480-i2c";
+		reg = <0x42>;
+		status = "okay";
 	};
 };
 
 &spk{
 	status = "disabled";
-};
-
-&sound {
-	mediatek,speaker-codec {
-		sound-dai = <&tfa98xx_0 &tfa98xx_1>;
-	};
 };

@@ -1508,6 +1508,13 @@ config SND_SOC_TFA989X
 	  Note that the driver currently bypasses the built-in "CoolFlux DSP"
 	  and does not support (hardware) volume control.
 
+config SND_SOC_FS181X
+	tristate "FourSemi  speaker amplifier"
+	depends on I2C
+	help
+	  Config of FourSemi speaker amplifier.
+
+
 config SND_SOC_TLV320AIC23
 	tristate
 

@@ -60,6 +60,15 @@ config TYPEC_MUX_FLIP_ALPHA_FSA4480
          Support typec analog audio switch.
          Support turn on source vbus function.
 
+config FSA4480_I2C
+	tristate "analog audio switch"
+	depends on I2C
+	help
+	  The FSA4480 is a high-performance USB Type-C port
+	  multimedia switch. The FSA4480 supports USB2.0
+	  signal, analog audio, sideband use wires and analog
+	  microphone signal.
+
 config TYPEC_MUX_PI3DPX1205A
 	tristate "DIODES USB TYPE-C DP Linear Redriver"
 	depends on MTK_USB_TYPEC_MUX
