@@ -19,6 +19,13 @@
 #include "../../codecs/mt6377-accdet.h"
 #endif
 #include "../common/mtk-sp-spk-amp.h"
+
+// FourSemi Add V5 Start
+#if IS_ENABLED(CONFIG_SND_SOC_FS181X)
+#include "../../codecs/fs181x/spkr-amp-mngr.h"
+#endif
+// FourSemi Add V5 End
+
 /*
  * if need additional control for the ext spk amp that is connected
  * after Lineout Buffer / HP Buffer on the codec, put the control in
@@ -1463,9 +1470,17 @@ static int mt6835_mt6377_dev_probe(struct platform_device *pdev)
 	if (ret)
 		dev_err(&pdev->dev, "%s snd_soc_register_card fail %d\n",
 			__func__, ret);
-	else
+	else {
 		dev_info(&pdev->dev, "%s snd_soc_register_card pss %d\n",
 				__func__, ret);
+// FourSemi Add V5 Start
+#if IS_ENABLED(CONFIG_SND_SOC_FS181X)
+		if (spkr_amp_dapm_init(card))
+			dev_err(&pdev->dev, "Failed to init spkr amp mngr:%d\n", ret);
+
+#endif
+// FourSemi Add V5 End
+	}
 	return ret;
 }
 

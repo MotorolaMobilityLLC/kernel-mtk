@@ -3,6 +3,7 @@
 ccflags-y += -I$(srctree)/drivers/usb/typec
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
 
+obj-$(CONFIG_FSA4480_I2C) += fsa4480-i2c.o
 obj-$(CONFIG_MTK_USB_TYPEC_MUX) += mux_switch.o
 obj-$(CONFIG_TYPEC_MUX_FUSB304)	+= fusb304.o
 obj-$(CONFIG_TYPEC_MUX_PTN36241G) += ptn36241g.o
