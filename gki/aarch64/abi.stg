@@ -410494,6 +410494,14 @@ function {
   parameter_id: 0x35d37abd
 }
 function {
+  id: 0x9b758262
+  return_type_id: 0x6720d32f
+  parameter_id: 0x18bd6530
+  parameter_id: 0x36f98e5c
+  parameter_id: 0x064d6086
+  parameter_id: 0x13580d6c
+}
+function {
   id: 0x9b7582d1
   return_type_id: 0x6720d32f
   parameter_id: 0x18bd6530
@@ -433377,6 +433385,15 @@ elf_symbol {
   full_name: "__traceiter_android_vh_customize_alloc_gfp"
 }
 elf_symbol {
+  id: 0x3444cc6c
+  name: "__traceiter_android_vh_customize_thp_gfp_orders"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x3198092f
+  type_id: 0x9b758262
+  full_name: "__traceiter_android_vh_customize_thp_gfp_orders"
+}
+elf_symbol {
   id: 0xbb17692f
   name: "__traceiter_android_vh_dc_receive"
   is_defined: true
@@ -439936,6 +439953,15 @@ elf_symbol {
   crc: 0x7c5aa8a7
   type_id: 0x18ccbd2c
   full_name: "__tracepoint_android_vh_customize_alloc_gfp"
+}
+elf_symbol {
+  id: 0x66823d32
+  name: "__tracepoint_android_vh_customize_thp_gfp_orders"
+  is_defined: true
+  symbol_type: OBJECT
+  crc: 0x7c5aa8a7
+  type_id: 0x18ccbd2c
+  full_name: "__tracepoint_android_vh_customize_thp_gfp_orders"
 }
 elf_symbol {
   id: 0x869fd955
@@ -510945,6 +510971,7 @@ interface {
   symbol_id: 0x431c5bf5
   symbol_id: 0x9f47ed94
   symbol_id: 0x96cfd964
+  symbol_id: 0x3444cc6c
   symbol_id: 0xbb17692f
   symbol_id: 0xc8db6e69
   symbol_id: 0x17df4128
@@ -511674,6 +511701,7 @@ interface {
   symbol_id: 0x66a766d7
   symbol_id: 0xc44d61e6
   symbol_id: 0x611b30be
+  symbol_id: 0x66823d32
   symbol_id: 0x869fd955
   symbol_id: 0xaab0786f
   symbol_id: 0x749563a6
