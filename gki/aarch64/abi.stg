@@ -4614,6 +4614,11 @@ pointer_reference {
   pointee_type_id: 0x1b77cf3e
 }
 pointer_reference {
+  id: 0x0c5168e8
+  kind: POINTER
+  pointee_type_id: 0x1b05453e
+}
+pointer_reference {
   id: 0x0c5278a8
   kind: POINTER
   pointee_type_id: 0x1b09043d
@@ -17557,6 +17562,11 @@ pointer_reference {
   id: 0x28a1c669
   kind: POINTER
   pointee_type_id: 0x88c7ff3b
+}
+pointer_reference {
+  id: 0x28a3a74b
+  kind: POINTER
+  pointee_type_id: 0x88ce7bb2
 }
 pointer_reference {
   id: 0x28ac1164
@@ -37427,6 +37437,11 @@ typedef {
   id: 0x7b64642a
   name: "blk_opf_t"
   referred_type_id: 0xe62ebf07
+}
+typedef {
+  id: 0x1684c624
+  name: "blk_plug_cb_fn"
+  referred_type_id: 0x0c5168e8
 }
 typedef {
   id: 0x3cc4e4dd
@@ -75902,6 +75917,12 @@ member {
   id: 0x56e97283
   name: "callback"
   type_id: 0x0c897676
+}
+member {
+  id: 0x56f376f1
+  name: "callback"
+  type_id: 0x1684c624
+  offset: 128
 }
 member {
   id: 0x3b021d6c
@@ -286084,6 +286105,17 @@ struct_union {
   }
 }
 struct_union {
+  id: 0x88ce7bb2
+  kind: STRUCT
+  name: "blk_plug_cb"
+  definition {
+    bytesize: 32
+    member_id: 0x7c00ef52
+    member_id: 0x56f376f1
+    member_id: 0xff8a91c0
+  }
+}
+struct_union {
   id: 0x54a4079a
   kind: STRUCT
   name: "blk_queue_stats"
@@ -381209,6 +381241,12 @@ function {
   parameter_id: 0x2e60a6b2
 }
 function {
+  id: 0x1b05453e
+  return_type_id: 0x48b5725f
+  parameter_id: 0x28a3a74b
+  parameter_id: 0x6d7f5ff6
+}
+function {
   id: 0x1b0758a9
   return_type_id: 0x48b5725f
   parameter_id: 0x2d9d2fbb
@@ -390712,6 +390750,13 @@ function {
   return_type_id: 0x054f691a
   parameter_id: 0x380c33d1
   parameter_id: 0x054f691a
+}
+function {
+  id: 0x66cc4765
+  return_type_id: 0x28a3a74b
+  parameter_id: 0x1684c624
+  parameter_id: 0x18bd6530
+  parameter_id: 0x6720d32f
 }
 function {
   id: 0x66e18f45
@@ -446536,6 +446581,15 @@ elf_symbol {
   crc: 0x33c01ec6
   type_id: 0xfc093226
   full_name: "blk_bio_list_merge"
+}
+elf_symbol {
+  id: 0x650319ec
+  name: "blk_check_plugged"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xe27d120d
+  type_id: 0x66cc4765
+  full_name: "blk_check_plugged"
 }
 elf_symbol {
   id: 0x72fb1937
@@ -510344,6 +510398,15 @@ elf_symbol {
   full_name: "zstd_decompress_dctx"
 }
 elf_symbol {
+  id: 0xc282f08e
+  name: "zstd_default_clevel"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x7851be11
+  type_id: 0x9d80e32f
+  full_name: "zstd_default_clevel"
+}
+elf_symbol {
   id: 0x3542c796
   name: "zstd_get_params"
   is_defined: true
@@ -512570,6 +512633,7 @@ interface {
   symbol_id: 0x226328f4
   symbol_id: 0x0b5d5f1c
   symbol_id: 0x1516f6b7
+  symbol_id: 0x650319ec
   symbol_id: 0x72fb1937
   symbol_id: 0x59a87a04
   symbol_id: 0xc255c6cd
@@ -519654,6 +519718,7 @@ interface {
   symbol_id: 0x4ba0be41
   symbol_id: 0xb2b54222
   symbol_id: 0xb8699f23
+  symbol_id: 0xc282f08e
   symbol_id: 0x3542c796
   symbol_id: 0xae02eaa9
   symbol_id: 0x0d8da27c
