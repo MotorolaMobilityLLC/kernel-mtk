@@ -286,7 +286,6 @@ static int gzvm_drv_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Not found available conduit\n");
 		return -ENODEV;
 	}
-
 	pr_debug("Found GenieZone hypervisor version %u.%u.%llu\n",
 		 gzvm_drv.hyp_version.major, gzvm_drv.hyp_version.minor,
 		 gzvm_drv.hyp_version.sub);

@@ -232,7 +232,20 @@ static long gzvm_vcpu_ioctl(struct file *filp, unsigned int ioctl,
 	return ret;
 }
 
+#ifdef CONFIG_MTK_GZVM_DEBUG
+static int gzvm_vcpu_release(struct inode *inode, struct file *filp)
+{
+	struct gzvm_vcpu *vcpu = filp->private_data;
+
+	gzvm_vm_put(vcpu->gzvm);
+	return 0;
+}
+#endif
+
 static const struct file_operations gzvm_vcpu_fops = {
+#ifdef CONFIG_MTK_GZVM_DEBUG
+	.release	= gzvm_vcpu_release,
+#endif
 	.unlocked_ioctl = gzvm_vcpu_ioctl,
 	.llseek		= noop_llseek,
 };
@@ -288,6 +301,9 @@ int gzvm_vm_ioctl_create_vcpu(struct gzvm *gzvm, u32 cpuid)
 	struct gzvm_vcpu *vcpu;
 	int ret;
 
+#ifdef CONFIG_MTK_GZVM_DEBUG
+	kref_get(&gzvm->kref);
+#endif
 	if (cpuid >= GZVM_MAX_VCPUS)
 		return -EINVAL;
 

@@ -385,11 +385,29 @@ static void gzvm_destroy_vm(struct gzvm *gzvm)
 	kfree(gzvm);
 }
 
+#ifdef CONFIG_MTK_GZVM_DEBUG
+static void __gzvm_vm_put(struct kref *kref)
+{
+	struct gzvm *gzvm = container_of(kref, struct gzvm, kref);
+
+	gzvm_destroy_vm(gzvm);
+}
+
+void gzvm_vm_put(struct gzvm *gzvm)
+{
+	kref_put(&gzvm->kref, __gzvm_vm_put);
+}
+#endif
+
 static int gzvm_vm_release(struct inode *inode, struct file *filp)
 {
 	struct gzvm *gzvm = filp->private_data;
 
+#ifdef CONFIG_MTK_GZVM_DEBUG
+	kref_put(&gzvm->kref, __gzvm_vm_put);
+#else
 	gzvm_destroy_vm(gzvm);
+#endif
 	return 0;
 }
 
@@ -597,6 +615,9 @@ static struct gzvm *gzvm_create_vm(struct gzvm_driver *drv, unsigned long vm_typ
 	mutex_init(&gzvm->mem_lock);
 	gzvm->pinned_pages = RB_ROOT;
 
+#ifdef CONFIG_MTK_GZVM_DEBUG
+	kref_init(&gzvm->kref);
+#endif
 	ret = gzvm_vm_irqfd_init(gzvm);
 	if (ret) {
 		pr_err("Failed to initialize irqfd\n");
