@@ -119,6 +119,13 @@ eint_cp: eint_cp {
 	debounce = <512>;
 	status = "okay";
 };
+&swtp_3 {
+        interrupt-parent = <&pio>;
+        interrupts = <20 IRQ_TYPE_LEVEL_HIGH 20 0>;
+        deb-gpios = <&pio 20 0>;
+        debounce = <512>;
+        status = "okay";
+};
 
 /delete-node/ &mt6377_vtp;
 
