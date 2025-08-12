@@ -75,6 +75,8 @@ struct board_ntc_info {
 	struct iio_channel *chan_tspk_ntc;
 	struct iio_channel *chan_quiet_ntc;
 	struct iio_channel *chan_chg_ntc;
+	struct iio_channel *chan_flash_ntc;
+	struct iio_channel *chan_conn_ntc;
 	unsigned int default_pullup_v;
 };
 
@@ -235,6 +237,12 @@ static int board_ntc_get_temp(void *data, int *temp)
 	}  else if (!PTR_ERR_OR_ZERO(ntc_info->chan_chg_ntc)){
 		iio_read_channel_raw(ntc_info->chan_chg_ntc, &val);
 		r_type = 0;
+	}   else if (!PTR_ERR_OR_ZERO(ntc_info->chan_flash_ntc)){
+		iio_read_channel_raw(ntc_info->chan_flash_ntc, &val);
+		r_type = 0;
+	}   else if (!PTR_ERR_OR_ZERO(ntc_info->chan_conn_ntc)){
+		iio_read_channel_raw(ntc_info->chan_conn_ntc, &val);
+		r_type = 0;
 	}  else if (!IS_ERR(ntc_info->data_reg)) {
 
 	while (count < READ_TIA_REG_COUNT_MAX) {
@@ -284,7 +292,10 @@ RETRY:
 		return -ENODEV;
 	}
 
-	if ((!PTR_ERR_OR_ZERO(ntc_info->chan_wcn_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_cam_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_tspk_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_quiet_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_chg_ntc))) {
+	if ((!PTR_ERR_OR_ZERO(ntc_info->chan_wcn_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_cam_ntc))
+		||(!PTR_ERR_OR_ZERO(ntc_info->chan_tspk_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_quiet_ntc))
+		||(!PTR_ERR_OR_ZERO(ntc_info->chan_chg_ntc)) ||(!PTR_ERR_OR_ZERO(ntc_info->chan_flash_ntc))
+		||(!PTR_ERR_OR_ZERO(ntc_info->chan_conn_ntc))) {
 		v_in = (val * 145000) / 4096;
 		pullup_v = ntc_info->default_pullup_v;
 		dev_err(ntc_info->dev, "%s, get pullupv :%d\n",
@@ -446,12 +457,16 @@ static int board_ntc_probe(struct platform_device *pdev)
 	ntc_info->chan_tspk_ntc =  devm_iio_channel_get(&pdev->dev, "SPK_NTC");
 	ntc_info->chan_quiet_ntc =  devm_iio_channel_get(&pdev->dev, "QUIET_NTC");
 	ntc_info->chan_chg_ntc =  devm_iio_channel_get(&pdev->dev, "CHG_NTC");
+	ntc_info->chan_flash_ntc =  devm_iio_channel_get(&pdev->dev, "FLASH_NTC");
+	ntc_info->chan_conn_ntc =  devm_iio_channel_get(&pdev->dev, "CONN_NTC");
 
 	if ((!PTR_ERR_OR_ZERO(ntc_info->chan_wcn_ntc)) ||
 			(!PTR_ERR_OR_ZERO(ntc_info->chan_cam_ntc)) ||
 			(!PTR_ERR_OR_ZERO(ntc_info->chan_tspk_ntc)) ||
 			(!PTR_ERR_OR_ZERO(ntc_info->chan_quiet_ntc)) ||
-			(!PTR_ERR_OR_ZERO(ntc_info->chan_chg_ntc)) ) {
+			(!PTR_ERR_OR_ZERO(ntc_info->chan_chg_ntc)) ||
+			(!PTR_ERR_OR_ZERO(ntc_info->chan_flash_ntc)) ||
+			(!PTR_ERR_OR_ZERO(ntc_info->chan_conn_ntc))) {
 		has_cust_ntc = true;
 		board_ntc_parse_cust_pullup_v(&pdev->dev, ntc_info);
 	}
