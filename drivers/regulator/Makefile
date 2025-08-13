@@ -181,5 +181,7 @@ obj-$(CONFIG_REGULATOR_WM8350) += wm8350-regulator.o
 obj-$(CONFIG_REGULATOR_WM8400) += wm8400-regulator.o
 obj-$(CONFIG_REGULATOR_WM8994) += wm8994-regulator.o
 obj-$(CONFIG_MOTO_AW37004) += aw37004-regulator.o
+obj-$(CONFIG_MOTO_DIO8015) += dio8015-regulator.o
+obj-$(CONFIG_MOTO_DIO80151C) += dio80151c-regulator.o
 
 ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
