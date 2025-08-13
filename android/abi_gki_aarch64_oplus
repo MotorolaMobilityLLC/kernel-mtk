@@ -60,6 +60,7 @@
   have_governor_per_policy
   i2c_smbus_read_word_data
   i2c_smbus_write_word_data
+  __icmp_send
   igrab
   iio_channel_get
   iio_channel_release
@@ -186,7 +187,9 @@
   tcf_exts_init_ex
   tcf_exts_validate
   tcf_queue_work
+  tcp_cong_avoid_ai
   tcp_hashinfo
+  tcp_reno_undo_cwnd
   touch_atime
   __traceiter_android_rvh_post_init_entity_util_avg
   __traceiter_android_rvh_rtmutex_force_update
@@ -514,6 +517,7 @@
   vfs_statfs
   vfs_unlink
   __vmalloc_array
+  vma_set_file
   wait_for_completion_io_timeout
   wait_for_completion_killable_timeout
   wakeup_source_remove
