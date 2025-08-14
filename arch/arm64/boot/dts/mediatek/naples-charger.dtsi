@@ -38,39 +38,6 @@
 		sgm,irq-gpio = <&pio 3 IRQ_TYPE_EDGE_FALLING>;     //irq num base on hardware design
 		sgm,chg-en-gpio = <&pio 151 0>;   //gpio num base on hardware design  1.MTK parent node name is pio  2.QUALCOMM parent node name is tlmm or other
 	};
-	sc8989x_chg: chg@6A {
-		compatible = "southchip,sc89890h";
-		reg = <0x6A>;
-		status = "okay";
-		eint_name = "chr_stat";
-		sc,intr-gpio = <&pio 3 IRQ_TYPE_EDGE_FALLING>;
-		charger_name = "primary_chg";
-		io-channels = <&pmic_adc AUXADC_VCDT>;
-		io-channel-names = "pmic_vbus";
-		phys = <&u2port0 PHY_TYPE_USB2>;
-		phy-names = "usb2-phy";
-		sc,sc8989x,ico-en = <0>;
-		sc,sc8989x,hvdcp-en = <0>;
-		sc,sc8989x,auto-dpdm-en = <0>;
-		sc,sc8989x,vsys-min = <5>; /*3500mV*/
-		sc,sc8989x,vbatmin-sel = <0>; /*0:2.9V 1:2.5V*/
-		sc,sc8989x,itrick = <3>; /*60 + val *60*/
-		sc,sc8989x,iterm = <3>; /*30 + val * 60*/
-		sc,sc8989x,vbat-cv = <38>; /*3840 + val * 16*/
-		sc,sc8989x,vbat-low = <1>; /*0:2.8V 1:3V*/
-		sc,sc8989x,vrechg = <0>; /*0:100mV 1:200mV*/
-		sc,sc8989x,en-term = <1>;
-		sc,sc8989x,stat-dis = <0>;
-		sc,sc8989x,wd-time = <0>; /*0:Dis 1:40s 2:80s 3:160s*/
-		sc,sc8989x,en-timer = <1>;
-		sc,sc8989x,charge-timer = <2>; /*0:5h 1:8h 2:12h 3:20h*/
-		sc,sc8989x,bat-comp = <0>; /*val * 20*/
-		sc,sc8989x,vclamp = <0>; /*val *32*/
-		sc,sc8989x,votg = <12>; /*3900 + val * 100*/
-		sc,sc8989x,iboost = <7>; /*0:0.5A 3:1.4A 5:1.875A 7:2.45A*/
-		sc,sc8989x,force_vindpm = <0>;
-		sc,sc8989x,vindpm = <18>; /*2600 + val * 100*/
-	};
         aw35615@24 {
                 compatible = "awinic,aw35615";
                 reg = <0x24>;
@@ -275,15 +242,16 @@
 };
 
 &extcon_usb {
-	charger = <&sc8989x_chg>;
+	charger = <&sgm4154x_chg>;
         vbus-current = <1200000>;
 };
 
 &mtk_ctd {
-	bc12 = <&sc8989x_chg>;
+	bc12 = <&sgm4154x_chg>;
 };
 &charger {
-         charger = <&sc8989x_chg>;
+         charger = <&sgm4154x_chg>;
+         charger_configuration= <3>;
          /* common */
          battery_cv = <4500000>;
          max_charger_voltage = <15000000>;
@@ -321,7 +289,8 @@
                         <0 4200 1020  0>,
                         <10 4250 2550 1530>,
                         <15 4500 2550 2550>,
-                        <45 4530 3500 3500>,
+                        <45 4320 5800 5200>,
+                        <45 4450 5200 4000>,
                         <60 4200 2550 0>;
 
 	mmi,mmi-ffc-zones = <0 4200 255>,
@@ -455,7 +424,7 @@
 
 	SHUTDOWN_1_TIME = <(30)>;
 	ACTIVE_TABLE = <(5)>;
-	R_FG_VALUE = <(5)>;
+	R_FG_VALUE = <(2)>;
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
 	CAR_TUNE_VALUE = <(101)>;
 
