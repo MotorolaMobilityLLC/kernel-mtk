@@ -35,7 +35,7 @@
 				regulator-max-microvolt = <1800000>;
 			};
 
-			cam_afvdd_rear_main: ldo3 {
+			cam_avdd_rear_main: ldo3 {
 				regulator-name = "ldo3";
 				regulator-min-microvolt = <1200000>;
 				regulator-max-microvolt = <4300000>;
