@@ -493639,6 +493639,15 @@ elf_symbol {
   full_name: "simple_attr_write"
 }
 elf_symbol {
+  id: 0xdee74bc1
+  name: "simple_attr_write_signed"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x9fd76680
+  type_id: 0x120e3950
+  full_name: "simple_attr_write_signed"
+}
+elf_symbol {
   id: 0xbdcb1d7d
   name: "simple_dir_operations"
   is_defined: true
@@ -517780,6 +517789,7 @@ interface {
   symbol_id: 0xcbc81720
   symbol_id: 0xda8bd5f1
   symbol_id: 0xa07fb91d
+  symbol_id: 0xdee74bc1
   symbol_id: 0xbdcb1d7d
   symbol_id: 0x1b5d526c
   symbol_id: 0x30b604c4
