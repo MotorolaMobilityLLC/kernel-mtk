@@ -105,6 +105,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 
 //Naples bring up
 #if defined(CONFIG_MOT_NAPLES_CAMERA_PROJECT)
+#if defined(MOT_NAPLES_S5KHM9_SENSOR_ID)
+    {
+        SENSOR_DRVNAME_MOT_NAPLES_S5KHM9_MIPI_RAW,
+        {
+            {SensorMCLK, Vol_High, 5},
+            {RST, Vol_Low, 2},
+            {DOVDD, Vol_1800, 1},
+            {AVDD, Vol_2200, 2},
+            {DVDD, Vol_1000, 1},
+            {RST, Vol_High, 5},
+        },
+    },
+#endif
 #if defined(MOT_NAPLES_S5KKDS_SENSOR_ID)
     {
         SENSOR_DRVNAME_MOT_NAPLES_S5KKDS_MIPI_RAW,

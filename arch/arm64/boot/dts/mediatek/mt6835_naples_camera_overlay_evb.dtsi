@@ -192,13 +192,7 @@
 			"cam1_mclk_6mA", "cam1_mclk_8mA",
 			"cam2_mclk_off",
 			"cam2_mclk_2mA", "cam2_mclk_4mA",
-			"cam2_mclk_6mA", "cam2_mclk_8mA",
-			"cam0_ldo_vcama_0",  "cam0_ldo_vcama_1",
-			"cam0_ldo_vcamd_0",  "cam0_ldo_vcamd_1",
-			"cam1_ldo_vcama_0",  "cam1_ldo_vcama_1",
-			"cam1_ldo_vcamd_0",  "cam1_ldo_vcamd_1",
-			"cam2_ldo_vcama_0",  "cam2_ldo_vcama_1",
-			"cam2_ldo_vcamd_0",  "cam2_ldo_vcamd_1";
+			"cam2_mclk_6mA", "cam2_mclk_8mA";
 
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst_0>;
@@ -222,13 +216,11 @@
 	pinctrl-19 = <&camera_pins_cam2_mclk_4ma>;
 	pinctrl-20 = <&camera_pins_cam2_mclk_6ma>;
 	pinctrl-21 = <&camera_pins_cam2_mclk_8ma>;
-	pinctrl-22 = <&camera_pins_cam0_avdd_gpio_0>;
-	pinctrl-23 = <&camera_pins_cam0_avdd_gpio_1>;
-	pinctrl-24 = <&camera_pins_cam0_dvdd_gpio_0>;
-	pinctrl-25 = <&camera_pins_cam0_dvdd_gpio_1>;
 
 	/* main (wide)*/
-	cam0_vcamio-supply = <&mt6377_vaud18>;
+	cam0_vcamio-supply = <&mt6377_vio18>;
+	cam0_vcama-supply = <&cam_avdd_rear_main>;
+	cam0_vcamd-supply = <&cam_dvdd_rear_main>;
 	cam1_vcamio-supply = <&mt6377_vio18>;
 	cam1_vcama-supply = <&cam_avdd_front>;
 	cam1_vcamd-supply = <&cam_dvdd_front>;
@@ -238,12 +230,10 @@
 
 	cam0_pin_mclk = "mclk";
 	cam0_pin_rst = "gpio";
-	cam0_pin_vcama = "gpio";
+	cam0_pin_vcama = "regulator";
 	cam0_pin_vcamio = "regulator";
-	cam0_pin_vcamd = "gpio";
-	cam0_pin_vcama1 = "gpio";
-	cam0_pin_vcama1_gpio = "gpio";
-	cam0_pin_vcamaf = "gpio";
+	cam0_pin_vcamd = "regulator";
+	cam0_pin_vcamaf = "regulator";
 	cam1_pin_mclk = "mclk";
 	cam1_pin_rst = "gpio";
 	cam1_pin_vcama = "regulator";
@@ -255,7 +245,7 @@
 	cam2_pin_vcama = "regulator";
 	cam2_pin_vcamd = "regulator";
 
-	cam0_enable_sensor = "mot_nevada_s5kkd1_mipi_raw mot_nevada_s5kkds_mipi_raw";
+	cam0_enable_sensor = "mot_naples_s5khm9_mipi_raw";
 	cam1_enable_sensor = "mot_naples_s5kkds_mipi_raw";
 	cam2_enable_sensor = "mot_naples_ov08f_mipi_raw mot_naples_gc08a3_mipi_raw";
 	status = "okay";
@@ -329,10 +319,10 @@
 		reg = <0x50>;
 		status = "okay";
 	};
-	camera_main_mtk:camera_main@1a {
+	camera_main_mtk:camera_main@20 {
 		compatible = "mediatek,camera_main";
 		#thermal-sensor-cells = <0>;
-		reg = <0x56>;
+		reg = <0x20>;
 		status = "okay";
 	};
 };
@@ -370,7 +360,7 @@
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_naples_s5kkds_mipi_raw mot_naples_ov08f_mipi_raw mot_naples_gc08a3_mipi_raw";
+       cust-sensor = "mot_naples_s5khm9_mipi_raw mot_naples_s5kkds_mipi_raw mot_naples_ov08f_mipi_raw mot_naples_gc08a3_mipi_raw";
 };
 
 &pio {
