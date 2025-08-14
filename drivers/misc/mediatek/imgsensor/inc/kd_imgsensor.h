@@ -419,6 +419,8 @@
 //Naples bringup
 #define MOT_NAPLES_S5KKDS_SENSOR_ID                      0x4850
 #define SENSOR_DRVNAME_MOT_NAPLES_S5KKDS_MIPI_RAW        "mot_naples_s5kkds_mipi_raw"
+#define MOT_NAPLES_OV08F_SENSOR_ID                       0x0847
+#define SENSOR_DRVNAME_MOT_NAPLES_OV08F_MIPI_RAW         "mot_naples_ov08f_mipi_raw"
 
 
 //orlando bring up
