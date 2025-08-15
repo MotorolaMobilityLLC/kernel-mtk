@@ -14,6 +14,7 @@
 #include <linux/slab.h>
 #include <linux/xarray.h>
 #include "gcma_sysfs.h"
+#include "internal.h"
 
 /*
  * page->page_type : area id
@@ -602,6 +603,7 @@ again:
 void gcma_alloc_range(unsigned long start_pfn, unsigned long end_pfn)
 {
 	int i;
+	unsigned long pfn;
 	struct gcma_area *area;
 	int nr_area = atomic_read(&nr_gcma_area);
 
@@ -620,6 +622,13 @@ void gcma_alloc_range(unsigned long start_pfn, unsigned long end_pfn)
 
 		__gcma_discard_range(area, s_pfn, e_pfn);
 	}
+
+	/*
+	 * GCMA returns pages with refcount 1 and expects them to have
+	 * the same refcount 1 whet they are freed.
+	 */
+	for (pfn = start_pfn; pfn <= end_pfn; pfn++)
+		set_page_count(pfn_to_page(pfn), 1);
 }
 EXPORT_SYMBOL_GPL(gcma_alloc_range);
 
@@ -631,6 +640,10 @@ void gcma_free_range(unsigned long start_pfn, unsigned long end_pfn)
 	int area_id, start_id = 0;
 
 	VM_BUG_ON(irqs_disabled());
+
+	/* The caller should ensure no other users when freeing */
+	for (pfn = start_pfn; pfn <= end_pfn; pfn++)
+		WARN_ON(!page_ref_dec_and_test(pfn_to_page(pfn)));
 
 	local_irq_disable();
 
