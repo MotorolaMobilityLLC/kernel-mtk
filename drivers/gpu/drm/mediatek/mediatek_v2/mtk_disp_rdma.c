@@ -246,6 +246,7 @@ struct mtk_disp_rdma {
 	unsigned int dummy_h;
 	struct mtk_rdma_backup_info backup_info;
 	struct mtk_rdma_cfg_info cfg_info;
+	unsigned int disable_rdma_underflow;
 };
 
 static inline struct mtk_disp_rdma *comp_to_rdma(struct mtk_ddp_comp *comp)
@@ -673,7 +674,10 @@ void mtk_rdma_cal_golden_setting(struct mtk_ddp_comp *comp,
 		gs[GS_RDMA_FIFO_UNDERFLOW_EN] = 0;
 	} else {
 		gs[GS_RDMA_FIFO_SIZE] = fifo_size;
-		gs[GS_RDMA_FIFO_UNDERFLOW_EN] = 1;
+		if (rdma->disable_rdma_underflow)
+			gs[GS_RDMA_FIFO_UNDERFLOW_EN] = 0;
+		else
+			gs[GS_RDMA_FIFO_UNDERFLOW_EN] = 1;
 	}
 
 	/* DISP_RDMA_MEM_GMC_SETTING_2 */
@@ -1585,6 +1589,12 @@ static int mtk_disp_rdma_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, priv);
 
 	mtk_ddp_comp_pm_enable(&priv->ddp_comp);
+
+	ret = of_property_read_u32(dev->of_node, "MTK,disable_rdma_underflow", &priv->disable_rdma_underflow);
+	if (ret < 0)
+		priv->disable_rdma_underflow = 0;
+
+	DDPINFO("%s: disable_rdma_underflow: %d\n", __func__, priv->disable_rdma_underflow);
 
 	ret = component_add(dev, &mtk_disp_rdma_component_ops);
 	if (ret != 0) {
