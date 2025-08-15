@@ -11,7 +11,6 @@
  */
 
 #include "mediatek/mt6835-moto-common-overlay.dtsi"
-#include "mediatek/naples-display.dtsi"
 #include "mediatek/naples-touch.dtsi"
 #include "mediatek/naples-fps.dtsi"
 #include "mediatek/mt6835-moto-memory.dtsi"
@@ -22,6 +21,7 @@
 #include "mediatek/naples-ntc.dtsi"
 #include "mediatek/dio80151c.dtsi"
 #include "mediatek/dio8015.dtsi"
+#include "mediatek/naples-display.dtsi"
 //#include "mediatek/mt6835_kansas_camera_overlay.dtsi"
 / {
 
