@@ -29,6 +29,12 @@ config TCPC_SC2150
 	help
 	  support oem_tcpc_pd_sc2150
 
+config TCPC_CPS8851
+	tristate "oem tcpc pd cps8851"
+	default n
+	help
+	  support oem_tcpc_pd_cps8851
+
 config TCPC_AW35615
 	tristate "AW35615 TypeC port Controller Driver"
 	depends on TCPC_CLASS
