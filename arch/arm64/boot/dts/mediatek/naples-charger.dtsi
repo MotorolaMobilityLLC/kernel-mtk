@@ -38,6 +38,39 @@
 		sgm,irq-gpio = <&pio 3 IRQ_TYPE_EDGE_FALLING>;     //irq num base on hardware design
 		sgm,chg-en-gpio = <&pio 151 0>;   //gpio num base on hardware design  1.MTK parent node name is pio  2.QUALCOMM parent node name is tlmm or other
 	};
+	sc8989x_chg: chg@6A {
+		compatible = "southchip,sc89890h";
+		reg = <0x6A>;
+		status = "okay";
+		eint_name = "chr_stat";
+		sc,intr-gpio = <&pio 3 IRQ_TYPE_EDGE_FALLING>;
+		charger_name = "primary_chg";
+		io-channels = <&pmic_adc AUXADC_VCDT>;
+		io-channel-names = "pmic_vbus";
+		phys = <&u2port0 PHY_TYPE_USB2>;
+		phy-names = "usb2-phy";
+		sc,sc8989x,ico-en = <0>;
+		sc,sc8989x,hvdcp-en = <0>;
+		sc,sc8989x,auto-dpdm-en = <0>;
+		sc,sc8989x,vsys-min = <5>; /*3500mV*/
+		sc,sc8989x,vbatmin-sel = <0>; /*0:2.9V 1:2.5V*/
+		sc,sc8989x,itrick = <3>; /*60 + val *60*/
+		sc,sc8989x,iterm = <3>; /*30 + val * 60*/
+		sc,sc8989x,vbat-cv = <38>; /*3840 + val * 16*/
+		sc,sc8989x,vbat-low = <1>; /*0:2.8V 1:3V*/
+		sc,sc8989x,vrechg = <0>; /*0:100mV 1:200mV*/
+		sc,sc8989x,en-term = <1>;
+		sc,sc8989x,stat-dis = <0>;
+		sc,sc8989x,wd-time = <0>; /*0:Dis 1:40s 2:80s 3:160s*/
+		sc,sc8989x,en-timer = <1>;
+		sc,sc8989x,charge-timer = <2>; /*0:5h 1:8h 2:12h 3:20h*/
+		sc,sc8989x,bat-comp = <0>; /*val * 20*/
+		sc,sc8989x,vclamp = <0>; /*val *32*/
+		sc,sc8989x,votg = <12>; /*3900 + val * 100*/
+		sc,sc8989x,iboost = <7>; /*0:0.5A 3:1.4A 5:1.875A 7:2.45A*/
+		sc,sc8989x,force_vindpm = <0>;
+		sc,sc8989x,vindpm = <18>; /*2600 + val * 100*/
+	};
         aw35615@24 {
                 compatible = "awinic,aw35615";
                 reg = <0x24>;
@@ -53,104 +86,117 @@
                 aw35615,src_tog_time = <0x24>; /* set toggle source time */
                 aw35615,sink_bist_reg = <0x54>; /* set MDAC reg 0x50*/
         };
-        sc2150-pd@4e{
-                compatible = "southchip,sc2150";
-                reg = <0x4E>;
-                status = "okay";
-                sc-tcpc,name = "type_c_port0"; /* tcpc_device's name */
-                sc-tcpc,role_def = <5>; /* 0: Unknown, 1: SNK, 2: SRC */
-                                        /* 3: DRP, 4: Try.SRC, 5: Try.SNK */
-                sc-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
-                sc-tcpc,vconn_supply  = <1>;  /* 0: Never, 1: Always, */
-                                              /* 2: EMarkOnly, 3: StartOnly */
-                sc-tcpc,notifier_supply_num = <2>;
-                sc2150,intr_gpio_num = <307>;
-                pd-data {
-                        pd,vid = <0x311c>;
-                        pd,pid = <0x2150>;
-                        pd,source-cap-ext = /bits/ 8 <0x1c 0x31 0x00 0x66
-                                                      0x00 0x00 0x00 0x00
-                                                      0x00 0x00 0x00 0x00
-                                                      0x00 0x00 0x00 0x00
-                                                      0x00 0x00 0x00 0x00
-                                                      0x00 0x00 0x01 0x02
-                                                      0x00>;
-                        pd,sink-cap-ext = /bits/ 8 <0x1c 0x31 0x00 0x66
-                                                           0x00 0x00 0x00 0x00
-                                                           0x01 0x00 0x00 0x00
-                                                           0x00 0x00 0x00 0x00
-                                                           0x01 0x00 0x00 0x00
-                                                           0x00 0x00 0x00 0x00>;
-                        pd,mfrs = "SouthChip";
+	cps8851_pd: cps8851@4e {
+		compatible = "cps,cps8851";
+		reg = <0x4e>;
+		status = "okay";
+		cp-tcpc,name = "type_c_port0"; /* tcpc_device's name */
+		cp-tcpc,role_def = <5>; /* 0: Unknown, 1: SNK, 2: SRC */
+					/* 3: DRP, 4: Try.SRC, 5: Try.SNK */
+		cp-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
+		cp-tcpc,vconn_supply = <1>;  /* 0: Never, 1: Always, */
+					     /* 2: EMarkOnly, 3: StartOnly */
+		cps8851,intr_gpio = <&pio 8 0x0>;
+		cps8851,intr_gpio_num = <8>;
+		pd-data {
+			pd,vid = <0x315c>;
+			pd,pid = <0x8851>;
+			pd,source-cap-ext = /bits/ 8 <0x5c 0x31 0x51 0x88
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x01 0x02
+						      0x00 0x00 0x00 0x00>;
+			pd,sink-cap-ext = <0x8851315c  0x00000000 0x00010000
+				0x00000000 0x05000000 0x00000019>;
+			pd,mfrs = "CPS_TCPC";
 
-                        /*
-                         *      VSAFE5V = 0, MAX_POWER = 1, CUSTOM = 2,
-                         *      MAX_POWER_LV = 0x21, MAX_POWER_LVIC = 0x31
-                         *      MAX_POWER_HV = 0x41, MAX_POWER_HVIC = 0x51
-                         */
-                        pd,charging_policy= <0x31>;
+			/*
+			 *	VSAFE5V = 0, MAX_POWER = 1, CUSTOM = 2,
+			 *	MAX_POWER_LV = 0x21, MAX_POWER_LVIC = 0x31
+			 *	MAX_POWER_HV = 0x41, MAX_POWER_HVIC = 0x51
+			 */
+			pd,charging_policy = <0x31>;
 
-                        /*
-                         * Fixed 5V, 500 mA <0x00019032>
-                         * Fixed 5V, 1A <0x00019064>
-                         * Fixed 5V, 2A <0x000190c8>
-                         * Fixed 5V, 3A <0x0001912c>
-                         * Fixed 9V, 500 mA <0x0002d032>
-                         * Fixed 9V, 1A <0x0002d064>
-                         * Fixed 9V, 2A <0x0002d0c8>
-                         * Fixed 9V, 3A <0x0002d12c>
-                         * Variable 5-9V, 1A <0x8642d064>
-                         * Variable 5-9V, 2A <0x8642d0c8>
-                         * Variable 5-9V, 3A <0x8642d12c>
-                         * PPS 3V~5.9V, 3A <0xC0761E3C>
-                         */
-                        pd,source-pdo-size = <1>;
-                        /* Fixed 5V,1.5A */
-                        pd,source-pdo-data = <0x00019096>;
-                        pd,sink-pdo-size = <1>;
-                        pd,sink-pdo-data = <0x000190c8>;
-                        /*0110 1110 0011 0010
-                         * No DP, host + device
-                         *      pd,id-vdo-size = <6>;
-                         *      pd,id-vdo-data = <0xd14029cf 0x0 0x17110000
-                                                  0x61000000 0x0 0x41000000>;
-                         * With DP
-                         *      pd,id-vdo-size = <6>;
-                         *      pd,id-vdo-data = <0xd54029cf 0x0 0x17110000
-                                                  0x61000000 0x0 0x41000000>;
-                         */
+			/*
+			 * Fixed 5V, 500 mA <0x00019032>
+			 * Fixed 5V, 1A <0x00019064>
+			 * Fixed 5V, 2A <0x000190c8>
+			 * Fixed 5V, 3A <0x0001912c>
+			 * Fixed 9V, 500 mA <0x0002d032>
+			 * Fixed 9V, 1A <0x0002d064>
+			 * Fixed 9V, 2A <0x0002d0c8>
+			 * Fixed 9V, 3A <0x0002d12c>
+			 * Variable 5-9V, 1A <0x8642d064>
+			 * Variable 5-9V, 2A <0x8642d0c8>
+			 * Variable 5-9V, 3A <0x8642d12c>
+			 * PPS 3V~5.9V, 3A <0xC0761E3C>
+			 */
+			pd,source-pdo-size = <1>;
+			pd,source-pdo-data = <0x00019032>;
+			pd,sink-pdo-size = <1>;
+			pd,sink-pdo-data = <0x000190c8>;
 
-                        pd,id-vdo-size = <6>;
-                        pd,id-vdo-data = <0xd14029cf 0x0 0x17110000
-                                                  0x61000000 0x0 0x41000000>;
+			/*
+			 * No DP, host + device
+			 *	pd,id-vdo-size = <6>;
+			 *	pd,id-vdo-data = <0xd14029cf 0x0 0x17110000
+						  0x61000000 0x0 0x41000000>;
+			 * With DP
+			 *	pd,id-vdo-size = <6>;
+			 *	pd,id-vdo-data = <0xd54029cf 0x0 0x17110000
+						  0x61000000 0x0 0x41000000>;
+			 */
 
-                        bat,nr = <1>;
-                        pd,country_nr = <0>;
+			pd,id-vdo-size = <6>;
+			pd,id-vdo-data = <0xd140315c 0x0 0x88510000
+					  0x61000000 0x0 0x41000000>;
 
-                        bat-info0 {
-                                bat,vid = <0x311c>;
-                                bat,pid = <0x2150>;
-                                bat,mfrs = "bat1";
-                                bat,design_cap = <3000>;
-                        };
+			bat,nr = <1>;
+			pd,country_nr = <0>;
 
-                };
+			bat-info0 {
+				bat,vid = <0x315c>;
+				bat,pid = <0x8851>;
+				bat,mfrs = "bat1";
+				bat,design_cap = <3000>;
+			};
+
+			//bat-info1 {
+			//	bat,vid = <0x8abc>;
+			//	bat,pid = <0x5234>;
+			//	bat,mfrs = "bat2";
+			//	bat,design_cap = <4000>;
+			//};
+
+			//country0 {
+			//	pd,country_code = <0x5457>;
+			//	pd,country_len = <2>; /* max len = 26 */
+			//	pd,country_data = <0xff 0xff>;
+			//};
+
+			//country1 {
+			//	pd,country_code = <0x5553>;
+			//	pd,country_len = <3>; /* max len = 26 */
+			//	pd,country_data = <0xf1 0xf2 0xf3>;
+			//};
+		};
 		dpm_caps {
 			local_dr_power;
 			local_dr_data;
 			//local_ext_power;
-			//local_usb_comm;
+			local_usb_comm;
 			//local_usb_suspend;
 			//local_high_cap;
 			//local_give_back;
-			//local_no_suspend;
-			//local_vconn_supply;
+			local_no_suspend;
+			local_vconn_supply;
 
 			//attempt_discover_cable_dfp;
-			//attempt_enter_dp_mode;
-			//attempt_discover_cable;
-			//attempt_discover_id;
-			//attempt_discover_svid;
+			attempt_enter_dp_mode;
+			attempt_discover_cable;
+			attempt_discover_id;
 
 			/* 0: disable, 1: prefer_snk, 2: prefer_src */
 			pr_check = <0>;
@@ -188,7 +234,7 @@
 				//pin_assignment,mode_f;
 			};
 		};
-        };
+	};
 };
 
 &i2c0 {
@@ -208,6 +254,18 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&chargerpump_int_default_master>;
 
+	};
+	nu2115: nu2115-standalone@6D {
+		compatible = "cp,nu2115";
+		status = "okay";
+		charger_name = "primary_dvchg";
+		reg = <0x6D>;
+		nu2115,intr-gpios = <&pio 5 0x0>;
+		ac_ovp = <13000000>;
+		vbus_ovp = <12000000>;
+		bat_ucp_alm = <9200000>;
+		ibat_sns_res = <2>;
+		watchdog_dis;
 	};
 };
 
