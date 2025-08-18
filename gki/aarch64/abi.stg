@@ -431474,6 +431474,15 @@ elf_symbol {
   full_name: "__traceiter_android_rvh_finish_prio_fork"
 }
 elf_symbol {
+  id: 0x5ee64501
+  name: "__traceiter_android_rvh_fiq_dump"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x8aa2e82e
+  type_id: 0x9bab32de
+  full_name: "__traceiter_android_rvh_fiq_dump"
+}
+elf_symbol {
   id: 0xede4c5f2
   name: "__traceiter_android_rvh_flush_task"
   is_defined: true
@@ -438087,6 +438096,15 @@ elf_symbol {
   crc: 0x7c5aa8a7
   type_id: 0x18ccbd2c
   full_name: "__tracepoint_android_rvh_finish_prio_fork"
+}
+elf_symbol {
+  id: 0xa6181f5f
+  name: "__tracepoint_android_rvh_fiq_dump"
+  is_defined: true
+  symbol_type: OBJECT
+  crc: 0x7c5aa8a7
+  type_id: 0x18ccbd2c
+  full_name: "__tracepoint_android_rvh_fiq_dump"
 }
 elf_symbol {
   id: 0xb894fcfc
@@ -510954,6 +510972,7 @@ interface {
   symbol_id: 0x8bd49e8e
   symbol_id: 0x5d2af80b
   symbol_id: 0xf6f47b2e
+  symbol_id: 0x5ee64501
   symbol_id: 0xede4c5f2
   symbol_id: 0xa23fdad4
   symbol_id: 0x1964ffd9
@@ -511689,6 +511708,7 @@ interface {
   symbol_id: 0x1a0c7568
   symbol_id: 0x46cd6685
   symbol_id: 0xa6457550
+  symbol_id: 0xa6181f5f
   symbol_id: 0xb894fcfc
   symbol_id: 0x555d2f3e
   symbol_id: 0x4cd3e0a7
