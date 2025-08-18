@@ -421,7 +421,8 @@
 #define SENSOR_DRVNAME_MOT_NAPLES_S5KKDS_MIPI_RAW        "mot_naples_s5kkds_mipi_raw"
 #define MOT_NAPLES_OV08F_SENSOR_ID                       0x0847
 #define SENSOR_DRVNAME_MOT_NAPLES_OV08F_MIPI_RAW         "mot_naples_ov08f_mipi_raw"
-
+#define MOT_NAPLES_GC08A3_SENSOR_ID                       0x08a3
+#define SENSOR_DRVNAME_MOT_NAPLES_GC08A3_MIPI_RAW         "mot_naples_gc08a3_mipi_raw"
 
 //orlando bring up
 #define MOT_ORLANDO_OV50D_SENSOR_ID_OFFSET               0x2
