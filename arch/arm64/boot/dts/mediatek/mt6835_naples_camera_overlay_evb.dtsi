@@ -72,20 +72,6 @@
 			output-high;
 		};
 	};
-	camera_pins_cam0_af_0: vcamaf0@16 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	camera_pins_cam0_af_1: vcamaf1@17 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
 	camera_pins_cam0_mclk_off: camera_pins_cam0_mclk_off {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO91__FUNC_GPIO91>;
@@ -179,6 +165,22 @@
 	camera_pins_default: camdefault {
 	};
 };
+
+/delete-node/ &mt6377_vio28;
+&main_pmic{
+	regulators {
+		mt6377_vio28: vio28 {
+			regulator-compatible = "VIO28";
+			regulator-name = "mt6377_vio28";
+			regulator-min-microvolt = <2800000>;
+			regulator-max-microvolt = <2800000>;
+			regulator-enable-ramp-delay = <200>;
+			regulator-allowed-modes = <0 2>;
+			regulator-allow-set-load;
+		};
+	};
+};
+
 &kd_camera_hw1 {
 	pinctrl-names = "default",
 			"cam0_rst0", "cam0_rst1",
@@ -221,6 +223,7 @@
 	cam0_vcamio-supply = <&mt6377_vio18>;
 	cam0_vcama-supply = <&cam_avdd_rear_main>;
 	cam0_vcamd-supply = <&cam_dvdd_rear_main>;
+	cam0_vcamaf-supply = <&mt6377_vio28>;
 	cam1_vcamio-supply = <&mt6377_vio18>;
 	cam1_vcama-supply = <&cam_avdd_front>;
 	cam1_vcamd-supply = <&cam_dvdd_front>;
@@ -335,13 +338,6 @@
 		reg = <0x72>;
 		status = "okay";
 	};
-};
-
-&camera_af_hw_node {
-	pinctrl-names = "camaf_m1_gpio_on",	"camaf_m1_gpio_off";
-	pinctrl-0 = <&camera_pins_cam0_af_1>;
-	pinctrl-1 = <&camera_pins_cam0_af_0>;
-	status = "okay";
 };
 /* CAMERA AF end */
 

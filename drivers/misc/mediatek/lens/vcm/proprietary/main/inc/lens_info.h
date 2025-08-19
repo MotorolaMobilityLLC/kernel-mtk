@@ -87,6 +87,9 @@
 //Begin: Add lens driver name for Utah
 #define MOT_NEVADA_AFDRV_GT9764 "MOT_NEVADA_GT9764AF"
 //End
+//Begin: Add lens driver name for naples
+#define MOT_NAPLES_AFDRV_GT9764 "MOT_NAPLES_GT9764AF"
+//End
 #define CONVERT_CCU_TIMESTAMP 0x1000
 
 /* Structures */
