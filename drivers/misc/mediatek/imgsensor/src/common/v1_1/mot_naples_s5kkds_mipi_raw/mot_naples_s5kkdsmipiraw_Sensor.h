@@ -155,7 +155,7 @@ typedef enum {
 	LIMIT_FAILURE
 } calibration_status_t;
 
-struct NAPLES_S5KKDS_FM_eeprom_t{
+struct NAPLES_S5KKDS_eeprom_t{
 	uint8_t eeprom_table_version[1];
 	uint8_t cal_hw_ver[1];
 	uint8_t cal_sw_ver[1];
