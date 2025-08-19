@@ -992,7 +992,6 @@ static int z_erofs_do_read_page(struct z_erofs_decompress_frontend *fe,
 repeat:
 	if (offset + end - 1 < map->m_la ||
 	    offset + end - 1 >= map->m_la + map->m_llen) {
-		erofs_dbg("out-of-range map @ pos %llu", offset + end - 1);
 		z_erofs_pcluster_end(fe);
 		map->m_la = offset + end - 1;
 		map->m_llen = 0;
@@ -1073,9 +1072,6 @@ out:
 	if (err)
 		z_erofs_page_mark_eio(page);
 	z_erofs_onlinepage_endio(page);
-
-	erofs_dbg("%s, finish page: %pK split: %u map->m_llen %llu",
-		  __func__, page, split, map->m_llen);
 	return err;
 }
 
