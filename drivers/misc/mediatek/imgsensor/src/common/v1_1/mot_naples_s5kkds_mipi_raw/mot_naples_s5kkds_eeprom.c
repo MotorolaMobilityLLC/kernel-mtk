@@ -14,7 +14,7 @@
 #include "kd_imgsensor_errcode.h"
 #include "imgsensor_ca.h"
 
-#include "mot_naples_s5kkdsqtmipiraw_Sensor.h"
+#include "mot_naples_s5kkdsmipiraw_Sensor.h"
 
 static int mot_sensor_debug = 1;
 
@@ -23,7 +23,7 @@ typedef struct {
 	MUINT16 data;
 } kansas_xtc_cal_addr_data_t;
 
-#define PFX "MOT_NAPLES_S5KKDS_QT_"
+#define PFX "MOT_NAPLES_S5KKDS_"
 #define LOG_INF(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
 #define LOG_ERR(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
 #define LOG_INF_N(format, args...)   pr_warn(PFX "[%s] " format, __func__, ##args)
@@ -32,12 +32,12 @@ typedef struct {
 static DEFINE_SPINLOCK(imgsensor_lock);
 static  struct imgsensor_struct *imgsensor;
 
-#define NAPLES_S5KKDS_QT_EEPROM_SLAVE_ADDR 0xA2
-#define NAPLES_S5KKDS_QT_SENSOR_IIC_SLAVE_ADDR 0x94
-#define NAPLES_S5KKDS_QT_EEPROM_SIZE  0x0027
-#define NAPLES_S5KKDS_QT_EEPROM_CRC_MANUFACTURING_SIZE 37
+#define NAPLES_S5KKDS_EEPROM_SLAVE_ADDR 0xA2
+#define NAPLES_S5KKDS_SENSOR_IIC_SLAVE_ADDR 0x94
+#define NAPLES_S5KKDS_EEPROM_SIZE  0x0027
+#define NAPLES_S5KKDS_EEPROM_CRC_MANUFACTURING_SIZE 37
 
-static uint8_t NAPLES_S5KKDS_QT_eeprom[NAPLES_S5KKDS_QT_EEPROM_SIZE] = {0};
+static uint8_t NAPLES_S5KKDS_eeprom[NAPLES_S5KKDS_EEPROM_SIZE] = {0};
 static mot_calibration_status_t calibration_status = {CRC_FAILURE};
 static mot_calibration_mnf_t mnf_info = {0};
 
@@ -102,7 +102,7 @@ static struct IMGSENSOR_I2C_CFG *get_i2c_cfg(void)
 		  (imgsensor->psensor_func->psensor_inst))->i2c_cfg);
 }
 
-static kal_uint16 NAPLES_S5KKDS_QT_read_cmos_sensor_8(kal_uint16 addr)
+static kal_uint16 NAPLES_S5KKDS_read_cmos_sensor_8(kal_uint16 addr)
 {
 	kal_uint16 get_byte = 0;
 	char pusendcmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
@@ -118,7 +118,7 @@ static kal_uint16 NAPLES_S5KKDS_QT_read_cmos_sensor_8(kal_uint16 addr)
 	return get_byte;
 }
 
-static void NAPLES_S5KKDS_QT_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size)
+static void NAPLES_S5KKDS_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size)
 {
 	int i = 0;
 	spin_lock(&imgsensor_lock);
@@ -126,21 +126,21 @@ static void NAPLES_S5KKDS_QT_read_data_from_eeprom(kal_uint8 slave, kal_uint32 s
 	spin_unlock(&imgsensor_lock);
 
 	for (i = 0; i < size; i ++) {
-		NAPLES_S5KKDS_QT_eeprom[i] = NAPLES_S5KKDS_QT_read_cmos_sensor_8(start_add);
+		NAPLES_S5KKDS_eeprom[i] = NAPLES_S5KKDS_read_cmos_sensor_8(start_add);
 		start_add ++;
 	}
 
 	spin_lock(&imgsensor_lock);
-	imgsensor->i2c_write_id = NAPLES_S5KKDS_QT_SENSOR_IIC_SLAVE_ADDR;
+	imgsensor->i2c_write_id = NAPLES_S5KKDS_SENSOR_IIC_SLAVE_ADDR;
 	spin_unlock(&imgsensor_lock);
 }
 
 
-static calibration_status_t NAPLES_S5KKDS_QT_check_manufacturing_data(void *data)
+static calibration_status_t NAPLES_S5KKDS_check_manufacturing_data(void *data)
 {
-	struct NAPLES_S5KKDS_QT_eeprom_t *eeprom = (struct NAPLES_S5KKDS_QT_eeprom_t*)data;
+	struct NAPLES_S5KKDS_eeprom_t *eeprom = (struct NAPLES_S5KKDS_eeprom_t*)data;
 	LOG_INF("Manufacturing eeprom->mpn = %.8s !",eeprom->mpn);
-	if (!eeprom_util_check_crc16(eeprom->eeprom_table_version, NAPLES_S5KKDS_QT_EEPROM_CRC_MANUFACTURING_SIZE,
+	if (!eeprom_util_check_crc16(eeprom->eeprom_table_version, NAPLES_S5KKDS_EEPROM_CRC_MANUFACTURING_SIZE,
 		convert_crc(eeprom->manufacture_crc16))) {
 		LOG_ERROR("Manufacturing CRC Fails!");
 		return CRC_FAILURE;
@@ -149,11 +149,11 @@ static calibration_status_t NAPLES_S5KKDS_QT_check_manufacturing_data(void *data
 	return NO_ERRORS;
 }
 
-static void NAPLES_S5KKDS_QT_eeprom_get_mnf_data(void *data,
+static void NAPLES_S5KKDS_eeprom_get_mnf_data(void *data,
 		mot_calibration_mnf_t *mnf)
 {
 	int ret;
-	struct NAPLES_S5KKDS_QT_eeprom_t *eeprom = (struct NAPLES_S5KKDS_QT_eeprom_t*)data;
+	struct NAPLES_S5KKDS_eeprom_t *eeprom = (struct NAPLES_S5KKDS_eeprom_t*)data;
 
 	ret = snprintf(mnf->table_revision, MAX_CALIBRATION_STRING, "0x%x",
 		eeprom->eeprom_table_version[0]);
@@ -179,8 +179,8 @@ static void NAPLES_S5KKDS_QT_eeprom_get_mnf_data(void *data,
 		mnf->actuator_id[0] = 0;
 	}
 
-	if (eeprom->lens_id[0] == 0xA7){
-		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Sunny 39807A-401");
+	if (eeprom->lens_id[0] == 0x05){
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "AAC 325772A01-100");
 	} else {
 		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
 		LOG_INF("unknown lens_id");
@@ -244,20 +244,20 @@ static void NAPLES_S5KKDS_QT_eeprom_get_mnf_data(void *data,
 	}
 }
 
-void NAPLES_S5KKDS_QT_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
+void NAPLES_S5KKDS_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
 {
 	imgsensor = pImgsensor;
-	NAPLES_S5KKDS_QT_read_data_from_eeprom(NAPLES_S5KKDS_QT_EEPROM_SLAVE_ADDR, 0x00, NAPLES_S5KKDS_QT_EEPROM_SIZE);
-	calibration_status.mnf = NAPLES_S5KKDS_QT_check_manufacturing_data(NAPLES_S5KKDS_QT_eeprom);
-	NAPLES_S5KKDS_QT_eeprom_get_mnf_data((void *)NAPLES_S5KKDS_QT_eeprom, &mnf_info);
+	NAPLES_S5KKDS_read_data_from_eeprom(NAPLES_S5KKDS_EEPROM_SLAVE_ADDR, 0x00, NAPLES_S5KKDS_EEPROM_SIZE);
+	calibration_status.mnf = NAPLES_S5KKDS_check_manufacturing_data(NAPLES_S5KKDS_eeprom);
+	NAPLES_S5KKDS_eeprom_get_mnf_data((void *)NAPLES_S5KKDS_eeprom, &mnf_info);
 }
 
-mot_calibration_status_t *NAPLES_S5KKDS_QT_eeprom_get_calibration_status(void)
+mot_calibration_status_t *NAPLES_S5KKDS_eeprom_get_calibration_status(void)
 {
 	return &calibration_status;
 }
 
-mot_calibration_mnf_t *NAPLES_S5KKDS_QT_eeprom_get_mnf_info(void)
+mot_calibration_mnf_t *NAPLES_S5KKDS_eeprom_get_mnf_info(void)
 {
 	return &mnf_info;
 }
