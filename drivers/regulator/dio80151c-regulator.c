@@ -28,6 +28,7 @@
 #define DIO80151C_LDO2_VOUT 0x04
 #define DIO80151C_LDO3_VOUT 0x05
 #define DIO80151C_LDO4_VOUT 0x06
+#define OCP62101C_ID2_REG   0X07
 #define DIO80151C_LDO1_LDO2_SEQ 0x0a
 #define DIO80151C_LDO3_LDO4_SEQ 0x0b
 #define DIO80151C_LDO_EN 0x0e
@@ -49,8 +50,11 @@
 #define  DIO80151C_N_VOLTAGES                     256
 
 #define  DIO80151C_ID                             0x04
+#define  OCP62101C_ID                             0x00
+#define  OCP62101C_ID2                            0x03
 
-static int ldo_chipid = -1;
+
+static int ldo_chipid  = -1;
 
 enum slg51000_regulators {
 	DIO80151C_REGULATOR_LDO1 = 0,
@@ -380,12 +384,27 @@ static int dio80151c_i2c_probe(struct i2c_client *client,
 	}
 
 	ret = regmap_read(chip->regmap, DIO80151C_CHIP_REV, &ldo_chipid);
-	if (ret < 0 || ldo_chipid != DIO80151C_ID) {
+	if (ret < 0 ) {
 		dev_err(dev, "Failed to read CHIP ID:0x%x, ret:%d\n", ldo_chipid,ret);
 		ret = -ENODEV;
 		return ret;
 	} else {
-		dev_info(chip->dev, "DIO80151C CHIP ID matched!\n");
+		if (ldo_chipid == DIO80151C_ID) {
+			dev_info(chip->dev, "DIO80151C CHIP ID matched!\n");
+		} else if (ldo_chipid == OCP62101C_ID) {
+			ret = regmap_read(chip->regmap, OCP62101C_ID2_REG, &ldo_chipid);
+			if(ldo_chipid == OCP62101C_ID2) {
+				dev_info(chip->dev, "OCP62101C CHIP ID matched!\n");
+			} else {
+				dev_err(dev, "Failed to read OCP62101C ID:0x%x, ret:%d\n", ldo_chipid,ret);
+				ret = -ENODEV;
+				return ret;
+			}
+		} else {
+			dev_err(dev, "Failed to read CHIP ID:0x%x, ret:%d\n", ldo_chipid,ret);
+			ret = -ENODEV;
+			return ret;
+		}
 	}
 
 	for (i = 0; i < 5; i++) {
