@@ -3591,7 +3591,7 @@ static int mmi_check_power_info(struct mtk_charger *info, bool force)
 	} else if (info->mmi.charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO){
 		power_watt = MOTO_15W / 1000;
 		real_charger_type = POWER_SUPPLY_USB_TYPE_DCP;
-	} else if (get_charger_type(info) == POWER_SUPPLY_TYPE_USB_DCP && icl > TURBO_CHRG_THRSH) {
+	} else if (get_charger_type(info) == POWER_SUPPLY_TYPE_USB_DCP && icl > TURBO_CHRG_THRSH && info->mmi.factory_mode) {
 		power_watt = MOTO_15W / 1000;
 		real_charger_type = POWER_SUPPLY_USB_TYPE_DCP;
 	} else if (get_charger_type(info) == POWER_SUPPLY_TYPE_USB_DCP) {
