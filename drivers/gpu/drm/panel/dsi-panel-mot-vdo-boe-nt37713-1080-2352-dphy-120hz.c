@@ -38,8 +38,6 @@
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
-static int current_fps = 120;
-
 unsigned int nt37713_rc_buf_thresh[14] = {896, 1792, 2688, 3584, 4480, 5376,
         6272, 6720, 7168, 7616, 7744, 7872, 8000, 8064};
 unsigned int nt37713_range_min_qp[15] = {0, 4, 5, 5, 7, 7, 7, 7, 7, 7, 9, 9, 9, 13, 16};
@@ -51,7 +49,8 @@ int nt37713_range_bpg_ofs[15] = {2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -12,
 //TM EVT panel v0 support. to be disabled before PVT
 //#define TM_PANEL_EVT_V0_SUPPORT		1
 
-#define NT_BOE_PANEL_VENDOR_ID    0x65011000
+//panel id, reg 0xA1, value 02 01 13 51
+#define NT_BOE_PANEL_VENDOR_ID    0x51130102
 //#define NT_BOE_PANEL_VENDOR_ID  	(TM_ILI_PANEL_VENDOR_ID | (0xF << 24))
 
 static int tp_gesture_flag = 0;
@@ -73,6 +72,9 @@ struct boe_nt37713 {
 	//unsigned int hbm_mode;
 	unsigned int cabc_mode;
 	//enum panel_version version;
+	bool lhbm_en;
+	atomic_t hbm_mode;
+	atomic_t current_fps;
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
@@ -93,19 +95,31 @@ static struct mtk_panel_para_table panel_cabc_disable[] = {
 	{2, {0x55, 0x00}},
 };
 
-#if 0
-static struct mtk_panel_para_table panel_hbm_on[] = {
-	{2, {0xFF, 0x10}},
-	{2, {0xFB, 0x01}},
-	{3, {0x51, 0x07, 0xFF}},
+//set enable lhbm code, on status
+static struct mtk_panel_para_table panel_lhbm_on[] = {
+	//set page table
+	{6, {0xF0,0x55,0xAA,0x52,0x08,0x02}},
+	{2, {0x6F,0x02}},
+	{2, {0xD2,0x21}},
+
+	//set LHBM on
+	{2, {0x6F,0x01}},
+	{2, {0x8B,0x01}},
+	{2, {0x87,0x25}},
 };
 
-static struct mtk_panel_para_table panel_hbm_off[] = {
-	{2, {0xFF, 0x10}},
-	{2, {0xFB, 0x01}},
-	{3, {0x51, 0x06, 0x66}},
+//set enable lhbm code, off status
+static struct mtk_panel_para_table panel_lhbm_off[] = {
+	//set page table
+	{6, {0xF0,0x55,0xAA,0x52,0x08,0x02}},
+	{2, {0x6F,0x02}},
+	{2, {0xD2,0x20}},
+
+	//set LHBM off
+	{2, {0x87,0x00}},
+	{2, {0x6F,0x01}},
+	{2, {0x8B,0x00}},
 };
-#endif
 
 #define boe_nt37713_dcs_write_seq(ctx, seq...)                                     \
 	({                                                                     \
@@ -181,6 +195,8 @@ static void boe_nt37713_dcs_write(struct boe_nt37713 *ctx, const void *data, siz
 
 static void boe_nt37713_panel_init(struct boe_nt37713 *ctx)
 {
+	int current_fps = atomic_read(&ctx->current_fps);
+
 	pr_info("disp: %s+\n", __func__);
 
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
@@ -636,29 +652,20 @@ static struct mtk_panel_params ext_params_mode_30 = {
 		.cmd = 0xAB,
 		.count = 2,
 		.para_list[0] = 0x00,
-	},/*
-	.lcm_cellid = {
-		.panel_cellid_reg = 0xF1,
-		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 8,
-		.panel_cellid_reg_seq = 1,
-		.panel_cellid_len_sub = 16,
-		//.panel_cellid_esd_dis = 1,
-		.page_table = {
-			{0x15,0x02,0xFF,0x21},
-			{0x15,0x02,0xFB,0x01}
-		},
-		.page_post_table = {
-			{0x15,0x02,0xFF,0x10},
-			{0x15,0x02,0xFB,0x01}
-		},
-	},*/
+	},
+        .lcm_cellid = {
+                .panel_cellid_reg = 0xAC,
+                .panel_cellid_len = 23,
+                .panel_cellid_offset_reg = 0x6F,
+                .panel_cellid_offset = 0x00,
+        },
+
 	.panel_ver = 1,
-	//.panel_id = 0x01050791,
+	//.panel_id = 0x51130102,
 	.panel_name = "boe_nt37713_vid_1080_2352",
 	.panel_supplier = "boe",
-	.lcm_index = 1,
-	.hbm_type = HBM_MODE_RAMPING,
+	.lcm_index = 0,
+	//.hbm_type = HBM_MODE_RAMPING,
 	//.max_bl_level = 2047,
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
@@ -742,29 +749,20 @@ static struct mtk_panel_params ext_params_mode_60 = {
 		.cmd = 0xAB,
 		.count = 2,
 		.para_list[0] = 0x00,
-	},/*
-	.lcm_cellid = {
-		.panel_cellid_reg = 0xF1,
-		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 8,
-		.panel_cellid_reg_seq = 1,
-		.panel_cellid_len_sub = 16,
-		//.panel_cellid_esd_dis = 1,
-		.page_table = {
-			{0x15,0x02,0xFF,0x21},
-			{0x15,0x02,0xFB,0x01}
-		},
-		.page_post_table = {
-			{0x15,0x02,0xFF,0x10},
-			{0x15,0x02,0xFB,0x01}
-		},
-	},*/
+	},
+        .lcm_cellid = {
+                .panel_cellid_reg = 0xAC,
+                .panel_cellid_len = 23,
+                .panel_cellid_offset_reg = 0x6F,
+                .panel_cellid_offset = 0x00,
+        },
+
 	.panel_ver = 1,
-	//.panel_id = 0x01050791,
+	//.panel_id = 0x51130102,
 	.panel_name = "boe_nt37713_vid_1080_2352",
 	.panel_supplier = "boe",
-	.lcm_index = 1,
-	.hbm_type = HBM_MODE_RAMPING,
+	.lcm_index = 0,
+	//.hbm_type = HBM_MODE_RAMPING,
 	//.max_bl_level = 2047,
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
@@ -847,29 +845,20 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.cmd = 0xAB,
 		.count = 2,
 		.para_list[0] = 0x00,
-	},/*
-	.lcm_cellid = {
-		.panel_cellid_reg = 0xF1,
-		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 8,
-		.panel_cellid_reg_seq = 1,
-		.panel_cellid_len_sub = 16,
-		//.panel_cellid_esd_dis = 1,
-		.page_table = {
-			{0x15,0x02,0xFF,0x21},
-			{0x15,0x02,0xFB,0x01}
-		},
-		.page_post_table = {
-			{0x15,0x02,0xFF,0x10},
-			{0x15,0x02,0xFB,0x01}
-		},
-	},*/
+	},
+        .lcm_cellid = {
+                .panel_cellid_reg = 0xAC,
+                .panel_cellid_len = 23,
+                .panel_cellid_offset_reg = 0x6F,
+                .panel_cellid_offset = 0x00,
+        },
+
 	.panel_ver = 1,
-	//.panel_id = 0x10050a91,
+	//.panel_id = 0x51130102,
 	.panel_name = "boe_nt37713_vid_1080_2352",
 	.panel_supplier = "boe",
-	.lcm_index = 1,
-	.hbm_type = HBM_MODE_RAMPING,
+	.lcm_index = 0,
+	//.hbm_type = HBM_MODE_RAMPING,
 	//.max_bl_level = 2047,
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
@@ -952,29 +941,20 @@ static struct mtk_panel_params ext_params_mode_120 = {
 		.cmd = 0xAB,
 		.count = 2,
 		.para_list[0] = 0x00,
-	},/*
-	.lcm_cellid = {
-		.panel_cellid_reg = 0xF1,
-		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 8,
-		.panel_cellid_reg_seq = 1,
-		.panel_cellid_len_sub = 16,
-		//.panel_cellid_esd_dis = 1,
-		.page_table = {
-			{0x15,0x02,0xFF,0x21},
-			{0x15,0x02,0xFB,0x01}
-		},
-		.page_post_table = {
-			{0x15,0x02,0xFF,0x10},
-			{0x15,0x02,0xFB,0x01}
-		},
-	},*/
+	},
+        .lcm_cellid = {
+                .panel_cellid_reg = 0xAC,
+                .panel_cellid_len = 23,
+                .panel_cellid_offset_reg = 0x6F,
+                .panel_cellid_offset = 0x00,
+        },
+
 	.panel_ver = 1,
-	//.panel_id = 0x10050a91,
+	//.panel_id = 0x51130102,
 	.panel_name = "boe_nt37713_vid_1080_2352",
 	.panel_supplier = "boe",
-	.lcm_index = 1,
-	.hbm_type = HBM_MODE_RAMPING,
+	.lcm_index = 0,
+	//.hbm_type = HBM_MODE_RAMPING,
 	//.max_bl_level = 2047,
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
@@ -1057,29 +1037,20 @@ static struct mtk_panel_params ext_params_mode_144 = {
 		.cmd = 0xAB,
 		.count = 2,
 		.para_list[0] = 0x00,
-	},/*
-	.lcm_cellid = {
-		.panel_cellid_reg = 0xF1,
-		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 8,
-		.panel_cellid_reg_seq = 1,
-		.panel_cellid_len_sub = 16,
-		//.panel_cellid_esd_dis = 1,
-		.page_table = {
-			{0x15,0x02,0xFF,0x21},
-			{0x15,0x02,0xFB,0x01}
-		},
-		.page_post_table = {
-			{0x15,0x02,0xFF,0x10},
-			{0x15,0x02,0xFB,0x01}
-		},
-	},*/
+	},
+        .lcm_cellid = {
+                .panel_cellid_reg = 0xAC,
+                .panel_cellid_len = 23,
+                .panel_cellid_offset_reg = 0x6F,
+                .panel_cellid_offset = 0x00,
+        },
+
 	.panel_ver = 1,
-	//.panel_id = 0x10050a91,
+	//.panel_id = 0x51130102,
 	.panel_name = "boe_nt37713_vid_1080_2352",
 	.panel_supplier = "boe",
-	.lcm_index = 1,
-	.hbm_type = HBM_MODE_RAMPING,
+	.lcm_index = 0,
+	//.hbm_type = HBM_MODE_RAMPING,
 	//.max_bl_level = 2047,
 	.ssc_enable = 0,
 	.lane_swap_en = 0,
@@ -1186,6 +1157,7 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 	struct mtk_panel_ext *ext = find_panel_ext(panel);
 	int ret = 0;
 	struct drm_display_mode *m = get_mode_by_id(connector, mode);
+	struct boe_nt37713 *ctx = panel_to_boe_nt37713(panel);
 
 	if (!m)
 		return ret;
@@ -1204,7 +1176,9 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 	else
 		ret = 1;
 
-	current_fps = drm_mode_vrefresh(m);
+	if (!ret) {
+		atomic_set(&ctx->current_fps, drm_mode_vrefresh(m));
+	}
 	return ret;
 }
 
@@ -1336,41 +1310,90 @@ static int panel_cabc_set_cmdq(struct boe_nt37713 *ctx, void *dsi, dcs_grp_write
 	return 0;
 }
 
-#if 0 // HBM RAMPING
-static int panel_hbm_set_cmdq(struct boe_nt37713 *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level, uint32_t fps)
 {
 	unsigned int para_count = 0;
 	struct mtk_panel_para_table *pTable = NULL;
 
-	if (hbm_state > 1) {
-		pr_info("%s: invalid hbm_state:%d, return\n", __func__, hbm_state);
-		return -1;
-	}
+	pr_info("%s: bl_level:%d, fps:%d, on:%d\n", __func__, bl_level, fps, on);
 
-	switch (hbm_state) {
-		case 1:
-			para_count = sizeof(panel_hbm_on) / sizeof(struct mtk_panel_para_table);
-			pTable = panel_hbm_on;
-			pr_info("%s: set HBM on", __func__);
-			break;
+	if (on) {
+		para_count = sizeof(panel_lhbm_on) / sizeof(struct mtk_panel_para_table);
+		pTable = panel_lhbm_on;
+	} else {
+		para_count = sizeof(panel_lhbm_off) / sizeof(struct mtk_panel_para_table);
+		pTable = panel_lhbm_off;
+	}
+	cb(dsi, handle, pTable, para_count);
+	return 0;
+}
+
+static int panel_hbm_set_cmdq(struct boe_nt37713 *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0x3E, 0x80}};//set hbm code, on
+	unsigned int level = 0;
+	unsigned int fps = atomic_read(&ctx->current_fps);
+
+	pr_info("%s: level:%d, fps:%d, hbm_state:%d, lhbm_en=%d\n", __func__, level, fps, hbm_state, ctx->lhbm_en);
+
+	if (hbm_state > 2) return -1;
+
+	switch (hbm_state)
+	{
 		case 0:
-			para_count = sizeof(panel_hbm_off) / sizeof(struct mtk_panel_para_table);
-			pTable = panel_hbm_off;
-			pr_info("%s: set HBM off", __func__);
+			if (ctx->lhbm_en){
+				panel_lhbm_set_cmdq(dsi, cb, handle, 0, level,  fps);
+			}
+			break;
+		case 1:
+			if (ctx->lhbm_en) {
+				panel_lhbm_set_cmdq(dsi, cb, handle, 0, level,  fps);
+
+			} else {
+				cb(dsi, handle, &hbm_on_table, 1);
+			}
+			break;
+		case 2:
+			if (ctx->lhbm_en){
+				panel_lhbm_set_cmdq(dsi, cb, handle, 1, level,  fps);
+			}
+			else
+				cb(dsi, handle, &hbm_on_table, 1);
 			break;
 		default:
 			break;
 	}
 
-	if (pTable) {
-		cb(dsi, handle, pTable, para_count);
-	}
-	else
-		pr_info("%s: HBM pTable null, hbm_state:%s", __func__, hbm_state);
-
+	atomic_set(&ctx->hbm_mode, hbm_state);
 	return 0;
 }
-#endif
+
+
+static int panel_feature_get(struct drm_panel *panel, struct panel_param_info *param_info){
+
+	struct boe_nt37713 *ctx = panel_to_boe_nt37713(panel);
+	int ret = 0;
+	pr_info("%s enter\n", __func__);
+
+	switch (param_info->param_idx) {
+		case PARAM_CABC:
+			break;
+		case PARAM_ACL:
+			//ret = -1;
+			break;
+		case PARAM_HBM:
+			param_info->value = atomic_read(&ctx->hbm_mode);
+			break;
+		case PARAM_DC:
+			//param_info->value = atomic_read(&ctx->dc_mode);
+			break;
+		default:
+			ret = -1;
+			break;
+	}
+	return ret;
+
+}
 
 static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
@@ -1400,7 +1423,9 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
 			break;
 		case PARAM_HBM:
-				pr_info("%s: HBM ramping, skip HBM mode:%d\n", __func__, param_info.value);
+			atomic_set(&ctx->hbm_mode, param_info.value);
+			panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+			ret = 0;
 			break;
 		default:
 			pr_info("%s: skip unsupport feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
@@ -1419,6 +1444,7 @@ static struct mtk_panel_funcs ext_funcs = {
 //	.ata_check = panel_ata_check,
 	.set_gesture_flag = panel_set_gesture_flag,
 	.panel_feature_set = panel_feature_set,
+	.panel_feature_get = panel_feature_get,
 };
 #endif
 
@@ -1651,6 +1677,9 @@ static int boe_nt37713_probe(struct mipi_dsi_device *dsi)
 	if (ret < 0)
 		return ret;
 #endif
+	atomic_set(&ctx->hbm_mode, 0);
+	ctx->lhbm_en = 1;
+	atomic_set(&ctx->current_fps, 120);
 
 	pr_info("[%d  %s]- txd,nt36672c,vdo,120hz ret:%d\n", __LINE__, __func__,ret);
 

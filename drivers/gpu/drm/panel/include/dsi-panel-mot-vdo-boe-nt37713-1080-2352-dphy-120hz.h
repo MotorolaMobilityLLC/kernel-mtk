@@ -17,8 +17,8 @@
 #define FRAME_WIDTH                 1080
 #define FRAME_HEIGHT                2352
 
-#define PHYSICAL_WIDTH              70956
-#define PHYSICAL_HEIGHT             156891
+#define PHYSICAL_WIDTH              71868
+#define PHYSICAL_HEIGHT             156618
 
 #define DATA_RATE                   1190
 #define HSA                         30
