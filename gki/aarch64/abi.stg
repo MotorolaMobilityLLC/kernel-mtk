@@ -432077,6 +432077,15 @@ elf_symbol {
   full_name: "__traceiter_android_rvh_select_fallback_rq"
 }
 elf_symbol {
+  id: 0x78f0c473
+  name: "__traceiter_android_rvh_select_task_rq_dl"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x5cb6d11c
+  type_id: 0x9bc391f6
+  full_name: "__traceiter_android_rvh_select_task_rq_dl"
+}
+elf_symbol {
   id: 0xe48752ef
   name: "__traceiter_android_rvh_select_task_rq_fair"
   is_defined: true
@@ -438699,6 +438708,15 @@ elf_symbol {
   crc: 0x7c5aa8a7
   type_id: 0x18ccbd2c
   full_name: "__tracepoint_android_rvh_select_fallback_rq"
+}
+elf_symbol {
+  id: 0xefcecb1d
+  name: "__tracepoint_android_rvh_select_task_rq_dl"
+  is_defined: true
+  symbol_type: OBJECT
+  crc: 0x7c5aa8a7
+  type_id: 0x18ccbd2c
+  full_name: "__tracepoint_android_rvh_select_task_rq_dl"
 }
 elf_symbol {
   id: 0x3bb904a5
@@ -511039,6 +511057,7 @@ interface {
   symbol_id: 0x40bb3f78
   symbol_id: 0xf27119bc
   symbol_id: 0x0f807f10
+  symbol_id: 0x78f0c473
   symbol_id: 0xe48752ef
   symbol_id: 0x4c24a4be
   symbol_id: 0x5d194c5c
@@ -511775,6 +511794,7 @@ interface {
   symbol_id: 0xa5be18ba
   symbol_id: 0x16e6a696
   symbol_id: 0x0daed96e
+  symbol_id: 0xefcecb1d
   symbol_id: 0x3bb904a5
   symbol_id: 0xec4d6758
   symbol_id: 0x33183ab6
