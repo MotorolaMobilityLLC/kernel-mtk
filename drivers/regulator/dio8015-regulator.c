@@ -28,6 +28,7 @@
 #define DIO8015_LDO2_VOUT 0x04
 #define DIO8015_LDO3_VOUT 0x05
 #define DIO8015_LDO4_VOUT 0x06
+#define OCP6210_ID_REG    0X07
 #define DIO8015_LDO1_LDO2_SEQ 0x0a
 #define DIO8015_LDO3_LDO4_SEQ 0x0b
 #define DIO8015_LDO_EN 0x0e
@@ -49,6 +50,8 @@
 #define  DIO8015_N_VOLTAGES                     256
 
 #define  DIO8015_ID                             0x04
+#define  OCP6210_ID                             0x00
+#define  OCP6210_ID2                            0x03
 
 static int ldo_chipid = -1;
 
@@ -380,12 +383,27 @@ static int dio8015_i2c_probe(struct i2c_client *client,
 	}
 
 	ret = regmap_read(chip->regmap, DIO8015_CHIP_REV, &ldo_chipid);
-	if (ret < 0 || ldo_chipid != DIO8015_ID) {
+	if (ret < 0 ) {
 		dev_err(dev, "Failed to read CHIP ID:0x%x, ret:%d\n", ldo_chipid,ret);
 		ret = -ENODEV;
 		return ret;
 	} else {
-		dev_info(chip->dev, "DIO8015 CHIP ID matched!\n");
+		if (ldo_chipid == DIO8015_ID) {
+			dev_info(chip->dev, "DIO8015 CHIP ID matched!\n");
+		} else if (ldo_chipid == OCP6210_ID) {
+			ret = regmap_read(chip->regmap, OCP6210_ID_REG, &ldo_chipid);
+			if(ldo_chipid == OCP6210_ID2) {
+				dev_info(chip->dev, "OCP6210 CHIP ID matched!\n");
+			} else {
+				dev_err(dev, "Failed to read OCP6210 ID:0x%x, ret:%d\n", ldo_chipid,ret);
+				ret = -ENODEV;
+				return ret;
+			}
+		} else {
+			dev_err(dev, "Failed to read CHIP ID:0x%x, ret:%d\n", ldo_chipid,ret);
+			ret = -ENODEV;
+			return ret;
+		}
 	}
 
 	for (i = 0; i < 5; i++) {
