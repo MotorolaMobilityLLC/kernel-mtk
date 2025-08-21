@@ -28,6 +28,7 @@
 
 &i2c6 {
 	status = "ok";
+	clock-frequency = <400000>;
 	spk_amp1: fs18xx@35 {
 		compatible = "foursemi,fs1815";
 		reg = <0x35>;
