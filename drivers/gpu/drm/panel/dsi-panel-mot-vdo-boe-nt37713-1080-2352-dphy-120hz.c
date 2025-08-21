@@ -217,9 +217,15 @@ static void boe_nt37713_panel_init(struct boe_nt37713 *ctx)
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
+       //=================Modify Fod spot position start=================
+       //CMD2 Page 0
+        boe_nt37713_dcs_write_seq_static(ctx, 0xF0, 0x55,0xAA,0x52,0x08,0x00);
+        boe_nt37713_dcs_write_seq_static(ctx, 0x6F, 0x07);
+	 //LHBM Center (636,2525)
+        boe_nt37713_dcs_write_seq_static(ctx, 0xDF, 0x02,0x12,0x09,0x72,0x02,0xE8,0x0A,0x49);
+       //=================Modify Fod spot position end=================
 
 	boe_nt37713_dcs_write_seq_static(ctx, 0xFF, 0xAA, 0x55, 0xA5, 0x80);
-
 	//------------------------VGXP by pad cap------------------------
 	// ##VGXP cap
 	boe_nt37713_dcs_write_seq_static(ctx, 0x6F, 0x1F);
