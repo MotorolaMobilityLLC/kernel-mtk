@@ -14879,6 +14879,11 @@ pointer_reference {
   pointee_type_id: 0x571672df
 }
 pointer_reference {
+  id: 0x1f5a6b3b
+  kind: POINTER
+  pointee_type_id: 0x57294a71
+}
+pointer_reference {
   id: 0x1f5c397b
   kind: POINTER
   pointee_type_id: 0x57300370
@@ -57612,6 +57617,12 @@ member {
   name: "__sector"
   type_id: 0x89d2d38c
   offset: 384
+}
+member {
+  id: 0xb2927ff8
+  name: "__size"
+  type_id: 0x92233392
+  offset: 64
 }
 member {
   id: 0x8ca3627c
@@ -298998,6 +299009,16 @@ struct_union {
   }
 }
 struct_union {
+  id: 0x57294a71
+  kind: STRUCT
+  name: "dma_iova_state"
+  definition {
+    bytesize: 16
+    member_id: 0x24cdf172
+    member_id: 0xb2927ff8
+  }
+}
+struct_union {
   id: 0x04351df2
   kind: STRUCT
   name: "dma_map_ops"
@@ -373128,6 +373149,16 @@ function {
   parameter_id: 0x0356cddf
 }
 function {
+  id: 0x104de847
+  return_type_id: 0x48b5725f
+  parameter_id: 0x0258f96e
+  parameter_id: 0x1f5a6b3b
+  parameter_id: 0xf435685e
+  parameter_id: 0xf435685e
+  parameter_id: 0xcd84e3cd
+  parameter_id: 0x33756485
+}
+function {
   id: 0x104de9a9
   return_type_id: 0x48b5725f
   parameter_id: 0x0524edd8
@@ -373338,6 +373369,12 @@ function {
   return_type_id: 0x48b5725f
   parameter_id: 0x0258f96e
   parameter_id: 0x1fc34bc2
+}
+function {
+  id: 0x10730664
+  return_type_id: 0x48b5725f
+  parameter_id: 0x0258f96e
+  parameter_id: 0x1f5a6b3b
 }
 function {
   id: 0x1075e2ed
@@ -416578,6 +416615,17 @@ function {
   parameter_id: 0x6720d32f
 }
 function {
+  id: 0x9d472e58
+  return_type_id: 0x6720d32f
+  parameter_id: 0x0258f96e
+  parameter_id: 0x1f5a6b3b
+  parameter_id: 0xbdd18903
+  parameter_id: 0xf435685e
+  parameter_id: 0xf435685e
+  parameter_id: 0xcd84e3cd
+  parameter_id: 0x33756485
+}
+function {
   id: 0x9d475de3
   return_type_id: 0x6720d32f
   parameter_id: 0x056cf603
@@ -416714,6 +416762,14 @@ function {
   parameter_id: 0x6720d32f
   parameter_id: 0x0801d1b2
   parameter_id: 0x35c838ae
+}
+function {
+  id: 0x9d556957
+  return_type_id: 0x6720d32f
+  parameter_id: 0x0258f96e
+  parameter_id: 0x1f5a6b3b
+  parameter_id: 0xf435685e
+  parameter_id: 0xf435685e
 }
 function {
   id: 0x9d55b48a
@@ -427100,6 +427156,14 @@ function {
   parameter_id: 0x18a2fb63
   parameter_id: 0x18a2fb63
   parameter_id: 0x10673339
+}
+function {
+  id: 0xfe63a844
+  return_type_id: 0x6d7f5ff6
+  parameter_id: 0x0258f96e
+  parameter_id: 0x1f5a6b3b
+  parameter_id: 0xbdd18903
+  parameter_id: 0xf435685e
 }
 function {
   id: 0xfe66bdb7
@@ -457924,6 +457988,51 @@ elf_symbol {
   crc: 0x19ae5f31
   type_id: 0xa7203b99
   full_name: "dma_heap_try_get_pool_size_kb"
+}
+elf_symbol {
+  id: 0x4081da89
+  name: "dma_iova_free"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x82c7609d
+  type_id: 0x10730664
+  full_name: "dma_iova_free"
+}
+elf_symbol {
+  id: 0x3a3df3c8
+  name: "dma_iova_link"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xd3408e87
+  type_id: 0x9d472e58
+  full_name: "dma_iova_link"
+}
+elf_symbol {
+  id: 0x97ef4d41
+  name: "dma_iova_sync"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xb058ee98
+  type_id: 0x9d556957
+  full_name: "dma_iova_sync"
+}
+elf_symbol {
+  id: 0x94a241ab
+  name: "dma_iova_try_alloc"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x393a70ef
+  type_id: 0xfe63a844
+  full_name: "dma_iova_try_alloc"
+}
+elf_symbol {
+  id: 0xfa93d27a
+  name: "dma_iova_unlink"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xbdb8a78c
+  type_id: 0x104de847
+  full_name: "dma_iova_unlink"
 }
 elf_symbol {
   id: 0x6accd8d9
@@ -514391,6 +514500,11 @@ interface {
   symbol_id: 0xc9fc732f
   symbol_id: 0x2599b67f
   symbol_id: 0x651d36f0
+  symbol_id: 0x4081da89
+  symbol_id: 0x3a3df3c8
+  symbol_id: 0x97ef4d41
+  symbol_id: 0x94a241ab
+  symbol_id: 0xfa93d27a
   symbol_id: 0x6accd8d9
   symbol_id: 0x18b0baef
   symbol_id: 0x13f645c1
