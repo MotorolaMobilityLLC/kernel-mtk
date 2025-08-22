@@ -692,6 +692,12 @@ config MOTO_SGM41606S_ENABLE_OTG
         help
           Say Y to enable support for the sgm41606s otg mos adcdrv1.
 
+config MOTO_SGM41606S_ENABLE_ERRLO
+        bool "SGM41606S charger pump vbus error low config"
+        default n
+        help
+          Say Y to enable the VBUS error low detection for the SGM41606S charge pump.
+
 config CHARGER_SC89890H
 	tristate "SC89890H battery charger driver"
 	depends on I2C
