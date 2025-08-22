@@ -3167,6 +3167,117 @@ static ssize_t bat_sysfs_show(struct device *dev,
 	return count;
 }
 
+static int state_of_health_lotx_get(struct mtk_battery *gm,
+	struct mtk_battery_sysfs_field_info *attr,
+	unsigned long *val)
+{
+	if (gm != NULL && val != NULL)
+		*val = gm->aging_factor / 100;
+	return 0;
+}
+
+static int manufacturing_date_lotx_get(struct mtk_battery *gm,
+	struct mtk_battery_sysfs_field_info *attr,
+	unsigned long *val)
+{
+	if (gm != NULL && val != NULL)
+		*val = gm->manufacturing_date;
+	return 0;
+}
+
+static int manufacturing_date_lotx_set(struct mtk_battery *gm,
+	struct mtk_battery_sysfs_field_info *attr,
+	unsigned long val)
+{
+	if (gm != NULL)
+		gm->manufacturing_date = val;
+	return 0;
+}
+
+static int first_usage_date_lotx_get(struct mtk_battery *gm,
+	struct mtk_battery_sysfs_field_info *attr,
+	unsigned long *val)
+{
+	if (gm != NULL && val != NULL)
+		*val = gm->first_usage_date;
+	return 0;
+}
+
+static int first_usage_date_lotx_set(struct mtk_battery *gm,
+	struct mtk_battery_sysfs_field_info *attr,
+	unsigned long val)
+{
+	if (gm != NULL)
+		gm->first_usage_date = val;
+	return 0;
+}
+
+static ssize_t bat_sysfs_lotx_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct power_supply *psy;
+	struct mtk_battery *gm;
+	struct mtk_battery_sysfs_field_info *battery_attr;
+	unsigned long val;
+	ssize_t ret;
+
+	ret = kstrtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+	if (dev == NULL) {
+		return -EINVAL;
+	}
+
+	psy = dev_get_drvdata(dev);
+	if (psy == NULL) {
+		return -EINVAL;
+	}
+
+	gm = (struct mtk_battery *)power_supply_get_drvdata(psy);
+	if (gm == NULL) {
+		return -EINVAL;
+	}
+
+	battery_attr = container_of(attr,
+		struct mtk_battery_sysfs_field_info, attr);
+	if (battery_attr != NULL && battery_attr->lotx_set != NULL)
+		battery_attr->lotx_set(gm, battery_attr, val);
+
+	return count;
+}
+
+static ssize_t bat_sysfs_lotx_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct power_supply *psy;
+	struct mtk_battery *gm;
+	struct mtk_battery_sysfs_field_info *battery_attr;
+	unsigned long val = 0;
+	ssize_t count;
+
+	if (dev == NULL) {
+		return -EINVAL;
+	}
+
+	psy = dev_get_drvdata(dev);
+	if (psy == NULL) {
+		return -EINVAL;
+	}
+
+	gm = (struct mtk_battery *)power_supply_get_drvdata(psy);
+	if (gm == NULL) {
+		return -EINVAL;
+	}
+
+	battery_attr = container_of(attr,
+		struct mtk_battery_sysfs_field_info, attr);
+	if (battery_attr != NULL && battery_attr->lotx_get != NULL)
+		battery_attr->lotx_get(gm, battery_attr, &val);
+
+	count = scnprintf(buf, PAGE_SIZE, "%lu\n", val);
+	return count;
+}
+
 /* Must be in the same order as BAT_PROP_* */
 static struct mtk_battery_sysfs_field_info battery_sysfs_field_tbl[] = {
 	BAT_SYSFS_FIELD_RW(temperature, BAT_PROP_TEMPERATURE),
@@ -3180,6 +3291,9 @@ static struct mtk_battery_sysfs_field_info battery_sysfs_field_tbl[] = {
 	BAT_SYSFS_FIELD_RW(init_done, BAT_PROP_INIT_DONE),
 	BAT_SYSFS_FIELD_WO(reset, BAT_PROP_FG_RESET),
 	BAT_SYSFS_FIELD_RW(log_level, BAT_PROP_LOG_LEVEL),
+	BAT_SYSFS_FIELD_LOTX_RO(state_of_health, BAT_PROP_STATE_OF_HEALTH),
+	BAT_SYSFS_FIELD_LOTX_RW(manufacturing_date, BAT_PROP_MANUFACTURING_DATE),
+	BAT_SYSFS_FIELD_LOTX_RW(first_usage_date, BAT_PROP_FIRST_USAGE_DATE),
 };
 
 int battery_get_property(enum battery_property bp,
