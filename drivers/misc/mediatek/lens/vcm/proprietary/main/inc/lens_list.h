@@ -490,4 +490,20 @@ extern int MOT_NAPLES_GT9764AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 				int *pAF_Opened);
 extern int MOT_NAPLES_GT9764AF_GetFileName(unsigned char *pFileName);
 //End
+
+//Begin: Add lens driver interface for Naples
+#define MOT_NAPLES_GT9764V_SetI2CClient MOT_NAPLES_GT9764VAF_SetI2Cclient
+#define MOT_NAPLES_GT9764V_Ioctl MOT_NAPLES_GT9764VAF_Ioctl
+#define MOT_NAPLES_GT9764V_Release MOT_NAPLES_GT9764VAF_Release
+#define MOT_NAPLES_GT9764V_PowerDown MOT_NAPLES_GT9764VAF_PowerDown
+#define MOT_NAPLES_GT9764V_GetFileName MOT_NAPLES_GT9764VAF_GetFileName
+extern int MOT_NAPLES_GT9764VAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_NAPLES_GT9764VAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+				unsigned long a_u4Param);
+extern int MOT_NAPLES_GT9764VAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_NAPLES_GT9764VAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int MOT_NAPLES_GT9764VAF_GetFileName(unsigned char *pFileName);
+//End
 #endif
