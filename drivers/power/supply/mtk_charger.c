@@ -3054,12 +3054,15 @@ static int mmi_find_hotter_temp_zone(int pres_zone, int vbat,
 	return target_zone;
 }
 
+/* 50mV offset for CV transition */
+#define CV_MINUS_MV 50
 static int mmi_refresh_temp_zone(int pres_zone, int vbat,
 				struct mmi_temp_zone *zones,
 				int num_zones)
 {
 	int i;
 	int target_zone;
+	int norm_mv;
 
 	if (pres_zone == ZONE_COLD || pres_zone == ZONE_HOT)
 		return pres_zone;
@@ -3068,8 +3071,14 @@ static int mmi_refresh_temp_zone(int pres_zone, int vbat,
 	for (i = ZONE_FIRST; i < num_zones; i++) {
 		if (zones[pres_zone].temp_c == zones[i].temp_c) {
 			target_zone = i;
-			if (vbat < zones[i].norm_mv)
+			norm_mv = zones[i].norm_mv;
+			if (zones[i].norm_mv < zones[pres_zone].norm_mv) {
+				norm_mv = zones[i].norm_mv - CV_MINUS_MV;
+				pr_info("[C:%s]: need to do minus mv : %d\n", __func__, norm_mv);
+			}
+			if (vbat < norm_mv) {
 				break;
+			}
 		}
 	}
 	return target_zone;
