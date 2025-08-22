@@ -110,6 +110,28 @@ do {\
 	.set	= _name##_set,						\
 }
 
+#define BAT_SYSFS_FIELD_LOTX_RW(_name, _prop)	\
+{									 \
+	.attr	= __ATTR(_name, 0644, bat_sysfs_lotx_show, bat_sysfs_lotx_store),\
+	.prop	= _prop,	\
+	.lotx_set	= _name##_lotx_set,						\
+	.lotx_get	= _name##_lotx_get,						\
+}
+
+#define BAT_SYSFS_FIELD_LOTX_RO(_name, _prop)	\
+{			\
+	.attr   = __ATTR(_name, 0444, bat_sysfs_lotx_show, bat_sysfs_lotx_store),\
+	.prop   = _prop,				  \
+	.lotx_get	= _name##_lotx_get,						\
+}
+
+#define BAT_SYSFS_FIELD_LOTX_WO(_name, _prop)	\
+{								   \
+	.attr	= __ATTR(_name, 0200, bat_sysfs_lotx_show, bat_sysfs_lotx_store),\
+	.prop	= _prop,	\
+	.lotx_set	= _name##_lotx_set,						\
+}
+
 enum battery_property {
 	BAT_PROP_TEMPERATURE,
 	BAT_PROP_COULOMB_INT_GAP,
@@ -122,6 +144,9 @@ enum battery_property {
 	BAT_PROP_INIT_DONE,
 	BAT_PROP_FG_RESET,
 	BAT_PROP_LOG_LEVEL,
+	BAT_PROP_STATE_OF_HEALTH,
+	BAT_PROP_MANUFACTURING_DATE,
+	BAT_PROP_FIRST_USAGE_DATE,
 };
 
 enum property_control_data {
@@ -1125,6 +1150,9 @@ struct mtk_battery {
 	int (*resume)(struct mtk_battery *gm);
 
 	int log_level;
+
+	unsigned long manufacturing_date;
+	unsigned long first_usage_date;
 };
 
 struct mtk_battery_sysfs_field_info {
@@ -1134,6 +1162,10 @@ struct mtk_battery_sysfs_field_info {
 		struct mtk_battery_sysfs_field_info *attr, int val);
 	int (*get)(struct mtk_battery *gm,
 		struct mtk_battery_sysfs_field_info *attr, int *val);
+	int (*lotx_set)(struct mtk_battery *gm,
+		struct mtk_battery_sysfs_field_info *attr, unsigned long val);
+	int (*lotx_get)(struct mtk_battery *gm,
+		struct mtk_battery_sysfs_field_info *attr, unsigned long *val);
 };
 
 /* coulomb service */
