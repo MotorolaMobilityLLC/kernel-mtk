@@ -7,7 +7,9 @@
 #define __MT_PWM_H__
 
 #include <linux/types.h>
-#ifdef CONFIG_MOT_VEGAS_CAMERA_PROJECT
+#if defined(CONFIG_MOT_VEGAS_CAMERA_PROJECT)
+#include "mtk_pwm_hal.h"
+#elif defined(CONFIG_MOT_NAPLES_CAMERA_PROJECT)
 #include "mtk_pwm_hal.h"
 #else
 #include <mt-plat/mtk_pwm_hal.h>

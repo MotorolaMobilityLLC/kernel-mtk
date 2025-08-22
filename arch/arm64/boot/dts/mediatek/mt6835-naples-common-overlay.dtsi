@@ -23,6 +23,7 @@
 #include "mediatek/dio8015.dtsi"
 #include "mediatek/naples-display.dtsi"
 //#include "mediatek/mt6835_kansas_camera_overlay.dtsi"
+#include "mediatek/cust_mt6835_camera_6377_v4l2.dtsi"
 / {
 
 irq_nfc: irq_nfc {
