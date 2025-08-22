@@ -164,6 +164,44 @@
 	};
 	camera_pins_default: camdefault {
 	};
+
+	flashlight_gpio_high: flashlight@0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO147__FUNC_GPIO147>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlight_gpio_low: flashlight@1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO147__FUNC_GPIO147>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlight_pwm_high: flashlight@2 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO148__FUNC_GPIO148>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlight_pwm_low: flashlight@3 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO148__FUNC_GPIO148>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlight_pwm_en: flashlight@4 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO148__FUNC_PWM_1>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flash_default: flashlightdefault {
+	};
 };
 
 /delete-node/ &mt6377_vio28;
@@ -286,29 +324,6 @@
 		reg = <0x47>;
 		status = "okay";
 	};
-
-	strobe_main:strobe_main@63 {
-		compatible = "mediatek,strobe_main";
-		reg = <0x63>;
-		#cooling-cells = <2>;
-		pinctrl-names = "default", "hwen-high", "hwen-low";
-		pinctrl-0 = <&flashlight_pins_default>;
-		pinctrl-1 = <&flashlight_pins_hwen_high>;
-		pinctrl-2 = <&flashlight_pins_hwen_low>;
-		status = "okay";
-		decouple = <1>;
-		flash@0 {
-			reg = <0>;
-			type = <0>;
-			ct = <0>;
-			part = <0>;
-			port@0 {
-				fl_core_0: endpoint {
-				remote-endpoint = <&flashlight_0>;
-				};
-			};
-		};
-	};
 };
 
 &i2c8 {
@@ -359,40 +374,30 @@
        cust-sensor = "mot_naples_s5khm9_mipi_raw mot_naples_imx882_mipi_raw mot_naples_s5kkds_mipi_raw mot_naples_ov08f_mipi_raw mot_naples_gc08a3_mipi_raw";
 };
 
-&pio {
-	flashlight_pins_default: default {
-	};
+/* CAMERA Flashlight */
+&flashlights_naples {
+	compatible = "mediatek,flashlights_naples_ocp8135_pwm";
+	pinctrl-names = "default",
+		"flashlight_gpio_high",
+		"flashlight_gpio_low",
+		"flashlight_pwm_high",
+		"flashlight_pwm_low",
+		"flashlight_pwm_en";
 
-	flashlight_pins_hwen_high: hwen-high {
-		pins-cmd-dat {
-			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
+	pinctrl-0 = <&flash_default>;
+	pinctrl-1 = <&flashlight_gpio_high>;
+	pinctrl-2 = <&flashlight_gpio_low>;
+	pinctrl-3 = <&flashlight_pwm_high>;
+	pinctrl-4 = <&flashlight_pwm_low>;
+	pinctrl-5 = <&flashlight_pwm_en>;
+	srcclk = <&pericfg_ao_clk>;
 
-	flashlight_pins_hwen_low: hwen-low {
-		pins-cmd-dat {
-			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-};
-
-&flashlights_ocp81375 {
-	pinctrl-names = "default", "hwen-high", "hwen-low";
-	pinctrl-0 = <&flashlight_pins_default>;
-	pinctrl-1 = <&flashlight_pins_hwen_high>;
-	pinctrl-2 = <&flashlight_pins_hwen_low>;
-	status = "okay";
-};
-
-&mtk_composite_v4l2_1 {
-	port@0 {
-		flashlight_0: endpoint {
-			remote-endpoint = <&fl_core_0>;
-		};
+	decouple = <0>;
+	channel@1 {
+		status = "okay";
+		type = <0>;
+		ct = <0>;
+		part = <0>;
 	};
 };
-/* flashlight gpio end*/
+/* CAMERA Flashlight end */

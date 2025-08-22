@@ -29,6 +29,7 @@
 	moto_wlc: moto_wlc {};
 	flashlights_vegas: flashlights_vegas { };
 	flashlights_orlando: flashlights_orlando { };
+	flashlights_naples: flashlights_naples { };
 };
 
 &extcon_usb {
