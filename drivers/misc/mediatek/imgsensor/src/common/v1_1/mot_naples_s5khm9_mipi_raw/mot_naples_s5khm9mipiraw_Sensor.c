@@ -23,6 +23,10 @@
 #define S5KHM9_BASEGAIN 128
 #define S5KHM9_MAX_GAIN_BINNINGSIZE_PLATFORM 16384    /*128*128, 128 GAINBASE*/
 
+extern mot_calibration_status_t *NAPLES_S5KHM9_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *NAPLES_S5KHM9_eeprom_get_mnf_info(void);
+extern void NAPLES_S5KHM9_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+
 static bool bIsLongExposure = KAL_FALSE;
 static kal_uint16 mot_naples_s5khm9_table_write_cmos_sensor(kal_uint16 * para, kal_uint32 len);
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -857,6 +861,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			LOG_INF("mot_naples_s5khm9 sensor id = 0x%x",*sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				NAPLES_S5KHM9_eeprom_format_calibration_data(&imgsensor);
 				LOG_INF("mot_naples_s5khm9 i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;
 			}
@@ -1324,6 +1329,11 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->Custom4DelayFrame = imgsensor_info.custom4_delay_frame;
 	sensor_info->Custom5DelayFrame = imgsensor_info.custom5_delay_frame;
 	sensor_info->Custom6DelayFrame = imgsensor_info.custom6_delay_frame;
+
+	/*Apply manufacture info*/
+	memcpy(&sensor_info->mnf_calibration, NAPLES_S5KHM9_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, NAPLES_S5KHM9_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
+
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
 	sensor_info->AEShutDelayFrame = imgsensor_info.ae_shut_delay_frame;
