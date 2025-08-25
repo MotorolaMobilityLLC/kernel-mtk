@@ -32,8 +32,8 @@ typedef struct {
 static DEFINE_SPINLOCK(imgsensor_lock);
 static  struct imgsensor_struct *imgsensor;
 
-#define NAPLES_S5KHM9_EEPROM_SLAVE_ADDR 0xA2
-#define NAPLES_S5KHM9_SENSOR_IIC_SLAVE_ADDR 0x94
+#define NAPLES_S5KHM9_EEPROM_SLAVE_ADDR 0xA0
+#define NAPLES_S5KHM9_SENSOR_IIC_SLAVE_ADDR 0xac
 #define NAPLES_S5KHM9_EEPROM_SIZE  0x0027
 #define NAPLES_S5KHM9_EEPROM_CRC_MANUFACTURING_SIZE 37
 
@@ -179,8 +179,8 @@ static void NAPLES_S5KHM9_eeprom_get_mnf_data(void *data,
 		mnf->actuator_id[0] = 0;
 	}
 
-	if (eeprom->lens_id[0] == 0xA7){
-		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Sunny 39807A-401");
+	if (eeprom->lens_id[0] == 0x82){
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "AAC 1086261A01");
 	} else {
 		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
 		LOG_INF("unknown lens_id");
