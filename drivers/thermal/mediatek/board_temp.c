@@ -78,6 +78,7 @@ struct board_ntc_info {
 	struct iio_channel *chan_flash_ntc;
 	struct iio_channel *chan_conn_ntc;
 	unsigned int default_pullup_v;
+	unsigned int default_range_v;
 };
 
 unsigned int tia2_rc_sel_to_value(unsigned int sel)
@@ -296,7 +297,7 @@ RETRY:
 		||(!PTR_ERR_OR_ZERO(ntc_info->chan_tspk_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_quiet_ntc))
 		||(!PTR_ERR_OR_ZERO(ntc_info->chan_chg_ntc)) ||(!PTR_ERR_OR_ZERO(ntc_info->chan_flash_ntc))
 		||(!PTR_ERR_OR_ZERO(ntc_info->chan_conn_ntc))) {
-		v_in = (val * 145000) / 4096;
+		v_in = (val * ntc_info->default_range_v) / 4096;
 		pullup_v = ntc_info->default_pullup_v;
 		dev_err(ntc_info->dev, "%s, get pullupv :%d\n",
                         __func__, pullup_v);
@@ -344,6 +345,25 @@ static int board_ntc_parse_cust_pullup_v(struct device *dev,
 		ntc_info->default_pullup_v = ntc_info->adc_data->default_pullup_v;
 		dev_err(dev, "%s, use default pullupv: %d\n",
 			__func__, ntc_info->default_pullup_v);
+	}
+
+	return 0;
+}
+
+static int board_ntc_parse_cust_range_v(struct device *dev,
+                                struct board_ntc_info *ntc_info)
+{
+	struct device_node *np = dev->of_node;
+	u32 val = 0;
+
+	if (of_property_read_u32(np, "ntc-range-v", &val) >= 0) {
+		ntc_info->default_range_v = val;
+		dev_info(dev, "%s, set rangev :%d\n",
+			__func__, ntc_info->default_range_v);
+	} else {
+		ntc_info->default_range_v = 145000;
+		dev_info(dev, "%s, use default rangev: %d\n",
+			__func__, ntc_info->default_range_v);
 	}
 
 	return 0;
@@ -469,6 +489,7 @@ static int board_ntc_probe(struct platform_device *pdev)
 			(!PTR_ERR_OR_ZERO(ntc_info->chan_conn_ntc))) {
 		has_cust_ntc = true;
 		board_ntc_parse_cust_pullup_v(&pdev->dev, ntc_info);
+		board_ntc_parse_cust_range_v(&pdev->dev, ntc_info);
 	}
 
 	platform_set_drvdata(pdev, ntc_info);
