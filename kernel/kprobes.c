@@ -45,6 +45,10 @@
 #include <asm/errno.h>
 #include <linux/uaccess.h>
 
+#if IS_ENABLED(CONFIG_DEBUG_KMEMLEAK)
+#include <linux/kmemleak.h>
+#endif
+
 #define KPROBE_HASH_BITS 6
 #define KPROBE_TABLE_SIZE (1 << KPROBE_HASH_BITS)
 
@@ -2273,6 +2277,9 @@ int register_kretprobe(struct kretprobe *rp)
 			free_rp_inst(rp);
 			return -ENOMEM;
 		}
+#if IS_ENABLED(CONFIG_DEBUG_KMEMLEAK)
+		kmemleak_not_leak(inst);
+#endif
 		inst->rph = rp->rph;
 		freelist_add(&inst->freelist, &rp->freelist);
 	}
