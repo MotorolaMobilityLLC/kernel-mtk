@@ -113,6 +113,25 @@ type 'struct cgroup_root' changed
 type 'struct xhci_sideband' changed
   was fully defined, is now only declared
 
+type 'struct pkvm_module_ops' changed
+  member 'u64 android_kabi_reserved4' was removed
+  member 'union { int(* register_guest_smc_handler)(bool(*)(struct arm_smccc_1_2_regs*, struct arm_smccc_res*, pkvm_handle_t), pkvm_handle_t); struct { u64 android_kabi_reserved4; }; union { }; }' was added
+
+type 'struct pkvm_module_ops' changed
+  member 'u64 android_kabi_reserved5' was removed
+  member 'union { int(* guest_stage2_pa)(pkvm_handle_t, u64, phys_addr_t*); struct { u64 android_kabi_reserved5; }; union { }; }' was added
+
+type 'struct io_ring_ctx' changed
+  member 'struct hlist_head io_buf_list' was removed
+  28 members ('struct wait_queue_head poll_wq' .. 'struct page** sqe_pages') changed
+    offset changed by -64
+
+1 function symbol(s) removed
+  'int __traceiter_android_vh_filemap_fault_before_folio_locked(void*, struct folio*)'
+
+1 variable symbol(s) removed
+  'struct tracepoint __tracepoint_android_vh_filemap_fault_before_folio_locked'
+
 type 'struct kvm_protected_vm' changed
   member 'struct maple_tree pinned_pages' was removed
   member 'union { struct rb_root_cached pinned_pages; struct { struct maple_tree __unused; }; union { }; }' was added
