@@ -75,6 +75,7 @@
 #include <trace/hooks/ogki_honor.h>
 #include <trace/hooks/user.h>
 #include <trace/hooks/usb.h>
+#include <trace/hooks/dmv_debug.h>
 
 /*
  * Export tracepoints that act as a bare tracehook (ie: have no trace event
@@ -596,3 +597,9 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_swap_bio_charge);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_binder_looper_state_registered);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_binder_thread_release);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_binder_read_done);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_handle_add_fec_mismatch_blks);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_handle_data_error);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_handle_metadata_error);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_handle_add_skipped_blks);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_handle_add_blks_map);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_handle_get_b_info);
