@@ -152,7 +152,7 @@ typedef enum {
 	LIMIT_FAILURE
 } calibration_status_t;
 
-struct IMX882_eeprom_t{
+struct NAPLES_IMX882_eeprom_t{
 	//MNF_DATA
 	uint8_t eeprom_table_version[1];
 	uint8_t cal_hw_ver[1];
