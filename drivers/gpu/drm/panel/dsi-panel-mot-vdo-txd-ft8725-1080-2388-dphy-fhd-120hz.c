@@ -257,8 +257,9 @@ static int txd_unprepare(struct drm_panel *panel)
 	txd_dcs_write_seq_static(ctx, 0x28);
 	msleep(20);
 	txd_dcs_write_seq_static(ctx, 0x10);
-	msleep(80);
-
+	msleep(100);
+	txd_dcs_write_seq_static(ctx,0x00,0x00);
+	txd_dcs_write_seq_static(ctx,0xF7,0x5A,0xA5,0x95,0x27);
 	ctx->prepared = false;
 
 	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
