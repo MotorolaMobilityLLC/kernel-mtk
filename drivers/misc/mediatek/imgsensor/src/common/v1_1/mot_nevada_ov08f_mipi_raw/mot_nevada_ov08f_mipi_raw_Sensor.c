@@ -46,6 +46,9 @@
 #define MULTI_WRITE 1
 #define _I2C_BUF_SIZE 4096
 #define Table_write 1
+
+#define OV08F_OFFSET_TO_START_OF_EXPOSURE_NS 1400000
+
 // #define SUPPORT_GET_TEMPERATURE
 extern void ov08f_read_otp_data(struct imgsensor_struct *pImgsensor);
 extern mot_calibration_status_t *NEVADA_OV08F_otp_get_calibration_status(void);
@@ -1244,7 +1247,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	//LOG_INF("feature_id = %d\n", feature_id);
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_OFFSET_TO_START_OF_EXPOSURE:
-		*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 942800; //uint is ns
+		*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = OV08F_OFFSET_TO_START_OF_EXPOSURE_NS; //uint is ns
 		break;
 	case SENSOR_FEATURE_GET_ANA_GAIN_TABLE:
 		LOG_INF("use_my_gain_table,feature_id = %d\n", feature_id);
