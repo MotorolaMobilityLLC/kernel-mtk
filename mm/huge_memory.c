@@ -2977,6 +2977,23 @@ bool unmap_huge_pmd_locked(struct vm_area_struct *vma, unsigned long addr,
 	return __discard_anon_folio_pmd_locked(vma, addr, pmdp, folio);
 }
 
+#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
+static void remap_page(struct folio *folio, unsigned long nr)
+{
+	int i = 0;
+
+	/* If unmap_folio() uses try_to_migrate() on file, remove this check */
+	if (!folio_test_anon(folio))
+		return;
+	for (;;) {
+		remove_migration_ptes(folio, folio, true);
+		i += folio_nr_pages(folio);
+		if (i >= nr)
+			break;
+		folio = folio_next(folio);
+	}
+}
+#else
 static void remap_page(struct folio *folio, unsigned long nr, int flags)
 {
 	int i = 0;
@@ -2992,6 +3009,7 @@ static void remap_page(struct folio *folio, unsigned long nr, int flags)
 		folio = folio_next(folio);
 	}
 }
+#endif
 
 static int prep_to_unmap(struct folio *src)
 {
@@ -3338,7 +3356,11 @@ static void __split_huge_page(struct page *page, struct list_head *list,
 
 	if (nr_dropped)
 		shmem_uncharge(head->mapping->host, nr_dropped);
+#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
+	remap_page(folio, nr);
+#else
 	remap_page(folio, nr, PageAnon(head) ? RMP_USE_SHARED_ZEROPAGE : 0);
+#endif
 
 	for (i = 0; i < nr; i++) {
 		struct page *subpage = folio_dst_page(folio, i);
@@ -3555,7 +3577,11 @@ unfreeze:
 		folio_ref_unfreeze(folio, 1 + extra_pins);
 remap:
 		free_dst_pages(folio);
+#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
+		remap_page(folio, folio_nr_pages(folio));
+#else
 		remap_page(folio, folio_nr_pages(folio), 0);
+#endif
 	}
 
 out_unlock:
