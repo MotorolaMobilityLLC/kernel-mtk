@@ -56,6 +56,7 @@ enum {
 	CHARGER_DEV_NOTIFY_VOUTOVP,
 	CHARGER_DEV_NOTIFY_VDROVP,
 	CHARGER_DEV_NOTIFY_BATPRO_DONE,
+	CHARGER_DEV_NOTIFY_CTD_DONE, //charger type detected done
 };
 
 struct charger_device {
@@ -223,6 +224,12 @@ struct charger_ops {
 	int (*config_mux)(struct charger_device *dev,
 			enum mmi_dvchg_mux_channel typec_mos,
 			enum mmi_dvchg_mux_channel wls_mos);
+
+	int (*qc_is_detect)(struct charger_device *dev, bool *val);
+	int (*get_protocol)(struct charger_device *dev, int *val);
+	int (*config_qc_charger)(struct charger_device *dev);
+	int (*set_dp_dm)(struct charger_device *dev, int val);
+	int (*get_dp_dm)(struct charger_device *dev, int *val);
 };
 
 static inline void *charger_dev_get_drvdata(
@@ -426,4 +433,10 @@ extern int charger_dev_notify(
 extern int charger_dev_enable_adc(struct charger_device *chg_dev, bool en);
 extern int charger_dev_config_mux(struct charger_device *chg_dev,
 	enum mmi_dvchg_mux_channel typec_mos, enum mmi_dvchg_mux_channel wls_mos);
+
+extern int charger_dev_qc_is_detect(struct charger_device *chg_dev, bool *val);
+extern int charger_dev_get_protocol(struct charger_device *chg_dev, int *val);
+extern int charger_dev_config_qc_charger(struct charger_device *chg_dev);
+extern int charger_dev_set_dp_dm(struct charger_device *chg_dev, int val);
+extern int charger_dev_get_dp_dm(struct charger_device *chg_dev, int *val);
 #endif /*LINUX_POWER_CHARGER_CLASS_H*/

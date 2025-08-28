@@ -102,6 +102,8 @@ static bool support_fast_charging(struct mtk_charger *info)
 	struct chg_alg_device *alg;
 	int i = 0, state = 0;
 	bool ret = false;
+	bool qc_is_detect = false;
+	int qc_chg_type = 0;
 
 	for (i = 0; i < MAX_ALG_NO; i++) {
 		alg = info->alg[i];
@@ -111,6 +113,20 @@ static bool support_fast_charging(struct mtk_charger *info)
 		if (info->enable_fast_charging_indicator &&
 		    ((alg->alg_id & info->fast_charging_indicator) == 0))
 			continue;
+
+		charger_dev_qc_is_detect(info->chg1_dev, &qc_is_detect);
+		charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
+		if(qc_is_detect == true && alg->alg_id  != PE5_ID) {
+			chr_err("qc is detecting and skip detect others type\n");
+			return ret;
+		} else if (qc_chg_type == USB_TYPE_QC30) {
+			if(charger_dev_config_qc_charger(info->chg1_dev) != 0) {
+				chr_err("config_qc_charger set dpdm failed\n");
+			} else {
+				chr_err("it is HVDCP set ICL 3A  qc_chg_type = %d\n",qc_chg_type);
+			}
+			return ret;
+		}
 
 		chg_alg_set_current_limit(alg, &info->setting);
 		state = chg_alg_is_algo_ready(alg);
@@ -140,6 +156,8 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 	bool is_basic = false;
 	u32 ichg1_min = 0, aicr1_min = 0;
 	int ret;
+	bool qc_is_detect = false;
+	int qc_chg_type = 0;
 
 	select_cv(info);
 
@@ -292,6 +310,25 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		chr_err("user space force pmic icl %d\n", pdata->input_current_limit);
 	}
 
+	charger_dev_qc_is_detect(info->chg1_dev, &qc_is_detect);
+	charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
+	/*when qc is detect should make sure ICL is 500mA*/
+	if(qc_is_detect == true){
+		if(pdata->charging_current_limit > 500000){
+			pdata->charging_current_limit = 500000;
+			chr_err("qc is detect, set charging_current_limit 500mA!\n");
+		}
+	} else {
+		if(qc_chg_type == USB_TYPE_QC3P_45 ||
+			qc_chg_type == USB_TYPE_QC3P_27 ||
+			qc_chg_type == USB_TYPE_QC3P_18 ||
+			qc_chg_type == USB_TYPE_QC30) {
+				pdata->input_current_limit = 3000000;
+		} else if (qc_chg_type == USB_TYPE_QC20) {
+			pdata->input_current_limit = 1500000;
+		}
+	}
+
 	info->mmi.target_usb = pdata->input_current_limit;
 
 	sc_select_charging_current(info, pdata);
@@ -419,7 +456,7 @@ static int do_algorithm(struct mtk_charger *info)
 	bool is_basic = true;
 	bool chg_done = false;
 	int i;
-	int ret, ret2, ret3;
+	int ret, ret2, ret3, ret4;
 	int val = 0;
 	int lst_rnd_alg_idx = info->lst_rnd_alg_idx;
 
@@ -470,7 +507,7 @@ static int do_algorithm(struct mtk_charger *info)
 				continue;
 			} else if ((pdata->thermal_charging_current_limit > 0)
 				&& (pdata->thermal_charging_current_limit < info->mmi.min_therm_current_limit)
-				&& (alg->alg_id & PE5_ID)) {
+				&& ((alg->alg_id & PE5_ID) || (alg->alg_id & PEHV_ID))) {
 				charger_dev_enable(info->chg1_dev, true);
 				chg_alg_stop_algo(alg);
 				chr_err("%s: alg:%s due to thermal limit current%d < %d\n", __func__,
@@ -612,9 +649,12 @@ static int do_algorithm(struct mtk_charger *info)
 		ret2 = chg_alg_is_algo_ready(alg);
 		alg = get_chg_alg_by_name("hvbp");
 		ret3 = chg_alg_is_algo_ready(alg);
+		alg = get_chg_alg_by_name("pehv");
+		ret4 = chg_alg_is_algo_ready(alg);
 		if (!(ret == ALG_READY || ret == ALG_RUNNING) &&
 			!(ret2 == ALG_READY || ret2 == ALG_RUNNING) &&
-			!(ret3 == ALG_READY || ret3 == ALG_RUNNING))
+			!(ret3 == ALG_READY || ret3 == ALG_RUNNING) &&
+			!(ret4 == ALG_READY || ret4 == ALG_RUNNING))
 			charger_dev_enable(info->chg1_dev, true);
 	}
 
@@ -700,6 +740,10 @@ static int charger_dev_event(struct notifier_block *nb, unsigned long event,
 			chg_alg_notifier_call(alg, &notify);
 		}
 		pr_info("%s: batpro_done = %d\n", __func__, info->batpro_done);
+		break;
+	case CHARGER_DEV_NOTIFY_CTD_DONE:
+		pr_info("%s: CTD done\n", __func__);
+		schedule_work(&info->mmi.notify_power_event_work);
 		break;
 	default:
 		return NOTIFY_DONE;

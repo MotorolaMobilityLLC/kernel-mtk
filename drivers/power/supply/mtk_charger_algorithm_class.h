@@ -26,6 +26,7 @@
 #define PE5P_ID  (1 << 6)
 
 //Reserve some bits for MTK
+#define PEHV_ID (1 << 14)
 #define WLC_ID  (1 << 15) //0x8000
 
 struct chg_alg_properties {
@@ -94,6 +95,7 @@ enum chg_alg_notifier_events {
 	EVT_RECHARGE,
 	EVT_DETACH,
 	EVT_HARDRESET,
+	EVT_SOFTRESET,
 	EVT_VBUSOVP,
 	EVT_IBUSOCP,
 	EVT_IBUSUCP_FALL,
