@@ -27,6 +27,7 @@
 	tboard_thermistor8: thermal-ntc8 { };
 	tboard_thermistor9: thermal-ntc9 { };
 	moto_wlc: moto_wlc {};
+	mmi_pehv: mmi_pehv{};
 	flashlights_vegas: flashlights_vegas { };
 	flashlights_orlando: flashlights_orlando { };
 	flashlights_naples: flashlights_naples { };

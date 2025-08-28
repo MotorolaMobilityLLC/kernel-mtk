@@ -984,6 +984,9 @@ static ssize_t Charging_mode_show(struct device *dev,
 	case WLC_ID:
 		alg_name = "wlc";
 		break;
+	case PEHV_ID:
+		alg_name = "pehv";
+		break;
 	}
 	chr_err("%s: charging_mode: %s\n", __func__, alg_name);
 	return sprintf(buf, "%s\n", alg_name);
@@ -2505,6 +2508,23 @@ static bool charger_init_algo(struct mtk_charger *info)
 		idx++;
 	}
 
+	if (info->fast_charging_indicator & PEHV_ID) {
+		alg = get_chg_alg_by_name("pehv");
+		info->alg[idx] = alg;
+		if (alg == NULL) {
+			chr_err("get pehv fail\n");
+			return false;
+		} else if (alg->alg_id == 0) {
+			chr_err("get pehv success\n");
+			alg->config = info->config;
+			alg->alg_id = PEHV_ID;
+			chg_alg_init_algo(alg);
+
+			register_chg_alg_notifier(alg, &info->chg_alg_nb);
+		}
+		idx++;
+	}
+
 	if (info->fast_charging_indicator & PE5_ID) {
 		alg = get_chg_alg_by_name("pe5");
 		info->alg[idx] = alg;
@@ -3287,6 +3307,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 	int icl, rc;
 	int rp_level = 0;
 	union power_supply_propval val;
+	int qc_chg_type = 0;
 
 	if (info == NULL)
 		return;
@@ -3339,14 +3360,25 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 		goto end_rate_check;
  	}
 
+	charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
+	//QC3 and Qc3+ all support max power more than 15w, should show trubo power
+	if ((qc_chg_type == USB_TYPE_QC30) ||
+            (qc_chg_type == USB_TYPE_QC3P_18) ||
+            (qc_chg_type == USB_TYPE_QC3P_27) ||
+            (qc_chg_type == USB_TYPE_QC3P_45)) {
+
+		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		goto end_rate_check;
+	}
+
 	if (icl < WEAK_CHRG_THRSH)
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
 	else
 		info->mmi.charge_rate =  POWER_SUPPLY_CHARGE_RATE_NORMAL;
 
 end_rate_check:
-	pr_info("%s ICL:%d, Rp:%d, PD:%d, Charger Detected: %s\n",
-		__func__, icl, rp_level, info->pd_type, charge_rate[info->mmi.charge_rate]);
+	pr_info("%s ICL:%d, Rp:%d, PD:%d, chg_type: %d, Charger Detected: %s\n",
+		__func__, icl, rp_level, info->pd_type, qc_chg_type, charge_rate[info->mmi.charge_rate]);
 }
 
 static ssize_t charge_rate_show(struct device *dev,
@@ -3438,6 +3470,7 @@ static bool mmi_check_vbus_present(struct mtk_charger *info)
 #define MOTO_7W 7000
 #define MOTO_10W 10000
 #define MOTO_15W 15000
+#define MOTO_30W 30000
 #define MOTO_68W 68000
 #define MOTO_125W 125000
 #define PPS_60W 60000
@@ -3550,6 +3583,7 @@ static int mmi_check_power_info(struct mtk_charger *info, bool force)
 	int rc = 0;
 	int icl = 0;
 	int power_watt = 0;
+	int qc_chg_type = 0;
 	union power_supply_propval val = {0,};
 	int real_charger_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
 
@@ -3589,6 +3623,7 @@ static int mmi_check_power_info(struct mtk_charger *info, bool force)
 	}
 
 	icl = get_charger_input_current(info, info->chg1_dev) / 1000;
+	charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
 
 	if (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
 		power_watt = mmi_get_apdo_power(info, force) / 1000;
@@ -3597,6 +3632,12 @@ static int mmi_check_power_info(struct mtk_charger *info, bool force)
 			|| info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_PD30) {
 		power_watt = mmi_get_pdc_power(info, force) / 1000;
 		real_charger_type = POWER_SUPPLY_USB_TYPE_PD;
+	} else if (qc_chg_type == USB_TYPE_QC3P_45 || qc_chg_type == USB_TYPE_QC3P_27 || qc_chg_type == USB_TYPE_QC3P_18) {
+		power_watt = MOTO_30W / 1000;
+		real_charger_type = POWER_SUPPLY_USB_TYPE_DCP;
+	} else if (qc_chg_type == USB_TYPE_QC30) {
+		power_watt = MOTO_15W / 1000;
+		real_charger_type = POWER_SUPPLY_USB_TYPE_DCP;
 	} else if (info->mmi.charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO){
 		power_watt = MOTO_15W / 1000;
 		real_charger_type = POWER_SUPPLY_USB_TYPE_DCP;
@@ -3741,6 +3782,7 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 	int max_fv_mv = -EINVAL;
 	int target_fcc = -EINVAL;
 	int target_fv = -EINVAL;
+	int qc_chg_type = 0;
 
 	/* Collect Current Information */
 
@@ -3815,8 +3857,9 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 	if (mmi->base_fv_mv == 0) {
 		mmi->base_fv_mv = info->data.battery_cv / 1000;
 	}
-	if (info->dvchg1_dev != NULL
-		&& info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
+	charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
+	if (info->dvchg1_dev != NULL && (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO ||
+                qc_chg_type == USB_TYPE_QC3P_27)) {
 		max_fv_mv = mmi_get_ffc_fv(info, batt_temp);
 		if (max_fv_mv == 0)
 			max_fv_mv = mmi->base_fv_mv;
@@ -4424,6 +4467,8 @@ static DEVICE_ATTR(force_pmic_icl, 0644,
 		force_pmic_icl_show,
 		force_pmic_icl_store);
 
+static void mmi_notify_power_event_work(struct work_struct *work);
+
 void mmi_init(struct mtk_charger *info)
 {
 	int rc;
@@ -4492,6 +4537,7 @@ void mmi_init(struct mtk_charger *info)
 				&dev_attr_factory_charge_upper);
 	if (rc)
 		pr_err("[%s]couldn't create factory_charge_upper\n", __func__);
+	INIT_WORK(&info->mmi.notify_power_event_work, mmi_notify_power_event_work);
 
 	info->mmi.init_done = true;
 }
@@ -5057,6 +5103,17 @@ static int psy_charger_get_property(struct power_supply *psy,
 				if (ret == ALG_RUNNING)
 					val->intval = true;
 			}
+
+			alg = get_chg_alg_by_name("pehv");
+			if (alg == NULL)
+				chr_err("get pehv fail\n");
+			else {
+				ret = chg_alg_is_algo_ready(alg);
+				if (ret == ALG_RUNNING) {
+					val->intval = true;
+					break;
+				}
+			}
 			break;
 		}
 
@@ -5362,6 +5419,33 @@ static int mmi_notify_lpd_event(struct mtk_charger *pinfo) {
 	chr_err("%s, lpd:%d send %s\n",__func__, pinfo->water_detected, event_string);
 	kfree(event_string);
 	return 0;
+}
+
+#define CHG_SHOW_MAX_SIEZE 50
+static void mmi_notify_power_event_work(struct work_struct *work) {
+	char *event_string = NULL;
+	char *batt_uenvp[2];
+	int pmax_w = 0;
+
+	if(!mmi_info->bat_psy)
+		mmi_info->bat_psy = power_supply_get_by_name("battery");
+	if(!mmi_info->bat_psy) {
+		chr_err("%s: get battery supply failed\n", __func__);
+		return;
+	}
+
+	pmax_w = mmi_check_power_info(mmi_info, true);
+
+	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
+
+	scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
+			"POWER_SUPPLY_POWER_WATT=%d", pmax_w);
+
+	batt_uenvp[0] = event_string;
+	batt_uenvp[1] = NULL;
+	kobject_uevent_env(&mmi_info->bat_psy->dev.kobj, KOBJ_CHANGE, batt_uenvp);
+	chr_err("%s, pmax_w:%d send %s\n",__func__, pmax_w, event_string);
+	kfree(event_string);
 }
 
 int notify_adapter_event(struct notifier_block *notifier,
