@@ -49,6 +49,7 @@ struct boe_ft8057m {
 
 	int error;
 	unsigned int cabc_mode;
+	s64 screen_on_timestamp;
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
@@ -140,6 +141,7 @@ static void boe_ft8057m_dcs_write(struct boe_ft8057m *ctx, const void *data, siz
 
 static void boe_ft8057m_panel_init(struct boe_ft8057m *ctx)
 {
+	ktime_t now;
 	pr_info("disp: %s+\n", __func__);
 
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
@@ -165,6 +167,20 @@ static void boe_ft8057m_panel_init(struct boe_ft8057m *ctx)
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
+	// BEGIN: Vendor sequence to enhance discharge capability
+	boe_ft8057m_dcs_write_seq_static(ctx, 0x00,0x00);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0xFF,0x80,0x57,0x01);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0x00,0x80);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0xFF,0x80,0x57);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0x00,0xCC);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0xC0,0x14);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0x00,0xB4);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0xCB,0x10);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0x00,0x00);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0xFF,0x00,0x00,0x00);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0x00,0x80);
+	boe_ft8057m_dcs_write_seq_static(ctx, 0xFF,0x00,0x00);
+	// END
 
 	boe_ft8057m_dcs_write_seq_static(ctx, 0x11);
 	msleep(90);
@@ -173,6 +189,11 @@ static void boe_ft8057m_panel_init(struct boe_ft8057m *ctx)
 	boe_ft8057m_dcs_write_seq_static(ctx, 0x51,0xFC,0x0F);
 	boe_ft8057m_dcs_write_seq_static(ctx, 0x53,0x2C);
 	boe_ft8057m_dcs_write_seq_static(ctx, 0x55,0x01);
+
+	now = ktime_get();
+	ctx->screen_on_timestamp = ktime_to_ms(now);
+	pr_info("disp -screen on timestamp: %lld \n", ctx->screen_on_timestamp);
+
 	msleep(10);
 
 	pr_info("%s-\n", __func__);
@@ -212,9 +233,22 @@ static int boe_ft8057m_unprepare(struct drm_panel *panel)
 {
 	struct boe_ft8057m *ctx = panel_to_boe_ft8057m(panel);
 
+	ktime_t now;
+        s64 timestamp = 0;
+        s64 diff = 0;
+
 	if (!ctx->prepared) {
 		pr_info("%s, already unprepared, return\n", __func__);
 		return 0;
+	}
+
+	now = ktime_get();
+	timestamp = ktime_to_ms(now);
+	diff = timestamp - ctx->screen_on_timestamp;
+	pr_info("disp -screen on and off time diff: %lld \n", diff);
+	if (diff < 500 && diff >= 0) {
+            // Per vendor, enforce 500ms min between screen on/off to prevent IC issues
+	    msleep(500 - diff);
 	}
 
 	pr_info("%s\n", __func__);
