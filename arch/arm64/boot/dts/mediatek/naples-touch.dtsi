@@ -21,8 +21,10 @@
                 focaltech,irq-gpio = <&pio 4 0x0>;
                 focaltech,max-touch-number = <10>;
                 focaltech,display-coords = <0 0 1272 2772>;
+                mmi,enable-gestures;
+                mmi,power-off-suspend;
                 focaltech,report_gesture_key = <59>;
-                focaltech,supported_gesture_type = <0x06>;
+                mmi,supported_gesture_type = <0x06>;
                 focaltech,panel-supplier = "boe";
                 focaltech,touch-charger-detect-psy-name = "battery";
                 focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
