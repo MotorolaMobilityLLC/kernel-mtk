@@ -53,6 +53,7 @@ struct csot_td4160 {
 	int error;
 //	unsigned int hbm_mode;
 	unsigned int cabc_mode;
+	s64 screen_on_timestamp;
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
@@ -197,6 +198,7 @@ EXPORT_SYMBOL(panel_gesture_notifier_call_chain);
 
 static void csot_td4160_panel_init(struct csot_td4160 *ctx)
 {
+	ktime_t now;
 	pr_info("disp: %s+\n", __func__);
 
 	ocp2138_BiasPower_enable(20,20,5);
@@ -239,6 +241,11 @@ static void csot_td4160_panel_init(struct csot_td4160 *ctx)
 	msleep(120);
 	csot_td4160_dcs_write_seq_static(ctx, 0x29);
 	csot_td4160_dcs_write_seq_static(ctx, 0x51, 0x07, 0xCF);
+
+	now = ktime_get();
+	ctx->screen_on_timestamp = ktime_to_ms(now);
+	pr_info("disp:%s -screen on timestamp: %lld \n", __func__, ctx->screen_on_timestamp);
+
 	msleep(80);
 
 	pr_info("%s-\n", __func__);
@@ -277,10 +284,22 @@ static int csot_td4160_set_gesture_flag(int state)
 static int csot_td4160_unprepare(struct drm_panel *panel)
 {
 	struct csot_td4160 *ctx = panel_to_csot_td4160(panel);
+	ktime_t now;
+        s64 timestamp = 0;
+        s64 diff = 0;
 
 	if (!ctx->prepared) {
 		pr_info("%s, already unprepared, return\n", __func__);
 		return 0;
+	}
+
+        now = ktime_get();
+	timestamp = ktime_to_ms(now);
+	diff = timestamp - ctx->screen_on_timestamp;
+	pr_info("disp %s -screen on and off time diff: %lld \n", __func__, diff);
+	if (diff < 500 && diff >= 0) {
+            // Per vendor, enforce 500ms min between screen on/off to prevent IC issues
+	    msleep(500 - diff);
 	}
 
 	pr_info("%s\n", __func__);
