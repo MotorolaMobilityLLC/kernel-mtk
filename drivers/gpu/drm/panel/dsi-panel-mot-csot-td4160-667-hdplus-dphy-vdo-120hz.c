@@ -246,7 +246,7 @@ static void csot_td4160_panel_init(struct csot_td4160 *ctx)
 	ctx->screen_on_timestamp = ktime_to_ms(now);
 	pr_info("disp:%s -screen on timestamp: %lld \n", __func__, ctx->screen_on_timestamp);
 
-	msleep(80);
+	msleep(10);
 
 	pr_info("%s-\n", __func__);
 }
