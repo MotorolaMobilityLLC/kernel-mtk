@@ -59,4 +59,10 @@
 	regulator-min-microvolt = <3300000>;
 	regulator-max-microvolt = <3300000>;
 };
+&odm {
+	mmi_stow: mmi_stow {
+		compatible = "moto,mmi_stow";
+		mmi,stow-gpio = <&pio 21 0x0>;
+	};
+};
 /* TOUCH end */
