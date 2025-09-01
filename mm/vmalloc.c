@@ -623,6 +623,7 @@ int __vmap_pages_range_noflush(unsigned long addr, unsigned long end,
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(__vmap_pages_range_noflush);
 
 int vmap_pages_range_noflush(unsigned long addr, unsigned long end,
 		pgprot_t prot, struct page **pages, unsigned int page_shift)
@@ -634,6 +635,7 @@ int vmap_pages_range_noflush(unsigned long addr, unsigned long end,
 		return ret;
 	return __vmap_pages_range_noflush(addr, end, prot, pages, page_shift);
 }
+EXPORT_SYMBOL_GPL(vmap_pages_range_noflush);
 
 /**
  * vmap_pages_range - map pages to a kernel virtual address
