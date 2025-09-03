@@ -408,6 +408,11 @@
                                2000000 1500000 1000000 500000>;
 };
 
+&u2port0 {
+	mediatek,eye-vrt = <7>;
+	mediatek,eye-term = <6>;
+	mediatek,rev6 = <3>;
+};
 &mtk_gauge {
 
 	DIFFERENCE_FULLOCV_ITH = <80>;  /*gauge cut-off current, should overtop ieoc 50ma*/
