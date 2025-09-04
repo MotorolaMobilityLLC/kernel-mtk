@@ -759,6 +759,9 @@ static void aw36515_i2c_shutdown(struct i2c_client *client)
 	aw36515_i2c_write(aw36515_i2c_client, AW36515_REG_ENABLE,
 						AW36515_CHIP_STANDBY);
 
+	aw36515_disable(AW36515_CHANNEL_CH1);
+	aw36515_timer_cancel(AW36515_CHANNEL_CH1);
+
 	pr_info("aw36515 shutdown done.\n");
 }
 
