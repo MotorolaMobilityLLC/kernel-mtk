@@ -48,7 +48,7 @@ static mot_calibration_status_t calibration_status = {STATUS_CRC_FAIL};
 static mot_calibration_mnf_t mnf_info = {0};
 
 #define OV08F_OTP_DEBUG  1
-#define OV08F_OTP_SIZE 3819
+#define OV08F_OTP_SIZE 1928
 
 unsigned char g_otpMemoryData[OV08F_OTP_SIZE] = {0};
 
@@ -97,6 +97,24 @@ static uint32_t convert_crc(uint8_t *crc_ptr)
 	return (crc_ptr[0] << 8) | (crc_ptr[1]);
 }
 
+static int32_t eeprom_util_check_sum(uint8_t *data, uint32_t size,uint32_t index)
+{
+	int32_t check_sum = 0,check_sum_cal = 0;
+	int32_t check_sum_match = 0;
+
+	for (; index < size; index++) {
+		check_sum_cal += data[index];
+	}
+	check_sum_cal = (check_sum_cal % 255 ) + 1;
+	check_sum = data[size];
+	if( check_sum == check_sum_cal){
+          check_sum_match = 1;
+		  LOG_INF("eeprom_util_check_sum check success");
+	}
+
+	return check_sum_match;
+}
+
 static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
 {
 	int32_t crc_match = 0;
@@ -106,7 +124,6 @@ static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t re
 
 	uint32_t tmp;
 	uint32_t tmp_reverse;
-
 	/* Calculate both methods of CRC since integrators differ on
 	* how CRC should be calculated. */
 	for (i = 0; i < size; i++) {
@@ -143,44 +160,37 @@ static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t re
 static int8_t ov08f_otp_do_checksum(unsigned char *data)
 {
 	struct NAPLES_OV08F_otp_t *otp = (struct NAPLES_OV08F_otp_t*)data;
-	if (!eeprom_util_check_crc16(otp->flag_of_basic_infomation, BASIC_INFO_SIZE, convert_crc(otp->manufacturing_data_chksum))) {
+
+	if (!eeprom_util_check_crc16(otp->eeprom_table_revision, BASIC_INFO_SIZE, convert_crc(otp->manufacturing_data_chksum))) {
 		LOG_INF("basic info CRC Failed!");
 		return -1;
 	} else {
+		LOG_INF("basic info CRC success!");
 		calibration_status.mnf = STATUS_OK;
 	}
-	if (!eeprom_util_check_crc16(otp->flag_of_awb, AWB_SIZE, convert_crc(otp->awb_chksum))) {
-		LOG_INF("Awb CRC Failed!");
+
+	if (!eeprom_util_check_sum(otp->flag_of_awb, AWB_SIZE,0)){
+		LOG_INF("Awb chksum Failed!");
 		return -1;
 	} else {
+		LOG_INF("Awb check success!");
 		calibration_status.awb = STATUS_OK;
 	}
-	if (!eeprom_util_check_crc16(otp->flag_of_oc, OC_SIZE, convert_crc(otp->oc_chksum))) {
-		LOG_INF("OC CRC Failed!");
-		return -1;
-	}
-	if (!eeprom_util_check_crc16(otp->flag_of_sfr1, SFR1_SIZE, convert_crc(otp->sfr1_chksum))) {
-		LOG_INF("Sfr1 CRC Failed!");
-		return -1;
-	}
-	if (!eeprom_util_check_crc16(otp->flag_of_sfr2, SFR2_SIZE, convert_crc(otp->sfr2_chksum))) {
-		LOG_INF("Sfr2 CRC Failed!");
-		return -1;
-	}
-	if (!eeprom_util_check_crc16(otp->flag_of_qcom_lsc, QCOM_LSC_SIZE, convert_crc(otp->qcom_lsc_chksum))) {
-		LOG_INF("Qcom Lsc CRC Failed!");
-		return -1;
-	}
-	if (!eeprom_util_check_crc16(otp->flag_of_mtk_lsc, MTK_LSC_SIZE, convert_crc(otp->mtk_lsc_chksum))) {
-		LOG_INF("MTK Lsc CRC Failed!");
+
+	if (!eeprom_util_check_sum(otp->flag_of_mtk_lsc, MTK_LSC_SIZE,0)) {
+		LOG_INF("MTK Lsc chksum Failed!");
 		return -1;
 	} else {
+		LOG_INF("LSC check success!");
 		calibration_status.lsc = STATUS_OK;
 	}
-	if (!eeprom_util_check_crc16(otp->flag_of_mtk_necessary_info, MTK_NECESSARY_INFO_SIZE, convert_crc(otp->mtk_necessary_info_chksum))) {
-		LOG_INF("MTK_necessary info CRC Failed!");
-		return -1;
-	}
+
+	// if (!eeprom_util_check_sum(otp->flag_of_basic_infomation, ALL_DATA_SIZE,1)) {
+	// 	LOG_INF("all data chksum Failed!");
+	// 	return -1;
+	// } else {
+	// 	LOG_INF("all data chksum success!");
+	// }
 
 	LOG_INF("OV08F otp checksum ok!");
 	return 0;
@@ -210,43 +220,19 @@ static void ov08f_sensor_otp_set_block(u8 block)
 	return;
 }
 
-static bool ov08f_otp_verify_group(u8 block, u16 addr)
-{
-	u16 flag = 0;
-	ov08f_sensor_otp_set_block(block);
-	flag = read_cmos_sensor(addr);
-
-	if ((flag & 0xc0) >> 6 == 0x01) {
-		LOG_INF("group vaild, block is %d", (unsigned int)block);
-		return true;
-	} else if ((flag & 0xc0) >> 6 == 0x00) {
-		LOG_INF("group empty, block is %d", (unsigned int)block);
-		return false;
-	} else if ((flag & 0xc0) >> 6 == 0x11) {
-		LOG_INF("group invaild, block is %d", (unsigned int)block);
-		return false;
-	} else {
-		LOG_INF("UNKOWN OTP ERR");
-		return false;
-	}
-
-	return false;
-}
-
 static u8 ov08f_otp_get_verify_group_num()
 {
-	bool groupValid = false;
+	u16 flag = 0;
+	ov08f_sensor_otp_set_block(GROUP1_BLOCK_START_NUM);
 
-	groupValid = ov08f_otp_verify_group(4, 0x00);
-	if (groupValid == true) {
-		LOG_INF("group1 vaild");
-		return 1;
-	}
+	flag = read_cmos_sensor(0x00);
 
-	groupValid = ov08f_otp_verify_group(34, 0x00);
-	if (groupValid == true) {
-		LOG_INF("group2 vaild");
+	if((flag & 0x3f)  == 0x3f){
+		return 3;
+	}else if((flag & 0x07)  == 0x07){
 		return 2;
+	}else if ((flag & 0x01)  == 0x01) {
+		return 1;
 	}
 
 	return 0;
@@ -255,10 +241,25 @@ static u8 ov08f_otp_get_verify_group_num()
 static u8 ov08f_otp_read_group(u8 block_start, u8 block_end, unsigned char *data)
 {
 	int i = 0;
-	int j = 0;
+	int j = block_start + 1;
 	int index = 0;
 
-	for (j = block_start; j < block_end; ++j) {
+	ov08f_sensor_otp_set_block(block_start);
+	if (block_start == GROUP1_BLOCK_START_NUM) {
+		for (i = 1; i < BLOCK_DATA_SIZE; i++) {
+			data[index++] = read_cmos_sensor(i);
+		}
+	} else if (block_start == GROUP2_BLOCK_START_NUM) {
+		for (i = 81; i < BLOCK_DATA_SIZE; i++) {
+			data[index++] = read_cmos_sensor(i);
+		}
+	}  else if (block_start == GROUP3_BLOCK_START_NUM) {
+		for (i = 33; i < BLOCK_DATA_SIZE; i++) {
+			data[index++] = read_cmos_sensor(i);
+		}
+	}
+
+	for ( ; j < block_end; ++j) {
 		ov08f_sensor_otp_set_block(j);
 		for (i = 0; i < BLOCK_DATA_SIZE; i++) {
 			data[index++] = read_cmos_sensor(i);
@@ -266,10 +267,19 @@ static u8 ov08f_otp_read_group(u8 block_start, u8 block_end, unsigned char *data
 	}
 
 	ov08f_sensor_otp_set_block(block_end);
-	for (i = 0; i < LAST_BLOCK_DATA_SIZE; i++) {
-		data[index++] = read_cmos_sensor(i);
+	if (block_start == GROUP1_BLOCK_START_NUM) {
+		for (i = 0; i < GROUP1_LAST_BLOCK_DATA_SIZE; i++) {
+			data[index++] = read_cmos_sensor(i);
+		}
+	} else if (block_start == GROUP2_BLOCK_START_NUM) {
+		for (i = 0; i < GROUP2_LAST_BLOCK_DATA_SIZE; i++) {
+			data[index++] = read_cmos_sensor(i);
+		}
+	}  else if (block_start == GROUP3_BLOCK_START_NUM) {
+		for (i = 0; i < GROUP3_LAST_BLOCK_DATA_SIZE; i++) {
+			data[index++] = read_cmos_sensor(i);
+		}
 	}
-
 	return 0;
 }
 
@@ -279,7 +289,6 @@ int ov08f_iReadData(unsigned char *pinputdata)
 	u8 groupNum = 0;
 
 	ov08f_sensor_otp_init();
-
 	groupNum = ov08f_otp_get_verify_group_num();
 
 	if (groupNum == 1) {
@@ -298,7 +307,15 @@ int ov08f_iReadData(unsigned char *pinputdata)
 			LOG_INF("I2C iReadData failed!!\n");
 			return -1;
 		}
-	} else {
+	} else if (groupNum == 3) {
+		LOG_INF("group3 vaild");
+		i4RetValue = ov08f_otp_read_group(GROUP3_BLOCK_START_NUM,
+			GROUP3_BLOCK_END_NUM, pinputdata);
+		if (i4RetValue != 0) {
+			LOG_INF("I2C iReadData failed!!\n");
+			return -1;
+		}
+	}else {
 		LOG_INF("UNKOWN OTP ERR");
 		return -1;
 	}
@@ -335,8 +352,8 @@ static void ov08f_format_mnf_data(void *data, mot_calibration_mnf_t *mnf)
 		mnf->actuator_id[0] = 0;
 	}
 
-	if (otp->lens_id[0] == 0xC2){
-		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "AAC 084195A01");
+	if (otp->lens_id[0] == 0x01){
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "S08101A");
 	} else {
 		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
 		LOG_INF("unknown lens_id");
@@ -347,13 +364,11 @@ static void ov08f_format_mnf_data(void *data, mot_calibration_mnf_t *mnf)
 		mnf->lens_id[0] = 0;
 	}
 
-	if (otp->manufacturer_id[0] == 'Q' && otp->manufacturer_id[1] == 'T') {
-		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Qtech");
-	} else if (otp->manufacturer_id[0] == 'S' && otp->manufacturer_id[1] == 'W') {
-		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "SunWing");
-	} else {
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
 		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Unknown");
 		LOG_INF("unknown manufacturer_id");
+	}else {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "TrulyOpto");
 	}
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
@@ -404,6 +419,7 @@ static void ov08f_format_mnf_data(void *data, mot_calibration_mnf_t *mnf)
 void ov08f_read_otp_data(struct imgsensor_struct *pImgSensor)
 {
 	spImgSensor = pImgSensor;
+
 	ov08f_iReadData(g_otpMemoryData);
 
 	schkSumResult = ov08f_otp_do_checksum(g_otpMemoryData);
@@ -431,11 +447,11 @@ unsigned int ov08f_read_region(struct i2c_client *client, unsigned int addr,
 	if (size > (OV08F_OTP_SIZE)) {
 		size = (OV08F_OTP_SIZE);
 	}
-	if (addr == 0x0 && size == 3819) {
+	if (addr == 0x0 && size == 1928) {
 		memcpy((void*)data, (void*)otp, size);
-	} else if (addr == 0xeed && size == 1) {
+	} else if (addr == 0x78B && size == 1) {
 		memcpy((void*)data, (void*)&calibration_status.lsc, size);
-	} else if (addr == 0xeec && size == 1) {
+	} else if (addr == 0x78A && size == 1) {
 		memcpy((void*)data, (void*)&schkSumResult, size);
 	} else {
 		LOG_INF("addr = 0x%04x, size = %d, wrong addr or size, read failed", addr, size);

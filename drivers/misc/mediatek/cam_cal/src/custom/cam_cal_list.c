@@ -21,6 +21,10 @@ extern unsigned int ov02b_read_region(struct i2c_client *client, unsigned int ad
 extern unsigned int ov08f_read_region(struct i2c_client *client, unsigned int addr,
 				unsigned char *data, unsigned int size);
 #endif
+#if defined(CONFIG_MOT_NAPLES_CAMERA_PROJECT)
+extern unsigned int ov08f_read_region(struct i2c_client *client, unsigned int addr,
+				unsigned char *data, unsigned int size);
+#endif
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
 #if defined(CONFIG_MOT_KANSAS_CAMERA_PROJECT)
@@ -46,6 +50,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{MOT_NAPLES_S5KHM9_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_NAPLES_IMX882_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_NAPLES_S5KKDS_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_NAPLES_OV08F_SENSOR_ID, 0x6C, ov08f_read_region}, // otp
 #endif
 	{OV48B12M_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{OV48B_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
