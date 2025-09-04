@@ -145,7 +145,7 @@ static int initAF(void)
 		LOG_INF("Check HW version: 0x00 is %x\n", Temp);
 		ret = s4AF_WriteReg(0, 0x02, 0x02); //CONTROL
 		s4AF_WriteReg(0, 0x06, 0x40);
-		s4AF_WriteReg(0, 0x07, 0x75);
+		s4AF_WriteReg(0, 0x07, 0x04);
 
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
