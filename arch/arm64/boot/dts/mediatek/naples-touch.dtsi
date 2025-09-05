@@ -28,6 +28,8 @@
                 focaltech,panel-supplier = "boe";
                 focaltech,touch-charger-detect-psy-name = "battery";
                 focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
+                mmi,charger-psy-name = "battery";
+                mmi,usb-charger-detection;
 	};
 
 	omnivision@1 {
