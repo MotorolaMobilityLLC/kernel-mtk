@@ -3628,6 +3628,9 @@ static int mmi_check_power_info(struct mtk_charger *info, bool force)
 	if (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
 		power_watt = mmi_get_apdo_power(info, force) / 1000;
 		real_charger_type = POWER_SUPPLY_USB_TYPE_PD_PPS;
+        } else if (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_PD30 && info->chr_type == POWER_SUPPLY_TYPE_USB) {
+                power_watt = MOTO_10W / 1000;
+                real_charger_type = POWER_SUPPLY_USB_TYPE_PD;
 	} else if (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK
 			|| info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_PD30) {
 		power_watt = mmi_get_pdc_power(info, force) / 1000;
