@@ -453,6 +453,9 @@
 	mediatek,eye-vrt = <7>;
 	mediatek,eye-term = <6>;
 	mediatek,rev6 = <3>;
+	mediatek,eye-vrt-host = <7>;
+	mediatek,eye-term-host = <6>;
+	mediatek,rev6-host = <3>;
 };
 &mtk_gauge {
 
