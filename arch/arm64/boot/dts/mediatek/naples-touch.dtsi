@@ -13,7 +13,7 @@
 		compatible = "focaltech,fts";
                 reg = <0>; //Same as CS ID
                 status = "ok";
-		mmi,status = "/chosen","mmi,panel_name","contains","boe_nt37713_vid_1080_2352";
+		mmi,status = "/chosen","mmi,panel_name","contains","boe_nt37713_vid_1080_2352","boe_il97605a_vid_1080_2352";
                 spi-max-frequency = <9600000>;
 		vdd-supply= <&mt6377_vtp>;
 		vcc_i2c-supply = <&mt6377_vaud18>;
@@ -25,7 +25,7 @@
                 mmi,power-off-suspend;
                 focaltech,report_gesture_key = <59>;
                 mmi,supported_gesture_type = <0x06>;
-                focaltech,panel-supplier = "boe";
+                focaltech,panel-supplier = "boe_nt37713","boe_il97605a";
                 focaltech,touch-charger-detect-psy-name = "battery";
                 focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
                 mmi,charger-psy-name = "battery";
