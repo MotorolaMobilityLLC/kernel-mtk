@@ -622,6 +622,9 @@ static void check_dynamic_mivr(struct mtk_charger *info)
 		if (alg == NULL)
 			continue;
 
+		if (info->mmi.adaptive_charging_disable_ibat) {
+			break;
+		}
 		ret = chg_alg_is_algo_ready(alg);
 		if (ret == ALG_RUNNING) {
 			is_fast_charge = true;
@@ -5102,6 +5105,9 @@ static int psy_charger_get_property(struct power_supply *psy,
 			if (alg == NULL)
 				chr_err("get pe5 fail\n");
 			else {
+				if (info->mmi.adaptive_charging_disable_ibat) {
+					break;
+				}
 				ret = chg_alg_is_algo_ready(alg);
 				if (ret == ALG_RUNNING)
 					val->intval = true;
