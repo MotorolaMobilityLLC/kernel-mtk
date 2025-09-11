@@ -179,22 +179,20 @@ static void txd_panel_init(struct txd *ctx)
 {
 	pr_info("disp: %s+\n", __func__);
 
-	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->reset_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
-			__func__, PTR_ERR(ctx->reset_gpio));
-		//return;
-	}
-	else {
-		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(1 * 1000, 2 * 1000);
-		gpiod_set_value(ctx->reset_gpio, 0);
-		usleep_range(1 * 1000, 2 * 1000);
-		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(10 * 1000, 12 * 1000);
-		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-		pr_info("disp: %s reset_gpio\n", __func__);
-	}
+	gpiod_set_value(ctx->reset_gpio, 0);
+	usleep_range(5 * 1000, 6 * 1000);
+#ifdef BIAS_OCP2138
+        pr_info("%s: start ocp2138_BiasPower_enable\n", __func__);
+        ocp2138_BiasPower_enable(15,15,5);
+	usleep_range(1 * 1000, 2 * 1000);
+#endif
+	gpiod_set_value(ctx->reset_gpio, 1);
+	usleep_range(1 * 1000, 2 * 1000);
+	gpiod_set_value(ctx->reset_gpio, 0);
+	usleep_range(1 * 1000, 2 * 1000);
+	gpiod_set_value(ctx->reset_gpio, 1);
+	usleep_range(10 * 1000, 12 * 1000);
+	pr_info("disp: %s reset_gpio\n", __func__);
 
 	pr_info("txd ft8725 fhd init start!\n");
 	txd_dcs_write_seq_static(ctx,0x00,0x00);
@@ -284,13 +282,6 @@ static int txd_prepare(struct drm_panel *panel)
 		pr_info("%s, already prepared, return\n", __func__);
 		return 0;
 	}
-
-
-#ifdef BIAS_OCP2138
-	pr_info("%s: start ocp2138_BiasPower_enable\n", __func__);
-	ocp2138_BiasPower_enable(15,15,5);
-	msleep(1);
-#endif
 
 	txd_panel_init(ctx);
 	//ctx->hbm_mode = 0;
@@ -1025,7 +1016,6 @@ static int txd_probe(struct mipi_dsi_device *dsi)
 			PTR_ERR(ctx->reset_gpio));
 		return PTR_ERR(ctx->reset_gpio);
 	}
-	devm_gpiod_put(dev, ctx->reset_gpio);
 
 	ctx->prepared = true;
 	ctx->enabled = true;
@@ -1110,4 +1100,3 @@ module_mipi_dsi_driver(txd_driver);
 MODULE_AUTHOR("mediatek");
 MODULE_DESCRIPTION("txd ft8725 incell 120hz Panel Driver");
 MODULE_LICENSE("GPL v2");
-
