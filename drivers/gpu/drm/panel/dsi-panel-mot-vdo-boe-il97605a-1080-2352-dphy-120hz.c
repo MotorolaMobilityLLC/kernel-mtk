@@ -52,6 +52,8 @@ int il97605a_range_bpg_ofs[15] = {2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -12
 //panel id, reg 0xF1, value 02 05 5a 51
 #define IL_BOE_PANEL_VENDOR_ID    0x515a0502
 //#define IL_BOE_PANEL_VENDOR_ID  	(TM_ILI_PANEL_VENDOR_ID | (0xF << 24))
+#define FOD_CENTER_X 636
+#define FOD_CENTER_Y 2525
 
 static int tp_gesture_flag = 0;
 
@@ -293,6 +295,14 @@ static void boe_il97605a_panel_init(struct boe_il97605a *ctx)
 	 //normal 14056 AOD 14056
 	 //R51 DBV=0 before Video start
 	 //boe_il97605a_dcs_write_seq_static(ctx, 0x51, 0x36, 0xE8, 0x36, 0xE8);
+
+	//BEGIN Motorola, IKSWW-46934, Modify FOD spot position
+	boe_il97605a_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x00);
+	boe_il97605a_dcs_write_seq_static(ctx, 0x96, (FOD_CENTER_Y >> 8) & 0xFF);// POS-Y
+	boe_il97605a_dcs_write_seq_static(ctx, 0x97, FOD_CENTER_Y & 0xFF);
+	boe_il97605a_dcs_write_seq_static(ctx, 0x98, (FOD_CENTER_X >> 8) & 0xFF); // POS-X
+	boe_il97605a_dcs_write_seq_static(ctx, 0x99, FOD_CENTER_X & 0xFF);
+	//END Motorola, IKSWW-46934
 
 	 //Sleep out
 	 boe_il97605a_dcs_write_seq_static(ctx, 0x11, 0);
