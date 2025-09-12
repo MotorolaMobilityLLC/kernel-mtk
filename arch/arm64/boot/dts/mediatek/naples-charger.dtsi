@@ -281,7 +281,7 @@
 
                 mmi,batid_v_ref = <1800000>;
                 mmi,batid_r_pull = <100000>;
-                mmi,batt-ids-map = "1", "ATLRL52NVT", "2", "LWNRL52SWD";
+                mmi,batt-ids-map = "1", "ATLSP52NVT", "2", "LWNSP52SWD", "3", "COSSP52COS";
 
                 mmi,adc-channel-cpu = <0>;
                 mmi,adc-channel-charger = <2>;
