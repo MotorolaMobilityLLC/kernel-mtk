@@ -146,6 +146,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         },
     },
 #endif
+#if defined(MOT_NAPLES_GC32E1_MIPI_RAW)
+    {
+        SENSOR_DRVNAME_MOT_NAPLES_GC32E1_MIPI_RAW,
+        {
+            {SensorMCLK, Vol_High, 0},
+            {RST, Vol_Low, 1},
+            {DOVDD, Vol_1800, 6},
+            {DVDD, Vol_1200, 6},
+            {AVDD, Vol_2800, 6},
+            {RST, Vol_High, 4},
+        },
+    },
+#endif
 #if defined(MOT_NAPLES_OV08F_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_MOT_NAPLES_OV08F_MIPI_RAW,
