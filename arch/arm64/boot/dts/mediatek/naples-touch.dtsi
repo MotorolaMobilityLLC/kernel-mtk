@@ -24,7 +24,7 @@
                 mmi,enable-gestures;
                 mmi,power-off-suspend;
                 focaltech,report_gesture_key = <59>;
-                mmi,supported_gesture_type = <0x06>;
+                mmi,supported_gesture_type = <0x07>;
                 focaltech,panel-supplier = "boe_nt37713","boe_il97605a";
                 focaltech,touch-charger-detect-psy-name = "battery";
                 focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
