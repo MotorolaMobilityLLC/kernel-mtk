@@ -676,6 +676,7 @@ static kal_uint32 open(void)
 
 static kal_uint32 close(void)
 {
+	streaming_control(KAL_FALSE);
 	return ERROR_NONE;
 }   /*  close  */
 
