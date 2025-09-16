@@ -536,7 +536,7 @@
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
 	CAR_TUNE_VALUE = <(101)>;
 
-	df-serialnum = "ATLRL52NVT";
-	#include "bat_setting/mt6835_battery_rl52_atl_5200mah.dtsi"
+	df-serialnum = "ATLSP52NVT";
+	#include "bat_setting/mt6835_battery_sp52_atl_5200mah.dtsi"
 	#include "bat_setting/mt6835_battery_rl52_swd_5200mah.dtsi"
 };
