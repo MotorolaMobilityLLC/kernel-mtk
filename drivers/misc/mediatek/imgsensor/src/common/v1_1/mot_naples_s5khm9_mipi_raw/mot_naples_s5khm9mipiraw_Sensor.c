@@ -14,6 +14,7 @@
 #include "kd_imgsensor_errcode.h"
 #include "mot_naples_s5khm9mipiraw_Sensor.h"
 #include "mot_naples_s5khm9_Sensor_setting.h"
+#include "mot_naples_s5khm9_Sensor_setting_ver2.h"
 #undef VENDOR_EDIT
 #define PFX "MOTNAPLESS5KHM9_camera_sensor"
 #define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __func__, ##args)
@@ -28,6 +29,7 @@ extern mot_calibration_status_t *NAPLES_S5KHM9_eeprom_get_calibration_status(voi
 extern mot_calibration_mnf_t *NAPLES_S5KHM9_eeprom_get_mnf_info(void);
 extern void NAPLES_S5KHM9_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
+static int s5khm9_hw_ver = 0;
 static bool bIsLongExposure = KAL_FALSE;
 static kal_uint16 mot_naples_s5khm9_table_write_cmos_sensor(kal_uint16 * para, kal_uint32 len);
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -749,66 +751,131 @@ static void sensor_init(void)
 	mdelay(15);
 	write_cmos_sensor(0x0136, 0x1800);
 	write_cmos_sensor(0x013E, 0x0000);
-	mot_naples_s5khm9_table_write_cmos_sensor(addr_data_pair_init_mot_naples_s5khm9_part1,
-		sizeof(addr_data_pair_init_mot_naples_s5khm9_part1)/sizeof(kal_uint16));
-	mot_naples_s5khm9_table_write_cmos_sensor(addr_data_pair_init_mot_naples_s5khm9_part2,
-		sizeof(addr_data_pair_init_mot_naples_s5khm9_part2)/sizeof(kal_uint16));
-	mot_naples_s5khm9_table_write_cmos_sensor(addr_data_pair_init_mot_naples_s5khm9_part3,
-		sizeof(addr_data_pair_init_mot_naples_s5khm9_part3)/sizeof(kal_uint16));
+	if(s5khm9_hw_ver == 0x01) {
+		mot_naples_s5khm9_table_write_cmos_sensor(addr_data_pair_init_mot_naples_s5khm9_part1,
+			sizeof(addr_data_pair_init_mot_naples_s5khm9_part1)/sizeof(kal_uint16));
+		mot_naples_s5khm9_table_write_cmos_sensor(addr_data_pair_init_mot_naples_s5khm9_part2,
+			sizeof(addr_data_pair_init_mot_naples_s5khm9_part2)/sizeof(kal_uint16));
+		mot_naples_s5khm9_table_write_cmos_sensor(addr_data_pair_init_mot_naples_s5khm9_part3,
+			sizeof(addr_data_pair_init_mot_naples_s5khm9_part3)/sizeof(kal_uint16));
+	} else if(s5khm9_hw_ver == 0x02) {
+		mot_naples_s5khm9_table_write_cmos_sensor(addr_data_pair_init_mot_naples_s5khm9_ver2_part1,
+			sizeof(addr_data_pair_init_mot_naples_s5khm9_ver2_part1)/sizeof(kal_uint16));
+		mot_naples_s5khm9_table_write_cmos_sensor(addr_data_pair_init_mot_naples_s5khm9_ver2_part2,
+			sizeof(addr_data_pair_init_mot_naples_s5khm9_ver2_part2)/sizeof(kal_uint16));
+		mot_naples_s5khm9_table_write_cmos_sensor(addr_data_pair_init_mot_naples_s5khm9_ver2_part3,
+			sizeof(addr_data_pair_init_mot_naples_s5khm9_ver2_part3)/sizeof(kal_uint16));
+	} else {
+		LOG_INF("Sensor mode sensor_init set failed\n");
+	}
 	LOG_INF("sensor_init -\n");
 }	/*	  sensor_init  */
 static void preview_setting(void)
 {
 	LOG_INF("preview_setting +\n");
-	mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_preview_setting, sizeof(s5khm9_preview_setting)/sizeof(kal_uint16));
+	if(s5khm9_hw_ver == 0x01) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_preview_setting, sizeof(s5khm9_preview_setting)/sizeof(kal_uint16));
+	} else if(s5khm9_hw_ver == 0x02) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_ver2_preview_setting, sizeof(s5khm9_ver2_preview_setting)/sizeof(kal_uint16));
+	} else {
+		LOG_INF("Sensor mode preview_setting set failed\n");
+	}
 	LOG_INF("preview_setting -\n");
 } /* preview_setting */
 static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("capture_setting + currefps:%d\n", currefps);
-	mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_capture_setting, sizeof(s5khm9_capture_setting)/sizeof(kal_uint16));
+	if(s5khm9_hw_ver == 0x01) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_capture_setting, sizeof(s5khm9_capture_setting)/sizeof(kal_uint16));
+	} else if(s5khm9_hw_ver == 0x02) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_ver2_capture_setting, sizeof(s5khm9_ver2_capture_setting)/sizeof(kal_uint16));
+	} else {
+		LOG_INF("Sensor mode capture_setting set failed\n");
+	}
 	LOG_INF("capture_setting -\n");
 }
 static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("normal_video_setting + currefps:%d\n", currefps);
-	mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_normal_video_setting,	sizeof(s5khm9_normal_video_setting)/sizeof(kal_uint16));
+	if(s5khm9_hw_ver == 0x01) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_normal_video_setting,	sizeof(s5khm9_normal_video_setting)/sizeof(kal_uint16));
+	} else if(s5khm9_hw_ver == 0x02) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_ver2_normal_video_setting,	sizeof(s5khm9_ver2_normal_video_setting)/sizeof(kal_uint16));
+	} else {
+		LOG_INF("Sensor mode normal_video_setting set failed\n");
+	}
 	LOG_INF("normal_video_setting -\n");
 }
 static void hs_video_setting(void)
 {
 	LOG_INF("+\n");
-	mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_hs_video_setting,	sizeof(s5khm9_hs_video_setting)/sizeof(kal_uint16));
+	if(s5khm9_hw_ver == 0x01) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_hs_video_setting,	sizeof(s5khm9_hs_video_setting)/sizeof(kal_uint16));
+	} else if(s5khm9_hw_ver == 0x02) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_ver2_hs_video_setting,	sizeof(s5khm9_ver2_hs_video_setting)/sizeof(kal_uint16));
+	} else {
+		LOG_INF("Sensor mode hs_video_setting set failed\n");
+	}
 	LOG_INF("-\n");
 }
 static void slim_video_setting(void)
 {
 	LOG_INF("+\n");
-	mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_slim_video_setting, sizeof(s5khm9_slim_video_setting)/sizeof(kal_uint16));
+	if(s5khm9_hw_ver == 0x01) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_slim_video_setting, sizeof(s5khm9_slim_video_setting)/sizeof(kal_uint16));
+	} else if(s5khm9_hw_ver == 0x02) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_ver2_slim_video_setting, sizeof(s5khm9_ver2_slim_video_setting)/sizeof(kal_uint16));
+	} else {
+		LOG_INF("Sensor mode slim_video_setting set failed\n");
+	}
 	LOG_INF("-*\n");
 }
 static void custom1_setting(void)
 {
 	LOG_INF("+\n");
-	mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_custom1_setting, sizeof(s5khm9_custom1_setting)/sizeof(kal_uint16));
+	if(s5khm9_hw_ver == 0x01) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_custom1_setting, sizeof(s5khm9_custom1_setting)/sizeof(kal_uint16));
+	} else if(s5khm9_hw_ver == 0x02) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_ver2_custom1_setting, sizeof(s5khm9_ver2_custom1_setting)/sizeof(kal_uint16));
+	} else {
+		LOG_INF("Sensor mode custom1 set failed\n");
+	}
 	LOG_INF("-\n");
 }
 static void custom2_setting(void)
 {
 	LOG_INF("+\n");
-	mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_custom2_setting, sizeof(s5khm9_custom2_setting)/sizeof(kal_uint16));
+	if(s5khm9_hw_ver == 0x01) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_custom2_setting, sizeof(s5khm9_custom2_setting)/sizeof(kal_uint16));
+	} else if(s5khm9_hw_ver == 0x02) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_ver2_custom2_setting, sizeof(s5khm9_ver2_custom2_setting)/sizeof(kal_uint16));
+	} else {
+		LOG_INF("Sensor mode custom2 set failed\n");
+	}
 	LOG_INF("-\n");
 }
 static void custom3_setting(void)
 {
 	LOG_INF("+\n");
-	mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_custom3_setting, sizeof(s5khm9_custom3_setting)/sizeof(kal_uint16));
+	if(s5khm9_hw_ver == 0x01) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_custom3_setting, sizeof(s5khm9_custom3_setting)/sizeof(kal_uint16));
+	} else if(s5khm9_hw_ver == 0x02) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_ver2_custom3_setting, sizeof(s5khm9_ver2_custom3_setting)/sizeof(kal_uint16));
+	} else {
+		LOG_INF("Sensor mode custom3 set failed\n");
+	}
 	LOG_INF("-\n");
 }
 static void custom4_setting(void)
 {
 	LOG_INF("+\n");
-	mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_custom4_setting, sizeof(s5khm9_custom4_setting)/sizeof(kal_uint16));
+	if(s5khm9_hw_ver == 0x01) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_custom4_setting, sizeof(s5khm9_custom4_setting)/sizeof(kal_uint16));
+	} else if(s5khm9_hw_ver == 0x02) {
+		mot_naples_s5khm9_table_write_cmos_sensor(s5khm9_ver2_custom4_setting, sizeof(s5khm9_ver2_custom4_setting)/sizeof(kal_uint16));
+	} else {
+		LOG_INF("Sensor mode custom4 set failed\n");
+	}
 	LOG_INF("-\n");
 }
 /*************************************************************************
@@ -840,7 +907,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			LOG_INF("mot_naples_s5khm9 sensor id = 0x%x",*sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				NAPLES_S5KHM9_eeprom_format_calibration_data(&imgsensor);
-				LOG_INF("mot_naples_s5khm9 i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+				s5khm9_hw_ver = read_cmos_sensor_8(0x0010); // get sensor version, reg: 0x0010,
+				LOG_INF("mot_naples_s5khm9 i2c write id: 0x%x, sensor id: 0x%x, s5khm9_hw_ver:0x%x\n", imgsensor.i2c_write_id, *sensor_id, s5khm9_hw_ver);
 					return ERROR_NONE;
 			}
 			LOG_INF("mot_naples_s5khm9 Read sensor id fail, sensor id: 0x%x, i2c: 0x%x\n", *sensor_id, imgsensor.i2c_write_id);
@@ -903,7 +971,13 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
 		imgsensor.autoflicker_en = KAL_FALSE;
 		spin_unlock(&imgsensor_drv_lock);
 		LOG_INF("seamless switch sesor mode 0,1-exp!\n");
-		mot_naples_s5khm9_table_write_cmos_sensor(fast_mode_change_index00, sizeof(fast_mode_change_index00) / sizeof(kal_uint16));
+		if(s5khm9_hw_ver == 0x01) {
+			mot_naples_s5khm9_table_write_cmos_sensor(fast_mode_change_index00, sizeof(fast_mode_change_index00) / sizeof(kal_uint16));
+		} else if(s5khm9_hw_ver == 0x02) {
+			mot_naples_s5khm9_table_write_cmos_sensor(fast_mode_change_ver2_index00, sizeof(fast_mode_change_ver2_index00) / sizeof(kal_uint16));
+		} else {
+			LOG_INF("seamless_switch fast_mode_change_index_preview set failed\n");
+		}
 		if (ae_ctrl) {
 			LOG_INF("call SENSOR_SCENARIO_ID_CAMERA_PREVIEW %d %d", ae_ctrl[SHUTTER_NE_FRM_1], ae_ctrl[GAIN_NE_FRM_1]);
 			set_shutter(ae_ctrl[SHUTTER_NE_FRM_1]);
@@ -920,7 +994,13 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
 		imgsensor.autoflicker_en = KAL_FALSE;
 		spin_unlock(&imgsensor_drv_lock);
 		LOG_INF("seamless switch custom1-1exp!\n");
-		mot_naples_s5khm9_table_write_cmos_sensor(fast_mode_change_index01, sizeof(fast_mode_change_index01) / sizeof(kal_uint16));
+		if(s5khm9_hw_ver == 0x01) {
+			mot_naples_s5khm9_table_write_cmos_sensor(fast_mode_change_index01, sizeof(fast_mode_change_index01) / sizeof(kal_uint16));
+		} else if(s5khm9_hw_ver == 0x02) {
+			mot_naples_s5khm9_table_write_cmos_sensor(fast_mode_change_ver2_index01, sizeof(fast_mode_change_ver2_index01) / sizeof(kal_uint16));
+		} else {
+			LOG_INF("seamless_switch fast_mode_change_index_custom1 set failed\n");
+		}
 		if (ae_ctrl) {
 			LOG_INF("call SENSOR_SCENARIO_ID_CUSTOM1 %d %d %d %d",
 				ae_ctrl[SHUTTER_NE_FRM_1], ae_ctrl[GAIN_NE_FRM_1], ae_ctrl[SHUTTER_SE_FRM_1], ae_ctrl[GAIN_SE_FRM_1]);
