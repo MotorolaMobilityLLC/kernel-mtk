@@ -135,6 +135,29 @@
 		};
 	};
 
+       panel3@2 {
+                /delete-property/ compatible;
+                /delete-property/ pm-enable-gpios;
+                /delete-property/ reset-gpios;
+                /delete-property/gate-ic;
+
+                compatible = "tm_vtdr6126a_vid_1080_2352";
+                reg = <2>;
+
+                reset-gpios = <&pio 86 0>;
+                dvdd-supply = <&lcd_dvdd>;
+                vci-supply = <&lcd_avdd>;
+                vddi_en-gpios = <&pio 191 0>;
+
+                pinctrl-names = "default";
+
+                port {
+                                panel_in3: endpoint {
+                                                remote-endpoint = <&dsi_out>;
+                                };
+                };
+        };
+
 	ports {
 		port {
 			dsi_out: endpoint {
@@ -143,6 +166,9 @@
 			dsi_out2: endpoint2 {
 				remote-endpoint = <&panel_in2>;
 			};
+			dsi_out3: endpoint3 {
+                                remote-endpoint = <&panel_in3>;
+                        };
 		};
 	};
 };
