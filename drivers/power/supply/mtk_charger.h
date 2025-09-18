@@ -306,10 +306,10 @@ struct charger_data {
 };
 
 /*moto mmi Functionality start*/
-struct mmi_ffc_zone  {
+struct mmi_zone  {
 	int		temp;
-	int		ffc_max_mv;
-	int		ffc_chg_iterm;
+	int		max_mv;
+	int		chg_iterm;
 };
 
 struct mmi_thermal_config {
@@ -375,8 +375,9 @@ struct mmi_params {
 	int			back_chrg_iterm;
 
 	int			num_ffc_zones;
-	struct mmi_ffc_zone	*ffc_zones;
-
+	struct mmi_zone		*ffc_zones;
+	int			num_normal_zones;
+	struct mmi_zone     	*normal_zones;
 	bool			enable_charging_limit;
 	bool			is_factory_image;
 	enum charging_limit_modes	charging_limit_modes;
