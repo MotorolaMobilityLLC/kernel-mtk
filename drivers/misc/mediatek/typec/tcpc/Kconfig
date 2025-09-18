@@ -44,6 +44,15 @@ config TCPC_AW35615
 	  TypeC port Controller
 	  Driver
 
+config TCPC_AW35615FCR
+	tristate "AW35615FCR TypeC port Controller Driver"
+	depends on TCPC_CLASS
+	default n
+	help
+	  Say Y to enable
+	  TypeC port Controller
+	  Driver
+
 config TCPC_RT1711H
 	tristate "Richtek RT1711H TypeC port Controller Driver"
 	depends on TCPC_CLASS

@@ -73,19 +73,30 @@
 		sc,sc8989x,vindpm = <18>; /*2600 + val * 100*/
 		mmi,hvdcp-support;
 	};
+	/* naples uses aw35615fcr*/
         aw35615@24 {
-                compatible = "awinic,aw35615";
+                compatible = "awinic,aw35615fcr";
                 reg = <0x24>;
                 status = "okay";
                 awinic,int_n = <&pio 8 1>;
+                aw35615,port_id = <0>;
                 aw35615,snk_pdo_size = <1>; /* set sink pdo num*/
                 aw35615,snk_pdo_vol = <5000>; /* set sink pdo voltage mV*/
                 aw35615,snk_pdo_cur = <2000>; /* set sink pdo current mA*/
+                aw35615,snk_pps_size = <0>; /* set sink pps num*/
+                aw35615,snk_pps_vol = <0>; /* set sink pps voltage mV*/
+                aw35615,snk_pps_cur = <0>; /* set sink pps current mA*/
                 aw35615,src_pdo_size = <1>; /* set source pdo num*/
                 aw35615,src_pdo_vol = <5000>; /* set source pdo voltage mV*/
                 aw35615,src_pdo_cur = <1000>; /* set source pdo current mA*/
-                aw35615,snk_tog_time = <0x38>; /* set toggle sink time */
-                aw35615,src_tog_time = <0x24>; /* set toggle source time */
+                aw35615,src_pps_size = <0>; /* set source pps num*/
+                aw35615,src_pps_vol = <0>; /* set source pps voltage mV*/
+                aw35615,src_pps_cur = <0>; /* set source pps current mA*/
+                aw35615,snk_tog_time = <0x36>; /* set toggle sink time */
+                aw35615,src_tog_time = <0x36>; /* set toggle source time */
+                aw35615,cc1_ov_th = <0x1>; /* set cc1 ov threshold. 0x1: ov threshold is 5.5V. */
+                aw35615,cc2_ov_th = <0x1>; /* set cc2 ov threshold. 0x1: ov threshold is 5.5V. */
+                aw35615,lpd_tim_set = <0xf>; /* set the LPD sensitivity. The larger the value, the more sensitive it is. */
                 aw35615,sink_bist_reg = <0x54>; /* set MDAC reg 0x50*/
         };
 	cps8851_pd: cps8851@4e {
