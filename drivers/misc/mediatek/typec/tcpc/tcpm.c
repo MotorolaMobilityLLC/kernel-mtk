@@ -20,6 +20,17 @@
 #include "../../../../../motorola/kernel/modules/drivers/usb/typec/aw35615/platform_helpers.h"
 #endif /* CONFIG_TCPC_AW35615 */
 
+#if IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+#include "../../../../../motorola/kernel/modules/drivers/usb/typec/aw35615fcr/platform_helpers.h"
+
+static struct aw_tcpm_ops_ptr *aw_tcpm_ops = NULL;
+void tcpm_set_aw_ops(struct aw_tcpm_ops_ptr *pps_ops)
+{
+	aw_tcpm_ops = pps_ops;
+}
+EXPORT_SYMBOL(tcpm_set_aw_ops);
+#endif /* CONFIG_TCPC_AW35615FCR */
+
 #if IS_ENABLED(CONFIG_TCPC_AW35615)
 static int aw_get_pps_status(struct tcpc_device *tcpc, struct pd_pps_status *pps_status)
 {
@@ -674,15 +685,27 @@ bool tcpm_inquire_pd_connected(struct tcpc_device *tcpc)
 {
 	struct pd_port *pd_port = &tcpc->pd_port;
 #if IS_ENABLED(CONFIG_TCPC_AW35615)
-		int ret;
+	int ret;
 
-		ret = aw_pd_pd_connected(tcpc);
+	ret = aw_pd_pd_connected(tcpc);
+	if (ret >= 0) {
+		if (ret)
+			return true;
+		else
+			return false;
+	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	int ret;
+
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->pd_connected(tcpc);
 		if (ret >= 0) {
 			if (ret)
 				return true;
 			else
 				return false;
 		}
+	}
 #endif /* CONFIG_TCPC_AW35615 */
 	return pd_port->pe_data.pd_connected;
 }
@@ -733,6 +756,18 @@ uint8_t tcpm_inquire_pd_pe_ready(struct tcpc_device *tcpc)
 			return true;
 		else
 			return false;
+	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	int ret;
+
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->pd_pe_ready(tcpc);
+		if (ret >= 0) {
+			if (ret)
+				return true;
+			else
+				return false;
+		}
 	}
 #endif /* CONFIG_TCPC_AW35615 */
 
@@ -1034,6 +1069,18 @@ int tcpm_get_remote_power_cap(struct tcpc_device *tcpc,
 		else
 			return TCPM_ERROR_UNKNOWN;
 	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	int ret;
+
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->get_power_cap(tcpc, remote_cap);
+		if (ret >= 0) {
+			if (ret == 0)
+				return TCPM_SUCCESS;
+			else
+				return TCPM_ERROR_UNKNOWN;
+		}
+	}
 #endif /* CONFIG_TCPC_AW35615 */
 
 	mutex_lock(&pd_port->pd_lock);
@@ -1161,6 +1208,18 @@ int tcpm_dpm_pd_power_swap(struct tcpc_device *tcpc,
 		else
 			return TCPM_ERROR_UNKNOWN;
 	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	int ret;
+
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->request_pr_swap(tcpc, role);
+		if (ret >= 0) {
+			if (ret == 0)
+				return TCPM_SUCCESS;
+			else
+				return TCPM_ERROR_UNKNOWN;
+		}
+	}
 #endif /* CONFIG_TCPC_AW35615 */
 	return tcpm_put_tcp_dpm_event_cbk1(
 		tcpc, &tcp_event, cb_data, TCPM_BK_PR_SWAP_TOUT);
@@ -1182,6 +1241,18 @@ int tcpm_dpm_pd_data_swap(struct tcpc_device *tcpc,
 			return TCPM_SUCCESS;
 		else
 			return TCPM_ERROR_UNKNOWN;
+	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	int ret;
+
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->request_dr_swap(tcpc, role);
+		if (ret >= 0) {
+			if (ret == 0)
+				return TCPM_SUCCESS;
+			else
+				return TCPM_ERROR_UNKNOWN;
+		}
 	}
 #endif /*CONFIG_TCPC_AW35615*/
 	return tcpm_put_tcp_dpm_event_cbk1(
@@ -1277,6 +1348,28 @@ int tcpm_dpm_pd_request(struct tcpc_device *tcpc,
 				return TCPM_ERROR_UNKNOWN;
 		}
 	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	int ret;
+
+	if (aw_tcpm_ops != NULL) {
+		if (tcpc->pd_port.dpm_charging_policy == DPM_CHARGING_POLICY_PPS) {
+			ret = aw_tcpm_ops->request_apdo(tcpc, (uint16_t)mv, (uint16_t)ma);
+			if (ret >= 0) {
+				if (ret == 0)
+					return TCPM_SUCCESS;
+				else
+					return TCPM_ERROR_UNKNOWN;
+			}
+		} else {
+			ret = aw_tcpm_ops->request_pdo(tcpc, (uint16_t)mv, (uint16_t)ma);
+			if (ret >= 0) {
+				if (ret == 0)
+					return TCPM_SUCCESS;
+				else
+					return TCPM_ERROR_UNKNOWN;
+			}
+		}
+	}
 #endif /* CONFIG_TCPC_AW35615 */
 	return tcpm_put_tcp_dpm_event_cbk1(
 		tcpc, &tcp_event, cb_data, TCPM_BK_REQUEST_TOUT);
@@ -1368,6 +1461,18 @@ int tcpm_dpm_pd_get_status(struct tcpc_device *tcpc,
 		else
 			return TCPM_ERROR_UNKNOWN;
 	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	int ret;
+
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->pd_get_status(tcpc, status);
+		if (ret >= 0) {
+			if (ret == 0)
+				return TCPM_SUCCESS;
+			else
+				return TCPM_ERROR_UNKNOWN;
+		}
+	}
 #endif /* CONFIG_TCPC_AW35615 */
 	return tcpm_put_tcp_dpm_event_cbk2(
 		tcpc, &tcp_event, cb_data, TCPM_BK_PD_CMD_TOUT,
@@ -1403,6 +1508,17 @@ int tcpm_dpm_pd_get_pps_status(struct tcpc_device *tcpc,
 			return TCPM_SUCCESS;
 		else
 			return TCPM_ERROR_UNKNOWN;
+	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->get_pps_status(tcpc, pps_status);
+		if (ret >= 0) {
+			if (ret == 0)
+				return TCPM_SUCCESS;
+			else
+				return TCPM_ERROR_UNKNOWN;
+		}
 	}
 #endif /* CONFIG_TCPC_AW35615 */
 	ret = tcpm_dpm_pd_get_pps_status_raw(
@@ -1659,7 +1775,7 @@ int tcpm_inquire_dp_ufp_u_state(struct tcpc_device *tcpc, uint8_t *state)
 	int ret;
 	struct pd_port *pd_port = &tcpc->pd_port;
 
-#if IS_ENABLED(CONFIG_TCPC_AW35615)
+#if IS_ENABLED(CONFIG_TCPC_AW35615) || IS_ENABLED(CONFIG_TCPC_AW35615FCR)
 	if (pd_get_dp_data(pd_port) == NULL)
 		return TCPM_ERROR_UNKNOWN;
 #endif /*CONFIG_TCPC_AW35615*/
@@ -1700,7 +1816,7 @@ int tcpm_inquire_dp_dfp_u_state(struct tcpc_device *tcpc, uint8_t *state)
 {
 	int ret;
 	struct pd_port *pd_port = &tcpc->pd_port;
-#if IS_ENABLED(CONFIG_TCPC_AW35615)
+#if IS_ENABLED(CONFIG_TCPC_AW35615) || IS_ENABLED(CONFIG_TCPC_AW35615FCR)
 	if (pd_get_dp_data(pd_port) == NULL)
 		return TCPM_ERROR_UNKNOWN;
 #endif /*CONFIG_TCPC_AW35615*/
@@ -1907,7 +2023,7 @@ int tcpm_set_pd_charging_policy(struct tcpc_device *tcpc,
 	};
 
 	struct pd_port *pd_port = &tcpc->pd_port;
-#if IS_ENABLED(CONFIG_TCPC_AW35615)
+#if IS_ENABLED(CONFIG_TCPC_AW35615) || IS_ENABLED(CONFIG_TCPC_AW35615FCR)
 	int ret;
 #endif /* CONFIG_TCPC_AW35615 */
 	/* PPS should call another function ... */
@@ -1922,6 +2038,18 @@ int tcpm_set_pd_charging_policy(struct tcpc_device *tcpc,
 			return TCPM_SUCCESS;
 		else
 			return TCPM_ERROR_UNKNOWN;
+	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	pd_port->dpm_charging_policy = policy;
+
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->request_pdo(tcpc, 5000, 2000);
+		if (ret >= 0) {
+			if (ret == 0)
+				return TCPM_SUCCESS;
+			else
+				return TCPM_ERROR_UNKNOWN;
+		}
 	}
 #endif /* CONFIG_TCPC_AW35615 */
 	mutex_lock(&pd_port->pd_lock);
@@ -1997,7 +2125,7 @@ int tcpm_set_apdo_charging_policy(struct tcpc_device *tcpc,
 	};
 
 	struct pd_port *pd_port = &tcpc->pd_port;
-#if IS_ENABLED(CONFIG_TCPC_AW35615)
+#if IS_ENABLED(CONFIG_TCPC_AW35615) || IS_ENABLED(CONFIG_TCPC_AW35615FCR)
 	int ret;
 #endif /* CONFIG_TCPC_AW35615 */
 	/* Not PPS should call another function ... */
@@ -2011,6 +2139,17 @@ int tcpm_set_apdo_charging_policy(struct tcpc_device *tcpc,
 			return TCPM_SUCCESS;
 		else
 			return TCPM_ERROR_UNKNOWN;
+	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->request_apdo(tcpc, (uint16_t)mv, (uint16_t)ma);
+		if (ret >= 0) {
+			pd_port->dpm_charging_policy = policy;
+			if (ret == 0)
+				return TCPM_SUCCESS;
+			else
+				return TCPM_ERROR_UNKNOWN;
+		}
 	}
 #endif /* CONFIG_TCPC_AW35615 */
 	mutex_lock(&pd_port->pd_lock);
@@ -2041,13 +2180,23 @@ int tcpm_inquire_pd_source_apdo(struct tcpc_device *tcpc,
 	uint8_t i;
 	struct tcpm_power_cap cap;
 #if IS_ENABLED(CONFIG_TCPC_AW35615)
-		ret = aw_get_source_apdo(tcpc, apdo_type, cap_i, cap_val);
+	ret = aw_get_source_apdo(tcpc, apdo_type, cap_i, cap_val);
+	if (ret >= 0) {
+		if (ret == 0)
+			return TCPM_SUCCESS;
+		else
+			return TCPM_ERROR_NOT_FOUND;
+	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->get_source_apdo(tcpc, apdo_type, cap_i, cap_val);
 		if (ret >= 0) {
 			if (ret == 0)
 				return TCPM_SUCCESS;
 			else
 				return TCPM_ERROR_NOT_FOUND;
 		}
+	}
 #endif /* CONFIG_TCPC_AW35615 */
 	ret = tcpm_inquire_pd_source_cap(tcpc, &cap);
 	if (ret != TCPM_SUCCESS)
@@ -2384,6 +2533,18 @@ bool tcpm_is_comm_capable(struct tcpc_device *tcpc)
 		else
 			return false;
 	}
+#elif IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	int ret;
+
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->pd_comm_capable(tcpc);
+		if (ret >= 0) {
+			if (ret)
+				return true;
+			else
+				return false;
+		}
+	}
 #endif /* CONFIG_TCPC_AW35615 */
 	return pd_port->pe_data.dpm_flags & DPM_FLAGS_PARTNER_USB_COMM;
 }
@@ -2427,7 +2588,7 @@ static const char * const bk_event_ret_name[] = {
 static inline void tcpm_dpm_bk_copy_data(struct pd_port *pd_port)
 {
 	uint8_t size = pd_port->tcpm_bk_cb_data_max;
-#if IS_ENABLED(CONFIG_TCPC_AW35615)
+#if IS_ENABLED(CONFIG_TCPC_AW35615) || IS_ENABLED(CONFIG_TCPC_AW35615FCR)
 	if (pd_get_msg_data_payload(pd_port) == NULL)
 		return;
 #endif /*CONFIG_TCPC_AW35615*/
