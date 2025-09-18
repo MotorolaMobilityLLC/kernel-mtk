@@ -1,0 +1,84 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (c) 2025 Motorola Mobility LLC.
+ */
+
+#ifndef PANEL_MOT_VDO_TM_VTDR6126A_1080_2352_DPHY_120HZ
+#define PANEL_MOT_VDO_TM_VTDR6126A_1080_2352_DPHY_120HZ
+
+#define PANEL_ESD_RECOVERY_NOFLASH   0x01
+#define PANEL_ESD_RECOVERY_VDD       0x02
+#define REGFLAG_DELAY             0xFFFC
+#define REGFLAG_UDELAY            0xFFFB
+#define REGFLAG_END_OF_TABLE      0xFFFD
+#define REGFLAG_RESET_LOW         0xFFFE
+#define REGFLAG_RESET_HIGH        0xFFFF
+
+#define FRAME_WIDTH                 1080
+#define FRAME_HEIGHT                2352
+
+#define PHYSICAL_WIDTH              71868
+#define PHYSICAL_HEIGHT             156618
+
+#define DATA_RATE                   1130
+
+#define HSA                         20
+#define HBP                         70
+#define HFP                         106
+#define VSA                         2
+#define VBP                         18
+
+//Parameter setting for mode 1 Start
+#define MODE_60_FPS                 60
+#define MODE_60_VFP                 2524
+//Parameter setting for mode 1 End
+
+//Parameter setting for mode 2 Start
+#define MODE_90_FPS                 90
+#define MODE_90_VFP                 892
+//Parameter setting for mode 2 End
+
+/*Parameter setting for mode 3 Start*/
+#define MODE_120_FPS                120
+#define MODE_120_VFP                76
+/*Parameter setting for mode 3 End*/
+
+#define LFR_EN                      0
+/* DSC RELATED */
+
+#define DSC_ENABLE                  1
+#define DSC_VER                     2
+#define DSC_SLICE_MODE              1
+#define DSC_RGB_SWAP                0
+#define DSC_DSC_CFG                 40
+#define DSC_RCT_ON                  1
+#define DSC_BIT_PER_CHANNEL         10
+#define DSC_DSC_LINE_BUF_DEPTH      11
+#define DSC_BP_ENABLE               1
+#define DSC_BIT_PER_PIXEL           128
+#define DSC_SLICE_HEIGHT            12
+#define DSC_SLICE_WIDTH             540
+#define DSC_CHUNK_SIZE              540
+#define DSC_XMIT_DELAY              512
+#define DSC_DEC_DELAY               279
+#define DSC_SCALE_VALUE             32
+#define DSC_INCREMENT_INTERVAL      538
+#define DSC_DECREMENT_INTERVAL      7
+#define DSC_LINE_BPG_OFFSET         1
+#define DSC_NFL_BPG_OFFSET          187
+#define DSC_SLICE_BPG_OFFSET        2170
+#define DSC_INITIAL_OFFSET          6144
+#define DSC_FINAL_OFFSET            4336
+#define DSC_FLATNESS_MINQP          7
+#define DSC_FLATNESS_MAXQP          16
+#define DSC_RC_MODEL_SIZE           8192
+#define DSC_RC_EDGE_FACTOR          6
+#define DSC_RC_QUANT_INCR_LIMIT0    15
+#define DSC_RC_QUANT_INCR_LIMIT1    15
+#define DSC_RC_TGT_OFFSET_HI        3
+#define DSC_RC_TGT_OFFSET_LO        3
+
+int panel_esd_register_client(const char *source, struct notifier_block *nb);
+int panel_esd_unregister_client(struct notifier_block *nb);
+int panel_esd_notifier_call_chain(unsigned long val, void *v);
+#endif
