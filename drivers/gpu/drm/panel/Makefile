@@ -129,6 +129,7 @@ obj-$(CONFIG_DRM_PANEL_CSOT_TD4160_667_720_HDPLUS_DPHY_VDO_120HZ) += dsi-panel-m
 obj-$(CONFIG_DRM_PANEL_MOT_VDO_BOE_NT37713_1080_2352_DPHY_120HZ) += dsi-panel-mot-vdo-boe-nt37713-1080-2352-dphy-120hz.o
 obj-$(CONFIG_DRM_PANEL_MOT_VDO_BOE_IL97605A_1080_2352_DPHY_120HZ) += dsi-panel-mot-vdo-boe-il97605a-1080-2352-dphy-120hz.o
 obj-$(CONFIG_DRM_PANEL_MOT_VDO_TM_VTDR6126A_1080_2352_DPHY_120HZ) += dsi-panel-mot-vdo-tm-vtdr6126a-1080-2352-dphy-120hz.o
+obj-$(CONFIG_DRM_PANEL_MOT_VDO_CSOT_VTDR6126A_1080_2352_DPHY_120HZ) += dsi-panel-mot-vdo-csot-vtdr6126a-1080-2352-dphy-120hz.o
 
 mediatek-drm-gateic-y := mtk_drm_panel_i2c.o \
 		  mtk_drm_gateic_rt4801h.o \
