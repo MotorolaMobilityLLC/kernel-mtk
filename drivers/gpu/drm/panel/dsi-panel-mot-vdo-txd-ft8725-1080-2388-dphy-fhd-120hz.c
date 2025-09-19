@@ -73,6 +73,7 @@ struct txd {
 	int error;
 	//unsigned int hbm_mode;
 	unsigned int cabc_mode;
+	s64 screen_on_timestamp;
 	//enum panel_version version;
 };
 
@@ -177,6 +178,7 @@ static void txd_dcs_write(struct txd *ctx, const void *data, size_t len)
 
 static void txd_panel_init(struct txd *ctx)
 {
+	ktime_t now;
 	pr_info("disp: %s+\n", __func__);
 
 	gpiod_set_value(ctx->reset_gpio, 0);
@@ -199,6 +201,12 @@ static void txd_panel_init(struct txd *ctx)
 	txd_dcs_write_seq_static(ctx,0xFF,0x87,0x25,0x01);
 	txd_dcs_write_seq_static(ctx,0x00,0x80);
 	txd_dcs_write_seq_static(ctx,0xFF,0x87,0x25);
+	txd_dcs_write_seq_static(ctx,0x00,0xB0);
+	txd_dcs_write_seq_static(ctx,0xCA,0x05,0x05,0x0B);
+	txd_dcs_write_seq_static(ctx,0x00,0xB5);
+	txd_dcs_write_seq_static(ctx,0xCA,0x03);
+	txd_dcs_write_seq_static(ctx,0x00,0x80);
+	txd_dcs_write_seq_static(ctx,0xA7,0x03);
 
 	txd_dcs_write_seq_static(ctx,0x53,0x2C);
 	txd_dcs_write_seq_static(ctx,0x55,0x01);
@@ -207,6 +215,11 @@ static void txd_panel_init(struct txd *ctx)
 	msleep(100);
 	txd_dcs_write_seq_static(ctx,0x29,0x00);
 	txd_dcs_write_seq_static(ctx,0x51,0xFC,0x0F);
+
+	now = ktime_get();
+	ctx->screen_on_timestamp = ktime_to_ms(now);
+	pr_info("disp -screen on timestamp: %lld \n", ctx->screen_on_timestamp);
+
 	msleep(20);
 
 	pr_info("disp:init code %s, data_rate=%d end!\n", __func__, DATA_RATE);
@@ -244,11 +257,24 @@ static int panel_set_gesture_flag(int state)
 static int txd_unprepare(struct drm_panel *panel)
 {
 	struct txd *ctx = panel_to_txd(panel);
+	ktime_t now;
+	s64 timestamp = 0;
+	s64 diff = 0;
 
 	if (!ctx->prepared) {
 		pr_info("%s, already unprepared, return\n", __func__);
 		return 0;
 	}
+
+	now = ktime_get();
+	timestamp = ktime_to_ms(now);
+	diff = timestamp - ctx->screen_on_timestamp;
+	pr_info("disp -screen on and off time diff: %lld \n", diff);
+	if (diff < 150 && diff >= 0) {
+            // Per vendor, enforce 150ms min between screen on/off to prevent IC issues
+	    msleep(150 - diff);
+	}
+
 	pr_info("%s\n", __func__);
 	printk("[%d  %s]_check_dsi !!\n",__LINE__, __FUNCTION__);
 	msleep(1);
