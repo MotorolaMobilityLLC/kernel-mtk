@@ -76,6 +76,33 @@ static int mtk_ext_get_charger_type(struct mtk_ctd_info *mci, int attach)
 	return power_supply_set_property(bc12_psy,
 					 POWER_SUPPLY_PROP_ONLINE, &prop);
 }
+
+static int mmi_wake_up_charger(void)
+{
+	struct mtk_charger *info = NULL;
+	struct power_supply *chg_psy = NULL;
+
+	chg_psy = power_supply_get_by_name("mtk-master-charger");
+	if (chg_psy == NULL || IS_ERR(chg_psy)) {
+		pr_err("%s Couldn't get chg_psy\n", __func__);
+		return 0;
+	} else {
+		info = (struct mtk_charger *)power_supply_get_drvdata(chg_psy);
+		if (!info) {
+		    pr_err("%s: Failed to get charger driver data\n", __func__);
+		    return 0; /* Or an appropriate error code */
+		}
+	}
+
+	pr_info("%s \n", __func__);
+	if (info->algo.wake_up_charger)
+		info->algo.wake_up_charger(info);
+	else
+		pr_err("%s get info->algo.wake_up_charger fail", __func__);
+
+	return 0;
+}
+
 static int mmi_mux_typec_chg_chan(enum mmi_mux_channel channel, bool on)
 {
 	struct mtk_charger *info = NULL;
@@ -231,6 +258,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 					noti->typec_state.polarity);
 			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, true);
 			handle_typec_pd_attach(mci, ATTACH_TYPE_TYPEC);
+			mmi_wake_up_charger();
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
 		    noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
 		    noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC ||
