@@ -696,6 +696,13 @@ static int enable_charging(struct mtk_charger *info,
 	return 0;
 }
 
+static int wake_up_charger(struct mtk_charger *info)
+{
+	chr_err("%s \n", __func__);
+	_wake_up_charger(info);
+	return 0;
+}
+
 static int charger_dev_event(struct notifier_block *nb, unsigned long event,
 				void *v)
 {
@@ -1062,6 +1069,7 @@ int mtk_basic_charger_init(struct mtk_charger *info)
 	info->algo.do_dvchg2_event = dvchg2_dev_event;
 	info->algo.do_hvdvchg1_event = hvdvchg1_dev_event;
 	info->algo.do_hvdvchg2_event = hvdvchg2_dev_event;
+	info->algo.wake_up_charger = wake_up_charger;
 	info->lst_rnd_alg_idx = -1;
 	//info->change_current_setting = mtk_basic_charging_current;
 	return 0;

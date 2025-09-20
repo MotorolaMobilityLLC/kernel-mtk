@@ -238,6 +238,7 @@ struct mtk_charger_algorithm {
 	int (*do_hvdvchg2_event)(struct notifier_block *nb, unsigned long ev,
 			       void *v);
 	int (*change_current_setting)(struct mtk_charger *info);
+	int (*wake_up_charger)(struct mtk_charger *info);
 	void *algo_data;
 };
 
