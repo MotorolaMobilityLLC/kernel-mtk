@@ -521,15 +521,15 @@ static const struct drm_display_mode performance_mode_60hz = {
 
 static struct mtk_panel_params ext_params_mode_60 = {
 	.data_rate = DATA_RATE,
-	.cust_esd_check = 0,
-	.esd_check_enable = 0,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
-		.para_list[0] = 0xc,
+		.para_list[0] = 0x9c,
 	},
 	.lcm_esd_check_table[1] = {
-		.cmd = 0xAB,
+		.cmd = 0x66,
 		.count = 2,
 		.para_list[0] = 0x00,
 	},
@@ -610,15 +610,15 @@ static struct mtk_panel_params ext_params_mode_60 = {
 
 static struct mtk_panel_params ext_params_mode_90 = {
 	.data_rate = DATA_RATE,
-	.cust_esd_check = 0,
-	.esd_check_enable = 0,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
-		.para_list[0] = 0xc,
+		.para_list[0] = 0x9c,
 	},
 	.lcm_esd_check_table[1] = {
-		.cmd = 0xAB,
+		.cmd = 0x66,
 		.count = 2,
 		.para_list[0] = 0x00,
 	},
@@ -699,15 +699,15 @@ static struct mtk_panel_params ext_params_mode_90 = {
 
 static struct mtk_panel_params ext_params_mode_120 = {
 	.data_rate = DATA_RATE,
-	.cust_esd_check = 0,
-	.esd_check_enable = 0,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
-		.para_list[0] = 0xc,
+		.para_list[0] = 0x9c,
 	},
 	.lcm_esd_check_table[1] = {
-		.cmd = 0xAB,
+		.cmd = 0x66,
 		.count = 2,
 		.para_list[0] = 0x00,
 	},
