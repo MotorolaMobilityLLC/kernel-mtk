@@ -577,9 +577,7 @@ static const struct drm_display_mode performance_mode_60hz = {
 
 
 static struct mtk_panel_params ext_params_mode_60 = {
-	//.change_fps_by_vfp_send_cmd = 0,
-	.vfp_low_power = 888,
-	.data_rate = 1130,
+ 	.data_rate = 1130,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
@@ -657,18 +655,17 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = 60,
 	.dyn_fps = {
-		.switch_en = 0,
+		.switch_en = 1,
 		.vact_timing_fps = 120,
-
+		.dfps_cmd_table[0] = {0, 2, {0x6C, 0x03} },
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
-
+		.switch_en = 0,
 	},
 };
 
 static struct mtk_panel_params ext_params_mode_90 = {
-	.vfp_low_power = 888,
 	.data_rate = 1130,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -749,7 +746,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	.dyn_fps = {
 		.switch_en = 1,
 		.vact_timing_fps = 120,
-
+		.dfps_cmd_table[0] = {0, 2, {0x6C, 0x02} },
 
 	},
 	/* following MIPI hopping parameter might cause screen mess */
@@ -760,7 +757,6 @@ static struct mtk_panel_params ext_params_mode_90 = {
 };
 
 static struct mtk_panel_params ext_params_mode_120 = {
-	.vfp_low_power = 888,
 	.data_rate = 1130,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -839,9 +835,9 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = 60,
 	.dyn_fps = {
-		.switch_en = 0,
+		.switch_en = 1,
 		.vact_timing_fps = 120,
-
+		.dfps_cmd_table[0] = {0, 2, {0x6C, 0x01} },
 	},
 	/* following MIPI hopping parameter might cause screen mess */
 	.dyn = {
