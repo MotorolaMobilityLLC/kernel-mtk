@@ -644,8 +644,6 @@ static const struct drm_display_mode performance_mode_30hz = {
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 static struct mtk_panel_params ext_params_mode_30 = {
-	//.change_fps_by_vfp_send_cmd = 0,
-	.vfp_low_power = 846,
 	.data_rate = DATA_RATE,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -741,8 +739,6 @@ static struct mtk_panel_params ext_params_mode_30 = {
 };
 
 static struct mtk_panel_params ext_params_mode_60 = {
-	//.change_fps_by_vfp_send_cmd = 0,
-	.vfp_low_power = 846,
 	.data_rate = DATA_RATE,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -838,7 +834,6 @@ static struct mtk_panel_params ext_params_mode_60 = {
 };
 
 static struct mtk_panel_params ext_params_mode_90 = {
-	.vfp_low_power = 846,
 	.data_rate = DATA_RATE,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -934,7 +929,6 @@ static struct mtk_panel_params ext_params_mode_90 = {
 };
 
 static struct mtk_panel_params ext_params_mode_120 = {
-	.vfp_low_power = 846,
 	.data_rate = DATA_RATE,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -1030,7 +1024,6 @@ static struct mtk_panel_params ext_params_mode_120 = {
 };
 
 static struct mtk_panel_params ext_params_mode_144 = {
-	.vfp_low_power = 846,
 	.data_rate = DATA_RATE,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
