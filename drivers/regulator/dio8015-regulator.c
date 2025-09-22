@@ -304,6 +304,7 @@ static int dio8015_i2c_probe(struct i2c_client *client,
 	struct device *dev = &client->dev;
 	struct dio8015 *chip;
 	int error, cs_gpio, vin1_gpio, ret, i, value;
+	int retry = 2;
 
 	/* Set all register to initial value when probe driver to avoid register value was modified.
 	*/
@@ -382,7 +383,15 @@ static int dio8015_i2c_probe(struct i2c_client *client,
 		return error;
 	}
 
-	ret = regmap_read(chip->regmap, DIO8015_CHIP_REV, &ldo_chipid);
+	do {
+		ret = regmap_read(chip->regmap, DIO8015_CHIP_REV, &ldo_chipid);
+		if (ldo_chipid == DIO8015_ID || ldo_chipid == OCP6210_ID) {
+			dev_info(chip->dev, "read chip id success!\n");
+			break;
+		}
+		retry--;
+	} while (retry > 0);
+
 	if (ret < 0 ) {
 		dev_err(dev, "Failed to read CHIP ID:0x%x, ret:%d\n", ldo_chipid,ret);
 		ret = -ENODEV;
@@ -400,7 +409,7 @@ static int dio8015_i2c_probe(struct i2c_client *client,
 				return ret;
 			}
 		} else {
-			dev_err(dev, "Failed to read CHIP ID:0x%x, ret:%d\n", ldo_chipid,ret);
+			dev_err(dev, "Failed to read other CHIP ID:0x%x, ret:%d\n", ldo_chipid,ret);
 			ret = -ENODEV;
 			return ret;
 		}
