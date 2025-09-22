@@ -54,7 +54,8 @@ int vtdr6126A_range_bpg_ofs[15] = {2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -1
 //#define IL_CSOT_PANEL_VENDOR_ID  	(csot_ILI_PANEL_VENDOR_ID | (0xF << 24))
 
 static int tp_gesture_flag = 0;
-
+/* Tracks the current backlight level to provide context for HBM/LHBM transitions */
+static int current_bl = 0;
 struct csot_vtdr6126A {
 	struct device *dev;
 	struct drm_panel panel;
@@ -107,25 +108,6 @@ static struct mtk_panel_para_table panel_lhbm_off[] = {
 	//set LHBM off
       {2, {0x62,0x00}},
 };
-
-static void set_lhbm_alpha(unsigned int bl_level)
-{
-	struct mtk_panel_para_table *pTable = &panel_lhbm_on[0];
-	unsigned int alpha = 0;
-	unsigned int lhbm_alpha_index = bl_level;
-
-	alpha = lhbm_alpha[lhbm_alpha_index];
-
-	if (bl_level >= 3519){
-		pTable->para_list[3] = (bl_level >> 8) & 0xFF;
-		pTable->para_list[4] = bl_level & 0xFF;
-		pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pTable->para_list[3], pTable->para_list[4]);
-	} else if (bl_level >= 0 && bl_level < 3519){
-		pTable->para_list[1] = (alpha >> 8) & 0xFF;
-		pTable->para_list[2] = alpha & 0xFF;
-		pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pTable->para_list[1], pTable->para_list[2]);
-	}
-}
 
 #define csot_vtdr6126A_dcs_write_seq(ctx, seq...)                                     \
 	({                                                                     \
@@ -233,7 +215,9 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x35, 0x00);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x51, 0x36,0xE8);//DBV
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x53, 0x20);
-	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x59, 0x00);//demura off
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x59, 0x09);//demura on
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA,0x18);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xB0, 0x80);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x5E, 0x00);//DC MODE,default off
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x6B, 0x01);//DR_TEMP_SEL
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x6C, 0x01);//120hz
@@ -280,6 +264,11 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xCE, 0x22);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x72, 0x00); //PMIC1=SC6010
 
+	//LHBM ratios provided by panel vendor
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xf0, 0xaa,0x1c);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xc1, 0x0D,0xC0,0x0F,0xE4,0x12,0x08,0x1D,0x28,0x36,0xE8,0x39,0x70,0x3B,0xF8,0x3E,0x80,0x3F,0x3E,0x3F,0xFC);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xc2, 0x5E,0x52,0x73,0x50,0x44,0x62,0x40,0x34,0x4F,0x2A,0x22,0x36,0x18,0x14,0x20,0x09,0x06,0x0F,0x97,0x97,0x97,0xB4,0xB3,0xBA,0xC3,0xBF,0xCB,0xC3,0xBF,0xCB);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xc4, 0x01,0xFF,0x02,0x02,0x02,0x04,0x04,0x04,0x04,0x04,0x04,0x06,0x06,0x07,0x1B,0x16,0x1C,0x1E,0x1A,0x1F,0x21,0x20,0x25,0x28,0x28,0x2C,0x3F,0x3C,0x44,0x47,0x44,0x4D);
 	//by V clear DMR LB ERR
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xff, 0x5a,0x80);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x65, 0x25);
@@ -806,6 +795,7 @@ static int csot_vtdr6126A_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 
 	pr_info("%s backlight = %d\n", __func__, level);
 
+	current_bl = level;
 	bl_tb0[1] = (level >> 8) & 0x3F;
 	bl_tb0[2] = level & 0xFF;
 
@@ -966,6 +956,25 @@ static int panel_cabc_set_cmdq(struct csot_vtdr6126A *ctx, void *dsi, dcs_grp_wr
 	return 0;
 }
 
+static void set_lhbm_alpha(unsigned int bl_level)
+{
+	struct mtk_panel_para_table *pAlphaTable;
+	unsigned int alpha = 0;
+	unsigned int lhbm_alpha_index = bl_level;
+
+	pAlphaTable = &panel_lhbm_on[0];
+	if (lhbm_alpha_index >= ARRAY_SIZE(lhbm_alpha)){
+			pAlphaTable->para_list[3] = (bl_level >> 8) & 0xFF;
+			pAlphaTable->para_list[4] = bl_level & 0xFF;
+			pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pAlphaTable->para_list[3], pAlphaTable->para_list[4]);
+		} else {
+			alpha = lhbm_alpha[lhbm_alpha_index];
+			pAlphaTable->para_list[1] = (alpha >> 8) & 0xFF;
+			pAlphaTable->para_list[2] = alpha & 0xFF;
+			pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pAlphaTable->para_list[1], pAlphaTable->para_list[2]);
+		}
+}
+
 static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level, uint32_t fps)
 {
 	unsigned int para_count = 0;
@@ -988,7 +997,7 @@ static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, ui
 static int panel_hbm_set_cmdq(struct csot_vtdr6126A *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
 	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0x3E, 0x80}};//set hbm code, on
-	unsigned int level = 0;
+	unsigned int level = current_bl;
 	unsigned int fps = atomic_read(&ctx->current_fps);
 
 	pr_info("%s: level:%d, fps:%d, hbm_state:%d, lhbm_en=%d\n", __func__, level, fps, hbm_state, ctx->lhbm_en);
