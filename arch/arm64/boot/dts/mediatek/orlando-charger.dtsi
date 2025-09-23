@@ -61,6 +61,7 @@
 		sc,sc8989x,iboost = <7>; /*0:0.5A 3:1.4A 5:1.875A 7:2.45A*/
 		sc,sc8989x,force_vindpm = <0>;
 		sc,sc8989x,vindpm = <18>; /*2600 + val * 100*/
+		sc,vindpm-track = <3>; /*0: DIS 1:200, 2:250 3:300*/
 	};
         aw35615@22 {
                 compatible = "awinic,aw35615";
