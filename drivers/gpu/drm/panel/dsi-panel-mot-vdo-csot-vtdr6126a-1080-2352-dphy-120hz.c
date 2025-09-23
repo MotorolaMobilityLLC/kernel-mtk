@@ -534,10 +534,10 @@ static struct mtk_panel_params ext_params_mode_60 = {
 		.para_list[0] = 0x00,
 	},
         .lcm_cellid = {
-                .panel_cellid_reg = 0xAC,
-                .panel_cellid_len = 23,
-                .panel_cellid_offset_reg = 0x6F,
-                .panel_cellid_offset = 0x00,
+		.panel_cellid_reg = 0x5A,
+		.panel_cellid_len = 23,
+		.panel_cellid_offset_reg = 0x65,
+		.panel_cellid_offset = 0x00,
         },
 
 	.panel_ver = 1,
@@ -623,10 +623,10 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.para_list[0] = 0x00,
 	},
         .lcm_cellid = {
-                .panel_cellid_reg = 0xAC,
-                .panel_cellid_len = 23,
-                .panel_cellid_offset_reg = 0x6F,
-                .panel_cellid_offset = 0x00,
+		.panel_cellid_reg = 0x5A,
+		.panel_cellid_len = 23,
+		.panel_cellid_offset_reg = 0x65,
+		.panel_cellid_offset = 0x00,
         },
 
 	.panel_ver = 1,
@@ -712,10 +712,10 @@ static struct mtk_panel_params ext_params_mode_120 = {
 		.para_list[0] = 0x00,
 	},
         .lcm_cellid = {
-                .panel_cellid_reg = 0xAC,
-                .panel_cellid_len = 23,
-                .panel_cellid_offset_reg = 0x6F,
-                .panel_cellid_offset = 0x00,
+		.panel_cellid_reg = 0x5A,
+		.panel_cellid_len = 23,
+		.panel_cellid_offset_reg = 0x65,
+		.panel_cellid_offset = 0x00,
         },
 
 	.panel_ver = 1,
