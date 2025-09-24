@@ -2212,6 +2212,7 @@
       <elf-symbol name='devm_pm_runtime_enable' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe6440835'/>
       <elf-symbol name='devm_power_supply_get_by_phandle' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x71406826'/>
       <elf-symbol name='devm_power_supply_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x73f6be50'/>
+      <elf-symbol name='devm_power_supply_register_no_ws' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2a82b75e'/>
       <elf-symbol name='devm_pwm_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x795bbc1e'/>
       <elf-symbol name='devm_pwmchip_add' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x117d6c4e'/>
       <elf-symbol name='devm_qcom_smem_state_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa7138795'/>
@@ -86517,10 +86518,10 @@
       </union-decl>
       <union-decl name='__anonymous_union__' size-in-bits='64' is-anonymous='yes' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1' id='ac5ab65f'>
         <data-member access='public'>
-          <var-decl name='' type-id='e7f44049' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1'/>
+          <var-decl name='' type-id='e7f4404a' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1'/>
         </data-member>
         <data-member access='public'>
-          <var-decl name='' type-id='e7f4404a' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1'/>
+          <var-decl name='' type-id='e7f44049' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1'/>
         </data-member>
         <data-member access='public'>
           <var-decl name='' type-id='ac5ab597' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1'/>
@@ -119895,15 +119896,15 @@
       </class-decl>
       <class-decl name='__anonymous_struct__' size-in-bits='64' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1' id='e7f44049'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='ra_honor_pio_pflag' type-id='8f048e17' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='8'>
-          <var-decl name='padding4' type-id='c20b850f' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1'/>
+          <var-decl name='android_kabi_reserved4' type-id='91ce1af9' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='__anonymous_struct__' size-in-bits='64' is-struct='yes' is-anonymous='yes' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1' id='e7f4404a'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='android_kabi_reserved4' type-id='91ce1af9' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1'/>
+          <var-decl name='ra_honor_pio_pflag' type-id='8f048e17' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='8'>
+          <var-decl name='padding4' type-id='c20b850f' visibility='default' filepath='include/linux/ipv6.h' line='93' column='1'/>
         </data-member>
       </class-decl>
       <class-decl name='__anonymous_struct__' size-in-bits='224' is-struct='yes' is-anonymous='yes' visibility='default' filepath='mm/vmscan.c' line='163' column='1' id='e7f4404b'>
@@ -144686,6 +144687,12 @@
         <parameter type-id='fa0b179b' name='parent' filepath='drivers/power/supply/power_supply_core.c' line='1293' column='1'/>
         <parameter type-id='cb9cd99f' name='desc' filepath='drivers/power/supply/power_supply_core.c' line='1294' column='1'/>
         <parameter type-id='048b3ad6' name='cfg' filepath='drivers/power/supply/power_supply_core.c' line='1295' column='1'/>
+        <return type-id='c0c93c9e'/>
+      </function-decl>
+      <function-decl name='devm_power_supply_register_no_ws' mangled-name='devm_power_supply_register_no_ws' filepath='drivers/power/supply/power_supply_core.c' line='1329' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_power_supply_register_no_ws'>
+        <parameter type-id='fa0b179b' name='parent' filepath='drivers/power/supply/power_supply_core.c' line='1329' column='1'/>
+        <parameter type-id='cb9cd99f' name='desc' filepath='drivers/power/supply/power_supply_core.c' line='1330' column='1'/>
+        <parameter type-id='048b3ad6' name='cfg' filepath='drivers/power/supply/power_supply_core.c' line='1331' column='1'/>
         <return type-id='c0c93c9e'/>
       </function-decl>
       <function-decl name='devm_pwm_get' mangled-name='devm_pwm_get' filepath='drivers/pwm/core.c' line='1082' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_pwm_get'>
