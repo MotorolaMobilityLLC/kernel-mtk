@@ -659,6 +659,7 @@
   devm_pwm_get
   devm_qcom_smem_state_get
   devm_regmap_add_irq_chip
+  devm_regmap_add_irq_chip_fwnode
   devm_regmap_del_irq_chip
   devm_regmap_field_alloc
   devm_regmap_field_bulk_alloc
@@ -1615,8 +1616,10 @@
   irq_dispose_mapping
   __irq_domain_alloc_irqs
   irq_domain_alloc_irqs_parent
+  __irq_domain_alloc_fwnode
   irq_domain_create_hierarchy
   irq_domain_disconnect_hierarchy
+  irq_domain_free_fwnode
   irq_domain_free_irqs_common
   irq_domain_free_irqs_parent
   irq_domain_get_irq_data
@@ -1828,6 +1831,7 @@
   led_trigger_register_simple
   led_trigger_unregister
   led_trigger_unregister_simple
+  linear_range_values_in_range
   linkwatch_fire_event
   __list_add_valid_or_report
   __list_del_entry_valid_or_report
@@ -3385,6 +3389,7 @@
   __traceiter_android_vh_binder_restore_priority
   __traceiter_android_vh_binder_set_priority
   __traceiter_android_vh_build_sched_domains
+  __traceiter_android_vh_check_hibernation_swap
   __traceiter_android_vh_check_uninterruptible_tasks
   __traceiter_android_vh_check_uninterruptible_tasks_dn
   __traceiter_android_vh_cpufreq_fast_switch
@@ -3413,6 +3418,8 @@
   __traceiter_android_vh_printk_hotplug
   __traceiter_android_vh_rproc_recovery
   __traceiter_android_vh_rproc_recovery_set
+  __traceiter_android_vh_save_cpu_resume
+  __traceiter_android_vh_save_hib_resume_bdev
   __traceiter_android_vh_scheduler_tick
   __traceiter_android_vh_setscheduler_uclamp
   __traceiter_android_vh_show_resume_epoch_val
@@ -3521,6 +3528,7 @@
   __tracepoint_android_vh_binder_restore_priority
   __tracepoint_android_vh_binder_set_priority
   __tracepoint_android_vh_build_sched_domains
+  __tracepoint_android_vh_check_hibernation_swap
   __tracepoint_android_vh_check_uninterruptible_tasks
   __tracepoint_android_vh_check_uninterruptible_tasks_dn
   __tracepoint_android_vh_cpufreq_fast_switch
@@ -3549,6 +3557,8 @@
   __tracepoint_android_vh_printk_hotplug
   __tracepoint_android_vh_rproc_recovery
   __tracepoint_android_vh_rproc_recovery_set
+  __tracepoint_android_vh_save_cpu_resume
+  __tracepoint_android_vh_save_hib_resume_bdev
   __tracepoint_android_vh_scheduler_tick
   __tracepoint_android_vh_setscheduler_uclamp
   __tracepoint_android_vh_show_resume_epoch_val
