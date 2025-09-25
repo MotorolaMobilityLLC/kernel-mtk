@@ -22,6 +22,11 @@
 #include "mediatek/sbuya-ntc.dtsi"
 //#include "mediatek/mt6835_kansas_camera_overlay.dtsi"
 / {
+
+irq_nfc: irq_nfc {
+                compatible = "mediatek,irq_nfc-eint";
+};
+
 switch_chg_eint: switch_chg_eint {
 	};
 tcpc_pd: tcpc_pd {
@@ -61,16 +66,53 @@ eint_cp: eint_cp {
 	};
 };
 
-&i2c3 {
-        clock-frequency = <400000>;
+&pio {
+	nfc_spi_cs_mode_spi: nfc_spi_cs_mode_spi {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO37__FUNC_SPI5_CSB>;
+			bias-disable;
+		};
+	};
 
-        sn220e: sn220e@28 {
-                compatible = "qcom,sn-nci";
-                reg = <0x28>;
-                qcom,sn-irq = <&pio 41 0>;
-                qcom,sn-ven = <&pio 42  0>;
-                status = "okay";
-        };
+	nfc_spi_cs_mode_idle: nfc_spi_cs_mode_idle {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO37__FUNC_GPIO37>;
+			bias-disable;
+		};
+	};
+};
+
+&spi5 {
+	st54spi: st54spi@0 {
+		compatible = "st,st54spi";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+		gpio-power_nreset = <40>;
+		gpio-power_nreset-std = <&pio 40 0x00>;
+		power_mode = "ST54J";
+		bootmode = <&chosen>;
+		pinctrl-names = "pinctrl_state_mode_spi",
+				"pinctrl_state_mode_idle";
+		pinctrl-0 = <&nfc_spi_cs_mode_spi>;
+		pinctrl-1 = <&nfc_spi_cs_mode_idle>;
+		status = "okay";
+	};
+};
+
+&i2c3 {
+	status = "okay";
+	clock-frequency = <400000>;
+	st21nfc: st21nfc@0x08 {
+		compatible = "st,st21nfc";
+		reg = <0x08>;
+		interrupt-parent = <&pio>;
+		interrupts = <41 IRQ_TYPE_LEVEL_HIGH>;
+		bootmode = <&chosen>;
+		reset-gpios = <&pio 42 0x00>;
+		irq-gpios = <&pio 41 0x00>;
+		clkreq-gpios = <&pio 2 0x00>;
+		status = "okay";
+	};
 };
 
 &u2port0 {
