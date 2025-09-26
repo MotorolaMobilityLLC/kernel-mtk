@@ -62,6 +62,8 @@
                 focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
                 mmi,charger-psy-name = "battery";
                 mmi,usb-charger-detection;
+                focaltech,interpolation-ctrl;
+                focaltech,sample-ctrl;
 	};
 
 
