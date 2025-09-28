@@ -64,6 +64,7 @@
                 mmi,usb-charger-detection;
                 focaltech,interpolation-ctrl;
                 focaltech,sample-ctrl;
+                mmi,resolution_boost = <16>;
 	};
 
 
