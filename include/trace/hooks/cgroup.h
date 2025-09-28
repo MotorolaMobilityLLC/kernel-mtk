@@ -15,9 +15,17 @@ DECLARE_HOOK(android_vh_cgroup_set_task,
 	TP_PROTO(int ret, struct cgroup *cgrp, struct task_struct *task, bool threadgroup),
 	TP_ARGS(ret, cgrp, task, threadgroup));
 
+DECLARE_RESTRICTED_HOOK(android_rvh_refrigerator,
+	TP_PROTO(bool f),
+	TP_ARGS(f), 1);
+
 DECLARE_HOOK(android_vh_cgroup_attach,
 	TP_PROTO(struct cgroup_subsys *ss, struct cgroup_taskset *tset),
 	TP_ARGS(ss, tset));
+
+DECLARE_RESTRICTED_HOOK(android_rvh_cpuset_fork,
+	TP_PROTO(struct task_struct *p, bool *inherit_cpus),
+	TP_ARGS(p, inherit_cpus), 1);
 
 DECLARE_RESTRICTED_HOOK(android_rvh_cpu_cgroup_attach,
 	TP_PROTO(struct cgroup_taskset *tset),

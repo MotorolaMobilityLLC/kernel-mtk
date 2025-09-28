@@ -552,6 +552,7 @@
   device_match_name
   device_match_of_node
   device_move
+  device_node_to_regmap
   device_property_match_string
   device_property_present
   device_property_read_string
@@ -1118,6 +1119,7 @@
   extcon_set_state
   extcon_set_state_sync
   extcon_unregister_notifier
+  ext_sched_class
   fasync_helper
   fd_install
   fget
@@ -1258,6 +1260,9 @@
   get_user_ifreq
   get_user_pages
   get_zeroed_page_noprof
+  gic_v3_cpu_init
+  gic_v3_dist_init
+  gic_v3_dist_wait_for_rwp
   gov_attr_set_init
   gov_attr_set_put
   governor_sysfs_ops
@@ -2846,6 +2851,8 @@
   scsi_normalize_sense
   __scsi_print_sense
   scsi_register_interface
+  __scx_ops_enabled
+  __scx_switched_all
   sdei_event_disable
   sdei_event_enable
   sdei_event_register
@@ -3421,10 +3428,12 @@
   __traceiter_android_vh_save_cpu_resume
   __traceiter_android_vh_save_hib_resume_bdev
   __traceiter_android_vh_scheduler_tick
+  __traceiter_android_vh_scx_enabled
   __traceiter_android_vh_setscheduler_uclamp
   __traceiter_android_vh_show_resume_epoch_val
   __traceiter_android_vh_show_suspend_epoch_val
   __traceiter_android_vh_skip_swap_map_write
+  __traceiter_android_vh_switching_to_scx
   __traceiter_android_vh_thermal_pm_notify_suspend
   __traceiter_android_vh_timer_calc_index
   __traceiter_android_vh_try_fixup_sea
@@ -3560,10 +3569,12 @@
   __tracepoint_android_vh_save_cpu_resume
   __tracepoint_android_vh_save_hib_resume_bdev
   __tracepoint_android_vh_scheduler_tick
+  __tracepoint_android_vh_scx_enabled
   __tracepoint_android_vh_setscheduler_uclamp
   __tracepoint_android_vh_show_resume_epoch_val
   __tracepoint_android_vh_show_suspend_epoch_val
   __tracepoint_android_vh_skip_swap_map_write
+  __tracepoint_android_vh_switching_to_scx
   __tracepoint_android_vh_thermal_pm_notify_suspend
   __tracepoint_android_vh_timer_calc_index
   __tracepoint_android_vh_try_fixup_sea
@@ -4089,6 +4100,7 @@
   xsk_tx_peek_desc
   xsk_tx_release
   xsk_uses_need_wakeup
+  zap_page_range_single
   zap_vma_ptes
   zlib_deflate
   zlib_deflateEnd

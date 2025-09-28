@@ -94,6 +94,7 @@ unsigned int sysctl_sched_tunable_scaling = SCHED_TUNABLESCALING_LOG;
  * (default: 0.75 msec * (1 + ilog(ncpus)), units: nanoseconds)
  */
 unsigned int sysctl_sched_base_slice			= 750000ULL;
+EXPORT_SYMBOL_GPL(sysctl_sched_base_slice);
 static unsigned int normalized_sysctl_sched_base_slice	= 750000ULL;
 
 /*
@@ -8959,6 +8960,7 @@ static void set_cpus_allowed_fair(struct task_struct *p, struct affinity_context
 static int
 balance_fair(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
 {
+	trace_android_rvh_balance_fair(rq, prev, rf);
 	if (sched_fair_runnable(rq))
 		return 1;
 
@@ -9118,12 +9120,15 @@ struct task_struct *
 pick_next_task_fair(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
 {
 	struct sched_entity *se;
-	struct task_struct *p;
+	struct task_struct *p = NULL;
 	int new_tasks;
 
 again:
-	p = pick_task_fair(rq);
-	trace_android_rvh_replace_next_task_fair(rq, &p, prev);
+	trace_android_rvh_before_pick_task_fair(rq, &p, prev, rf);
+	if (!p) {
+		p = pick_task_fair(rq);
+		trace_android_rvh_replace_next_task_fair(rq, &p, prev);
+	}
 
 	if (!p)
 		goto idle;

@@ -3861,6 +3861,8 @@ static void switching_to_scx(struct rq *rq, struct task_struct *p)
 	if (SCX_HAS_OP(set_cpumask))
 		SCX_CALL_OP_TASK(SCX_KF_REST, set_cpumask, p,
 				 (struct cpumask *)p->cpus_ptr);
+
+	trace_android_vh_switching_to_scx(rq, p);
 }
 
 static void switched_from_scx(struct rq *rq, struct task_struct *p)
@@ -4155,6 +4157,7 @@ DEFINE_SCHED_CLASS(ext) = {
 	.uclamp_enabled		= 1,
 #endif
 };
+EXPORT_SYMBOL_GPL(ext_sched_class);
 
 static void init_dsq(struct scx_dispatch_q *dsq, u64 dsq_id)
 {
@@ -4637,7 +4640,6 @@ static void scx_ops_disable_workfn(struct kthread_work *work)
 	default:
 		break;
 	}
-	trace_android_vh_scx_ops_enable_state(SCX_OPS_DISABLING);
 
 	/*
 	 * Here, every runnable task is guaranteed to make forward progress and
@@ -4662,6 +4664,7 @@ static void scx_ops_disable_workfn(struct kthread_work *work)
 	 * must be switched out and exited synchronously.
 	 */
 	percpu_down_write(&scx_fork_rwsem);
+	trace_android_vh_scx_ops_enable_state(SCX_OPS_DISABLING);
 
 	scx_ops_init_task_enabled = false;
 

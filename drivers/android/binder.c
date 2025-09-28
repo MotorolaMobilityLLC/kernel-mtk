@@ -4516,6 +4516,7 @@ static int binder_thread_write(struct binder_proc *proc,
 			}
 			thread->looper |= BINDER_LOOPER_STATE_REGISTERED;
 			binder_inner_proc_unlock(proc);
+			trace_android_vh_binder_looper_state_registered(thread, proc);
 			break;
 		case BC_ENTER_LOOPER:
 			binder_debug(BINDER_DEBUG_THREADS,
@@ -5500,7 +5501,7 @@ static void binder_free_proc(struct binder_proc *proc)
 	binder_stats_deleted(BINDER_STAT_PROC);
 	dbitmap_free(&proc->dmap);
 	trace_android_vh_binder_free_proc(proc);
-	kfree(proc);
+	kfree(proc_wrapper(proc));
 }
 
 static void binder_free_thread(struct binder_thread *thread)
@@ -5598,6 +5599,7 @@ static int binder_thread_release(struct binder_proc *proc,
 	if (send_reply)
 		binder_send_failed_reply(send_reply, BR_DEAD_REPLY);
 	binder_release_work(proc, &thread->todo);
+	trace_android_vh_binder_thread_release(proc, thread);
 	binder_thread_dec_tmpref(thread);
 	return active_transactions;
 }
@@ -5671,6 +5673,7 @@ static int binder_ioctl_write_read(struct file *filp, unsigned long arg,
 		if (!binder_worklist_empty_ilocked(&proc->todo) || has_special_work)
 			binder_wakeup_proc_ilocked(proc);
 		binder_inner_proc_unlock(proc);
+		trace_android_vh_binder_read_done(proc, thread);
 		if (ret < 0) {
 			if (copy_to_user(ubuf, &bwr, sizeof(bwr)))
 				ret = -EFAULT;
@@ -6250,6 +6253,7 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
 
 static int binder_open(struct inode *nodp, struct file *filp)
 {
+	struct binder_proc_wrap *proc_wrap;
 	struct binder_proc *proc, *itr;
 	struct binder_device *binder_dev;
 	struct binderfs_info *info;
@@ -6259,9 +6263,10 @@ static int binder_open(struct inode *nodp, struct file *filp)
 	binder_debug(BINDER_DEBUG_OPEN_CLOSE, "%s: %d:%d\n", __func__,
 		     current->group_leader->pid, current->pid);
 
-	proc = kzalloc(sizeof(*proc), GFP_KERNEL);
-	if (proc == NULL)
+	proc_wrap = kzalloc(sizeof(*proc_wrap), GFP_KERNEL);
+	if (proc_wrap == NULL)
 		return -ENOMEM;
+	proc = &proc_wrap->proc;
 
 	dbitmap_init(&proc->dmap);
 	spin_lock_init(&proc->inner_lock);

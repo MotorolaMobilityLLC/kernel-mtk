@@ -378,6 +378,15 @@ DECLARE_RESTRICTED_HOOK(android_rvh_remove_entity_load_avg,
 	TP_PROTO(struct cfs_rq *cfs_rq, struct sched_entity *se),
 	TP_ARGS(cfs_rq, se), 1);
 
+DECLARE_RESTRICTED_HOOK(android_rvh_before_pick_task_fair,
+	TP_PROTO(struct rq *rq, struct task_struct **p,
+		 struct task_struct *prev, struct rq_flags *rf),
+	TP_ARGS(rq, p, prev, rf), 1);
+
+DECLARE_RESTRICTED_HOOK(android_rvh_balance_fair,
+	TP_PROTO(struct rq *rq, struct task_struct *prev, struct rq_flags *rf),
+	TP_ARGS(rq, prev, rf), 1);
+
 struct affinity_context;
 DECLARE_RESTRICTED_HOOK(android_rvh_set_cpus_allowed_ptr,
 	TP_PROTO(struct task_struct *p, struct affinity_context *ctx, bool *skip_user_ptr),
@@ -412,6 +421,10 @@ DECLARE_HOOK(android_vh_scx_set_cpus_allowed,
 DECLARE_HOOK(android_vh_scx_task_switch_finish,
 	TP_PROTO(struct task_struct *p, int enable),
 	TP_ARGS(p, enable));
+
+DECLARE_HOOK(android_vh_switching_to_scx,
+	TP_PROTO(struct rq *rq, struct task_struct *p),
+	TP_ARGS(rq, p));
 
 struct sugov_policy;
 DECLARE_RESTRICTED_HOOK(android_rvh_set_sugov_update,
