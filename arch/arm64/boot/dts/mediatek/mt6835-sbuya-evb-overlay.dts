@@ -15,19 +15,19 @@
 
 /* NOTE: copied from mt6835-kansas-dvt-overlay.dts for reusing Kansas DVT or later HW */
 
-#include "mediatek/mt6835-nevada-common-overlay.dtsi"
-#include "mediatek/mt6835_nevada_camera_overlay_evb.dtsi"
+#include "mediatek/mt6835-sbuya-common-overlay.dtsi"
+#include "mediatek/mt6835_sbuya_camera_overlay_evb.dtsi"
 /* Board match root node */
 / {
 	fragment@model {
 		target-path = "/";
 		__overlay__ {
-			mot,model = "nevada";
-			mot,board-id = <0x41 0xA100>;
+			mot,model = "sbuya";
+			mot,board-id = <0x47 0xA100>;
 		};
 	};
 };
 
-#include <nevada_evb/cust.dtsi>
-#include "mediatek/nevada-charger.dtsi"
+#include <sbuya_evb/cust.dtsi>
+#include "mediatek/sbuya-charger.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
