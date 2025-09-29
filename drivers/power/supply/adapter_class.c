@@ -161,6 +161,56 @@ int adapter_dev_send_hardreset(struct adapter_device *adapter_dev)
 }
 EXPORT_SYMBOL(adapter_dev_send_hardreset);
 
+int adapter_dev_reset_chg_type(struct adapter_device *adapter_dev)
+{
+	if (adapter_dev != NULL && adapter_dev->ops != NULL &&
+	    adapter_dev->ops->reset_chg_type)
+		return adapter_dev->ops->reset_chg_type(adapter_dev);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(adapter_dev_reset_chg_type);
+
+int adapter_dev_start_detection(struct adapter_device *adapter_dev)
+{
+	if (adapter_dev != NULL && adapter_dev->ops != NULL &&
+	    adapter_dev->ops->start_detection)
+		return adapter_dev->ops->start_detection(adapter_dev);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(adapter_dev_start_detection);
+
+int adapter_dev_is_charger_ready(struct adapter_device *adapter_dev, bool *val)
+{
+	if (adapter_dev != NULL && adapter_dev->ops != NULL &&
+	    adapter_dev->ops->is_charger_ready)
+		return adapter_dev->ops->is_charger_ready(adapter_dev, val);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(adapter_dev_is_charger_ready);
+
+int adapter_dev_get_protocol(struct adapter_device *adapter_dev, int *val)
+{
+	if (adapter_dev != NULL && adapter_dev->ops != NULL &&
+	    adapter_dev->ops->get_protocol)
+		return adapter_dev->ops->get_protocol(adapter_dev, val);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(adapter_dev_get_protocol);
+
+int adapter_dev_dp_dm(struct adapter_device *adapter_dev, int val)
+{
+	if (adapter_dev != NULL && adapter_dev->ops != NULL &&
+	    adapter_dev->ops->dp_dm)
+		return adapter_dev->ops->dp_dm(adapter_dev, val);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(adapter_dev_dp_dm);
+
 static DEVICE_ATTR_RO(name);
 
 static struct attribute *adapter_class_attrs[] = {

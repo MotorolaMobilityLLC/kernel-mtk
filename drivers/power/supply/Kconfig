@@ -749,6 +749,38 @@ config CHARGER_BQ256XX
 	  charge management and system power path management devices for single
 	  cell Li-ion and Li-polymer batteries.
 
+config MOTO_CHG_WT6670F_SUPPORT
+	bool "Enable WT6670F charger protocol IC for Moto"
+	default n
+	help
+	  Enable support for the Weltrend WT6670F, an external
+	  protocol IC used for implementing Qualcomm Quick Charge (QC)
+	  on non-Qualcomm platforms.
+
+config FORCE_QC3_ICL
+        bool "Force set qc3 input current limit"
+        default n
+        help
+          This is to force set the icl of qc3&qc3+.
+
+config WT6670F_QC3P
+        tristate "QC3+ protocol chipset"
+        depends on I2C
+        help
+          Say Y to enable support for QC3 plus protocol chipset.
+
+config WT6670F_I2C_400K
+        bool "Enable this to set the I2C clock frequency to 400kHz for the WT6670F IC"
+        default n
+        help
+          This is to enable MOTO supports of IC WT6670F.
+
+config MOTO_WT6670F_SHUTDOWN_ONLY_DO_SW_RESET
+        bool "WT6670F shutdown only do software reset"
+        default n
+        help
+          This is to enable shutdown Wt6670F only do software reset.
+
 config CHARGER_SMB347
 	tristate "Summit Microelectronics SMB3XX Battery Charger"
 	depends on I2C
