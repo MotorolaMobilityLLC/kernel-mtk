@@ -104,11 +104,18 @@ static void sched_queue_task_hook(void *data, struct rq *rq, struct task_struct 
 {
 	int cpu = rq->cpu;
 	int type = *(int *)data;
+	struct mtk_task *pvtask = (struct mtk_task *) p->android_vendor_data1;
+
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 	u64 ts[2];
 
 	ts[0] = sched_clock();
 #endif
+
+	if (type == enqueue)
+		pvtask->on_rq_timestamp = rq_clock(rq);
+	else
+		pvtask->on_rq_timestamp = 0;
 
 	if (trace_sched_queue_task_enabled()) {
 		unsigned long util = READ_ONCE(rq->cfs.avg.util_avg);
