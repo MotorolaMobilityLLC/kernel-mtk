@@ -1177,6 +1177,8 @@ done:
 
 #endif
 
+unsigned int sysctl_sched_long_preemption_ns = 2000000;
+
 #if IS_ENABLED(CONFIG_MTK_EAS)
 /* must hold runqueue lock for queue se is currently on */
 static struct task_struct *detach_a_hint_task(struct rq *src_rq, int dst_cpu)
@@ -1186,12 +1188,18 @@ static struct task_struct *detach_a_hint_task(struct rq *src_rq, int dst_cpu)
 	unsigned int task_util;
 	bool latency_sensitive = false;
 
+	struct task_struct *long_wait_task = NULL;
+	u64 max_wait_time = 0;
+	u64 now = rq_clock(src_rq);
+
 	lockdep_assert_rq_held(src_rq);
 
 	rcu_read_lock();
 	dst_capacity = capacity_orig_of(dst_cpu);
 	list_for_each_entry_reverse(p,
 			&src_rq->cfs_tasks, se.group_node) {
+
+		struct mtk_task *pvtask = (struct mtk_task *) p->android_vendor_data1;
 
 		if (!cpumask_test_cpu(dst_cpu, p->cpus_ptr))
 			continue;
@@ -1206,6 +1214,16 @@ static struct task_struct *detach_a_hint_task(struct rq *src_rq, int dst_cpu)
 				&& src_rq->rt.rt_nr_running == 0) {
 			trace_sched_skip_force_migrate_vip(p, src_rq->cpu, dst_cpu);
 			continue;
+		}
+
+		if (pvtask->on_rq_timestamp > 0) {
+			u64 wait_time = now - pvtask->on_rq_timestamp;
+
+			if (wait_time > sysctl_sched_long_preemption_ns && wait_time > max_wait_time) {
+				max_wait_time = wait_time;
+				long_wait_task = p;
+				trace_sched_long_preempt_migrate(p, src_rq->cpu, dst_cpu, wait_time);
+			}
 		}
 
 		task_util = uclamp_task_util(p);
@@ -1231,7 +1249,15 @@ static struct task_struct *detach_a_hint_task(struct rq *src_rq, int dst_cpu)
 			backup = p;
 		}
 	}
-	p = best_task ? best_task : backup;
+
+	if (best_task) {
+		p = best_task;
+	} else if (long_wait_task) {
+		p = long_wait_task;
+	} else {
+		p = backup;
+	}
+
 	if (p) {
 		/* detach_task */
 		deactivate_task(src_rq, p, DEQUEUE_NOCLOCK);

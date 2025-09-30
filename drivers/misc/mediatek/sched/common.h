@@ -60,6 +60,7 @@ struct mtk_task {
 #if IS_ENABLED(CONFIG_MOTO_STAT)
 	struct moto_stats_task_struct moto_stats_task;
 #endif
+	u64 on_rq_timestamp;
 };
 
 struct vip_task_group {
