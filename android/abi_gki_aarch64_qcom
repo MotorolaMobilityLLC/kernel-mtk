@@ -150,6 +150,7 @@
   blocking_notifier_chain_register
   blocking_notifier_chain_unregister
   bmap
+  bpf_redirect_info
   bpf_trace_run10
   bpf_trace_run11
   bpf_trace_run12
@@ -1386,6 +1387,7 @@
   nvmem_device_read
   nvmem_device_write
   of_address_to_resource
+  of_alias_get_highest_id
   of_alias_get_id
   of_clk_add_hw_provider
   of_clk_add_provider
