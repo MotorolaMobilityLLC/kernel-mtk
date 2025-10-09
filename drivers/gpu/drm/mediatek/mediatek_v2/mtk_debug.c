@@ -109,6 +109,7 @@ unsigned int disp_cm_bypass;
 static unsigned int m_old_pq_persist_property[32];
 unsigned int m_new_pq_persist_property[32];
 unsigned int g_mml_mode;
+
 #if IS_ENABLED(CONFIG_MTK_DISP_DEBUG)
 struct wr_online_dbg g_wr_reg;
 #endif
@@ -5254,6 +5255,7 @@ int mtk_debug_read_ddic_cellid(unsigned char *cellid, struct cellid_item *cellid
 	int dsi_read_pkg;
 	int len = cellid_info->panel_cellid_len;
 	int len_sub = cellid_info->panel_cellid_len_sub;
+	struct cellid_item temp_cellid_info;
 
 	if (!cmd_msg) {
 		DDPPR_ERR("cmd msg is NULL\n");
@@ -5287,11 +5289,20 @@ int mtk_debug_read_ddic_cellid(unsigned char *cellid, struct cellid_item *cellid
 	for(k = 0; k < dsi_read_pkg; k++) {
 		cmd_msg->channel = 0;
 		cmd_msg->flags |= MIPI_DSI_MSG_USE_LPM;
-
 		if (cellid_info->page_table[0][0]) {
 			if (!k || cellid_info->page_cmd_always) {
 				//set page cmds
-				ret = mtk_debug_send_page_cmds(cmd_msg, cellid_info->page_table);
+				if(!cellid_info->panel_cellid_regdata_increase) {
+					ret = mtk_debug_send_page_cmds(cmd_msg, cellid_info->page_table);
+				}
+				else {
+					if(cellid_info->page_table[3][4]) {
+						memcpy(&temp_cellid_info, cellid_info, sizeof(struct cellid_item));
+						//This reg needs the corresponding value written before each read
+						temp_cellid_info.page_table[3][4] += k;
+						ret = mtk_debug_send_page_cmds(cmd_msg, temp_cellid_info.page_table);
+					}
+				}
 				if (ret != 0) {
 					DDPPR_ERR("mtk_ddic_dsi_send_cmd error\n");
 					goto  dsi_error;
