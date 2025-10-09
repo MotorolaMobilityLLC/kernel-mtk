@@ -11,18 +11,30 @@
  * GNU General Public License for more details.
  */
 &i2c6 {
-	status = "ok";
-	tfa98xx_0: tfa98xx@34 {
-		compatible = "tfa,tfa98xx";
+	status = "okay";
+	aw883xx_smartpa_0: aw883xx@34 {
+		compatible = "awinic,aw883xx_smartpa";
+		#sound-dai-cells = <0>;
 		reg = <0x34>;
-		reset-gpio = <&pio 170 0>;
-		reset-polarity = <1>;
-	};
-	tfa98xx_1: tfa98xx@35 {
-		compatible = "tfa,tfa98xx";
-		reg = <0x35>;
 		reset-gpio = <&pio 124 0>;
-		reset-polarity = <1>;
+		irq-gpio = <&pio 10 0>;
+		sync-load = <1>;
+		sound-channel = <0>;
+		re-min = <1000>;
+		re-max = <40000>;
+		status = "okay";
+ 	};
+  	aw883xx_smartpa_1: aw883xx_smartpa@37 {
+		compatible = "awinic,aw883xx_smartpa";
+		#sound-dai-cells = <0>;
+		reg = <0x37>;
+		reset-gpio = <&pio 170 0>;
+		irq-gpio = <&pio 34 0>;
+		sync-load = <1>;
+		sound-channel = <1>;
+		re-min = <1000>;
+		re-max = <40000>;
+		status = "okay";
 	};
 };
 
@@ -31,7 +43,8 @@
 };
 
 &sound {
+	smartpa-hac-flag = <0>;
 	mediatek,speaker-codec {
-		sound-dai = <&tfa98xx_0 &tfa98xx_1>;
+		sound-dai = <&aw883xx_smartpa_0 &aw883xx_smartpa_1>;
 	};
 };

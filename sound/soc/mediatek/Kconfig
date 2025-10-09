@@ -439,3 +439,9 @@ config SND_SOC_VEGAS_AUDIO
 	depends on I2C
 	help
 	  This option enables support for VEGAS aw883xx Smart PA.
+
+config SND_SOC_SBUYA_AUDIO
+	tristate "SoC SBUYA Audio for aw883xx"
+	depends on I2C
+	help
+	  This option enables support for SBUYA aw883xx Smart PA.
