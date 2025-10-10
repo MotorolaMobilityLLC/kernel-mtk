@@ -2967,7 +2967,7 @@ int tcpc_typec_handle_wd(struct tcpc_device *tcpc, bool wd)
 		tcpc_typec_error_recovery(tcpc);
 		goto out;
 	}
-
+#ifdef MTK_BASE
 	if (tcpc->bootmode == 8 || tcpc->bootmode == 9) {
 		TYPEC_INFO("KPOC does not enter water protection\n");
 		goto out;
@@ -2983,6 +2983,9 @@ int tcpc_typec_handle_wd(struct tcpc_device *tcpc, bool wd)
 		TYPEC_NEW_STATE(typec_water_protection);
 		tcpci_set_water_protection(tcpc, true);
 	}
+#else
+	tcpci_set_water_protection(tcpc, wd);
+#endif
 out:
 	tcpci_notify_wd_status(tcpc, wd);
 	if (tcpc->typec_state == typec_water_protection ||
