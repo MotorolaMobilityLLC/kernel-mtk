@@ -181,8 +181,8 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 	}
 
 	if (info->water_detected) {
-		pdata->input_current_limit = info->data.usb_charger_current;
-		pdata->charging_current_limit = info->data.usb_charger_current;
+		pdata->input_current_limit = info->data.ac_charger_input_current;
+		pdata->charging_current_limit = info->data.ac_charger_current;
 		is_basic = true;
 		goto done;
 	}
