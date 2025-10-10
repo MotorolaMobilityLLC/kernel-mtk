@@ -61,7 +61,7 @@ struct sensor_info {
 	uint8_t sensor_type;
 	uint8_t padding[3];
 	uint32_t gain;
-	char name[16];
+	char name[32]; //moto change to 32
 	char vendor[16];
 } __packed __aligned(4);
 

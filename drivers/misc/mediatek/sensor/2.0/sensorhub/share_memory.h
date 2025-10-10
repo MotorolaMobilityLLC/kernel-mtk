@@ -47,7 +47,7 @@ struct share_mem_info {
 	uint8_t sensor_type;
 	uint8_t padding[3];
 	uint32_t gain;
-	uint8_t name[16];
+	uint8_t name[32]; //moto change to 32
 	uint8_t vendor[16];
 } __packed __aligned(4);
 
