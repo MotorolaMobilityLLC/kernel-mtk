@@ -455,7 +455,7 @@
 	compatible = "mmi,pehv";
 	gauge = <&mtk_gauge>;
 	polling-interval = <10000>;
-	vbat-cv = <4500>;
+	vbat-cv = <4560>;
 	start-soc-min = <0>;
 	start-soc-max = <90>;
 	idvchg-cc = <3000>;
