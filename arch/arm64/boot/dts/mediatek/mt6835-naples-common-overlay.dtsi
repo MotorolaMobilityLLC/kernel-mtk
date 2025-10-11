@@ -17,7 +17,6 @@
 #include "mediatek/naples-sensor.dtsi"
 #include "mediatek/naples-msdc.dtsi"
 #include "mediatek/naples-audio.dtsi"
-#include "mediatek/naples-fmr.dtsi"
 #include "mediatek/naples-ntc.dtsi"
 #include "mediatek/dio80151c.dtsi"
 #include "mediatek/dio8015.dtsi"
