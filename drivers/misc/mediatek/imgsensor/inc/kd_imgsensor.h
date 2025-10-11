@@ -429,10 +429,12 @@
 #define SENSOR_DRVNAME_MOT_NAPLES_GC32E1_MIPI_RAW        "mot_naples_gc32e1_mipi_raw"
 #define MOT_NAPLES_OV08F_SENSOR_ID                       0x0847
 #define SENSOR_DRVNAME_MOT_NAPLES_OV08F_MIPI_RAW         "mot_naples_ov08f_mipi_raw"
-#define MOT_NAPLES_GC08A3_SENSOR_ID                       0x08a3
-#define SENSOR_DRVNAME_MOT_NAPLES_GC08A3_MIPI_RAW         "mot_naples_gc08a3_mipi_raw"
-#define MOT_NAPLES_OV08F_2ND_SENSOR_ID                       0x0847 + 1
-#define SENSOR_DRVNAME_MOT_NAPLES_OV08F_2ND_MIPI_RAW         "mot_naples_ov08f_2nd_mipi_raw"
+#define MOT_NAPLES_GC08A3_SENSOR_ID                      0x08a3
+#define SENSOR_DRVNAME_MOT_NAPLES_GC08A3_MIPI_RAW        "mot_naples_gc08a3_mipi_raw"
+#define MOT_NAPLES_OV08F_2ND_SENSOR_ID                   0x0847 + 1
+#define SENSOR_DRVNAME_MOT_NAPLES_OV08F_2ND_MIPI_RAW     "mot_naples_ov08f_2nd_mipi_raw"
+#define MOT_NAPLES_SC800CSA_SENSOR_ID                    0xd154
+#define SENSOR_DRVNAME_MOT_NAPLES_SC800CSA_MIPI_RAW      "mot_naples_sc800csa_mipi_raw"
 
 //sbuya bringup
 #define MOT_SBUYA_IMX882_SENSOR_ID                      0x8203    /*0x8202 + 1*/

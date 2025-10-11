@@ -211,6 +211,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
     },
 #endif
+#if defined(MOT_NAPLES_SC800CSA_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_NAPLES_SC800CSA_MIPI_RAW,
+		{
+			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
+			{DOVDD, Vol_1800, 3},
+			{DVDD, Vol_1200, 1},
+			{AVDD, Vol_2800, 4},
+			{RST, Vol_High, 7}
+		},
+	},
+#endif
 #endif
 
 //sbuya bring up

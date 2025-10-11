@@ -343,7 +343,7 @@
 
 	cam0_enable_sensor = "mot_naples_s5khm9_mipi_raw mot_naples_s5khp5_mipi_raw mot_naples_imx882_mipi_raw";
 	cam1_enable_sensor = "mot_naples_s5kkds_mipi_raw mot_naples_gc32e1_mipi_raw";
-	cam2_enable_sensor = "mot_naples_ov08f_2nd_mipi_raw";
+	cam2_enable_sensor = "mot_naples_ov08f_2nd_mipi_raw mot_naples_sc800csa_mipi_raw";
 	status = "okay";
 };
 /* CAMERA GPIO end */
@@ -432,7 +432,7 @@
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_naples_s5khm9_mipi_raw mot_naples_s5khp5_mipi_raw mot_naples_imx882_mipi_raw mot_naples_s5kkds_mipi_raw mot_naples_gc32e1_mipi_raw mot_naples_ov08f_2nd_mipi_raw";
+       cust-sensor = "mot_naples_s5khm9_mipi_raw mot_naples_s5khp5_mipi_raw mot_naples_imx882_mipi_raw mot_naples_s5kkds_mipi_raw mot_naples_gc32e1_mipi_raw mot_naples_ov08f_2nd_mipi_raw mot_naples_sc800csa_mipi_raw";
 };
 
 /* CAMERA Flashlight */
