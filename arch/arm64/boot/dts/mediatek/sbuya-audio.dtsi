@@ -19,7 +19,7 @@
 		reset-gpio = <&pio 124 0>;
 		irq-gpio = <&pio 10 0>;
 		sync-load = <1>;
-		sound-channel = <0>;
+		sound-channel = <1>;
 		re-min = <1000>;
 		re-max = <40000>;
 		status = "okay";
@@ -31,7 +31,7 @@
 		reset-gpio = <&pio 170 0>;
 		irq-gpio = <&pio 34 0>;
 		sync-load = <1>;
-		sound-channel = <1>;
+		sound-channel = <0>;
 		re-min = <1000>;
 		re-max = <40000>;
 		status = "okay";
