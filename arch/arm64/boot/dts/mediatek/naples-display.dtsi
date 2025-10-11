@@ -96,7 +96,6 @@
 		/delete-property/ reset-gpios;
 		/delete-property/gate-ic;
 
-		compatible = "boe_nt37713_vid_1080_2352";
 		reg = <0>;
 
 		reset-gpios = <&pio 86 0>;
@@ -113,88 +112,11 @@
 		};
 	};
 
-	panel2@1 {
-		/delete-property/ compatible;
-		/delete-property/ pm-enable-gpios;
-		/delete-property/ reset-gpios;
-		/delete-property/gate-ic;
-
-		compatible = "boe_il97605a_vid_1080_2352";
-		reg = <1>;
-
-		reset-gpios = <&pio 86 0>;
-		dvdd-supply = <&lcd_dvdd>;
-		vci-supply = <&lcd_avdd>;
-		vddi_en-gpios = <&pio 191 0>;
-
-		pinctrl-names = "default";
-
-		port {
-				panel_in2: endpoint {
-						remote-endpoint = <&dsi_out>;
-				};
-		};
-	};
-
-       panel3@2 {
-                /delete-property/ compatible;
-                /delete-property/ pm-enable-gpios;
-                /delete-property/ reset-gpios;
-                /delete-property/gate-ic;
-
-                compatible = "tm_vtdr6126a_vid_1080_2352";
-                reg = <2>;
-
-                reset-gpios = <&pio 86 0>;
-                dvdd-supply = <&lcd_dvdd>;
-                vci-supply = <&lcd_avdd>;
-                vddi_en-gpios = <&pio 191 0>;
-
-                pinctrl-names = "default";
-
-                port {
-                                panel_in3: endpoint {
-                                                remote-endpoint = <&dsi_out>;
-                                };
-                };
-        };
-
-		panel4@3 {
-				/delete-property/ compatible;
-				/delete-property/ pm-enable-gpios;
-				/delete-property/ reset-gpios;
-				/delete-property/gate-ic;
-
-				compatible = "csot_vtdr6126a_vid_1080_2352";
-				reg = <3>;
-
-				reset-gpios = <&pio 86 0>;
-				dvdd-supply = <&lcd_dvdd>;
-				vci-supply = <&lcd_avdd>;
-				vddi_en-gpios = <&pio 191 0>;
-
-				pinctrl-names = "default";
-
-				port {
-					panel_in4: endpoint {
-						remote-endpoint = <&dsi_out4>;
-					};
-				};
-			};
 	ports {
 		port {
 			dsi_out: endpoint {
 				remote-endpoint = <&panel_in1>;
 			};
-			dsi_out2: endpoint2 {
-				remote-endpoint = <&panel_in2>;
-			};
-			dsi_out3: endpoint3 {
-				remote-endpoint = <&panel_in3>;
-            };
-			dsi_out4: endpoint4 {
-				remote-endpoint = <&panel_in4>;
-            };
 		};
 	};
 };
