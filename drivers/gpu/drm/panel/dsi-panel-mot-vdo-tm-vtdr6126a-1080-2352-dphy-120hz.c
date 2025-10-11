@@ -213,8 +213,11 @@ static void tm_vtdr6126a_panel_init(struct tm_vtdr6126a *ctx)
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x03, 0x01);
 
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x35, 0x00);
+	//dimming on
+	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x53, 0x28);
+	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x13);
+	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xD0, 0x0F);
 
-	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x53, 0x20);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x59, 0x09);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x5E, 0x00);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x6B, 0x01);

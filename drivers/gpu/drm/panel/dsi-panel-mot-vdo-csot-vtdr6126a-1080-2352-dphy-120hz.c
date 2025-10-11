@@ -213,8 +213,11 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x03, 0x01);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x35, 0x00);
-	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x51, 0x36,0xE8);//DBV
-	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x53, 0x20);
+	//dimming on
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x53, 0x28);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x13);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xD0, 0x0F);
+
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x59, 0x00);//demura off
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x5E, 0x00);//DC MODE,default off
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x6B, 0x01);//DR_TEMP_SEL
