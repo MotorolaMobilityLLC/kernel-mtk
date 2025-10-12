@@ -600,6 +600,18 @@ struct mtk_charger {
 	struct moto_chg_tcmd_client chg_tcmd_client;
 	struct mmi_params	mmi;
 	struct mutex mmi_mux_lock;
+
+	struct tcpc_device *tcpc_dev;
+	bool typecotp_charger;
+	bool typec_otp_sts;
+	bool dcp_otp_sts;
+	struct mutex typec_otp_lock;
+	/*typec connecter ntc thermal*/
+	struct thermal_cooling_device *tcd;
+	unsigned long typec_otp_max_state;
+	unsigned long typec_otp_cur_state;
+	/* charge otp ctrl gpio for mos */
+	int charge_tcpc_opt_mos_gpio;
 };
 
 static inline int mtk_chg_alg_notify_call(struct mtk_charger *info,

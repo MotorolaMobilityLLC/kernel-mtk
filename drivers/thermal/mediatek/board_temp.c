@@ -79,6 +79,7 @@ struct board_ntc_info {
 	struct iio_channel *chan_conn_ntc;
 	unsigned int default_pullup_v;
 	unsigned int default_range_v;
+	unsigned int default_pullup_r;
 };
 
 unsigned int tia2_rc_sel_to_value(unsigned int sel)
@@ -106,6 +107,9 @@ unsigned int tia3_rc_sel_to_value(unsigned int sel)
 	unsigned int resistance;
 
 	switch (sel) {
+	case 3:
+		resistance = 3920; /* 3.92K */
+		break;
 	case 0:
 	default:
 		resistance = 100000; /* 100K */
@@ -149,7 +153,7 @@ static struct pmic_auxadc_data mt6685_pmic_auxadc_data = {
 
 static struct pmic_auxadc_data mt6377_pmic_auxadc_data = {
 	.default_pullup_v = 184000,
-	.num_of_pullup_r_type = 1,
+	.num_of_pullup_r_type = 4,
 	.pullup_r_calibration = NULL,
 	.adc2volt = mt6377_adc2volt,
 	.tia_param = &tia3_data,
@@ -167,6 +171,14 @@ static const struct of_device_id board_ntc_of_match[] = {
 	{},
 };
 MODULE_DEVICE_TABLE(of, board_ntc_of_match);
+
+static bool is_conn_adc(unsigned int pullup_r_type)
+{
+	if (pullup_r_type == 3)
+		return true;
+	else
+		return false;
+}
 
 static int board_ntc_r_to_temp(struct board_ntc_info *ntc_info,
 						int val)
@@ -220,7 +232,7 @@ static int board_ntc_get_temp(void *data, int *temp)
 	unsigned long long v_in;
 	bool is_val_valid, is_rtype_valid;
 	static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ, 10);
-	unsigned int pullup_v;
+	unsigned int pullup_v = 0;
 
 	ratelimit_set_flags(&ratelimit, RATELIMIT_MSG_ON_RELEASE);
 	if (!PTR_ERR_OR_ZERO(ntc_info->chan_wcn_ntc)){
@@ -242,8 +254,13 @@ static int board_ntc_get_temp(void *data, int *temp)
 		iio_read_channel_raw(ntc_info->chan_flash_ntc, &val);
 		r_type = 0;
 	}   else if (!PTR_ERR_OR_ZERO(ntc_info->chan_conn_ntc)){
-		iio_read_channel_raw(ntc_info->chan_conn_ntc, &val);
-		r_type = 0;
+		if( 3920 == ntc_info->default_pullup_r ) {
+			iio_read_channel_processed(ntc_info->chan_conn_ntc, &val);
+			r_type = 3;
+		} else {
+			iio_read_channel_raw(ntc_info->chan_conn_ntc, &val);
+			r_type = 0;
+		}
 	}  else if (!IS_ERR(ntc_info->data_reg)) {
 
 	while (count < READ_TIA_REG_COUNT_MAX) {
@@ -297,10 +314,17 @@ RETRY:
 		||(!PTR_ERR_OR_ZERO(ntc_info->chan_tspk_ntc))||(!PTR_ERR_OR_ZERO(ntc_info->chan_quiet_ntc))
 		||(!PTR_ERR_OR_ZERO(ntc_info->chan_chg_ntc)) ||(!PTR_ERR_OR_ZERO(ntc_info->chan_flash_ntc))
 		||(!PTR_ERR_OR_ZERO(ntc_info->chan_conn_ntc))) {
-		v_in = (val * ntc_info->default_range_v) / 4096;
-		pullup_v = ntc_info->default_pullup_v;
-		dev_err(ntc_info->dev, "%s, get pullupv :%d\n",
-                        __func__, pullup_v);
+		if (is_conn_adc(r_type) != true) {
+			v_in = (val * ntc_info->default_range_v) / 4096;
+			pullup_v = ntc_info->default_pullup_v;
+			dev_err(ntc_info->dev, "%s, get pullupv :%d\n",
+							__func__, pullup_v);
+		} else {
+			v_in = val;
+			pullup_v = adc_data->pullup_v[r_type];
+			dev_err(ntc_info->dev, "%s, val:%d\n",
+							__func__, val);
+		}
 	} else {
 		v_in = ntc_info->adc_data->adc2volt(get_adc_data(val, tia_param->valid_bit - 1));
 		pullup_v = adc_data->pullup_v[r_type];
@@ -347,6 +371,12 @@ static int board_ntc_parse_cust_pullup_v(struct device *dev,
 			__func__, ntc_info->default_pullup_v);
 	}
 
+	if (of_property_read_u32(np, "ntc-pullup-r", &val) >= 0) {
+		ntc_info->default_pullup_r = val;
+		dev_err(dev, "%s, set pullupr :%d\n",
+			__func__, ntc_info->default_pullup_r);
+	}
+
 	return 0;
 }
 
@@ -390,7 +420,10 @@ static int board_ntc_init_auxadc_data(struct device *dev,
 		for (i = 0; i < num; i++) {
 			adc_data->pullup_r[i] =
 				adc_data->tia_param->rc_sel_to_value(i);
-			adc_data->pullup_v[i] = adc_data->default_pullup_v;
+			if (is_conn_adc(i) != true)
+				adc_data->pullup_v[i] = adc_data->default_pullup_v;
+			else
+				adc_data->pullup_v[i] = 1800000;
 
 			dev_info(dev, "%d: default pullup_r=%d, pullup_v=%d\n",
 				i, adc_data->pullup_r[i],

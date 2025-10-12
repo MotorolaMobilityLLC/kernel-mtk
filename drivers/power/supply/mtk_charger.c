@@ -64,6 +64,8 @@
 #include "mtk_charger.h"
 #include "mtk_battery.h"
 #include <linux/of_gpio.h>
+#include <linux/thermal.h>
+#include <tcpm.h>
 
 struct tag_bootmode {
 	u32 size;
@@ -180,6 +182,25 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 	u32 val = 0;
 	struct device_node *boot_node = NULL;
 	struct tag_bootmode *tag = NULL;
+	int ret;
+
+	info->charge_tcpc_opt_mos_gpio = of_get_named_gpio(np, "mmi,mos_gpio", 0);
+	if (!gpio_is_valid(info->charge_tcpc_opt_mos_gpio))
+	{
+		chr_err("%s: info->charge_tcpc_opt_mos_gpio  not specified\n", __func__);
+	}
+
+	/* request gpio */
+	if (gpio_is_valid(info->charge_tcpc_opt_mos_gpio))
+	{
+		ret = gpio_request(info->charge_tcpc_opt_mos_gpio, "charge_tcpc_thermal_mos_gpio");
+		if (ret)
+		{
+			chr_err("[GPIO] info->charge_tcpc_opt_mos_gpio request failed");
+			if (gpio_is_valid(info->charge_tcpc_opt_mos_gpio))
+				gpio_free(info->charge_tcpc_opt_mos_gpio);
+		}
+	}
 
 	boot_node = of_parse_phandle(dev->of_node, "bootmode", 0);
 	if (!boot_node)
@@ -4281,6 +4302,9 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 	if (rc)
 		info->mmi.vbus_l = 5000000;
 
+	info->typecotp_charger = of_property_read_bool(node, "mmi,typecotp-charger");
+	pr_info("%s typecotp_charger:%d \n", __func__, info->typecotp_charger);
+
 	return rc;
 }
 
@@ -4695,6 +4719,157 @@ static char *dump_charger_type(int chg_type, int usb_type)
 	}
 }
 
+#define TYPEC_OTP_STATE_NUM 2
+/*
+0 - normal or recover
+1 - over temp
+*/
+static int mmi_typec_otp_tcd_get_max_state(struct thermal_cooling_device *tcd,
+	unsigned long *state)
+{
+	struct mtk_charger *info = tcd->devdata;
+
+	if (!info) {
+		chr_err("%s Error:info is NULL\n", __func__);
+		return -1;
+	}
+
+	*state = info->typec_otp_max_state;
+
+	return 0;
+}
+
+static int mmi_typec_otp_tcd_get_cur_state(struct thermal_cooling_device *tcd,
+	unsigned long *state)
+{
+	struct mtk_charger *info = tcd->devdata;
+
+	if (!info) {
+		chr_err("%s Error:info is NULL\n", __func__);
+		return -1;
+	}
+
+	*state = info->typec_otp_cur_state;
+
+	return 0;
+}
+
+static int mmi_typec_otp_set_cur_state(struct thermal_cooling_device *tcd,
+	unsigned long state)
+{
+	struct mtk_charger *info = tcd->devdata;
+
+	if (IS_ERR_OR_NULL(info)) {
+		chr_err("%s Error:info is NULL\n", __func__);
+		return -EINVAL;
+	}
+
+	if (!info->typecotp_charger) {
+		chr_err("%s Error: typec-otp not support\n", __func__);
+		return -EINVAL;
+	}
+
+	if (state > info->typec_otp_max_state) {
+		chr_err("%s Error:state(%ld) > max_state(%ld)\n", __func__, state, info->typec_otp_max_state);
+		return -EINVAL;
+	}
+
+	mutex_lock(&info->typec_otp_lock);
+
+	if (state == 1) {
+		info->typec_otp_sts = true;
+		charger_dev_enable_powerpath(info->chg1_dev, 0);//hz
+		charger_dev_enable_hz(info->chg1_dev, 1);
+		chr_err("otph_hz\n");
+		if (get_charger_type(info) == POWER_SUPPLY_TYPE_USB_DCP) {
+			if (!IS_ERR_OR_NULL(info->tcpc_dev)) {
+				tcpm_typec_disable_function(info->tcpc_dev, true);
+				msleep(100);
+				chr_err("otp disable cc\n");
+			} else {
+				chr_err("%s info->tcpc_dev is ERR or NULL\n", __func__);
+			}
+			//charger_dev_enable_mos_short(info->chg1_dev, true);
+			if ( gpio_is_valid(info->charge_tcpc_opt_mos_gpio) )
+				gpio_direction_output(info->charge_tcpc_opt_mos_gpio, 1);
+			info->dcp_otp_sts = true;
+			chr_err("otp enable mos_short\n");
+		}
+		info->typec_otp_cur_state = state;
+	} else if (state == 0) {
+		if (info->typec_otp_sts) {
+			info->typec_otp_sts = false;
+			charger_dev_enable_powerpath(info->chg1_dev, 1);
+			charger_dev_enable_hz(info->chg1_dev, 0);
+			chr_err("otpl_hz\n");
+			if (info->dcp_otp_sts) {
+				//charger_dev_enable_mos_short(info->chg1_dev, false);
+				if ( gpio_is_valid(info->charge_tcpc_opt_mos_gpio) )
+					gpio_direction_output(info->charge_tcpc_opt_mos_gpio, 0);
+				chr_err("otp disable mos_short\n");
+				if (!IS_ERR_OR_NULL(info->tcpc_dev)) {
+					tcpm_typec_disable_function(info->tcpc_dev, false);
+					chr_err("otp enable cc\n");
+				}
+				info->dcp_otp_sts = false;
+			}
+		}
+		info->typec_otp_cur_state = state;
+	}
+
+	mutex_unlock(&info->typec_otp_lock);
+
+	pr_info("%s set state=%ld,cur_state=%ld,otp_sts typec:%d dcp:%d\n",
+		__func__, state,
+		info->typec_otp_cur_state,
+		info->typec_otp_sts,
+		info->dcp_otp_sts);
+
+	return 0;
+}
+
+static const struct thermal_cooling_device_ops mmi_typec_otp_tcd_ops = {
+	.get_max_state = mmi_typec_otp_tcd_get_max_state,
+	.get_cur_state = mmi_typec_otp_tcd_get_cur_state,
+	.set_cur_state = mmi_typec_otp_set_cur_state,
+};
+
+#define TYPEC_OTP_THRES 700
+#define TYPEC_RECOVER_THRES 600
+#define VBUS_THRES 4000
+static void mmi_check_typec_conn_temp(struct mtk_charger *info)
+{
+	struct thermal_zone_device *usb_conn_zone;
+	int conn_ntc = 0;
+	int ret = 0;
+
+	if (!info->typecotp_charger) {
+		chr_err("%s Error: typec-otp not support\n", __func__);
+		return;
+	}
+
+	usb_conn_zone = thermal_zone_get_zone_by_name("conn_ntc");
+	if (IS_ERR_OR_NULL(usb_conn_zone)) {
+		chr_err("get usb_conn zone failure\n");
+		return;
+	}
+
+	ret = thermal_zone_get_temp(usb_conn_zone, &conn_ntc);
+	if (ret) {
+		pr_err("%s Error reading temperature for conn_ntc:%d\n", __func__, ret);
+		return;
+	}
+
+	conn_ntc = conn_ntc / 100;
+
+	pr_info("otp conn_ntc = %d\n",conn_ntc);
+	if ((conn_ntc >= TYPEC_OTP_THRES) && (get_vbus(info) > VBUS_THRES)) {
+		mmi_typec_otp_set_cur_state(info->tcd, true);
+	} else if (conn_ntc <= TYPEC_RECOVER_THRES) {
+		mmi_typec_otp_set_cur_state(info->tcd, false);
+	}
+}
+
 static int charger_routine_thread(void *arg)
 {
 	struct mtk_charger *info = arg;
@@ -4760,6 +4935,8 @@ static int charger_routine_thread(void *arg)
 			dump_charger_type(info->chr_type, info->usb_type),
 			dump_charger_type(get_charger_type(info), get_usb_type(info)),
 			info->pd_type, get_ibat(info), chg_cv);
+
+		mmi_check_typec_conn_temp(info);
 
 		is_charger_on = mtk_is_charger_on(info);
 
@@ -5814,6 +5991,11 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		wakeup_source_register(NULL, name);
 	spin_lock_init(&info->slock);
 
+	info->tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+	if (IS_ERR_OR_NULL(info->tcpc_dev)) {
+		chr_err("%s get tcpc device type_c_port0 fail\n", __func__);
+	}
+
 	init_waitqueue_head(&info->wait_que);
 	info->polling_interval = CHARGING_INTERVAL;
 	mtk_charger_init_timer(info);
@@ -5989,11 +6171,24 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	mmi_init(info);
 	kthread_run(charger_routine_thread, info, "charger_thread");
 
+	mutex_init(&info->typec_otp_lock);
+	/* Register typec connecter ntc thermal zone cooling device */
+	if (info->typecotp_charger && !info->mmi.factory_mode) {
+		info->typec_otp_max_state = TYPEC_OTP_STATE_NUM - 1;
+		info->tcd = thermal_of_cooling_device_register(dev_of_node(&pdev->dev),
+			"typec_otp", info, &mmi_typec_otp_tcd_ops);
+		pr_info("%s Register typec connecter ntc thermal zone cooling device %s\n",
+			__func__, (!IS_ERR_OR_NULL(info->tcd))? "Success": "Failed");
+	}
+
 	return 0;
 }
 
 static int mtk_charger_remove(struct platform_device *dev)
 {
+	struct mtk_charger *info = platform_get_drvdata(dev);
+	if (gpio_is_valid(info->charge_tcpc_opt_mos_gpio))
+		gpio_free(info->charge_tcpc_opt_mos_gpio);
 	return 0;
 }
 
