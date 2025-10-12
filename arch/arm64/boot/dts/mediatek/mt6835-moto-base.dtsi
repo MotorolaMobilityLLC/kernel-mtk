@@ -31,6 +31,13 @@
 	flashlights_vegas: flashlights_vegas { };
 	flashlights_orlando: flashlights_orlando { };
 	flashlights_naples: flashlights_naples { };
+	soc {
+		gpio_keys: gpio-keys {
+			compatible = "gpio-keys";
+			status = "disabled";
+		};
+	};
+
 };
 
 &extcon_usb {

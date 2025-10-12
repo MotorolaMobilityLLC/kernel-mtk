@@ -30,6 +30,31 @@ eint_cp: eint_cp {
 	};
 };
 
+/* KEY GPIO standardization start */
+&pio{
+	aikey_gpio_default:key-default {
+		ai_key_int {
+			pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
+			input-enable;
+			bias-pull-up;
+		};
+	};
+};
+/* KEY GPIO standardization end */
+&gpio_keys {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&aikey_gpio_default>;
+	aikey {
+		label = "AI_key";
+		linux,code = <583>;
+		linux,input-type = <1>;
+		gpios = <&pio 9 1>;
+		wakeup-source;
+		debounce-interval = <30>;
+	};
+};
+
 &mt6377keys {
 	home {
 		linux,keycodes = <114>;
