@@ -17,17 +17,21 @@
 
 #include "mediatek/mt6835-naples-common-overlay.dtsi"
 #include "mediatek/mt6835_naples_camera_overlay_evb.dtsi"
-#include "mediatek/naples-sensor.dtsi"
+#include "mediatek/naples-sensor-ip68.dtsi"
+
+#define NAPLES_RADIO 6
+
 /* Board match root node */
 / {
 	fragment@model {
 		target-path = "/";
 		__overlay__ {
 			mot,model = "naples";
-			mot,board-id = <0x41 0xA100>;
+			mot,board-id = <(NAPLES_RADIO << 8 | 0x41) 0xA100>;
 		};
 	};
 };
+
 
 #include <naples_evb/cust.dtsi>
 #include "mediatek/naples-charger.dtsi"

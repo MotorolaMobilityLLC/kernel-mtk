@@ -14,7 +14,6 @@
 #include "mediatek/naples-touch.dtsi"
 #include "mediatek/naples-fps.dtsi"
 #include "mediatek/mt6835-moto-memory.dtsi"
-#include "mediatek/naples-sensor.dtsi"
 #include "mediatek/naples-msdc.dtsi"
 #include "mediatek/naples-audio.dtsi"
 #include "mediatek/naples-ntc.dtsi"
