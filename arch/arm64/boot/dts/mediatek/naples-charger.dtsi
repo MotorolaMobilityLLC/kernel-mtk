@@ -620,5 +620,7 @@
 
 	df-serialnum = "ATLSP52NVT";
 	#include "bat_setting/mt6835_battery_sp52_atl_5200mah.dtsi"
-	#include "bat_setting/mt6835_battery_rl52_swd_5200mah.dtsi"
+	#include "bat_setting/mt6835_battery_sp52_swd_5200mah.dtsi"
+	#include "bat_setting/mt6835_battery_sp52_cos_5200mah.dtsi"
+
 };
