@@ -71,30 +71,10 @@ struct tm_vtdr6126a {
 	bool enabled;
 
 	int error;
-	//unsigned int hbm_mode;
-	unsigned int cabc_mode;
 	//enum panel_version version;
 	bool lhbm_en;
 	atomic_t hbm_mode;
 	atomic_t current_fps;
-};
-
-static struct mtk_panel_para_table panel_cabc_ui[] = {
-	{2, {0xFF, 0x10}},
-	{2, {0xFB, 0x01}},
-	{2, {0x55, 0x01}},
-};
-
-static struct mtk_panel_para_table panel_cabc_mv[] = {
-	{2, {0xFF, 0x10}},
-	{2, {0xFB, 0x01}},
-	{2, {0x55, 0x03}},
-};
-
-static struct mtk_panel_para_table panel_cabc_disable[] = {
-	{2, {0xFF, 0x10}},
-	{2, {0xFB, 0x01}},
-	{2, {0x55, 0x00}},
 };
 
 //set enable lhbm code, on status
@@ -489,9 +469,6 @@ static int tm_vtdr6126a_prepare(struct drm_panel *panel)
 	}
 
 	tm_vtdr6126a_panel_init(ctx);
-	//ctx->hbm_mode = 0;
-	//ctx->cabc_mode = 0;
-
 	ret = ctx->error;
 	if (ret < 0) {
 		pr_info("disp: %s error ret=%d\n", __func__, ret);
@@ -963,43 +940,6 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 	return 0;
 }
 
-static int panel_cabc_set_cmdq(struct tm_vtdr6126a *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
-{
-	unsigned int para_count = 0;
-	struct mtk_panel_para_table *pTable = NULL;
-
-	if (cabc_mode > 3) {
-		pr_info("%s: invalid CABC mode:%d, return\n", __func__, cabc_mode);
-		return -1;
-	}
-
-	switch (cabc_mode) {
-		case 0:
-			para_count = sizeof(panel_cabc_ui) / sizeof(struct mtk_panel_para_table);
-			pTable = panel_cabc_ui;
-			break;
-		case 1:
-			para_count = sizeof(panel_cabc_mv) / sizeof(struct mtk_panel_para_table);
-			pTable = panel_cabc_mv;
-			break;
-		case 2:
-			para_count = sizeof(panel_cabc_disable) / sizeof(struct mtk_panel_para_table);
-			pTable = panel_cabc_disable;
-			break;
-		default:
-			break;
-	}
-
-	if (pTable) {
-		pr_info("%s: set CABC mode :%d", __func__, cabc_mode);
-		cb(dsi, handle, pTable, para_count);
-	}
-	else
-		pr_info("%s: CABC mode:%d not support", __func__, cabc_mode);
-
-	return 0;
-}
-
 static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level, uint32_t fps)
 {
 	unsigned int para_count = 0;
@@ -1109,14 +1049,6 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 
 	switch (param_info.param_idx) {
 		case PARAM_CABC:
-			if (ctx->cabc_mode != param_info.value) {
-				ctx->cabc_mode = param_info.value;
-				panel_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
-				pr_debug("%s: set CABC to %d end\n", __func__, param_info.value);
-				ret = 0;
-			}
-			else
-				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
 			break;
 		case PARAM_HBM:
 			atomic_set(&ctx->hbm_mode, param_info.value);
