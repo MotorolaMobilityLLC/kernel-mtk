@@ -529,11 +529,6 @@ static struct mtk_panel_params ext_params_mode_60 = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
-	.lcm_esd_check_table[1] = {
-		.cmd = 0xAB,
-		.count = 2,
-		.para_list[0] = 0x00,
-	},
 	.lcm_cellid = {
 		.panel_cellid_reg = 0xF2,
 		.panel_cellid_len = 23,
@@ -637,11 +632,6 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.cmd = 0x0a,
 		.count = 1,
 		.para_list[0] = 0x9c,
-	},
-	.lcm_esd_check_table[1] = {
-		.cmd = 0xAB,
-		.count = 2,
-		.para_list[0] = 0x00,
 	},
 	.lcm_cellid = {
 		.panel_cellid_reg = 0xF2,
@@ -747,11 +737,6 @@ static struct mtk_panel_params ext_params_mode_120 = {
 		.cmd = 0x0a,
 		.count = 1,
 		.para_list[0] = 0x9c,
-	},
-	.lcm_esd_check_table[1] = {
-		.cmd = 0xAB,
-		.count = 2,
-		.para_list[0] = 0x00,
 	},
 	.lcm_cellid = {
 		.panel_cellid_reg = 0xF2,
