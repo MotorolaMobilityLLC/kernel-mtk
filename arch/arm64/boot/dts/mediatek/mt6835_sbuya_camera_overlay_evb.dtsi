@@ -143,7 +143,7 @@
 	cam1_pin_vcamd = "regulator";
 	cam1_pin_vcamio = "regulator";
 	cam0_enable_sensor = "mot_sbuya_imx882_mipi_raw";
-	cam1_enable_sensor = "mot_nevada_ov08f_mipi_raw";
+	cam1_enable_sensor = "mot_sbuya_ov08f_mipi_raw";
 	status = "okay";
 };
 /* CAMERA GPIO end */
@@ -154,17 +154,16 @@
 	clock-frequency = <400000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
+	camera_sub_mtk:camera_sub@20 {
+		compatible = "mediatek,camera_sub";
+		#thermal-sensor-cells = <0>;
+		reg = <0x20>;
+		status = "okay";
+	};
 
 	mtk_camera_eeprom1:camera_eeprom1@51 {
 		compatible = "mediatek,camera_eeprom";
 		reg = <0x51>;
-		status = "okay";
-	};
-
-	camera_sub_mtk:camera_sub@1a {
-		compatible = "mediatek,camera_sub";
-		#thermal-sensor-cells = <0>;
-		reg = <0x1a>;
 		status = "okay";
 	};
 };
@@ -246,7 +245,7 @@
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_sbuya_imx882_mipi_raw";
+       cust-sensor = "mot_sbuya_imx882_mipi_raw mot_sbuya_ov08f_mipi_raw";
 };
 
 &pio {

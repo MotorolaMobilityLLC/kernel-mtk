@@ -433,6 +433,9 @@
 //sbuya bringup
 #define MOT_SBUYA_IMX882_SENSOR_ID                      0x8203    /*0x8202 + 1*/
 #define SENSOR_DRVNAME_MOT_SBUYA_IMX882_MIPI_RAW        "mot_sbuya_imx882_mipi_raw"
+#define MOT_SBUYA_OV08F_SENSOR_ID                       0x0849    /*0x0846 + 3*/
+#define SENSOR_DRVNAME_MOT_SBUYA_OV08F_MIPI_RAW         "mot_sbuya_ov08f_mipi_raw"
+
 //orlando bring up
 #define MOT_ORLANDO_OV50D_SENSOR_ID_OFFSET               0x2
 #define MOT_ORLANDO_OV08D_SENSOR_ID_OFFSET               0x1
