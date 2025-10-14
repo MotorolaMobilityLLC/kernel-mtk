@@ -1532,5 +1532,14 @@ config MOTO_DIO80151C
 	help
 	    This option enables support for the dio80151c power connected
 	    through I2C. Say Y to enable support for the dio80151c .
+
+config REGULATOR_WL2868C
+	tristate "Will WL2868C Regulator"
+	depends on I2C && (OF || COMPILE_TEST)
+	select REGMAP_I2C
+	help
+	  This driver supports Will WL2868C regulator. The regulator is
+	  a programmable power management IC (PMIC), it is controlled
+	  by I2C and provides seven LDO outputs.
 endif
 

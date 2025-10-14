@@ -20,6 +20,7 @@
 #include "mediatek/sbuya-audio.dtsi"
 #include "mediatek/sbuya-fmr.dtsi"
 #include "mediatek/sbuya-ntc.dtsi"
+#include "mediatek/sbuya-wl2868c.dtsi"
 //#include "mediatek/mt6835_kansas_camera_overlay.dtsi"
 / {
 
@@ -58,6 +59,10 @@ eint_cp: eint_cp {
 		wakeup-source;
 		debounce-interval = <30>;
 	};
+};
+
+&rt5133 {
+	status = "disabled";
 };
 
 &mt6377keys {
