@@ -200,7 +200,7 @@ static int aw_request_apdo(struct tcpc_device *tcpc, AW_U16 apdo_vol, AW_U16 apd
 	struct aw35615_chip *chip = tcpc_get_dev_data(tcpc);
 	AW_U8 i = 0;
 	AW_U8 apdo_num = 0;
-	AW_U8 retry = 10;
+	AW_U8 retry = 100;
 
 	if (chip->chip_id != AW35615_CHIP_ID) {
 		AW_LOG("AWINIC %s - Chip structure is NULL!\n", __func__);
@@ -259,7 +259,7 @@ static int aw_request_apdo(struct tcpc_device *tcpc, AW_U16 apdo_vol, AW_U16 apd
 			} while ((chip->port.PolicyState != peSinkReady) || (chip->queued == AW_TRUE));
 			return 0;
 		}
-		usleep_range(10 * 1000, 10 * 1000);
+		usleep_range(1 * 1000, 2 * 1000);
 	}
 
 	return 1;

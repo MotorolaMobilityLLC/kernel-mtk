@@ -125,10 +125,18 @@ int pe50_hal_get_ta_status(struct chg_alg_device *alg,
 
 int pe50_hal_set_ta_cap(struct chg_alg_device *alg, int mV, int mA)
 {
-	int ret;
+	int ret, retry = 3;
 	struct pe50_hal *hal = chg_alg_dev_get_drv_hal_data(alg);
 
-	ret = adapter_dev_set_cap(hal->adapter, MTK_PD_APDO, mV, mA);
+	do {
+		ret = adapter_dev_set_cap(hal->adapter, MTK_PD_APDO, mV, mA);
+		--retry;
+		if (ret) {
+			usleep_range(100 * 1000, 120 * 1000);
+			PE50_ERR("%s fail, retry = %d\n", __func__, 3 - retry);
+		}
+	} while (ret && retry > 0);
+
 	return (ret <= MTK_ADAPTER_OK) ? ret : -ret;
 }
 
