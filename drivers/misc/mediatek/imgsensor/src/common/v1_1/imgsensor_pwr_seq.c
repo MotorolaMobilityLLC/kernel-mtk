@@ -187,6 +187,22 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #endif
 #endif
 
+#if defined(CONFIG_MOT_SBUYA_CAMERA_PROJECT)
+#if defined(MOT_SBUYA_IMX882_MIPI_RAW)
+    {
+		SENSOR_DRVNAME_MOT_SBUYA_IMX882_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 3},
+			{RST, Vol_Low, 1},
+			{DOVDD, Vol_1800, 3},
+			{DVDD, Vol_1100, 3},
+			{AVDD, Vol_2800, 6},
+			{AFVDD, Vol_2800, 1},
+			{RST, Vol_High, 5},
+		},
+	},
+#endif
+#endif
 #if defined(CONFIG_MOT_VEGAS_CAMERA_PROJECT)
 #if defined(MOT_VEGAS_OV50D_MIPI_RAW)
 	{
