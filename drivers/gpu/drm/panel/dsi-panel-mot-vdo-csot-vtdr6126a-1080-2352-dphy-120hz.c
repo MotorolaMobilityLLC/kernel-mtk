@@ -218,7 +218,9 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x13);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xD0, 0x0F);
 
-	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x59, 0x00);//demura off
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x59, 0x09);//demura on
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA,0x18);//round corner on
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xB0, 0x80);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x5E, 0x00);//DC MODE,default off
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x6B, 0x01);//DR_TEMP_SEL
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x6C, 0x01);//120hz
