@@ -254,7 +254,7 @@
 
 	flashlight_pins_hwen_high: hwen-high {
 		pins-cmd-dat {
-			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
+			pinmux = <PINMUX_GPIO171__FUNC_GPIO171>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -262,19 +262,11 @@
 
 	flashlight_pins_hwen_low: hwen-low {
 		pins-cmd-dat {
-			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
+			pinmux = <PINMUX_GPIO171__FUNC_GPIO171>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-};
-
-&flashlights_ocp81375 {
-	pinctrl-names = "default", "hwen-high", "hwen-low";
-	pinctrl-0 = <&flashlight_pins_default>;
-	pinctrl-1 = <&flashlight_pins_hwen_high>;
-	pinctrl-2 = <&flashlight_pins_hwen_low>;
-	status = "okay";
 };
 
 &mtk_composite_v4l2_1 {

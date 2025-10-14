@@ -32,6 +32,11 @@ const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
 	{0, 0, 0, "flashlights-naples-ocp8135-pwm", 0, 0},
 };
+#elif defined(CONFIG_MTK_FLASHLIGHT_SBUYA_AW36515)
+const struct flashlight_device_id flashlight_id[] = {
+	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
+	{0, 0, 0, "flashlights-aw36515", 0, 0},
+};
 #elif defined(mt6739)
 const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
