@@ -116,7 +116,8 @@ eint_cp: eint_cp {
 };
 
 &u2port0 {
-	mediatek,eye-vrt = <6>;
+	mediatek,eye-vrt = <7>;
+	mediatek,eye-term = <6>;
 	mediatek,eye-vrt-host = <6>;
 };
 
