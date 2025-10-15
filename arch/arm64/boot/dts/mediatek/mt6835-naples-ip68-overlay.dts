@@ -16,7 +16,7 @@
 /* NOTE: copied from mt6835-kansas-dvt-overlay.dts for reusing Kansas DVT or later HW */
 
 #include "mediatek/mt6835-naples-common-overlay.dtsi"
-#include "mediatek/mt6835_naples_camera_overlay_evb.dtsi"
+#include "mediatek/mt6835_naples_camera_ip68_overlay_evb.dtsi"
 #include "mediatek/naples-sensor-ip68.dtsi"
 
 #define NAPLES_RADIO 6

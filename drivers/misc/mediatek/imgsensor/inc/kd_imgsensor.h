@@ -421,6 +421,8 @@
 #define SENSOR_DRVNAME_MOT_NAPLES_S5KHM9_MIPI_RAW        "mot_naples_s5khm9_mipi_raw"
 #define MOT_NAPLES_IMX882_SENSOR_ID                      0x8202
 #define SENSOR_DRVNAME_MOT_NAPLES_IMX882_MIPI_RAW        "mot_naples_imx882_mipi_raw"
+#define MOT_NAPLES_S5KHP5_SENSOR_ID                      0x1B75
+#define SENSOR_DRVNAME_MOT_NAPLES_S5KHP5_MIPI_RAW        "mot_naples_s5khp5_mipi_raw"
 #define MOT_NAPLES_S5KKDS_SENSOR_ID                      0x4850
 #define SENSOR_DRVNAME_MOT_NAPLES_S5KKDS_MIPI_RAW        "mot_naples_s5kkds_mipi_raw"
 #define MOT_NAPLES_GC32E1_SENSOR_ID                      0x32E1

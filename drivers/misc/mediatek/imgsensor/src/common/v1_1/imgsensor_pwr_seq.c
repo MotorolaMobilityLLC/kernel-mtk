@@ -133,6 +133,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         },
     },
 #endif
+#if defined(MOT_NAPLES_S5KHP5_SENSOR_ID)
+    {
+        SENSOR_DRVNAME_MOT_NAPLES_S5KHP5_MIPI_RAW,
+        {
+            {SensorMCLK, Vol_High, 1},
+            {RST, Vol_Low, 1},
+            {DOVDD, Vol_1800, 3},
+            {AVDD, Vol_2200, 3},
+            {DVDD, Vol_1000, 8},
+            {RST, Vol_High, 13},
+        },
+    },
+#endif
 #if defined(MOT_NAPLES_S5KKDS_SENSOR_ID)
     {
         SENSOR_DRVNAME_MOT_NAPLES_S5KKDS_MIPI_RAW,
