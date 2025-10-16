@@ -12794,6 +12794,7 @@
 			"mmdvfs_clk";
 		operating-points-v2 = <&opp_table_venc>;
 		mmdvfs-dvfsrc-vcore-supply = <&dvfsrc_vcore>;
+		venc-core-count = <3>;
 		port-arg-num = <3>;
 		port-def = <0 M4U_PORT_L7_VENC_RCPU 0>,
 			<0 M4U_PORT_L7_VENC_REC 0>,
