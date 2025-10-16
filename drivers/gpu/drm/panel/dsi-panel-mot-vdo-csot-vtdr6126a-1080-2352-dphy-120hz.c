@@ -500,6 +500,7 @@ static const struct drm_display_mode performance_mode_60hz = {
 
 
 static struct mtk_panel_params ext_params_mode_60 = {
+	.change_fps_by_vfp_send_cmd = 1,
 	.data_rate = DATA_RATE,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -589,6 +590,7 @@ static struct mtk_panel_params ext_params_mode_60 = {
 };
 
 static struct mtk_panel_params ext_params_mode_90 = {
+	.change_fps_by_vfp_send_cmd = 1,
 	.data_rate = DATA_RATE,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -678,6 +680,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 };
 
 static struct mtk_panel_params ext_params_mode_120 = {
+	.change_fps_by_vfp_send_cmd = 1,
 	.data_rate = DATA_RATE,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
