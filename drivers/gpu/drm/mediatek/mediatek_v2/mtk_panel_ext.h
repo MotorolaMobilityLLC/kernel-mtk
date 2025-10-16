@@ -557,6 +557,7 @@ struct mtk_panel_params {
 	char panel_supplier[DRM_DISPLAY_NAME_LEN];
 	struct cellid_item lcm_cellid;
 	bool check_panel_feature;
+	bool change_fps_by_vfp_send_cmd;
 };
 
 struct mtk_panel_ext {
