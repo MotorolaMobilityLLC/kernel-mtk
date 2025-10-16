@@ -74,6 +74,7 @@ struct csot_vtdr6126A {
 	bool lhbm_en;
 	atomic_t hbm_mode;
 	atomic_t current_fps;
+	atomic_t dc_mode;
 };
 
 //set enable lhbm code, on status
@@ -87,6 +88,14 @@ static struct mtk_panel_para_table panel_lhbm_on[] = {
 static struct mtk_panel_para_table panel_lhbm_off[] = {
 	//set LHBM off
       {2, {0x62,0x00}},
+};
+
+static struct mtk_panel_para_table panel_dc_on[] = {
+	{2, {0x5E,0x01}},
+};
+
+static struct mtk_panel_para_table panel_dc_off[] = {
+	{2, {0x5E,0x00}},
 };
 
 #define csot_vtdr6126A_dcs_write_seq(ctx, seq...)                                     \
@@ -985,6 +994,23 @@ static int panel_hbm_set_cmdq(struct csot_vtdr6126A *ctx, void *dsi, dcs_grp_wri
 }
 
 
+static int panel_dc_set_cmdq(struct csot_vtdr6126A *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t dc_state)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable;
+
+	if (dc_state) {
+		para_count = sizeof(panel_dc_on) / sizeof(struct mtk_panel_para_table);
+		pTable = panel_dc_on;
+	} else {
+		para_count = sizeof(panel_dc_off) / sizeof(struct mtk_panel_para_table);
+		pTable = panel_dc_off;
+	}
+	cb(dsi, handle, pTable, para_count);
+	pr_info("%s: current_fps %d, dc_state %d\n", __func__, atomic_read(&ctx->current_fps), dc_state);
+	return 0;
+}
+
 static int panel_feature_get(struct drm_panel *panel, struct panel_param_info *param_info){
 
 	struct csot_vtdr6126A *ctx = panel_to_csot_vtdr6126A(panel);
@@ -1001,7 +1027,7 @@ static int panel_feature_get(struct drm_panel *panel, struct panel_param_info *p
 			param_info->value = atomic_read(&ctx->hbm_mode);
 			break;
 		case PARAM_DC:
-			//param_info->value = atomic_read(&ctx->dc_mode);
+			param_info->value = atomic_read(&ctx->dc_mode);
 			break;
 		default:
 			ret = -1;
@@ -1033,6 +1059,11 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 		case PARAM_HBM:
 			atomic_set(&ctx->hbm_mode, param_info.value);
 			panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+			ret = 0;
+			break;
+		case PARAM_DC:
+			atomic_set(&ctx->dc_mode, param_info.value);
+			panel_dc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
 			ret = 0;
 			break;
 		default:
@@ -1260,7 +1291,7 @@ static int csot_vtdr6126A_probe(struct mipi_dsi_device *dsi)
 	atomic_set(&ctx->hbm_mode, 0);
 	ctx->lhbm_en = 1;
 	atomic_set(&ctx->current_fps, 120);
-
+	atomic_set(&ctx->dc_mode, 0);
 	pr_info("csot,vtdr6126A,vdo,120hz ret:%d\n",ret);
 
 	return ret;
