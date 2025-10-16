@@ -348,7 +348,12 @@ static int mtk_vcodec_enc_probe(struct platform_device *pdev)
 		mtk_v4l2_debug(0, "default use ipm v1");
 		dev->venc_hw_ipm = VCODEC_IPM_V1;
 	}
-	mtk_v4l2_debug(0, "hw ipm: %d", dev->venc_hw_ipm);
+	ret = of_property_read_u32(pdev->dev.of_node, "venc-core-count", &dev->hw_max_count);
+	if (ret != 0 || dev->hw_max_count > MTK_VENC_HW_NUM) {
+		mtk_v4l2_debug(0, "default use 2 core");
+		dev->hw_max_count = 2;
+	}
+	mtk_v4l2_debug(0, "hw ipm: %d, core count %d", dev->venc_hw_ipm, dev->hw_max_count);
 
 	ret = mtk_vcodec_init_enc_pm(dev);
 	if (ret < 0) {
@@ -357,7 +362,7 @@ static int mtk_vcodec_enc_probe(struct platform_device *pdev)
 	}
 
 
-	while (!of_property_read_string_index(pdev->dev.of_node, "reg-names", i, &name)) {
+	for (i = 0; !of_property_read_string_index(pdev->dev.of_node, "reg-names", i, &name); i++) {
 		if (!strcmp(MTK_VDEC_REG_NAME_VENC_SYS, name)) {
 			reg_index = VENC_SYS;
 		} else if (!strcmp(MTK_VDEC_REG_NAME_VENC_C1_SYS, name)) {
@@ -391,8 +396,6 @@ static int mtk_vcodec_enc_probe(struct platform_device *pdev)
 		}
 		mtk_v4l2_debug(2, "reg[%d] base=0x%x",
 			reg_index, dev->enc_reg_base[reg_index]);
-
-		i++;
 	}
 
 	ret = of_property_read_u32(pdev->dev.of_node, "support-wfd-region", &support_wfd_region);
@@ -400,6 +403,13 @@ static int mtk_vcodec_enc_probe(struct platform_device *pdev)
 		mtk_v4l2_debug(0, "[VENC] Cannot get support-wfd-region, skip");
 		support_wfd_region = 0;
 	}
+
+	ret = of_property_read_u32(pdev->dev.of_node, "venc-disable-hw-break", &venc_disable_hw_break);
+	if (ret) {
+		mtk_v4l2_debug(0, "[VENC] default enable venc hw break");
+		venc_disable_hw_break = 0;
+	} else
+		mtk_v4l2_debug(0, "[VENC] %s venc hw break", venc_disable_hw_break ? "disable" : "enable");
 
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (res == NULL) {

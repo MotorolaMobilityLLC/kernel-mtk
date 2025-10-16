@@ -8,6 +8,10 @@
 #define _MTK_VCODEC_ENC_PM_H_
 
 #include "mtk_vcodec_drv.h"
+enum mtk_venc_hw_break_mode {
+    MTK_VENC_HW_BREAK_PAUSE_MODE = 0,
+    MTK_VENC_HW_BREAK_SMI_LOCK_MODE = 1,
+};
 
 void mtk_venc_init_ctx_pm(struct mtk_vcodec_ctx *ctx);
 int mtk_vcodec_init_enc_pm(struct mtk_vcodec_dev *dev);

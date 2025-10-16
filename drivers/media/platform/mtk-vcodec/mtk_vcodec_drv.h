@@ -749,6 +749,7 @@ struct mtk_vcodec_dev {
 	const char *platform;
 	enum mtk_vcodec_ipm vdec_hw_ipm;
 	enum mtk_vcodec_ipm venc_hw_ipm;
+	unsigned int hw_max_count;
 
 	struct v4l2_m2m_dev *m2m_dev_dec;
 	struct v4l2_m2m_dev *m2m_dev_enc;

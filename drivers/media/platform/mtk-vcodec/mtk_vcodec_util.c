@@ -165,6 +165,10 @@ EXPORT_SYMBOL_GPL(support_svp_region);
 int support_wfd_region;
 EXPORT_SYMBOL_GPL(support_wfd_region);
 
+/* disable on legacy platform by config dts */
+int venc_disable_hw_break;
+EXPORT_SYMBOL_GPL(venc_disable_hw_break);
+
 /* VCODEC FTRACE */
 #if VCODEC_TRACE
 unsigned long vcodec_get_tracing_mark(void)
