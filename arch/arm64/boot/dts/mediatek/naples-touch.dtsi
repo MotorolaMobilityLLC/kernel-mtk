@@ -19,7 +19,12 @@
 		goodix,reset-gpio = <&pio 150 0x0>;
 		goodix,irq-gpio = <&pio 4 0x2002>;
 		goodix,avdd-name = "vtp";
-
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend", "stylus_clk_active", "stylus_clk_suspend","gt9916_spi_mode";
+		pinctrl-0 = <&ctp_gt9896s_int_active>;
+		pinctrl-1 = <&ctp_gt9896s_int_suspend>;
+		pinctrl-2 = <&ctp_gt9896s_reset_active>;
+		pinctrl-3 = <&ctp_gt9896s_reset_suspend>;
+		pinctrl-4 = <&ctp_gt9896s_spi_mode>;
 		vtp-supply = <&mt6377_vtp>;
 		goodix,iovdd-name = "vant18";
 		vant18-supply = <&mt6377_vaud18>;
@@ -51,6 +56,12 @@
 		vcc_i2c-supply = <&mt6377_vaud18>;
                 focaltech,reset-gpio = <&pio 150 0x0>;
                 focaltech,irq-gpio = <&pio 4 0x0>;
+                pinctrl-names = "pmx_ts_active", "pmx_ts_suspend", "stylus_clk_active", "stylus_clk_suspend","gt9916_spi_mode";
+                pinctrl-0 = <&ctp_gt9896s_int_active>;
+                pinctrl-1 = <&ctp_gt9896s_int_suspend>;
+		pinctrl-2 = <&ctp_gt9896s_reset_active>;
+		pinctrl-3 = <&ctp_gt9896s_reset_suspend>;
+		pinctrl-4 = <&ctp_gt9896s_spi_mode>;
                 focaltech,max-touch-number = <10>;
                 focaltech,display-coords = <0 0 1272 2772>;
                 mmi,enable-gestures;
@@ -65,6 +76,7 @@
                 focaltech,interpolation-ctrl;
                 focaltech,sample-ctrl;
                 mmi,resolution_boost = <16>;
+
 	};
 
 
@@ -80,4 +92,40 @@
 		mmi,stow-gpio = <&pio 21 0x0>;
 	};
 };
+&pio {
+	ctp_gt9896s_int_active: int1_active {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
+			input-enable;
+		};
+	};
+	ctp_gt9896s_int_suspend: int1_suspend {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
+			output-low;
+		};
+	};
+	ctp_gt9896s_reset_active: reset1_active {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO150__FUNC_GPIO150>;
+			output-high;
+		};
+	};
+	ctp_gt9896s_reset_suspend: reset1_suspend {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO150__FUNC_GPIO150>;
+			output-low;
+		};
+	};
+	ctp_gt9896s_spi_mode: spimode-default {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO56__FUNC_SPI0_CLK>,
+				 <PINMUX_GPIO57__FUNC_SPI0_CSB>,
+				 <PINMUX_GPIO58__FUNC_SPI0_MO>,
+				 <PINMUX_GPIO59__FUNC_SPI0_MI>;
+			drive-strength = <1>;
+		};
+	};
+};
 /* TOUCH end */
+
