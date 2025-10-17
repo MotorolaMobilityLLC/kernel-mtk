@@ -414407,6 +414407,13 @@ function {
   parameter_id: 0x6720d32f
 }
 function {
+  id: 0x9bf3bb0f
+  return_type_id: 0x6720d32f
+  parameter_id: 0x18bd6530
+  parameter_id: 0x13580d6c
+  parameter_id: 0x4585663f
+}
+function {
   id: 0x9bf40739
   return_type_id: 0x6720d32f
   parameter_id: 0x18bd6530
@@ -435827,6 +435834,15 @@ elf_symbol {
   full_name: "__traceiter_android_vh_modify_scan_control"
 }
 elf_symbol {
+  id: 0x453eac0d
+  name: "__traceiter_android_vh_move_entity"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x818bceee
+  type_id: 0x9bf3bb0f
+  full_name: "__traceiter_android_vh_move_entity"
+}
+elf_symbol {
   id: 0x306a6019
   name: "__traceiter_android_vh_mpam_set"
   is_defined: true
@@ -442584,6 +442600,15 @@ elf_symbol {
   crc: 0x7c5aa8a7
   type_id: 0x18ccbd2c
   full_name: "__tracepoint_android_vh_modify_scan_control"
+}
+elf_symbol {
+  id: 0x633b21b3
+  name: "__tracepoint_android_vh_move_entity"
+  is_defined: true
+  symbol_type: OBJECT
+  crc: 0x7c5aa8a7
+  type_id: 0x18ccbd2c
+  full_name: "__tracepoint_android_vh_move_entity"
 }
 elf_symbol {
   id: 0x65023f2f
@@ -513144,6 +513169,7 @@ interface {
   symbol_id: 0xe44dacb1
   symbol_id: 0x5612c9d1
   symbol_id: 0xa77effd1
+  symbol_id: 0x453eac0d
   symbol_id: 0x306a6019
   symbol_id: 0xb1c564a3
   symbol_id: 0xacfcb454
@@ -513895,6 +513921,7 @@ interface {
   symbol_id: 0xb6da564f
   symbol_id: 0x41c8d09b
   symbol_id: 0xe2ad11db
+  symbol_id: 0x633b21b3
   symbol_id: 0x65023f2f
   symbol_id: 0xd5097f8d
   symbol_id: 0x6d3764d2
