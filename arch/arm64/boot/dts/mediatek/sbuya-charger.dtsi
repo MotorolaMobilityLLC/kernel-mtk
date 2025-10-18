@@ -44,9 +44,38 @@
         boot_battery_voltage = <3560000>;
 };
 
+
+&mt6375_typec {
+        mmi,en-moto-typec-otp;
+        pd-data {
+                pd,sink-cap-ext = /bits/ 8 <0xcf 0x29 0x75 0x63
+                                                0x00 0x00 0x00 0x00
+                                                0x00 0x00 0x01 0x00
+                                                0x00 0x00 0x00 0x00
+                                                0x01 0x0b 0x01 0x0a
+                                                0x1b 0x00 0x00 0x00>;
+                /*5V, 3A  9V, 3A*/
+                pd,sink-pdo-size = <2>;
+                pd,sink-pdo-data = <0x0001912c 0x0002d12c> ;
+                pd,id-vdo-data = <0xd14029cf 0x0 0x63750000
+                                0x61000000 0x0 0x41000000>;
+		/* 5V, 900ma */
+                pd,source-pdo-data = <0x0001905a>;
+        };
+
+        dpm-caps {
+                attempt-discover-id;
+                attempt-discover-svids;
+                attempt-enter-dp-mode;
+        };
+};
+
 &charger {
+         mmi,typecotp-charger;
+         /* mos gpio */
+         mmi,mos_gpio = <&pio 188 0>;
          charger = <&mt6375_chg>;
-	 charger_configuration= <3>;
+         charger_configuration= <3>;
          /* common */
          battery_cv = <4500000>;
          max_charger_voltage = <15000000>;
@@ -87,7 +116,7 @@
                         <45 4530 3500 3500>,
                         <60 4200 2550 0>;
 
-	mmi,mmi-ffc-zones = <0 4200 255>,
+         mmi,mmi-ffc-zones = <0 4200 255>,
 			<10 4500 255>,
 			<15 4500 255>,
 			<25 4530 738>,
