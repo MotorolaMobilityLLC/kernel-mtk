@@ -71,6 +71,7 @@ mainaf-y  += common/mot_nevada_gt9764vaf/MOT_NEVADA_GT9764VAF.o
 mainaf-y  += common/mot_nevada_gt9764af/MOT_NEVADA_GT9764AF.o
 mainaf-y  += common/mot_naples_gt9764af/MOT_NAPLES_GT9764AF.o
 mainaf-y  += common/mot_naples_gt9764vaf/MOT_NAPLES_GT9764VAF.o
+mainaf-y  += common/mot_naples_ak7377af/MOT_NAPLES_AK7377AF.o
 mainaf-y  += common/mot_sbuya_gt9764vaf/MOT_SBUYA_GT9764VAF.o
 mainaf-y  += common/bu63169af/OIS_user.o
 mainaf-y  += common/bu64253gwzaf/BU64253GWZAF.o

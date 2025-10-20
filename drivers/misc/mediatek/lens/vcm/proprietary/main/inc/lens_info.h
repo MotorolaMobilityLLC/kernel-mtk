@@ -95,6 +95,9 @@
 //Begin: Add lens driver name for sbuya
 #define MOT_SBUYA_AFDRV_GT9764V "MOT_SBUYA_GT9764VAF"
 //End
+//Begin: Add lens driver name for naples
+#define MOT_NAPLES_AFDRV_AK7377 "MOT_NAPLES_AK7377AF"
+//End
 #define CONVERT_CCU_TIMESTAMP 0x1000
 
 /* Structures */
