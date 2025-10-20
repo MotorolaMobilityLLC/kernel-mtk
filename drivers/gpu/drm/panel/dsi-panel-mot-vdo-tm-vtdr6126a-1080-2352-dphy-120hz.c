@@ -56,7 +56,7 @@ int vtdr6126a_range_bpg_ofs[15] = {2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -1
 #define FOD_CENTER_Y 2525
 
 static int tp_gesture_flag = 0;
-
+static int current_bl = 0;
 struct tm_vtdr6126a {
 	struct device *dev;
 	struct drm_panel panel;
@@ -77,20 +77,15 @@ struct tm_vtdr6126a {
 	atomic_t current_fps;
 };
 
-//set enable lhbm code, on status
-static struct mtk_panel_para_table panel_hbm_on[] = {
-      //set LHBM on
-      {2, {0x62, 0x03}},
-};
-
 static struct mtk_panel_para_table panel_lhbm_on[] = {
       //set LHBM on
+      {3, {0x51, 0x36, 0xE0}},
       {5, {0x63, 0x10, 0x00, 0x0d, 0xc0}},
       {2, {0x62, 0x03}},
 };
 
 //set enable lhbm code, off status
-static struct mtk_panel_para_table panel_hbm_off[] = {
+static struct mtk_panel_para_table panel_lhbm_off[] = {
 	//set LHBM off
       {2, {0x62,0x00}},
 };
@@ -838,7 +833,7 @@ static int tm_vtdr6126a_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	static char bl_tb0[] = { 0x51, 0x3f, 0xff };
 
 	pr_info("%s backlight = %d\n", __func__, level);
-
+	current_bl = level;
 	bl_tb0[1] = (level >> 8) & 0x3F;
 	bl_tb0[2] = level & 0xFF;
 
@@ -945,6 +940,29 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 	return 0;
 }
 
+static void set_lhbm_alpha(unsigned int bl_level)
+{
+	struct mtk_panel_para_table *pAlphaTable;
+	unsigned int alpha = 0;
+	unsigned int lhbm_alpha_index = bl_level;
+
+	pAlphaTable = &panel_lhbm_on[0];
+	if (lhbm_alpha_index >= ARRAY_SIZE(lhbm_alpha)){
+			pAlphaTable[0].para_list[1] = (bl_level >> 8) & 0xFF;
+			pAlphaTable[0].para_list[2] = bl_level & 0xFF;
+			pAlphaTable[1].para_list[3] = (bl_level >> 8) & 0xFF;
+			pAlphaTable[1].para_list[4] = bl_level & 0xFF;
+			pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pAlphaTable->para_list[3], pAlphaTable->para_list[4]);
+		} else {
+			alpha = lhbm_alpha[lhbm_alpha_index];
+			pAlphaTable[0].para_list[1] = (bl_level >> 8) & 0xFF;
+			pAlphaTable[0].para_list[2] = bl_level & 0xFF;
+			pAlphaTable[1].para_list[1] = (alpha >> 8) & 0xFF;
+			pAlphaTable[1].para_list[2] = alpha & 0xFF;
+			pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pAlphaTable->para_list[1], pAlphaTable->para_list[2]);
+		}
+}
+
 static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level, uint32_t fps)
 {
 	unsigned int para_count = 0;
@@ -953,17 +971,12 @@ static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, ui
 	pr_info("%s: bl_level:%d, fps:%d, on:%d\n", __func__, bl_level, fps, on);
 
 	if (on) {
-		if(bl_level > 0x0dbf) {
-			para_count = sizeof(panel_hbm_on) / sizeof(struct mtk_panel_para_table);
-			pTable = panel_hbm_on;
-		} else {
-			para_count = sizeof(panel_lhbm_on) / sizeof(struct mtk_panel_para_table);
-			pTable = panel_lhbm_on;
-		}
-
+		set_lhbm_alpha(bl_level);
+		para_count = sizeof(panel_lhbm_on) / sizeof(struct mtk_panel_para_table);
+		pTable = panel_lhbm_on;
 	} else {
-		para_count = sizeof(panel_hbm_off) / sizeof(struct mtk_panel_para_table);
-		pTable = panel_hbm_off;
+		para_count = sizeof(panel_lhbm_off) / sizeof(struct mtk_panel_para_table);
+		pTable = panel_lhbm_off;
 	}
 	cb(dsi, handle, pTable, para_count);
 	return 0;
@@ -972,7 +985,7 @@ static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, ui
 static int panel_hbm_set_cmdq(struct tm_vtdr6126a *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
 	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0x3E, 0x80}};//set hbm code, on
-	unsigned int level = 0;
+	unsigned int level = current_bl;
 	unsigned int fps = atomic_read(&ctx->current_fps);
 
 	pr_info("%s: level:%d, fps:%d, hbm_state:%d, lhbm_en=%d\n", __func__, level, fps, hbm_state, ctx->lhbm_en);
