@@ -33,7 +33,7 @@
 
 
 &i2c7 {
-	status = "okay";
+	status = "disabled";
 	clock-frequency = <400000>;
 	sx937x:sx937x@2c {
 		compatible = "Semtech,sx937x";
@@ -371,6 +371,6 @@
 				0x4280 0x0E
 		>;
 
-		status = "okay";
+		status = "disabled";
 	};
 };
