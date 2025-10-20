@@ -1,0 +1,157 @@
+&mt6377_vfp {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	//regulator-always-on;
+};
+
+&pio {
+
+        fingerfp_rst_high: fingerfp_rst_high {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO7__FUNC_GPIO7>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+
+        fingerfp_rst_low: fingerfp_rst_low {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO7__FUNC_GPIO7>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+
+        fingerfp_irq_active: fingerfp_irq_active {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO15__FUNC_GPIO15>;
+                        slew-rate = <0>;
+                        bias-disable;
+                };
+        };
+
+        fingerfp_spi_active: fingerfp_spi_active {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO63__FUNC_SPI1_MI>, <PINMUX_GPIO61__FUNC_SPI1_CSB>, <PINMUX_GPIO62__FUNC_SPI1_MO>, <PINMUX_GPIO60__FUNC_SPI1_CLK>;
+                        drive-strength = <2>;
+                };
+        };
+
+        fingerfp_spi_default: fingerfp_spi_default {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO63__FUNC_GPIO63>, <PINMUX_GPIO61__FUNC_GPIO61>, <PINMUX_GPIO62__FUNC_GPIO62>, <PINMUX_GPIO60__FUNC_GPIO60>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        fingerprint_irq: fingerprint_irq {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO15__FUNC_GPIO15>;
+                        slew-rate = <0>;
+                        bias-disable;
+                };
+        };
+
+        fingerprint_reset_high: fingerprint_reset_high {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO7__FUNC_GPIO7>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+
+        fingerprint_reset_low: fingerprint_reset_low {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO7__FUNC_GPIO7>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+	jiiov_fp_reset_output_low: jiiov_fp_reset_output_low {
+		pins_cmd_dat {
+		    pinmux = <PINMUX_GPIO7__FUNC_GPIO7>;
+		    slew-rate = <1>;
+		    output-low;
+		};
+	};
+
+	jiiov_fp_reset_output_high: jiiov_fp_reset_output_high {
+		pins_cmd_dat {
+		    pinmux = <PINMUX_GPIO7__FUNC_GPIO7>;
+		    slew-rate = <1>;
+		    output-high;
+		};
+	};
+
+	jiiov_fp_irq_default: jiiov_fp_irq_default {
+		pins_cmd_dat {
+		    pinmux = <PINMUX_GPIO15__FUNC_GPIO15>;
+		    slew-rate = <0>;
+		    bias-disable;
+		};
+	};
+
+	jiiov_fp_spi_active: jiiov_fp_spi_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO63__FUNC_SPI1_MI>, <PINMUX_GPIO61__FUNC_SPI1_CSB>, <PINMUX_GPIO62__FUNC_SPI1_MO>, <PINMUX_GPIO60__FUNC_SPI1_CLK>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+
+/* FINGERPRINT start */
+&spi1 {
+        status = "okay";
+        mediatek,pad-select = <0>, <1>;
+        tee-only;
+
+        goodix_tee@0 {
+                compatible = "goodix,goodix-fp";
+                reg = <0>;
+                spi-max-frequency = <10000000>;
+                netlink-event = <30>;
+                status = "okay";
+        };
+
+   	jiiov_tee@1 {
+		status = "okay";
+		compatible = "jiiov,fingerprint","mediatec,fingerprint-jiiov";
+		reg = <1>;
+		spi-max-frequency = <8000000>;
+		netlink-event = <30>;
+		interrupt-parent = <&pio>;
+		interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
+		anc,gpio_rst = <&pio 7 0x00>;
+		anc,gpio_irq = <&pio 15 0x00>;
+		anc,enable-on-boot;
+		anc,vdd_use_pmic;
+		vdd-supply = <&mt6377_vfp>;
+		anc,vdd_config = <3300000 3300000 150000>;
+		pinctrl-names = "anc_reset_low", "anc_reset_high", "anc_irq_default";
+		pinctrl-0 = <&jiiov_fp_reset_output_low>;
+		pinctrl-1 = <&jiiov_fp_reset_output_high>, <&jiiov_fp_spi_active>;
+		pinctrl-2 = <&jiiov_fp_irq_default>;
+	};
+
+};
+
+&odm {
+	goodix_fp: goodix_fp {
+		compatible = "mediatek,fingerprint-goodix";
+		interrupt-parent = <&pio>;
+
+		interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
+		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
+		pinctrl-0 = <&fingerfp_irq_active>;
+		pinctrl-1 = <&fingerfp_rst_high>;
+		pinctrl-2 = <&fingerfp_rst_low>;
+		int-gpios = <&pio 15 0>;
+		rgltr-ctrl-support;
+		fp,vdd-supply = <&mt6377_vfp>;	// ldo for support module vcc
+		fp,voltage-range = <3300000 3300000>;	// ldo voltage default 3.3V
+		fp,vdd-current = <100000>;
+		status = "okay";
+	};
+};
+

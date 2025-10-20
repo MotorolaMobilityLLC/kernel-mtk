@@ -1,0 +1,626 @@
+/*
+ * Copyright (c) 2019 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+#include <dt-bindings/iio/mt635x-auxadc.h>
+
+&mt6375 {
+	status = "disabled";
+};
+
+&pio {
+     chargerpump_int_default_master: chargerpump_int_default_master {
+		pinmux = <PINMUX_GPIO5__FUNC_GPIO5>;
+		slew-rate= <0>;
+		input-enable;
+		bias-pull-up;
+     };
+};
+
+&i2c5 {
+	clock-frequency = <400000>;
+	sgm4154x_chg: sgm41542@6B {
+		status = "okay";
+		compatible = "sgm,sgm41542";
+		reg = <0x6B>;
+                io-channels = <&pmic_adc AUXADC_VCDT>;
+		io-channel-names = "pmic_vbus";
+ 		phys = <&u2port0 PHY_TYPE_USB2>;
+ 		phy-names = "usb2-phy";
+		sgm,irq-gpio = <&pio 3 IRQ_TYPE_EDGE_FALLING>;     //irq num base on hardware design
+		sgm,chg-en-gpio = <&pio 151 0>;   //gpio num base on hardware design  1.MTK parent node name is pio  2.QUALCOMM parent node name is tlmm or other
+		mmi,hvdcp-support;
+	};
+	sc8989x_chg: chg@6A {
+		compatible = "southchip,sc89890h";
+		reg = <0x6A>;
+		status = "okay";
+		eint_name = "chr_stat";
+		sc,intr-gpio = <&pio 3 IRQ_TYPE_EDGE_FALLING>;
+		charger_name = "primary_chg";
+		io-channels = <&pmic_adc AUXADC_VCDT>;
+		io-channel-names = "pmic_vbus";
+		phys = <&u2port0 PHY_TYPE_USB2>;
+		phy-names = "usb2-phy";
+		sc,sc8989x,ico-en = <0>;
+		sc,sc8989x,hvdcp-en = <0>;
+		sc,sc8989x,auto-dpdm-en = <0>;
+		sc,sc8989x,vsys-min = <5>; /*3500mV*/
+		sc,sc8989x,vbatmin-sel = <0>; /*0:2.9V 1:2.5V*/
+		sc,sc8989x,itrick = <3>; /*60 + val *60*/
+		sc,sc8989x,iterm = <3>; /*30 + val * 60*/
+		sc,sc8989x,vbat-cv = <38>; /*3840 + val * 16*/
+		sc,sc8989x,vbat-low = <1>; /*0:2.8V 1:3V*/
+		sc,sc8989x,vrechg = <0>; /*0:100mV 1:200mV*/
+		sc,sc8989x,en-term = <1>;
+		sc,sc8989x,stat-dis = <0>;
+		sc,sc8989x,wd-time = <0>; /*0:Dis 1:40s 2:80s 3:160s*/
+		sc,sc8989x,en-timer = <1>;
+		sc,sc8989x,charge-timer = <2>; /*0:5h 1:8h 2:12h 3:20h*/
+		sc,sc8989x,bat-comp = <0>; /*val * 20*/
+		sc,sc8989x,vclamp = <0>; /*val *32*/
+		sc,sc8989x,votg = <12>; /*3900 + val * 100*/
+		sc,sc8989x,iboost = <7>; /*0:0.5A 3:1.4A 5:1.875A 7:2.45A*/
+		sc,sc8989x,force_vindpm = <0>;
+		sc,sc8989x,vindpm = <18>; /*2600 + val * 100*/
+		mmi,hvdcp-support;
+	};
+	/* sydnyl uses aw35615fcr*/
+        aw35615@24 {
+                compatible = "awinic,aw35615fcr";
+                reg = <0x24>;
+                status = "okay";
+                awinic,int_n = <&pio 8 1>;
+                aw35615,port_id = <0>;
+                aw35615,snk_pdo_size = <1>; /* set sink pdo num*/
+                aw35615,snk_pdo_vol = <5000>; /* set sink pdo voltage mV*/
+                aw35615,snk_pdo_cur = <2000>; /* set sink pdo current mA*/
+                aw35615,snk_pps_size = <0>; /* set sink pps num*/
+                aw35615,snk_pps_vol = <0>; /* set sink pps voltage mV*/
+                aw35615,snk_pps_cur = <0>; /* set sink pps current mA*/
+                aw35615,src_pdo_size = <1>; /* set source pdo num*/
+                aw35615,src_pdo_vol = <5000>; /* set source pdo voltage mV*/
+                aw35615,src_pdo_cur = <1000>; /* set source pdo current mA*/
+                aw35615,src_pps_size = <0>; /* set source pps num*/
+                aw35615,src_pps_vol = <0>; /* set source pps voltage mV*/
+                aw35615,src_pps_cur = <0>; /* set source pps current mA*/
+                aw35615,snk_tog_time = <0x36>; /* set toggle sink time */
+                aw35615,src_tog_time = <0x36>; /* set toggle source time */
+                aw35615,cc1_ov_th = <0x1>; /* set cc1 ov threshold. 0x1: ov threshold is 5.5V. */
+                aw35615,cc2_ov_th = <0x1>; /* set cc2 ov threshold. 0x1: ov threshold is 5.5V. */
+                aw35615,lpd_tim_set = <0xf>; /* set the LPD sensitivity. The larger the value, the more sensitive it is. */
+                aw35615,sink_bist_reg = <0x54>; /* set MDAC reg 0x50*/
+        };
+	cps8851_pd: cps8851@4e {
+		compatible = "cps,cps8851";
+		reg = <0x4e>;
+		status = "okay";
+		cp-tcpc,name = "type_c_port0"; /* tcpc_device's name */
+		cp-tcpc,role_def = <5>; /* 0: Unknown, 1: SNK, 2: SRC */
+					/* 3: DRP, 4: Try.SRC, 5: Try.SNK */
+		cp-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
+		cp-tcpc,vconn_supply = <1>;  /* 0: Never, 1: Always, */
+					     /* 2: EMarkOnly, 3: StartOnly */
+		cps8851,intr_gpio = <&pio 8 0x0>;
+		cps8851,intr_gpio_num = <8>;
+		pd-data {
+			pd,vid = <0x315c>;
+			pd,pid = <0x8851>;
+			pd,source-cap-ext = /bits/ 8 <0x5c 0x31 0x51 0x88
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x00 0x00
+						      0x00 0x00 0x01 0x02
+						      0x00 0x00 0x00 0x00>;
+			pd,sink-cap-ext = <0x8851315c  0x00000000 0x00010000
+				0x00000000 0x05000000 0x00000019>;
+			pd,mfrs = "CPS_TCPC";
+
+			/*
+			 *	VSAFE5V = 0, MAX_POWER = 1, CUSTOM = 2,
+			 *	MAX_POWER_LV = 0x21, MAX_POWER_LVIC = 0x31
+			 *	MAX_POWER_HV = 0x41, MAX_POWER_HVIC = 0x51
+			 */
+			pd,charging_policy = <0x31>;
+
+			/*
+			 * Fixed 5V, 500 mA <0x00019032>
+			 * Fixed 5V, 1A <0x00019064>
+			 * Fixed 5V, 2A <0x000190c8>
+			 * Fixed 5V, 3A <0x0001912c>
+			 * Fixed 9V, 500 mA <0x0002d032>
+			 * Fixed 9V, 1A <0x0002d064>
+			 * Fixed 9V, 2A <0x0002d0c8>
+			 * Fixed 9V, 3A <0x0002d12c>
+			 * Variable 5-9V, 1A <0x8642d064>
+			 * Variable 5-9V, 2A <0x8642d0c8>
+			 * Variable 5-9V, 3A <0x8642d12c>
+			 * PPS 3V~5.9V, 3A <0xC0761E3C>
+			 */
+			pd,source-pdo-size = <1>;
+			pd,source-pdo-data = <0x00019032>;
+			pd,sink-pdo-size = <1>;
+			pd,sink-pdo-data = <0x000190c8>;
+
+			/*
+			 * No DP, host + device
+			 *	pd,id-vdo-size = <6>;
+			 *	pd,id-vdo-data = <0xd14029cf 0x0 0x17110000
+						  0x61000000 0x0 0x41000000>;
+			 * With DP
+			 *	pd,id-vdo-size = <6>;
+			 *	pd,id-vdo-data = <0xd54029cf 0x0 0x17110000
+						  0x61000000 0x0 0x41000000>;
+			 */
+
+			pd,id-vdo-size = <6>;
+			pd,id-vdo-data = <0xd140315c 0x0 0x88510000
+					  0x61000000 0x0 0x41000000>;
+
+			bat,nr = <1>;
+			pd,country_nr = <0>;
+
+			bat-info0 {
+				bat,vid = <0x315c>;
+				bat,pid = <0x8851>;
+				bat,mfrs = "bat1";
+				bat,design_cap = <3000>;
+			};
+
+			//bat-info1 {
+			//	bat,vid = <0x8abc>;
+			//	bat,pid = <0x5234>;
+			//	bat,mfrs = "bat2";
+			//	bat,design_cap = <4000>;
+			//};
+
+			//country0 {
+			//	pd,country_code = <0x5457>;
+			//	pd,country_len = <2>; /* max len = 26 */
+			//	pd,country_data = <0xff 0xff>;
+			//};
+
+			//country1 {
+			//	pd,country_code = <0x5553>;
+			//	pd,country_len = <3>; /* max len = 26 */
+			//	pd,country_data = <0xf1 0xf2 0xf3>;
+			//};
+		};
+		dpm_caps {
+			local_dr_power;
+			local_dr_data;
+			//local_ext_power;
+			local_usb_comm;
+			//local_usb_suspend;
+			//local_high_cap;
+			//local_give_back;
+			local_no_suspend;
+			local_vconn_supply;
+
+			//attempt_discover_cable_dfp;
+			attempt_enter_dp_mode;
+			attempt_discover_cable;
+			attempt_discover_id;
+
+			/* 0: disable, 1: prefer_snk, 2: prefer_src */
+			pr_check = <0>;
+			//pr_reject_as_source;
+			//pr_reject_as_sink;
+			//pr_check_gp_source;
+			//pr_check_gp_sink;
+
+			/* 0: disable, 1: prefer_ufp, 2: prefer_dfp */
+			dr_check = <0>;
+			//dr_reject_as_dfp;
+			//dr_reject_as_ufp;
+		};
+		displayport {
+			/* connection type = "both", "ufp_d", "dfp_d" */
+			1st_connection = "dfp_d";
+			2nd_connection = "dfp_d";
+			signal,dp_v13;
+			//signal,dp_gen2;
+			//usbr20_not_used;
+			typec,receptacle;
+			ufp_d {
+				//pin_assignment,mode_a;
+				//pin_assignment,mode_b;
+				//pin_assignment,mode_c;
+				//pin_assignment,mode_d;
+				//pin_assignment,mode_e;
+			};
+			dfp_d {
+				//pin_assignment,mode_a;
+				//pin_assignment,mode_b;
+				pin_assignment,mode_c;
+				pin_assignment,mode_d;
+				pin_assignment,mode_e;
+				//pin_assignment,mode_f;
+			};
+		};
+	};
+};
+
+&i2c5 {
+	wt6670f@35 {
+		status = "okay";
+                compatible = "mediatek,wt6670f_qc3p";
+                reg = <0x35>;
+                wt6670f-reset-gpio = <&pio 10 0x0>;
+                wt6670f-int-gpio = <&pio 9 0x0>;
+                wt6670f-i2c-scl-pin = <&pio 137 0x0>;
+                wt6670f-i2c-sda-pin = <&pio 138 0x0>;
+
+                pinctrl-names = "default",
+                                "wt6670_i2c_scl_low", "wt6670_i2c_scl_high",
+                                "wt6670_i2c_sda_low", "wt6670_i2c_sda_high",
+                                "wt6670_i2c";
+                pinctrl-0 = <&wt6670_pins_default>;
+                pinctrl-1 = <&wt6670_pins_scl_low>;
+                pinctrl-2 = <&wt6670_pins_scl_high>;
+                pinctrl-3 = <&wt6670_pins_sda_low>;
+                pinctrl-4 = <&wt6670_pins_sda_high>;
+                pinctrl-5 = <&wt6670_pins_i2c>;
+        };
+};
+
+&pio {
+        wt6670_pins_default: wt6670_default_mode {
+        };
+        wt6670_pins_scl_low: wt6670_scl_low {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO137__FUNC_GPIO137>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        wt6670_pins_scl_high: wt6670_scl_high {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO137__FUNC_GPIO137>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        wt6670_pins_sda_low: wt6670_sda_low {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO138__FUNC_GPIO138>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        wt6670_pins_sda_high: wt6670_sda_high {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO138__FUNC_GPIO138>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        wt6670_pins_i2c: wt6670_i2c_mode {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO138__FUNC_SDA5>,
+                                <PINMUX_GPIO137__FUNC_SCL5>;
+                };
+        };
+
+};
+
+&i2c0 {
+	clock-frequency = <400000>;
+	sgm41606s_standalone:bq25960-standalone@65 {
+		status = "okay";
+		compatible = "ti,bq25960-standalone";
+		reg = <0x65>;
+
+		sc8541-addr = <0x65>;
+
+		mmi,disable_mux;
+		interrupt-parent = <&pio>;
+		interrupts = <5 IRQ_TYPE_EDGE_FALLING 5 0>;
+		interrupt-names = "bq25960_irq_standalone";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&chargerpump_int_default_master>;
+
+	};
+	nu2115: nu2115-standalone@6D {
+		compatible = "cp,nu2115";
+		status = "okay";
+		charger_name = "primary_dvchg";
+		reg = <0x6D>;
+		nu2115,intr-gpios = <&pio 5 0x0>;
+		ac_ovp = <13000000>;
+		vbus_ovp = <12000000>;
+		bat_ucp_alm = <9200000>;
+		ibat_sns_res = <2>;
+		watchdog_dis;
+	};
+};
+
+&moto_chg_tcmd {
+                compatible = "mmi,moto-chg-tcmd";
+                status = "okay";
+
+                mmi,ntc_table = <1>;
+                mmi,ntc_v_ref = <1800000>;
+                mmi,ntc_r_pull = <100000>;
+
+                mmi,batid_v_ref = <1800000>;
+                mmi,batid_r_pull = <100000>;
+                mmi,batt-ids-map = "1", "ATLSP52NVT", "2", "LWNSP52SWD", "3", "COSSP52COS";
+
+                mmi,adc-channel-cpu = <0>;
+                mmi,adc-channel-charger = <2>;
+                mmi,adc-channel-pa = <1>;
+                mmi,adc-channel-batid = <3>;
+                mmi,adc-channel-vbat = <100>;
+};
+
+&lk_charger {
+        temp_t4_threshold = <59>;
+        /* charging current */
+        usb_charger_current = <500000>;
+        ac_charger_current = <1500000>;
+        ac_charger_input_current = <2000000>;
+        non_std_ac_charger_current = <1000000>;
+        charging_host_charger_current = <1500000>;
+        boot_battery_voltage = <3560000>;
+};
+
+&extcon_usb {
+	charger = <&sgm4154x_chg>;
+        vbus-current = <1200000>;
+};
+
+&mtk_ctd {
+	bc12 = <&sgm4154x_chg>;
+};
+&charger {
+         charger = <&sgm4154x_chg>;
+         charger_configuration= <3>;
+         /* common */
+         battery_cv = <4530000>;
+         max_charger_voltage = <15000000>;
+         min_charger_voltage = <4700000>;
+         max_dmivr_charger_current = <4000000>;
+         min_charger_voltage_1 = <4500000>;
+         min_charger_voltage_2 = <4500000>;
+         //enable_pe_plus;
+         //enable_sw_jeita;
+
+         /*pe5 && pdc*/
+         fast_charging_indicator = <0x4014>;
+
+         /* charging current */
+         usb_charger_current_suspend = <0>;
+         usb_charger_current_unconfigured = <70000>;
+         usb_charger_current_configured = <500000>;
+         usb_charger_current = <500000>;
+         ac_charger_current = <2050000>;
+         ac_charger_input_current = <3000000>;
+         non_std_ac_charger_current = <1000000>;
+         charging_host_charger_current = <1500000>;
+         apple_1_0a_charger_current = <650000>;
+         apple_2_1a_charger_current = <800000>;
+         ta_ac_charger_current = <3600000>;
+         typec_limit_aicr = <3000000>;
+
+         /* PE */
+         ta_ac_9v_input_current = <2000000>;
+         ta_ac_7v_input_current = <2000000>;
+
+         //mmi config
+         mmi,iterm-ma = <255>;
+         mmi,mmi-temp-zones =
+                        <0 4200 1020  0>,
+                        <10 4250 2550 1530>,
+                        <15 4530 2550 2550>,
+                        <45 4320 5800 5200>,
+                        <45 4450 5200 4000>,
+                        <60 4200 2550 0>;
+
+	mmi,mmi-ffc-zones = <0 4200 255>,
+			<10 4530 255>,
+			<15 4530 255>,
+			<25 4560 864>,
+			<35 4560 991>,
+			<45 4560 1419>,
+			<60 4200 255>;
+
+	mmi,mmi-normal-zones = <0 4200 255>,
+			<10 4530 255>,
+			<15 4530 255>,
+			<25 4530 255>,
+			<35 4530 255>,
+			<45 4530 510>,
+			<60 4200 255>;
+
+         mmi,enable-charging-limit;
+         mmi,upper-limit-capacity = <65>;
+         mmi,lower-limit-capacity = <60>;
+         mmi,vfloat-comp-uv = <0>;
+         mmi,min-cp-therm-current-ua = <1400000>;
+         mmi,power-max-design-mw = <18000>;
+};
+
+&mmi_pehv {
+	compatible = "mmi,pehv";
+	gauge = <&mtk_gauge>;
+	polling-interval = <10000>;
+	vbat-cv = <4560>;
+	start-soc-min = <0>;
+	start-soc-max = <90>;
+	idvchg-cc = <3000>;
+	idvchg-term = <500>;
+	idvchg-step = <50>;
+	idvchg-ss-init = <1000>;
+	idvchg-ss-step = <250>;
+	idvchg-ss-step1 = <100>;
+	idvchg-ss-step2 = <50>;
+	idvchg-ss-step1-vbat = <4000>;
+	idvchg-ss-step2-vbat = <4200>;
+	ta-blanking = <400>;
+	swchg-aicr = <0>;
+	swchg-ichg = <1200>;
+	swchg-aicr-ss-init = <400>;
+	swchg-aicr-ss-step = <200>;
+	swchg-off-vbat = <4250>;
+	force-ta-cv-vbat = <4250>;
+	chg-time-max = <10800>;
+	ifod-threshold = <200>;
+	rsw-min = <20>;
+	ircmp-rbat = <40>;
+	ircmp-vclamp = <0>;
+	vta-cap-min = <6800>;
+	vta-cap-max = <11000>;
+	vta-step = <20>;
+	ita-cap-min = <1000>;
+	vbat-threshold = <4150>;
+	min-charger-voltage = <4600000>;
+	mmi_therm_cur_thres = <500>;
+	mmi_therm_vol_thres = <80>;
+	mmi_therm_step = <3>;
+	mmi_max_ibat = <6000>;
+};
+
+&pdc {
+         min-charger-voltage = <4600000>;
+         pd-vbus-low-bound = <5000000>;
+         pd_vbus_upper_bound = <9000000>;
+         vsys-watt = <5000000>;
+         ibus-err = <14>;
+
+         pd-stop-battery-soc = <80>;
+
+         /* single charger */
+         sc-input-current = <3000000>;
+         sc-charger-current = <4000000>;
+         pd-9v-input-current-discrete-arch-mmi = <2000000>;
+};
+
+&pe5 {
+	start_soc_max = <90>;
+	vbat_cv = <4560>;
+	start_vbat_max = <4500>;
+	tdvchg_curlmt = <(-1) (-1) (-1) 0 0 0 0 0 (-1)>;
+	tbat_curlmt = <0 0 0 0 0 0 0 0 0>;
+	tta_curlmt = <0 0 0 0 0 0 0 0 0>;
+};
+
+&pe45 {
+	status = "disabled";
+};
+
+&pe2 {
+	status = "disabled";
+};
+
+&pe {
+	status = "disabled";
+};
+
+&charger_cooler {
+       mmi,thermal-mitigation = <(-1) 5800000 5000000 4500000 3000000
+                               2000000 1500000 1000000 500000>;
+};
+
+&u2port0 {
+	mediatek,eye-vrt = <7>;
+	mediatek,eye-term = <6>;
+	mediatek,rev6 = <3>;
+	mediatek,eye-vrt-host = <7>;
+	mediatek,eye-term-host = <6>;
+	mediatek,rev6-host = <3>;
+};
+&mtk_gauge {
+
+	DIFFERENCE_FULLOCV_ITH = <80>;  /*gauge cut-off current, should overtop ieoc 50ma*/
+	EMBEDDED_SEL = <(1)>;  /*embedded battery,don't remove the battery for user*/
+	VIR_OLDOCV_DIFF_EMB = <3000>; /*0.1mv*/
+	VIR_OLDOCV_DIFF_EMB_LT = <3000>; /*0.1mv*/
+        CURR_MEASURE_20A = <(0)>;
+        UNIT_MULTIPLE = <(1)>;
+
+	/* battery prop */
+	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
+	g_FG_PSEUDO100 = <98 98 100 100
+		98 98 100 100
+		98 98 100 100
+		98 98 100 100
+		98 98 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100>;
+
+	g_Q_MAX = <5207 5206 4996 4996
+		5204 5310 4996 4996
+		5222 5258 4996 4996
+		5044 5158 4996 4996
+		4900 5019 4996 4996
+		4990 4996 4996 4996
+		4990 4996 4996 4996
+		4990 4996 4996 4996
+		4990 4996 4996 4996
+		4990 4996 4996 4996>;
+
+	g_Q_MAX_H_CURRENT = <5193 5189 4990 4990
+		5188 5290 4990 4990
+		5140 5188 4990 4990
+		4937 4935 4990 4990
+		4635 4491 4990 4990
+		4970 4990 4990 4990
+		4970 4990 4990 4990
+		4970 4990 4990 4990
+		4970 4990 4990 4990
+		4970 4990 4990 4990>;
+
+	/*vboot voltage for gauge 0%*/
+	g_PMIC_MIN_VOL_row = <4>;
+	g_PMIC_MIN_VOL_col = <10>;
+	g_PMIC_MIN_VOL = <32000  33500  33500  33500
+		32000  33500  33000  33000
+		33000  33000  33000  33000
+		32200  32200  32200  32200
+		31360  31360  31360  31360
+		31000  31000  31000  31000
+		31000  31000  31000  31000
+		31000  31000  31000  31000
+		31000  31000  31000  31000
+		31000  31000  31000  31200>;
+
+	/*Pseudo1 hide percentage*/
+	g_QMAX_SYS_VOL_row = <4>;
+	g_QMAX_SYS_VOL_col = <10>;
+	g_QMAX_SYS_VOL = <32500  34000  34950  34950
+		32500  34000  34950  34950
+		34250  34250  34250  34250
+		34250  34250  34250  34250
+		34250  34250  34250  34250
+		34250  34250  34250  34250
+		32800  32800  32800  32800
+		32800  32800  32800  32800
+		32800  32800  32800  32800
+		32800  32800  32800  32800>;
+
+	SHUTDOWN_1_TIME = <(30)>;
+	ACTIVE_TABLE = <(5)>;
+	R_FG_VALUE = <(2)>;
+	NO_BAT_TEMP_COMPENSATE = <(1)>;
+	CAR_TUNE_VALUE = <(101)>;
+
+	df-serialnum = "ATLSP52NVT";
+	#include "bat_setting/mt6835_battery_sp52_atl_5200mah.dtsi"
+	#include "bat_setting/mt6835_battery_sp52_swd_5200mah.dtsi"
+	#include "bat_setting/mt6835_battery_sp52_cos_5200mah.dtsi"
+
+};

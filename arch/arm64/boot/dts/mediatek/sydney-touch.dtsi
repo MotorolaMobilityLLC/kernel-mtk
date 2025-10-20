@@ -1,0 +1,83 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (c) 2024, Motorola Mobility Inc. All rights reserved.
+*/
+
+&spi0{
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	mediatek,pad-select = <0>, <1>;
+
+	goodix_ts_spi@0 {
+		status = "okay";
+		compatible = "goodix,gt9916K";
+		reg = <0x0>;
+		spi-max-frequency = <15000000>;  /* 4800000,9600000,15000000,19200000 */
+		mmi,status = "/chosen","mmi,panel_name","contains","tm_vtdr6126a_vid_1080_2352","csot_vtdr6126a_vid_1080_2352";
+		goodix,panel-supplier = "tm_vtdr6126a","csot_vtdr6126a";
+		goodix,reset-gpio = <&pio 150 0x0>;
+		goodix,irq-gpio = <&pio 4 0x2002>;
+		goodix,avdd-name = "vtp";
+
+		vtp-supply = <&mt6377_vtp>;
+		goodix,iovdd-name = "vant18";
+		vant18-supply = <&mt6377_vaud18>;
+		goodix,irq-flags = <0x2002>; /* 1:trigger rising, 2:trigger falling;*/
+		goodix,panel-max-id = <10>;
+		goodix,panel-max-x = <20352>;
+		goodix,panel-max-y = <44352>;
+		goodix,panel-max-w = <256>;
+		goodix,panel-max-p = <256>;
+		goodix,edge-ctrl;
+		goodix,sample-ctrl;
+		goodix,interpolation-ctrl;
+		goodix,gesture-wait-pm;
+		mmi,enable-gestures;
+		mmi,power-off-suspend;
+		mmi,usb-charger-detection;
+		mmi,supported_gesture_type = <0x07>;
+		mmi,resolution_boost = <16>;
+                mmi,charger-psy-name = "battery";
+	};
+
+	focaltech@1 {
+		compatible = "focaltech,fts";
+                reg = <1>; //Same as CS ID
+                status = "okay";
+		mmi,status = "/chosen","mmi,panel_name","contains","boe_nt37713_vid_1080_2352","boe_il97605a_vid_1080_2352";
+                spi-max-frequency = <9600000>;
+		vdd-supply= <&mt6377_vtp>;
+		vcc_i2c-supply = <&mt6377_vaud18>;
+                focaltech,reset-gpio = <&pio 150 0x0>;
+                focaltech,irq-gpio = <&pio 4 0x0>;
+                focaltech,max-touch-number = <10>;
+                focaltech,display-coords = <0 0 1272 2772>;
+                mmi,enable-gestures;
+                mmi,power-off-suspend;
+                focaltech,report_gesture_key = <59>;
+                mmi,supported_gesture_type = <0x07>;
+                focaltech,panel-supplier = "boe_nt37713","boe_il97605a";
+                focaltech,touch-charger-detect-psy-name = "battery";
+                focaltech,touch-charger-detect-psp = "POWER_SUPPLY_PROP_STATUS";
+                mmi,charger-psy-name = "battery";
+                mmi,usb-charger-detection;
+                focaltech,interpolation-ctrl;
+                focaltech,sample-ctrl;
+                mmi,resolution_boost = <16>;
+	};
+
+
+};
+
+&mt6377_vtp {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+};
+&odm {
+	mmi_stow: mmi_stow {
+		compatible = "moto,mmi_stow";
+		mmi,stow-gpio = <&pio 21 0x0>;
+	};
+};
+/* TOUCH end */

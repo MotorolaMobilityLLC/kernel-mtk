@@ -1,0 +1,122 @@
+/* Copyright (c) 2024, Motorola Mobility Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&dispsys_config {
+	force_dyn_mipi_change;
+};
+
+&mtk_leds {
+	/delete-property/ compatible;
+	/delete-property/ led_mode;
+	/delete-property/ gate_enable;
+	/delete-property/ pwm_config;
+
+	compatible = "mediatek,disp-leds";
+
+	backlight {
+		label = "lcd-backlight";
+		led_mode = <4>;
+		max-brightness = <16383>;
+		max-hw-brightness = <16383>;
+		default-brightness = <3000>;
+		default-state = "on";
+	};
+};
+
+&disp_rdma0 {
+       MTK,disable_rdma_underflow = <1>;
+};
+
+&cam_pmic {
+	/delete-property/ init-value;
+
+	/* default dio8501 output status, 1001 bit 1 --> dvdd, bit 4 --> vci */
+	init-value = <0x09>;
+	status = "okay";
+};
+
+&pio {
+	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO86__FUNC_GPIO86>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_rst_out0_gpio: lcm_rst_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO86__FUNC_GPIO86>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO85__FUNC_DSI_TE>;
+		};
+	};
+};
+
+&mtkfb {
+	pinctrl-names = "lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
+		"mode_te_te";
+	pinctrl-0 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-1 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-2 = <&mtkfb_pins_lcm_dsi_te>;
+	status = "okay";
+};
+
+&dispsys_config {
+	pinctrl-names = "lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
+		"mode_te_te";
+	pinctrl-0 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-1 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-2 = <&mtkfb_pins_lcm_dsi_te>;
+	status = "okay";
+};
+
+&dsi0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	panel1@0 {
+		/delete-property/ compatible;
+		/delete-property/ pm-enable-gpios;
+		/delete-property/ reset-gpios;
+		/delete-property/gate-ic;
+
+		reg = <0>;
+
+		reset-gpios = <&pio 86 0>;
+		dvdd-supply = <&lcd_dvdd>;
+		vci-supply = <&lcd_avdd>;
+		vddi_en-gpios = <&pio 191 0>;
+
+		pinctrl-names = "default";
+
+		port {
+			panel_in1: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+
+	ports {
+		port {
+			dsi_out: endpoint {
+				remote-endpoint = <&panel_in1>;
+			};
+		};
+	};
+};

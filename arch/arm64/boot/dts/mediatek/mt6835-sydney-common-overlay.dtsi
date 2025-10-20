@@ -1,0 +1,148 @@
+/* Copyright (c) 2023, Motorola Mobility Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "mediatek/mt6835-moto-common-overlay.dtsi"
+#include "mediatek/sydney-touch.dtsi"
+#include "mediatek/sydney-fps.dtsi"
+#include "mediatek/mt6835-moto-memory.dtsi"
+#include "mediatek/sydney-msdc.dtsi"
+#include "mediatek/sydney-audio.dtsi"
+#include "mediatek/sydney-ntc.dtsi"
+#include "mediatek/dio80151c.dtsi"
+#include "mediatek/dio8015.dtsi"
+#include "mediatek/sydney-display.dtsi"
+//#include "mediatek/mt6835_kansas_camera_overlay.dtsi"
+#include "mediatek/cust_mt6835_camera_6377_v4l2.dtsi"
+/ {
+
+irq_nfc: irq_nfc {
+                compatible = "mediatek,irq_nfc-eint";
+};
+
+switch_chg_eint: switch_chg_eint {
+	};
+tcpc_pd: tcpc_pd {
+	};
+eint_cp: eint_cp {
+	};
+};
+
+&mt6377keys {
+	home {
+		linux,keycodes = <114>;
+	};
+};
+
+&pio {
+	nfc_spi_cs_mode_spi: nfc_spi_cs_mode_spi {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO37__FUNC_SPI5_CSB>;
+			bias-disable;
+		};
+	};
+
+	nfc_spi_cs_mode_idle: nfc_spi_cs_mode_idle {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO37__FUNC_GPIO37>;
+			bias-disable;
+		};
+	};
+};
+
+&spi5 {
+	st54spi: st54spi@0 {
+		compatible = "st,st54spi";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+		gpio-power_nreset = <40>;
+		gpio-power_nreset-std = <&pio 40 0x00>;
+		power_mode = "ST54J";
+		bootmode = <&chosen>;
+		pinctrl-names = "pinctrl_state_mode_spi",
+				"pinctrl_state_mode_idle";
+		pinctrl-0 = <&nfc_spi_cs_mode_spi>;
+		pinctrl-1 = <&nfc_spi_cs_mode_idle>;
+		status = "okay";
+	};
+};
+
+&i2c3 {
+	status = "okay";
+	clock-frequency = <400000>;
+	st21nfc: st21nfc@0x08 {
+		compatible = "st,st21nfc";
+		reg = <0x08>;
+		interrupt-parent = <&pio>;
+		interrupts = <41 IRQ_TYPE_LEVEL_HIGH>;
+		bootmode = <&chosen>;
+		reset-gpios = <&pio 42 0x00>;
+		irq-gpios = <&pio 41 0x00>;
+		clkreq-gpios = <&pio 2 0x00>;
+		status = "okay";
+	};
+};
+
+&u2port0 {
+	mediatek,eye-vrt = <6>;
+	mediatek,eye-vrt-host = <6>;
+};
+
+&swtp {
+	interrupt-parent = <&pio>;
+	interrupts = <6 IRQ_TYPE_LEVEL_HIGH 6 0>;
+	deb-gpios = <&pio 6 0>;
+	debounce = <512>;
+	status = "okay";
+};
+
+&swtp_1 {
+	interrupt-parent = <&pio>;
+	interrupts = <11 IRQ_TYPE_LEVEL_HIGH 11 0>;
+	deb-gpios = <&pio 11 0>;
+	debounce = <512>;
+	status = "okay";
+};
+&swtp_2 {
+	interrupt-parent = <&pio>;
+	interrupts = <19 IRQ_TYPE_LEVEL_HIGH 19 0>;
+	deb-gpios = <&pio 19 0>;
+	debounce = <512>;
+	status = "okay";
+};
+&swtp_3 {
+        interrupt-parent = <&pio>;
+        interrupts = <20 IRQ_TYPE_LEVEL_HIGH 20 0>;
+        deb-gpios = <&pio 20 0>;
+        debounce = <512>;
+        status = "okay";
+};
+
+&therm_intf {
+ 	/*Vsensor name should be CASE DIFFERENT with the name in config file*/
+ 	mmi,temperature-names = "BACK_TEMP", "FRONT_TEMP", "SAFETY_TEMP";/*for "back_temp" in config file*/
+};
+
+&regulator_vibrator {
+	min-volt = <3000000>;
+};
+
+&memory_ssmr_features {
+                compatible = "mediatek,memory-ssmr-features";
+                svp-region-based-size = <0 0x18000000>;
+                svp-page-based-size = <0 0>;
+                tui-size = <0 0>;
+                wfd-region-based-size = <0 0x4000000>;
+                wfd-page-based-size = <0 0x4000000>;
+                prot-region-based-size = <0 0>;
+                prot-page-based-size = <0 0>;
+                sapu-data-shm-size = <0 0>;
+};

@@ -1,0 +1,60 @@
+/*
+ * Copyright (c) 2019 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+&odm {
+	frsm_amp: frsm_amp  {
+		compatible = "foursemi,frsm-amp";
+		frsm,amp-ndev = <2>;
+		frsm,class-enable;
+		status = "okay";
+	};
+
+	frsm_amp_mngr: frsm_amp_mngr {
+		compatible = "audio,spkr-amp-mngr";
+		audio,amp-ndev = <2>;
+		audio,register-dapm = <0>;
+		status = "okay";
+	};
+};
+
+&i2c6 {
+	status = "ok";
+	clock-frequency = <400000>;
+	spk_amp1: fs18xx@35 {
+		compatible = "foursemi,fs1815";
+		reg = <0x35>;
+		spkr-id = <1>;
+		fwm-name = "frsm-spk1.bin";
+		//mntr-enable;
+		//mntr-period = <2000>;
+		status = "okay";
+	};
+
+	spk_amp2: fs18xx@34 {
+		compatible = "foursemi,fs1815";
+		reg = <0x34>;
+		spkr-id = <2>;
+		fwm-name = "frsm-spk2.bin";
+		//mntr-enable;
+		//mntr-period = <2000>;
+		status = "okay";
+	};
+	fsa4480: fsa4480@42 {
+		compatible = "fsa,fsa4480-i2c";
+		reg = <0x42>;
+		status = "okay";
+	};
+};
+
+&spk{
+	status = "disabled";
+};

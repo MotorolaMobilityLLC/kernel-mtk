@@ -172,5 +172,11 @@ sphinx_*/
 /kernel/configs/factory-mgk_64_k515.config
 /kernel/configs/debug-mgk_64_k515-nevada.config
 /kernel/configs/moto-mgk_64_k515-nevada.config
+/kernel/configs/debug-mgk_64_k515-vegas.config
+/kernel/configs/moto-mgk_64_k515-vegas.config
 /kernel/configs/debug-mgk_64_k515-naples.config
 /kernel/configs/moto-mgk_64_k515-naples.config
+/kernel/configs/debug-mgk_64_k515-sydney.config
+/kernel/configs/moto-mgk_64_k515-sydney.config
+/kernel/configs/debug-mgk_64_k515-sydnyl.config
+/kernel/configs/moto-mgk_64_k515-sydnyl.config
