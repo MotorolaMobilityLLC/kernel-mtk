@@ -55,6 +55,8 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{MOT_NAPLES_GC32E1_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_NAPLES_OV08F_SENSOR_ID, 0x6C, ov08f_read_region}, // otp
 	{MOT_NAPLES_GC08A3_SENSOR_ID, 0x62, gc08a3_read_region}, // otp normal
+#elif defined(CONFIG_MOT_SBUYA_CAMERA_PROJECT)
+	{MOT_SBUYA_IMX882_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 #endif
 	{OV48B12M_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{OV48B_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
