@@ -55,7 +55,6 @@ int vtdr6126a_range_bpg_ofs[15] = {2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -1
 #define FOD_CENTER_X 636
 #define FOD_CENTER_Y 2525
 
-static int tp_gesture_flag = 0;
 static int current_bl = 0;
 struct tm_vtdr6126a {
 	struct device *dev;
@@ -368,17 +367,6 @@ static int tm_vtdr6126a_disable(struct drm_panel *panel)
 	return 0;
 }
 
-static int panel_set_gesture_flag(int state)
-{
-	if(state == 1)
-		tp_gesture_flag = 1;
-	else
-		tp_gesture_flag = 0;
-
-	pr_info("%s:disp:set tp_gesture_flag:%d\n", __func__, tp_gesture_flag);
-	return 0;
-}
-
 static int tm_vtdr6126a_unprepare(struct drm_panel *panel)
 {
 	struct tm_vtdr6126a *ctx = panel_to_tm_vtdr6126a(panel);
@@ -400,28 +388,25 @@ static int tm_vtdr6126a_unprepare(struct drm_panel *panel)
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 	msleep(10);
 
-
-	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
-	if(!tp_gesture_flag) {
-		ret = regulator_disable(ctx->vci_supply);
-		if (ret) {
-			dev_err(ctx->dev, "vci_supply failed to disable supply (%d)\n", ret);
-			return ret;
-		}
-		msleep(20);
-
-		ret = regulator_disable(ctx->dvdd_supply);
-		if (ret) {
-			dev_err(ctx->dev, "dvdd_supply failed to disable supply (%d)\n", ret);
-			return ret;
-		}
-		msleep(10);
-
-		//vddi low
-		ctx->vddi_en_gpio = devm_gpiod_get(ctx->dev, "vddi_en", GPIOD_OUT_HIGH);
-		gpiod_set_value(ctx->vddi_en_gpio, 0);
-		devm_gpiod_put(ctx->dev, ctx->vddi_en_gpio);
+	ret = regulator_disable(ctx->dvdd_supply);
+	if (ret) {
+		dev_err(ctx->dev, "dvdd_supply failed to disable supply (%d)\n", ret);
+		return ret;
 	}
+
+	msleep(5);
+	ret = regulator_disable(ctx->vci_supply);
+	if (ret) {
+		dev_err(ctx->dev, "vci_supply failed to disable supply (%d)\n", ret);
+		return ret;
+	}
+
+	msleep(5);
+
+	//vddi low
+	ctx->vddi_en_gpio = devm_gpiod_get(ctx->dev, "vddi_en", GPIOD_OUT_HIGH);
+	gpiod_set_value(ctx->vddi_en_gpio, 0);
+	devm_gpiod_put(ctx->dev, ctx->vddi_en_gpio);
 
 	ctx->error = 0;
 	ctx->prepared = false;
@@ -440,38 +425,36 @@ static int tm_vtdr6126a_prepare(struct drm_panel *panel)
 		pr_info("%s, already prepared, return\n", __func__);
 		return 0;
 	}
+	ctx->vddi_en_gpio = devm_gpiod_get(ctx->dev, "vddi_en", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->vddi_en_gpio)) {
+		dev_err(ctx->dev, "%s: cannot get vddi_gpio %ld\n",
+			__func__, PTR_ERR(ctx->vddi_en_gpio));
+		return PTR_ERR(ctx->vddi_en_gpio);
+	}
+	gpiod_set_value(ctx->vddi_en_gpio, 1);
+	devm_gpiod_put(ctx->dev, ctx->vddi_en_gpio);
+	msleep(20);
 
-	if(!tp_gesture_flag) {
-		// lcd reset H -> L -> L
-		ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(10000, 10001);
-		gpiod_set_value(ctx->reset_gpio, 0);
-		msleep(20);
-		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(20);
-		gpiod_set_value(ctx->reset_gpio, 0);
-		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-		// end
-		msleep(5);
+	ret = regulator_enable(ctx->vci_supply);
+	if (ret) {
+		dev_err(ctx->dev, "failed to enable supply (%d)\n", ret);
+		return ret;
+	}
+	dev_info(ctx->dev, "%s get vci normal purple\n", __func__);
 
-		ctx->vddi_en_gpio = devm_gpiod_get(ctx->dev, "vddi_en", GPIOD_OUT_HIGH);
-		gpiod_set_value(ctx->vddi_en_gpio, 1);
-		devm_gpiod_put(ctx->dev, ctx->vddi_en_gpio);
-		msleep(10);
-
+	msleep(20);
+	ctx->dvdd_supply = devm_regulator_get_optional(ctx->dev, "dvdd");
+	if (IS_ERR_OR_NULL(ctx->dvdd_supply)) {
+		dev_info(ctx->dev, "%s get dvdd failed \n", __func__);
+		return PTR_ERR(ctx->dvdd_supply);
+	} else {
+		regulator_set_voltage(ctx->dvdd_supply, 1200000, 1200000);
 		ret = regulator_enable(ctx->dvdd_supply);
 		if (ret) {
 			dev_err(ctx->dev, "failed to enable supply (%d)\n", ret);
 			return ret;
 		}
-		msleep(20);
-
-		ret = regulator_enable(ctx->vci_supply);
-		if (ret) {
-			dev_err(ctx->dev, "failed to enable supply (%d)\n", ret);
-			return ret;
-		}
+		dev_info(ctx->dev, "%s get dvdd normal \n", __func__);
 	}
 
 	tm_vtdr6126a_panel_init(ctx);
@@ -1118,7 +1101,6 @@ static struct mtk_panel_funcs ext_funcs = {
 	.mode_switch = mode_switch,
 //	.get_lcm_version = panel_get_lcm_version,
 //	.ata_check = panel_ata_check,
-	.set_gesture_flag = panel_set_gesture_flag,
 	.panel_feature_set = panel_feature_set,
 	.panel_feature_get = panel_feature_get,
 };
@@ -1248,21 +1230,7 @@ static int tm_vtdr6126a_probe(struct mipi_dsi_device *dsi)
 	}
 	devm_gpiod_put(ctx->dev, ctx->vddi_en_gpio);
 
-	ctx->dvdd_supply = devm_regulator_get_optional(dev, "dvdd");
-	if (IS_ERR_OR_NULL(ctx->dvdd_supply)) {
-		dev_info(dev, "%s get dvdd failed \n", __func__);
-		return -EPROBE_DEFER;
-	} else {
-		regulator_set_voltage(ctx->dvdd_supply, 1200000, 1200000);
-		ret = regulator_enable(ctx->dvdd_supply);
-		if (ret) {
-			dev_err(ctx->dev, "failed to enable supply (%d)\n", ret);
-			return ret;
-		}
-		dev_info(dev, "%s get dvdd normal \n", __func__);
-	}
-
-	ctx->vci_supply = devm_regulator_get_optional(dev, "vci");
+	ctx->vci_supply = devm_regulator_get_optional(ctx->dev, "vci");
 	if (IS_ERR_OR_NULL(ctx->vci_supply)) {
 		dev_info(dev, "%s get vci failed \n", __func__);
 		return -EPROBE_DEFER;
@@ -1276,6 +1244,19 @@ static int tm_vtdr6126a_probe(struct mipi_dsi_device *dsi)
 		dev_info(dev, "%s get vci normal purple\n", __func__);
 	}
 
+	ctx->dvdd_supply = devm_regulator_get_optional(ctx->dev, "dvdd");
+	if (IS_ERR_OR_NULL(ctx->dvdd_supply)) {
+		dev_info(dev, "%s get dvdd failed \n", __func__);
+		return -EPROBE_DEFER;
+	} else {
+		regulator_set_voltage(ctx->dvdd_supply, 1200000, 1200000);
+		ret = regulator_enable(ctx->dvdd_supply);
+		if (ret) {
+			dev_err(ctx->dev, "failed to enable supply (%d)\n", ret);
+			return ret;
+		}
+		dev_info(dev, "%s get dvdd normal \n", __func__);
+	}
 	ctx->prepared = true;
 	ctx->enabled = true;
 
