@@ -30,7 +30,7 @@
 #include <linux/suspend.h>
 #include "mtk_battery.h"
 #include "mtk_battery_table.h"
-
+#include <linux/iio/consumer.h>
 
 struct tag_bootmode {
 	u32 size;
@@ -234,6 +234,103 @@ static int mmi_get_batid_by_serialnumber(void)
 	return 0;
 }
 
+struct battery_v_range {
+	u32 min_mv;
+	u32 max_mv;
+	u32 id;
+};
+
+int fgauge_get_bat_id_adc(struct platform_device *pdev){
+	struct iio_channel *channel;
+	int auxadc_voltage;
+	int id_volt;
+	struct mtk_battery *gm;
+	struct power_supply *psy;
+	struct battery_v_range *ranges;
+	int count, i;
+	int ret = 0;
+	u32 *raw_data;
+	struct device_node  *batt_node;
+	batt_node = NULL;
+
+	psy = power_supply_get_by_name("mtk-gauge");
+	if (psy == NULL)
+		return -ENODEV;
+
+	gm = (struct mtk_battery *)power_supply_get_drvdata(psy);
+	if (!gm) {
+        bm_err("Invalid driver data\n");
+        return -EINVAL;
+	}
+	// Get IIO channel with error checking
+	channel = iio_channel_get(&(pdev->dev), "batteryID-channel");
+	if (IS_ERR(channel)) {
+		return PTR_ERR(channel);
+	}
+
+	// Read channel value with error handling
+	ret = iio_read_channel_processed(channel, &auxadc_voltage);
+	if (ret < 0) {
+		iio_channel_release(channel);
+		return ret;
+	}
+
+	// Convert to millivolts (assuming original value is in volts)
+	id_volt = auxadc_voltage * 1000;
+
+	// Release channel resource
+	iio_channel_release(channel);
+
+	//Voltage range classification
+	id_volt = auxadc_voltage * 1000;
+
+	batt_node = of_find_node_by_name(NULL, "mtk_gauge");
+	if (!batt_node) {
+		bm_err("Batterydata not available\n");
+		return -ENODEV;
+	}
+
+	count = of_property_count_u32_elems(batt_node, "battery_v_id");
+	if (count <= 0 || count % 3 != 0) {
+		bm_err("Invalid battery_v_id format\n");
+		return -EINVAL;
+	}
+	raw_data = kzalloc(count * sizeof(u32), GFP_KERNEL);
+	if (!raw_data){
+		ret = -ENOMEM;
+		goto out_kfree_raw;
+	}
+	if (of_property_read_u32_array(batt_node, "battery_v_id", raw_data, count)) {
+		ret = -EINVAL;
+		goto out_kfree_raw;
+	}
+	ranges = kzalloc((count/3) * sizeof(*ranges), GFP_KERNEL);
+	if (!ranges) {
+		ret= -ENOMEM;
+		goto out_kfree_rangs;
+	}
+
+	for (i = 0; i < count/3; i++) {
+		ranges[i].min_mv = raw_data[i*3];
+		ranges[i].max_mv = raw_data[i*3 + 1];
+		ranges[i].id = raw_data[i*3 + 2];
+	}
+
+	for (i = 0; i < count/3; i++) {
+		if (auxadc_voltage >= ranges[i].min_mv && auxadc_voltage <= ranges[i].max_mv) {
+			gm->batteryid_num = ranges[i].id;
+			break;
+		}
+	}
+	bm_debug("%s id_volt:%d gm->batteryid_num : %d\n",__func__,id_volt,gm->batteryid_num);
+
+out_kfree_rangs:
+	kfree(ranges);
+out_kfree_raw:
+	kfree(raw_data);
+
+	return ret;
+}
 int fgauge_get_profile_id(void)
 {
 	return mmi_get_batid_by_serialnumber();
@@ -2105,6 +2202,7 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 	struct fuel_gauge_custom_data *fg_cust_data;
 	struct fuel_gauge_table_custom_data *fg_table_cust_data;
 
+	fgauge_get_bat_id_adc(dev);
 	gm->battery_id = fgauge_get_profile_id();
 	bat_id = gm->battery_id;
 	fg_cust_data = &gm->fg_cust_data;
@@ -3344,8 +3442,57 @@ int battery_set_property(enum battery_property bp,
 	return 0;
 }
 
+static ssize_t batteryid_show(struct device *dev,
+                struct device_attribute *attr, char *buf)
+{
+	struct device_node  *batt_node;
+	const char *sn_buf;
+	int rc;
+	char string[16];
+	struct mtk_battery *gm;
+	struct power_supply *psy;
+
+	sn_buf = NULL;
+	batt_node = NULL;
+
+	psy = power_supply_get_by_name("mtk-gauge");
+	if (psy == NULL)
+		return -ENODEV;
+
+	gm = (struct mtk_battery *)power_supply_get_drvdata(psy);
+
+	batt_node = of_find_node_by_name(NULL, "mtk_gauge");
+	if (!batt_node) {
+		pr_err("Batterydata not available\n");
+		return 0;
+	}
+	pr_info("gm->batteryid_num:%d\n", gm->batteryid_num);
+	snprintf(string, sizeof(string), "serialnum_%d", gm->batteryid_num);
+	rc = of_property_read_string(batt_node, string,
+						&sn_buf);
+	if (rc)
+		pr_warn("No Serial Number defined\n");
+	else if (sn_buf)
+		pr_info("Serial Number %s\n", sn_buf);
+	if (!sn_buf)
+		sn_buf = "error";
+
+	return scnprintf(buf, 32, "%s\n", sn_buf);
+}
+
 static struct attribute *
 	battery_sysfs_attrs[ARRAY_SIZE(battery_sysfs_field_tbl) + 1];
+
+static DEVICE_ATTR(cur_batt_id,0664,batteryid_show,NULL);
+
+static struct attribute *batteryid_sysfs_attrs[] = {
+	&dev_attr_cur_batt_id.attr,
+	NULL,
+};
+
+static const struct attribute_group batteryid_sysfs_attr_group = {
+	.attrs = batteryid_sysfs_attrs,
+};
 
 static const struct attribute_group battery_sysfs_attr_group = {
 	.attrs = battery_sysfs_attrs,
@@ -3359,6 +3506,12 @@ static void battery_sysfs_init_attrs(void)
 		battery_sysfs_attrs[i] = &battery_sysfs_field_tbl[i].attr.attr;
 
 	battery_sysfs_attrs[limit] = NULL; /* Has additional entry for this */
+}
+
+static int batteryid_sysfs_create_group(struct power_supply *psy)
+{
+	return sysfs_create_group(&psy->dev.kobj,
+			&batteryid_sysfs_attr_group);
 }
 
 static int battery_sysfs_create_group(struct power_supply *psy)
@@ -4520,6 +4673,7 @@ int battery_init(struct platform_device *pdev)
 #endif /* CONFIG_PM */
 
 	fg_drv_thread_hrtimer_init(gm);
+	batteryid_sysfs_create_group(gm->bs_data.psy);
 	battery_sysfs_create_group(gm->bs_data.psy);
 
 	/* for gauge hal hw ocv */

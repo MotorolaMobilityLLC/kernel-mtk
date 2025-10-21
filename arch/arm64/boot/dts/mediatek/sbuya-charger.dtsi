@@ -179,6 +179,12 @@
 };
 
 &mtk_gauge {
+	/* bat_id channel */
+	io-channels = <&auxadc 1>;
+	io-channel-names = "batteryID-channel";
+	/* bat_id vmin_vmax_id */
+	battery_v_id = <100 500 0
+	1300 1700 1>;
 
 	DIFFERENCE_FULLOCV_ITH = <80>;  /*gauge cut-off current, should overtop ieoc 50ma*/
 	EMBEDDED_SEL = <(1)>;  /*embedded battery,don't remove the battery for user*/
