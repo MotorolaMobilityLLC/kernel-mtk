@@ -400129,6 +400129,16 @@ function {
   parameter_id: 0x4585663f
 }
 function {
+  id: 0x93625762
+  return_type_id: 0x6720d32f
+  parameter_id: 0x3b04bead
+  parameter_id: 0x079f969f
+  parameter_id: 0xf435685e
+  parameter_id: 0x391f15ea
+  parameter_id: 0x30ccee09
+  parameter_id: 0x2a670b41
+}
+function {
   id: 0x93627fe0
   return_type_id: 0x6720d32f
   parameter_id: 0x3a583251
@@ -463206,6 +463216,15 @@ elf_symbol {
   full_name: "drm_property_replace_blob_from_id"
 }
 elf_symbol {
+  id: 0x4cf5ba17
+  name: "drm_property_replace_global_blob"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x4835a36a
+  type_id: 0x93625762
+  full_name: "drm_property_replace_global_blob"
+}
+elf_symbol {
   id: 0x9718e72e
   name: "drm_puts"
   is_defined: true
@@ -516166,6 +516185,7 @@ interface {
   symbol_id: 0xceb76dac
   symbol_id: 0xb1f5cc24
   symbol_id: 0xaf623f9e
+  symbol_id: 0x4cf5ba17
   symbol_id: 0x9718e72e
   symbol_id: 0x8da70bb5
   symbol_id: 0x7f211ebf
