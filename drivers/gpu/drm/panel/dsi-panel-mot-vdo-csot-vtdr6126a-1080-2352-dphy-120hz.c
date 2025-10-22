@@ -253,7 +253,7 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x65, 0x0A);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xB1, 0x02);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x10);
-	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xCE, 0x22);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xCE, 0x20);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x72, 0x00); //PMIC1=SC6010
 
 	//LHBM ratios provided by panel vendor

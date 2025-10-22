@@ -253,7 +253,7 @@ static void tm_vtdr6126a_panel_init(struct tm_vtdr6126a *ctx)
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xB1, 0x02);
 
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x10);
-	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xCE, 0x22);
+	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xCE, 0x20);
 
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xF0, 0xAA,0x14);
     //CLK01
