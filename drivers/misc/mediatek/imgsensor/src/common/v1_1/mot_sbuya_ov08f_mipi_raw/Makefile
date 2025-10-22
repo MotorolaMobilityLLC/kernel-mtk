@@ -3,3 +3,4 @@
 
 imgsensor_isp6s-objs += \
         $(subdrv-rpath)/mot_sbuya_ov08f_mipi_raw_Sensor.o \
+        $(subdrv-rpath)/mot_sbuya_ov08f_otp.o \
