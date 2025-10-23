@@ -35,4 +35,6 @@
 #define NEVADA_OCP81375_DTNAME     "mediatek,flashlights_ocp81375"
 #define SBUYA_AW36515_DTNAME_I2C "mediatek,strobe_main"
 #define SBUYA_AW36515_DTNAME     "mediatek,flashlights_aw36515"
+#define SBUYA_SGM37864_DTNAME_I2C "mediatek,strobe_main"
+#define SBUYA_SGM37864_DTNAME     "mediatek,flashlights_sgm37864"
 #endif /* _FLASHLIGHT_DT_H */

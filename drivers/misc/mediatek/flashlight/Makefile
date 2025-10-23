@@ -27,6 +27,7 @@ obj-$(CONFIG_MTK_FLASHLIGHT_VEGAS)     += flashlights-ocp8135-pwm.o
 obj-$(CONFIG_MTK_FLASHLIGHT_ORLANDO)     += flashlights-orlando-ocp8135-pwm.o
 obj-$(CONFIG_MTK_FLASHLIGHT_NAPLES)     += flashlights-naples-ocp8135-pwm.o
 obj-$(CONFIG_MTK_FLASHLIGHT_SBUYA_AW36515)     += flashlights-sbuya-aw36515.o
+obj-$(CONFIG_MTK_FLASHLIGHT_SBUYA_SGM37864)     += flashlights-sbuya-sgm37864.o
 
 ccflags-$(CONFIG_MTK_FLASHLIGHT_DEBUG)     := -DDEBUG
 ccflags-$(CONFIG_MTK_FLASHLIGHT_PT)        += -DCONFIG_MTK_FLASHLIGHT_PT
@@ -61,6 +62,9 @@ ccflags-y += -DCONFIG_MTK_FLASHLIGHT_NAPLES
 endif
 ifeq ($(CONFIG_MTK_FLASHLIGHT_SBUYA_AW36515),m)
 ccflags-y += -DCONFIG_MTK_FLASHLIGHT_SBUYA_AW36515
+endif
+ifeq ($(CONFIG_MTK_FLASHLIGHT_SBUYA_SGM37864),m)
+ccflags-y += -DCONFIG_MTK_FLASHLIGHT_SBUYA_SGM37864
 endif
 subdir-ccflags-y += \
 	-I$(MTK_CUSTOM_PATH)/power_throttling

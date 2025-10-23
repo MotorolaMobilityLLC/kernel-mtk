@@ -286,3 +286,15 @@ config MTK_FLASHLIGHT_SBUYA_AW36515
         Select this only if your board has this IC.
 
         Say M here if you want to compile this driver as a module.
+
+config MTK_FLASHLIGHT_SBUYA_SGM37864
+        tristate "Mediatek flashlight sbuya sgm37864 flashlight driver"
+        depends on MTK_FLASHLIGHT
+        default n
+        help
+        This is flashlight sgm37864 flashlight driver for camera.
+
+        Say Y here if you want a driver IC with GPIO interface.
+        Select this only if your board has this IC.
+
+        Say M here if you want to compile this driver as a module.
