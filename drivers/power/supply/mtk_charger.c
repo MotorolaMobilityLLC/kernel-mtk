@@ -3408,7 +3408,8 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 
 	charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
 	//QC3 and Qc3+ all support max power more than 15w, should show trubo power
-	if ((qc_chg_type == USB_TYPE_QC30) ||
+	if ((qc_chg_type == USB_TYPE_QC20) ||
+	    (qc_chg_type == USB_TYPE_QC30) ||
             (qc_chg_type == USB_TYPE_QC3P_18) ||
             (qc_chg_type == USB_TYPE_QC3P_27) ||
             (qc_chg_type == USB_TYPE_QC3P_45)) {
