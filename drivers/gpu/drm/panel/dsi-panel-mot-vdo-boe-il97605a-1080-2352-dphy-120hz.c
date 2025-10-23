@@ -308,8 +308,8 @@ static void boe_il97605a_panel_init(struct boe_il97605a *ctx)
 	 //--page24--
 	 boe_il97605a_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x24);
 	 //set dimming
-	 boe_il97605a_dcs_write_seq_static(ctx, 0x85, 0x61, 0x80);
-	 boe_il97605a_dcs_write_seq_static(ctx, 0x86, 0x61, 0x80);
+	 boe_il97605a_dcs_write_seq_static(ctx, 0x85, 0x41, 0x80);//set 16 step
+	 boe_il97605a_dcs_write_seq_static(ctx, 0x86, 0x41, 0x80);//set 16 step
 
 	 //--IRC EN--
 	 boe_il97605a_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x00);
