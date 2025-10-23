@@ -4843,8 +4843,13 @@ static void mmi_check_typec_conn_temp(struct mtk_charger *info)
 	int conn_ntc = 0;
 	int ret = 0;
 
-	if (!info->typecotp_charger) {
+	if (!info->typecotp_charger || info->mmi.factory_mode) {
 		chr_err("%s Error: typec-otp not support\n", __func__);
+		return;
+	}
+
+	if (IS_ERR_OR_NULL(info->tcd)) {
+		chr_err("%s Error: typec cooling device not ready\n", __func__);
 		return;
 	}
 
