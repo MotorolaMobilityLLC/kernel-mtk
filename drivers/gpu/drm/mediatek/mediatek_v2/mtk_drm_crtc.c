@@ -1315,7 +1315,10 @@ static bool panel_set_hbm_backlight(struct drm_crtc *crtc, unsigned int *bl_lvl)
 
 	bl_level = *bl_lvl;
 
-	if (bl_level == BRIGHTNESS_HBM_ON || bl_level == BRIGHTNESS_HBM_OFF) {
+	if (HBM_MODE_NONE == panel_ext->hbm_type) {
+		pr_info("enter HBM_MODE_NONE.\n");
+		return false;
+	} else if (bl_level == BRIGHTNESS_HBM_ON || bl_level == BRIGHTNESS_HBM_OFF) {
 		*bl_lvl = bl_level == BRIGHTNESS_HBM_ON ? max_bl_level : bl_lvl_during_hbm;
 		hbm_mode = bl_level == BRIGHTNESS_HBM_ON ? true : false;
 

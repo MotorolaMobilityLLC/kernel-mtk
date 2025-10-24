@@ -462,6 +462,7 @@ enum panel_hbm_type {
 	HBM_MODE_DCS_GPIO,
 	HBM_MODE_DCS_I2C,
 	HBM_MODE_RAMPING,
+	HBM_MODE_NONE,
 };
 
 #define PAGE_MAX_NUM   4

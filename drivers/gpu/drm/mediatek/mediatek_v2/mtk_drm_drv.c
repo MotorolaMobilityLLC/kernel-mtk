@@ -6236,7 +6236,8 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 			else
 				ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
 
-			if (!ret) mtk_drm_setbacklight(crtc, bl_level, 0x1<<SET_BACKLIGHT_LEVEL, 0);
+			if (!ret && !(HBM_MODE_NONE == panel_ext->hbm_type))
+				mtk_drm_setbacklight(crtc, bl_level, 0x1<<SET_BACKLIGHT_LEVEL, 0);
 			break;
 		default:
 			ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
