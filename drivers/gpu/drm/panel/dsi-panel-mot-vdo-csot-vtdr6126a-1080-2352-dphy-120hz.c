@@ -923,6 +923,8 @@ static void set_lhbm_alpha(unsigned int bl_level)
 
 	pAlphaTable = &panel_lhbm_on[0];
 	if (lhbm_alpha_index >= ARRAY_SIZE(lhbm_alpha)){
+			pAlphaTable->para_list[1] = 0x10;
+			pAlphaTable->para_list[2] = 0x00;
 			pAlphaTable->para_list[3] = (bl_level >> 8) & 0xFF;
 			pAlphaTable->para_list[4] = bl_level & 0xFF;
 			pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pAlphaTable->para_list[3], pAlphaTable->para_list[4]);
@@ -930,6 +932,8 @@ static void set_lhbm_alpha(unsigned int bl_level)
 			alpha = lhbm_alpha[lhbm_alpha_index];
 			pAlphaTable->para_list[1] = (alpha >> 8) & 0xFF;
 			pAlphaTable->para_list[2] = alpha & 0xFF;
+			pAlphaTable->para_list[3] = 0x0d;
+			pAlphaTable->para_list[4] = 0xc0;
 			pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pAlphaTable->para_list[1], pAlphaTable->para_list[2]);
 		}
 }
