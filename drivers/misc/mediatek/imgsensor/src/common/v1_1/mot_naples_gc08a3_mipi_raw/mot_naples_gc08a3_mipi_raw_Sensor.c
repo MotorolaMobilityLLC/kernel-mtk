@@ -597,12 +597,13 @@ static void slim_video_setting(void)
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	pr_debug("enable: %d\n", enable);
-
-	if (enable)
-		write_cmos_sensor_8bit(0x008c, 0x01);
-	else
-		write_cmos_sensor_8bit(0x008c, 0x00);
-
+	if (enable){
+		write_cmos_sensor_8bit(0x008c, 0x0001);
+		write_cmos_sensor_8bit(0x008d, 0x0000);
+	}else{
+		write_cmos_sensor_8bit(0x008c, 0x0000);
+		write_cmos_sensor_8bit(0x008d, 0x0001);
+	}
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;
 	spin_unlock(&imgsensor_drv_lock);

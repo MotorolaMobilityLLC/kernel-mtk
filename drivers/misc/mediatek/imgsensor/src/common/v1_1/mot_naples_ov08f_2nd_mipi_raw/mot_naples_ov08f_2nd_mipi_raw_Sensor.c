@@ -1163,6 +1163,7 @@ static kal_uint32 set_test_pattern_mode(kal_uint32 modes)
 		write_cmos_sensor(0xfd, 0x07);
 		write_cmos_sensor(0x04, 0x00);
 		write_cmos_sensor(0x05, 0x00);
+		mdelay(70);
 	}
 
 	if ((modes != 2) && (imgsensor.test_pattern == 2)) {
