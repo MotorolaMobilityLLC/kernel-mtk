@@ -69,6 +69,7 @@ struct board_ntc_info {
 	void __iomem *data_reg;
 	void __iomem *dbg_reg;
 	void __iomem *en_reg;
+	int pre_temp;
 	struct pmic_auxadc_data *adc_data;
 	struct iio_channel *chan_wcn_ntc;
 	struct iio_channel *chan_cam_ntc;
@@ -317,19 +318,19 @@ RETRY:
 		if (is_conn_adc(r_type) != true) {
 			v_in = (val * ntc_info->default_range_v) / 4096;
 			pullup_v = ntc_info->default_pullup_v;
-			dev_err(ntc_info->dev, "%s, get pullupv :%d\n",
-							__func__, pullup_v);
+			//dev_err(ntc_info->dev, "%s, get pullupv :%d\n",
+			//				__func__, pullup_v);
 		} else {
 			v_in = val;
 			pullup_v = adc_data->pullup_v[r_type];
-			dev_err(ntc_info->dev, "%s, val:%d\n",
-							__func__, val);
+			//dev_err(ntc_info->dev, "%s, val:%d\n",
+			//				__func__, val);
 		}
 	} else {
 		v_in = ntc_info->adc_data->adc2volt(get_adc_data(val, tia_param->valid_bit - 1));
 		pullup_v = adc_data->pullup_v[r_type];
-		dev_err(ntc_info->dev, "%s, get default pullupv :%d\n",
-                        __func__, pullup_v);
+		//dev_err(ntc_info->dev, "%s, get default pullupv :%d\n",
+                //        __func__, pullup_v);
 	}
 	r_ntc = calculate_r_ntc(v_in, adc_data->pullup_r[r_type],
 				pullup_v);
@@ -345,8 +346,14 @@ RETRY:
 	}
 
 	if (__ratelimit(&ratelimit)) {
+		if (ntc_info->pre_temp != *temp / 1000) {
+		ntc_info->pre_temp = *temp / 1000;
 		dev_info(ntc_info->dev, "val=0x%x, v_in/r_type/r_ntc/t=%d/%d/%d/%d\n",
+                val, v_in, r_type, r_ntc, *temp);
+		}
+		/*dev_info(ntc_info->dev, "val=0x%x, v_in/r_type/r_ntc/t=%d/%d/%d/%d\n",
 		val, v_in, r_type, r_ntc, *temp);
+		*/
 	}
 	return 0;
 }
