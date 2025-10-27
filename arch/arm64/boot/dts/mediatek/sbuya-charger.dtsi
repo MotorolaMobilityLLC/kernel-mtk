@@ -151,7 +151,9 @@
 	start_soc_max = <90>;
 	vbat_cv = <4530>;
 	start_vbat_max = <4500>;
-	tdvchg_curlmt = <(-1) (-1) (-1) 0 0 0 0 0 (-1)>;
+
+	/* Sbuya disable temperature current limit */
+	tdvchg_curlmt = <0 0 0 0 0 0 0 0 0>;
 	tbat_curlmt = <0 0 0 0 0 0 0 0 0>;
 	tta_curlmt = <0 0 0 0 0 0 0 0 0>;
 };
@@ -293,6 +295,8 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&chargerpump_int_default_master>;
 
+		/* Sbuya disable otg mux */
+		mmi,disable_mux;
 	};
 	nu2115: nu2115-standalone@6D {
 		compatible = "cp,nu2115";
