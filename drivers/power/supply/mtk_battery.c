@@ -3797,6 +3797,27 @@ static enum alarmtimer_restart sw_uisoc_timer_callback(
 	return ALARMTIMER_NORESTART;
 }
 
+static void fg_delay_update_full_dwork_handler(struct work_struct *work)
+{
+	ktime_t ctime;
+	struct mtk_battery *gm;
+	gm = container_of(work,
+		struct mtk_battery, fg_delay_update_full_dwork.work);
+
+	ctime = ktime_get_boottime();
+
+	if (gm->init_flag == 1) {
+		gm->chr_full_handler_time = ktime_to_timespec64(ctime);
+		bm_err("[FG_DAEMON_CMD_GET_INIT_FLAG is %d,trigger notify fg full]\n", gm->init_flag);
+		wakeup_fg_algo(gm, FG_INTR_CHR_FULL);
+		fg_int_event(gm, EVT_INT_CHR_FULL);
+		cancel_delayed_work(&gm->fg_delay_update_full_dwork);
+	} else {
+		bm_err("[wair for FG_DAEMON_CMD_GET_INIT_FLAG == 1]\n");
+		schedule_delayed_work(&gm->fg_delay_update_full_dwork, msecs_to_jiffies(1000));
+	}
+
+}
 /* ============================================================ */
 /* power misc */
 /* ============================================================ */
@@ -4659,6 +4680,7 @@ int battery_init(struct platform_device *pdev)
 	alarm_init(&gm->sw_uisoc_timer, ALARM_BOOTTIME,
 		sw_uisoc_timer_callback);
 	INIT_WORK(&gm->sw_uisoc_timer_work, sw_uisoc_timer_work_handler);
+	INIT_DELAYED_WORK(&gm->fg_delay_update_full_dwork, fg_delay_update_full_dwork_handler);
 
 
 	kthread_run(battery_update_routine, gm, "battery_thread");
