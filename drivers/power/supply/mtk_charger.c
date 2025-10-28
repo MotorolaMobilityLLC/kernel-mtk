@@ -2772,6 +2772,7 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 	memset(&info->mmi.apdo_cap, 0, sizeof(struct adapter_auth_data));
 	info->mmi.pd_cap_max_watt = 0;
 	info->mmi.charger_watt = 0;
+	info->is_chg_done = false;
 
 	power_supply_changed(info->psy1);
 	return 0;
@@ -3389,6 +3390,69 @@ static int mmi_get_battery_age(void)
 
 	return gauge->gm->aging_factor /100;
 }
+
+static int mmi_get_fg_c_soc(void)
+{
+	struct mtk_gauge *gauge;
+	struct power_supply *psy;
+
+	psy = power_supply_get_by_name("mtk-gauge");
+	if (psy == NULL) {
+		pr_err("[%s]psy is not rdy\n", __func__);
+		return -1;
+	}
+
+	gauge = (struct mtk_gauge *)power_supply_get_drvdata(psy);
+	if (gauge == NULL) {
+		pr_err("[%s]mtk_gauge is not rdy\n", __func__);
+		return -1;
+	}
+
+	pr_info("[%s]fg_c_soc is %d\n", __func__, gauge->gm->fg_cust_data.c_soc);
+
+	return gauge->gm->fg_cust_data.c_soc;
+}
+
+static int mmi_get_fg_v_soc(void)
+{
+	struct mtk_gauge *gauge;
+	struct power_supply *psy;
+
+	psy = power_supply_get_by_name("mtk-gauge");
+	if (psy == NULL) {
+		pr_err("[%s]psy is not rdy\n", __func__);
+		return -1;
+	}
+
+	gauge = (struct mtk_gauge *)power_supply_get_drvdata(psy);
+	if (gauge == NULL) {
+		pr_err("[%s]mtk_gauge is not rdy\n", __func__);
+		return -1;
+	}
+
+	pr_info("[%s]fg_v_soc is %d\n", __func__, gauge->gm->fg_cust_data.v_soc);
+
+	return gauge->gm->fg_cust_data.v_soc;
+}
+
+static bool mmi_get_battery_is_hw_chrg_done(struct mtk_charger *info)
+{
+	bool chg_done = false;
+	int fg_c_soc,fg_v_soc;
+
+	fg_c_soc = mmi_get_fg_c_soc();
+	fg_v_soc = mmi_get_fg_v_soc();
+
+	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
+	pr_info("[%s],chg_done = %d,fg_c_soc = %d,fg_v_soc = %d, uisoc = %d\n", __func__, chg_done, fg_c_soc, fg_v_soc, get_uisoc(info));
+	if ((chg_done && info->mmi.pres_chrg_step != STEP_FULL)
+	    || ((fg_c_soc >= 100 * 100) && (fg_v_soc >= 100 * 100) && (get_uisoc(info) < 100))) {
+			return true;
+	}
+
+	return false;
+}
+
 static DEVICE_ATTR(charge_rate, S_IRUGO, charge_rate_show, NULL);
 
 static ssize_t age_show(struct device *dev,
@@ -3912,11 +3976,13 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 	} else if (mmi->pres_chrg_step == STEP_NORM) {
 		if (!zone->fcc_norm_ma)
 			mmi->pres_chrg_step = STEP_FLOAT;
-		else if ((batt_mv + HYST_STEP_MV) < zone->norm_mv) {
+		else if ((batt_mv + HYST_STEP_MV) < zone->norm_mv &&
+			!(mmi_get_battery_is_hw_chrg_done(info))) {
 			mmi->chrg_taper_cnt = 0;
 			mmi->pres_chrg_step = STEP_MAX;
 		}
-		else if ((batt_mv + HYST_STEP_MV/2) < max_fv_mv) {
+		else if ((batt_mv + HYST_STEP_MV/2) < max_fv_mv &&
+			!(mmi_get_battery_is_hw_chrg_done(info))) {
 			mmi->chrg_taper_cnt = 0;
 			mmi->pres_chrg_step = STEP_NORM;
 		} else if (mmi_has_current_tapered(info, batt_ma,
@@ -3925,7 +3991,7 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 		}
 	} else if (mmi->pres_chrg_step == STEP_FULL) {
 		//if (batt_mv < (max_fv_mv - HYST_STEP_MV * 2)) {
-		if (batt_soc <=95) {
+		if (batt_soc <=95 && (batt_mv < (max_fv_mv - HYST_STEP_MV * 2))) {
 			mmi->chrg_taper_cnt = 0;
 			mmi->pres_chrg_step = STEP_NORM;
 		}

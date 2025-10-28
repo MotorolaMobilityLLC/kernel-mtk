@@ -1050,6 +1050,7 @@ struct mtk_battery {
 	struct work_struct tracking_timer_work;
 	struct alarm one_percent_timer;
 	struct work_struct one_percent_timer_work;
+	struct delayed_work fg_delay_update_full_dwork;
 
 	/*UISOC timer for no hw*/
 	struct alarm sw_uisoc_timer;
@@ -1194,6 +1195,7 @@ extern int get_shutdown_cond_flag(struct mtk_battery *gm);
 extern void set_shutdown_cond_flag(struct mtk_battery *gm, int val);
 extern bool set_charge_power_sel(enum charge_sel select);
 extern int dump_pseudo100(enum charge_sel select);
+extern void fg_int_event(struct mtk_battery *gm, enum gauge_event evt);
 /*mtk_battery.c end */
 
 /* mtk_battery_algo.c */
