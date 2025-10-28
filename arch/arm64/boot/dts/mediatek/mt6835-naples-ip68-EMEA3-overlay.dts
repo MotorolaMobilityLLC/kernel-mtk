@@ -19,7 +19,7 @@
 #include "mediatek/mt6835_naples_camera_ip68_overlay_evb.dtsi"
 #include "mediatek/naples-sensor-ip68.dtsi"
 
-#define NAPLES_RADIO 6
+#define NAPLES_EMEA3_RADIO 7
 
 /* Board match root node */
 / {
@@ -27,7 +27,7 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "naples";
-			mot,board-id = <(NAPLES_RADIO << 8 | 0x41) 0xA100>;
+			mot,board-id = <(NAPLES_EMEA3_RADIO << 8 | 0x41) 0xA100>;
 		};
 	};
 };
