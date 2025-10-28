@@ -37,10 +37,10 @@
 #define MOT_NAPLES_SC800CSA_SENSOR_GAIN_MAP_SIZE         6
 #define MOT_NAPLES_SC800CSA_SENSOR_BASE_GAIN             0x400
 #define MOT_NAPLES_SC800CSA_SENSOR_MAX_GAIN              (32 * MOT_NAPLES_SC800CSA_SENSOR_BASE_GAIN )
-// extern void read_mot_naples_sc800csa_otp_data(void);
-// extern void NAPLES_SC800CSA_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
-// extern mot_calibration_status_t *NAPLES_SC800CSA_eeprom_get_calibration_status(void);
-// extern mot_calibration_mnf_t *NAPLES_SC800CSA_eeprom_get_mnf_info(void);
+extern void read_mot_naples_sc800csa_otp_data(void);
+extern void NAPLES_SC800CSA_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+extern mot_calibration_status_t *NAPLES_SC800CSA_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *NAPLES_SC800CSA_eeprom_get_mnf_info(void);
 #define PFX "mot_naples_sc800csa_camera_sensor"
 #define LOG_INF(format, args...)		pr_err(PFX "[%s] " format, __func__, ##args)
 
@@ -633,8 +633,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					    //Eeprom_DataInit(1, MOT_NAPLES_SC800CSA_TRULY_SENSOR_ID);
 					    deviceInfo_register_value = 0x01;
 					}
-					//read_mot_naples_sc800csa_otp_data();
-					//NAPLES_SC800CSA_eeprom_format_calibration_data(&imgsensor);
+					read_mot_naples_sc800csa_otp_data();
+					NAPLES_SC800CSA_eeprom_format_calibration_data(&imgsensor);
 					return ERROR_NONE;
 				}
 				LOG_INF("get_imgsensor_id Read sensor id fail, i2c write id: 0x%x,sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
@@ -905,8 +905,8 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->FrameTimeDelayFrame = imgsensor_info.frame_time_delay_frame;
 
     /*Apply manufacture info*/
-    //memcpy(&sensor_info->mnf_calibration, NAPLES_SC800CSA_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
-    //memcpy(&sensor_info->calibration_status, NAPLES_SC800CSA_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
+    memcpy(&sensor_info->mnf_calibration, NAPLES_SC800CSA_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+    memcpy(&sensor_info->calibration_status, NAPLES_SC800CSA_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
 
     sensor_info->SensorMasterClockSwitch = 0; /* not use */
     sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;

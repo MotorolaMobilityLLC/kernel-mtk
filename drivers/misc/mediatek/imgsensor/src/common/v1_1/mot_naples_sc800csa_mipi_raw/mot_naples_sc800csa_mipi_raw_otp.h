@@ -16,45 +16,36 @@
 /*MODULE*/
 #define OTP_MODULE_FLAG 0x827A
 #define MODULE_GROUP_INFO_PAGE 2
-
 #define MODULE_GROUP1_INFO_ADDR 0x827B
-#define MODULE_GROUP1_CHECKSUM 0x8291
+#define MODULE_GROUP1_CHECKSUM 0x82A0
 
-#define MODULE_GROUP2_INFO_ADDR 0x8292
-#define MODULE_GROUP2_CHECKSUM 0x82A8
+#define MODULE_GROUP2_INFO_PAGE 7
+#define MODULE_GROUP2_INFO_ADDR 0x8C7B
+#define MODULE_GROUP2_CHECKSUM 0x8CA0
 
-#define MODULE_INFO_LENGTH 22
+#define MODULE_INFO_LENGTH 37
 
 /*awb*/
-#define OTP_AWB_FLAG    0x82A9
-#define AWB_GROUP_INFO_PAGE 2
+#define OTP_AWB_GROUP1_FLAG    0x82A2
+#define AWB_GROUP1_INFO_PAGE 2
+#define AWB_GROUP1_INFO_ADDR 0x82A3
+#define AWB_GROUP1_CHECKSUM 0x82B3
 
-#define AWB_GROUP1_INFO_ADDR 0x82AA
-#define AWB_GROUP1_CHECKSUM 0x82C1
+#define OTP_AWB_GROUP2_FLAG    0x8CA2
+#define AWB_GROUP2_INFO_PAGE 7
+#define AWB_GROUP2_INFO_ADDR 0x8CA3
+#define AWB_GROUP2_CHECKSUM 0x8CB3
 
-#define AWB_GROUP2_INFO_ADDR 0x82C2
-#define AWB_GROUP2_CHECKSUM 0x82D9
+#define AWB_INFO_LENGTH 16
 
-#define AWB_INFO_LENGTH 23
+/*lsc group 1*/
+#define LSC_INFO_LENGTH 1868
 
-/*OC*/
-#define OTP_OC_FLAG     0x82DA
-#define OC_GROUP_INFO_PAGE 2
-
-#define OC_GROUP1_INFO_ADDR 0x82DB
-#define OC_GROUP1_CHECKSUM  0x82EC
-
-#define OC_GROUP2_INFO_ADDR 0x82ED
-#define OC_GROUP2_CHECKSUM  0X82FE
-
-#define OC_INFO_LENGTH 17
-
-/*lsc*/
-#define OTP_LSC_FLAG    0x82FF
+#define OTP_LSC_GROUP1_FLAG    0x82B4
 
 #define LSC_GROUP1_PART1_INFO_PAGE 2
-#define LSC_GROUP1_PART1_INFO_ADDR 0x8300
-#define LSC_GROUP1_PART1_INFO_LENGTH 256
+#define LSC_GROUP1_PART1_INFO_ADDR 0x82B5
+#define LSC_GROUP1_PART1_INFO_LENGTH 331
 
 #define LSC_GROUP1_PART2_INFO_PAGE 3
 #define LSC_GROUP1_PART2_INFO_ADDR 0x847A
@@ -70,17 +61,18 @@
 
 #define LSC_GROUP1_PART5_INFO_PAGE 6
 #define LSC_GROUP1_PART5_INFO_ADDR 0x8A7A
-#define LSC_GROUP1_PART5_INFO_LENGTH 390
+#define LSC_GROUP1_PART5_INFO_LENGTH 367
 
-#define LSC_GROUP1_PART6_INFO_PAGE 7
-#define LSC_GROUP1_PART6_INFO_ADDR 0x8C7A
-#define LSC_GROUP1_PART6_INFO_LENGTH 52
+#define LSC_GROUP1_CHECKSUM 0x8BE9
+#define TOTAL_GROUP1_INFO_PAGE 6
+#define TOTAL_GROUP1_CHECKSUM 0x8BEA
 
-#define LSC_GROUP1_CHECKSUM 0x8CAE
+/*lsc group 2*/
+#define OTP_LSC_GROUP2_FLAG    0x8CB4
 
 #define LSC_GROUP2_PART1_INFO_PAGE 7
-#define LSC_GROUP2_PART1_INFO_ADDR 0x8CAF
-#define LSC_GROUP2_PART1_INFO_LENGTH 337
+#define LSC_GROUP2_PART1_INFO_ADDR 0x8CB5
+#define LSC_GROUP2_PART1_INFO_LENGTH 331
 
 #define LSC_GROUP2_PART2_INFO_PAGE 8
 #define LSC_GROUP2_PART2_INFO_ADDR 0x8E7A
@@ -96,12 +88,14 @@
 
 #define LSC_GROUP2_PART5_INFO_PAGE 11
 #define LSC_GROUP2_PART5_INFO_ADDR 0x947A
-#define LSC_GROUP2_PART5_INFO_LENGTH 361
+#define LSC_GROUP2_PART5_INFO_LENGTH 367
 
-#define LSC_GROUP2_CHECKSUM 0x95E3
+#define LSC_GROUP2_CHECKSUM 0x95E9
 
-#define LSC_INFO_LENGTH 1868
+#define TOTAL_GROUP2_INFO_PAGE 11
+#define TOTAL_GROUP2_CHECKSUM 0x95EA
 
+#define ALL_DATA_SIZE 1928
 extern struct mot_naples_sc800csa_otp_t mot_naples_sc800csa_otp_info;
 
 typedef enum {
@@ -115,19 +109,21 @@ struct NAPLES_SC800CSA_eeprom_t{
 };
 
 struct mot_naples_sc800csa_otp_t {
-    u8  module_flag;
-    u8  module_param[22]; //u8  module_param[9];
-    u8  module_checksum;
-    u8  awb_param[23];
-    u8  awb_checksum;
-    u8  lsc_param[1868];
-    u8  lsc_checksum;
+	kal_uint8  module_param[37];
+	kal_uint8  moduleChksum[2];
+	kal_uint8  awb_flag;
+	kal_uint8  awb_param[16];
+	kal_uint8  awbChksum;
+	kal_uint8  lsc_flag;
+	kal_uint8  lsc_param[1868];
+	kal_uint8  lscChksum;
+	kal_uint8  allDataChksum;
 };
 
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
 		u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
-unsigned int mot_naples_sc800csa_read_region(struct i2c_client *client,
+unsigned int sc800csa_read_region(struct i2c_client *client,
 				unsigned int addr,
 				unsigned char *data,
 				unsigned int size);

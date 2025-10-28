@@ -45,6 +45,12 @@ static mot_calibration_mnf_t mnf_info = {0};
 
 struct mot_naples_sc800csa_otp_t mot_naples_sc800csa_otp_info = {0};
 
+
+bool checksummodule = false;
+bool checksumawb = false;
+bool checksumlsc = false;
+bool checksumall = false;
+
 static u16 read_cmos_sensor(u16 addr)
 {
 	u16 get_byte=0;
@@ -170,12 +176,12 @@ static void NAPLES_SC800CSA_eeprom_get_mnf_data(void *data,
 	uint8_t* module_param = data;
     	// lens_id
 	struct NAPLES_SC800CSA_eeprom_t eeprom = {
-        	.lens_id = module_param[5],
+        	.lens_id = module_param[12],
     	};
 
 	LOG_INF("eeprom.lens_id:0x%x", eeprom.lens_id);
-	if (eeprom.lens_id == 0x4F){
-		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "HX-M0846A1");
+	if (eeprom.lens_id == 0x01){
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "HX-M0846A");
 	} else {
 		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
 		LOG_INF("unknown lens_id");
@@ -245,6 +251,75 @@ static bool mot_naples_sc800csa_param_checksum(u8 *buf, unsigned int size, u8 ch
     return true;
 }
 
+static uint8_t crc_reverse_byte(uint32_t data)
+{
+	return ((data * 0x0802LU & 0x22110LU) |
+		(data * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
+}
+static uint32_t convert_crc(uint8_t *crc_ptr)
+{
+	return (crc_ptr[0] << 8) | (crc_ptr[1]);
+}
+static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
+{
+	int32_t crc_match = 0;
+	uint16_t crc = 0x0000;
+	uint16_t crc_reverse = 0x0000;
+	uint32_t i, j;
+
+	uint32_t tmp;
+	uint32_t tmp_reverse;
+	/* Calculate both methods of CRC since integrators differ on
+	* how CRC should be calculated. */
+	for (i = 0; i < size; i++) {
+		tmp_reverse = crc_reverse_byte(data[i]);
+		tmp = data[i] & 0xff;
+		for (j = 0; j < 8; j++) {
+			if (((crc & 0x8000) >> 8) ^ (tmp & 0x80))
+				crc = (crc << 1) ^ 0x8005;
+			else
+				crc = crc << 1;
+			tmp <<= 1;
+
+			if (((crc_reverse & 0x8000) >> 8) ^ (tmp_reverse & 0x80))
+				crc_reverse = (crc_reverse << 1) ^ 0x8005;
+			else
+				crc_reverse = crc_reverse << 1;
+
+			tmp_reverse <<= 1;
+		}
+	}
+
+	crc_reverse = (crc_reverse_byte(crc_reverse) << 8) |
+		crc_reverse_byte(crc_reverse >> 8);
+
+	if (crc == ref_crc || crc_reverse == ref_crc)
+		crc_match = 1;
+
+	LOG_INF("REF_CRC 0x%x CALC CRC 0x%x CALC Reverse CRC 0x%x matches? %d\n",
+		ref_crc, crc, crc_reverse, crc_match);
+
+	return crc_match;
+}
+
+static bool mot_naples_sc800csa_all_data_checksum(kal_uint8 *data, unsigned int size, kal_uint8 chksum)
+{
+	int32_t check_sum_cal = 0;
+	int32_t i = 0;
+
+	for (i =0; i < size; i++) {
+		check_sum_cal += data[i];
+	}
+	check_sum_cal = (check_sum_cal % 255 ) + 1;
+
+	if( chksum == check_sum_cal){
+		return true;
+	} else {
+		LOG_INF("chksum fail size = %d check_sum_cal=%d sum-in-eeprom=%d", size, check_sum_cal, chksum);
+		return false;
+	}
+}
+
 static bool mot_naples_sc800csa_read_module_info(u8 moduleflag)
 {
     bool ret = false;
@@ -252,15 +327,15 @@ static bool mot_naples_sc800csa_read_module_info(u8 moduleflag)
     pr_debug(PFX,"--------------mot_naples_sc800csa module info read begin------------\n");
     if (moduleflag == 1) {
         mot_naples_sc800csa_iReadData(MODULE_GROUP_INFO_PAGE, MODULE_GROUP1_INFO_ADDR, MODULE_INFO_LENGTH, &mot_naples_sc800csa_otp_info.module_param[0]);
-        mot_naples_sc800csa_iReadData(MODULE_GROUP_INFO_PAGE, MODULE_GROUP1_CHECKSUM, 1, &mot_naples_sc800csa_otp_info.module_checksum);
+        mot_naples_sc800csa_iReadData(MODULE_GROUP_INFO_PAGE, MODULE_GROUP1_CHECKSUM, 2, &mot_naples_sc800csa_otp_info.moduleChksum[0]);
     } else if (moduleflag  == 2) {
-        mot_naples_sc800csa_iReadData(MODULE_GROUP_INFO_PAGE, MODULE_GROUP2_INFO_ADDR, MODULE_INFO_LENGTH, &mot_naples_sc800csa_otp_info.module_param[0]);
-        mot_naples_sc800csa_iReadData(MODULE_GROUP_INFO_PAGE, MODULE_GROUP2_CHECKSUM, 1, &mot_naples_sc800csa_otp_info.module_checksum);
+        mot_naples_sc800csa_iReadData(MODULE_GROUP2_INFO_PAGE, MODULE_GROUP2_INFO_ADDR, MODULE_INFO_LENGTH, &mot_naples_sc800csa_otp_info.module_param[0]);
+        mot_naples_sc800csa_iReadData(MODULE_GROUP2_INFO_PAGE, MODULE_GROUP2_CHECKSUM, 2, &mot_naples_sc800csa_otp_info.moduleChksum[0]);
     } else {
         pr_debug(PFX,"--------------mot_naples_sc800csa module info read failed------------\n");
     }
     pr_debug(PFX,"--------------mot_naples_sc800csa module info read end------------\n");
-    ret = mot_naples_sc800csa_param_checksum(&mot_naples_sc800csa_otp_info.module_param[0], MODULE_INFO_LENGTH, mot_naples_sc800csa_otp_info.module_checksum);
+    ret = eeprom_util_check_crc16(&mot_naples_sc800csa_otp_info.module_param[0], MODULE_INFO_LENGTH, convert_crc(&mot_naples_sc800csa_otp_info.moduleChksum[0]));
     if (ret) {
         LOG_INF("--------------mot_naples_sc800csa module info checksum success------------\n");
     }
@@ -272,16 +347,18 @@ static bool mot_naples_sc800csa_read_awb_info(u8 moduleflag)
     bool ret = false;
     pr_debug(PFX,"--------------mot_naples_sc800csa awb info read begin------------\n");
     if (moduleflag  == 1) {
-        mot_naples_sc800csa_iReadData(AWB_GROUP_INFO_PAGE, AWB_GROUP1_INFO_ADDR, AWB_INFO_LENGTH, &mot_naples_sc800csa_otp_info.awb_param[0]);
-        mot_naples_sc800csa_iReadData(AWB_GROUP_INFO_PAGE, AWB_GROUP1_CHECKSUM, 1, &mot_naples_sc800csa_otp_info.awb_checksum);
+        mot_naples_sc800csa_iReadData(AWB_GROUP1_INFO_PAGE, OTP_AWB_GROUP1_FLAG, 1, &mot_naples_sc800csa_otp_info.awb_flag);
+        mot_naples_sc800csa_iReadData(AWB_GROUP1_INFO_PAGE, AWB_GROUP1_INFO_ADDR, AWB_INFO_LENGTH, &mot_naples_sc800csa_otp_info.awb_param[0]);
+        mot_naples_sc800csa_iReadData(AWB_GROUP1_INFO_PAGE, AWB_GROUP1_CHECKSUM, 1, &mot_naples_sc800csa_otp_info.awbChksum);
     } else if (moduleflag == 2) {
-        mot_naples_sc800csa_iReadData(AWB_GROUP_INFO_PAGE, AWB_GROUP2_INFO_ADDR, AWB_INFO_LENGTH, &mot_naples_sc800csa_otp_info.awb_param[0]);
-        mot_naples_sc800csa_iReadData(AWB_GROUP_INFO_PAGE, AWB_GROUP2_CHECKSUM, 1, &mot_naples_sc800csa_otp_info.awb_checksum);
+        mot_naples_sc800csa_iReadData(AWB_GROUP2_INFO_PAGE, OTP_AWB_GROUP2_FLAG, 1, &mot_naples_sc800csa_otp_info.awb_flag);
+        mot_naples_sc800csa_iReadData(AWB_GROUP2_INFO_PAGE, AWB_GROUP2_INFO_ADDR, AWB_INFO_LENGTH, &mot_naples_sc800csa_otp_info.awb_param[0]);
+        mot_naples_sc800csa_iReadData(AWB_GROUP2_INFO_PAGE, AWB_GROUP2_CHECKSUM, 1, &mot_naples_sc800csa_otp_info.awbChksum);
     } else {
         pr_debug(PFX,"--------------mot_naples_sc800csa awb info read failed------------\n");
     }
     pr_debug(PFX,"--------------mot_naples_sc800csa awb info read end------------\n");
-    ret = mot_naples_sc800csa_param_checksum(&mot_naples_sc800csa_otp_info.awb_param[0], AWB_INFO_LENGTH, mot_naples_sc800csa_otp_info.awb_checksum);
+    ret = mot_naples_sc800csa_param_checksum(&mot_naples_sc800csa_otp_info.awb_flag, AWB_INFO_LENGTH + 1, mot_naples_sc800csa_otp_info.awbChksum);
     if (ret) {
         LOG_INF("--------------mot_naples_sc800csa awb info checksum success------------\n");
     }
@@ -297,6 +374,9 @@ static bool mot_naples_sc800csa_read_lsc_info(u8 moduleflag)
     pr_debug(PFX,"--------------mot_naples_sc800csa lsc info read begin------------\n");
     if (moduleflag  == 1) {
         pr_debug(PFX,"--------------mot_naples_sc800csa lsc info read part1 idex %d------------\n", idex);
+        /*get lsc flag*/
+        mot_naples_sc800csa_iReadData(LSC_GROUP1_PART1_INFO_PAGE, OTP_LSC_GROUP1_FLAG, 1, &mot_naples_sc800csa_otp_info.lsc_flag);
+        /*get lsc para*/
         pBuff = &mot_naples_sc800csa_otp_info.lsc_param[idex];
         mot_naples_sc800csa_iReadData(LSC_GROUP1_PART1_INFO_PAGE, LSC_GROUP1_PART1_INFO_ADDR, LSC_GROUP1_PART1_INFO_LENGTH, pBuff);
 
@@ -320,19 +400,18 @@ static bool mot_naples_sc800csa_read_lsc_info(u8 moduleflag)
         pBuff = &mot_naples_sc800csa_otp_info.lsc_param[idex];
         mot_naples_sc800csa_iReadData(LSC_GROUP1_PART5_INFO_PAGE, LSC_GROUP1_PART5_INFO_ADDR, LSC_GROUP1_PART5_INFO_LENGTH, pBuff/*&mot_naples_sc800csa_otp_info.lsc_param[idex]*/);
 
-        idex = idex + LSC_GROUP1_PART5_INFO_LENGTH;
-        pr_debug(PFX,"--------------mot_naples_sc800csa lsc info read part5 idex %d ------------\n", idex);
-        pBuff = &mot_naples_sc800csa_otp_info.lsc_param[idex];
-        mot_naples_sc800csa_iReadData(LSC_GROUP1_PART6_INFO_PAGE, LSC_GROUP1_PART6_INFO_ADDR, LSC_GROUP1_PART6_INFO_LENGTH, pBuff/*&mot_naples_sc800csa_otp_info.lsc_param[idex]*/);
         /*for (int i = 0; i < LSC_INFO_LENGTH; i++)
         {
             LOG_INF("summation index %d , data = 0x%x\n", i, mot_naples_sc800csa_otp_info.lsc_param[i]);
         }*/
 
         pr_debug(PFX,"--------------mot_naples_sc800csa lsc info read checksum ------------\n");
-        mot_naples_sc800csa_iReadData(LSC_GROUP1_PART6_INFO_PAGE, LSC_GROUP1_CHECKSUM, 1, &mot_naples_sc800csa_otp_info.lsc_checksum);
+        mot_naples_sc800csa_iReadData(LSC_GROUP1_PART5_INFO_PAGE, LSC_GROUP1_CHECKSUM, 1, &mot_naples_sc800csa_otp_info.lscChksum);
     } else if (moduleflag  == 2) {
         pr_debug(PFX,"--------------mot_naples_sc800csa lsc info read part1 ------------\n");
+        /*get lsc flag*/
+        mot_naples_sc800csa_iReadData(LSC_GROUP2_PART1_INFO_PAGE, OTP_LSC_GROUP2_FLAG, 1, &mot_naples_sc800csa_otp_info.lsc_flag);
+        /*get lsc para*/
         mot_naples_sc800csa_iReadData(LSC_GROUP2_PART1_INFO_PAGE, LSC_GROUP2_PART1_INFO_ADDR, LSC_GROUP2_PART1_INFO_LENGTH, &mot_naples_sc800csa_otp_info.lsc_param[idex]);
 
         idex += LSC_GROUP2_PART1_INFO_LENGTH;
@@ -352,12 +431,12 @@ static bool mot_naples_sc800csa_read_lsc_info(u8 moduleflag)
         mot_naples_sc800csa_iReadData(LSC_GROUP2_PART5_INFO_PAGE, LSC_GROUP2_PART5_INFO_ADDR, LSC_GROUP2_PART5_INFO_LENGTH, &mot_naples_sc800csa_otp_info.lsc_param[idex]);
 
         pr_debug(PFX,"--------------mot_naples_sc800csa lsc info read checksum ------------\n");
-        mot_naples_sc800csa_iReadData(LSC_GROUP2_PART5_INFO_PAGE, LSC_GROUP2_CHECKSUM, 1, &mot_naples_sc800csa_otp_info.lsc_checksum);
+        mot_naples_sc800csa_iReadData(LSC_GROUP2_PART5_INFO_PAGE, LSC_GROUP2_CHECKSUM, 1, &mot_naples_sc800csa_otp_info.lscChksum);
     } else {
         pr_debug(PFX,"--------------mot_naples_sc800csa lsc info read failed------------\n");
     }
     pr_debug(PFX,"--------------mot_naples_sc800csa lsc info read end------------\n");
-    ret = mot_naples_sc800csa_param_checksum(&mot_naples_sc800csa_otp_info.lsc_param[0], LSC_INFO_LENGTH, mot_naples_sc800csa_otp_info.lsc_checksum);
+    ret = mot_naples_sc800csa_param_checksum(&mot_naples_sc800csa_otp_info.lsc_flag, LSC_INFO_LENGTH + 1, mot_naples_sc800csa_otp_info.lscChksum);
     if (ret) {
         LOG_INF("--------------mot_naples_sc800csa lsc info checksum success------------\n");
     }
@@ -368,29 +447,48 @@ void read_mot_naples_sc800csa_otp_data(void)
 {
     u8 moduleflag =0;
     u8 value =0;
-    bool checksum_module = false;
-    bool checksum_awb = false;
-    bool checksum_lsc = false;
+    u8 awb_flag = 0;
+    u8 lsc_flag = 0;
+    u8 all_Data_Chksum = 0;
 
     pr_debug(PFX,"mot_naples_sc800csa moduleflag read begin");
+    /*group valid flag check*/
     mot_naples_sc800csa_iReadData(MODULE_GROUP_INFO_PAGE, OTP_MODULE_FLAG, 1, &value);
-    if (value == 1) {
-         moduleflag = 1;
-    } else if (value == 19) {
+    if (value == 0x01) {
+        moduleflag = 1;
+        /*awb flag check*/
+        mot_naples_sc800csa_iReadData(AWB_GROUP1_INFO_PAGE, OTP_AWB_GROUP1_FLAG, 1, &awb_flag);
+        /*lsc flag check*/
+        mot_naples_sc800csa_iReadData(LSC_GROUP1_PART1_INFO_PAGE, OTP_LSC_GROUP1_FLAG, 1, &lsc_flag);
+        /*all checksum*/
+        mot_naples_sc800csa_iReadData(TOTAL_GROUP1_INFO_PAGE, TOTAL_GROUP1_CHECKSUM, 1, &all_Data_Chksum);
+    } else if (value == 0x03) {
         pr_debug(PFX,"mot_naples_sc800csa group flag = 0x%x", value);
-            moduleflag = 2;
+        moduleflag = 2;
+        /*awb flag check*/
+        mot_naples_sc800csa_iReadData(AWB_GROUP2_INFO_PAGE, OTP_AWB_GROUP2_FLAG, 1, &awb_flag);
+        /*lsc flag check*/
+        mot_naples_sc800csa_iReadData(LSC_GROUP2_PART1_INFO_PAGE, OTP_LSC_GROUP2_FLAG, 1, &lsc_flag);
+        /*all checksum*/
+        mot_naples_sc800csa_iReadData(TOTAL_GROUP2_INFO_PAGE, TOTAL_GROUP2_CHECKSUM, 1, &all_Data_Chksum);
     }
+
     pr_debug(PFX,"mot_naples_sc800csa moduleflag = 0x%x end", moduleflag);
     if (moduleflag != 1 && moduleflag != 2) {
         pr_debug(PFX,"mot_naples_sc800csa invalid moduleflag = 0x%x", moduleflag);
         return;
     }
+    if (awb_flag != 0x55 && lsc_flag != 0x55) {
+        pr_debug(PFX,"mot_naples_sc800csa invalid data flag, awb_flag = 0x%x, lsc_flag = 0x%x", awb_flag, lsc_flag);
+        return;
+    }
 
-    checksum_module = mot_naples_sc800csa_read_module_info(moduleflag);
-    checksum_awb = mot_naples_sc800csa_read_awb_info(moduleflag);
-    checksum_lsc = mot_naples_sc800csa_read_lsc_info(moduleflag);
+    checksummodule = mot_naples_sc800csa_read_module_info(moduleflag);
+    checksumawb = mot_naples_sc800csa_read_awb_info(moduleflag);
+    checksumlsc = mot_naples_sc800csa_read_lsc_info(moduleflag);
+    checksumall = mot_naples_sc800csa_all_data_checksum(&mot_naples_sc800csa_otp_info.module_param[0], ALL_DATA_SIZE - 1, all_Data_Chksum);
 
-    if (true == (checksum_module & checksum_awb & checksum_lsc))
+    if (true == (checksummodule & checksumawb & checksumlsc & checksumall))
     {
         LOG_INF("----------------mot_naples_sc800csa otp info check success----------------");
     }
@@ -400,7 +498,7 @@ void read_mot_naples_sc800csa_otp_data(void)
     }
 }
 
-unsigned int mot_naples_sc800csa_read_region(struct i2c_client *client, unsigned int addr,
+unsigned int sc800csa_read_region(struct i2c_client *client, unsigned int addr,
                                 unsigned char *data, unsigned int size)
 {
     unsigned char *dataTmp = data;
@@ -408,55 +506,52 @@ unsigned int mot_naples_sc800csa_read_region(struct i2c_client *client, unsigned
     pr_err("mot_naples_sc800csa otp region addr = 0x%x, size = %d\n", addr, size);
     if (addr == 0x1 && size == 1) {//0xff
         *(u8 *)data = 0x00000006;
-    } else if (addr == 0x0 && size == 1917) {
-        unsigned int totalSize = sizeof(mot_naples_sc800csa_otp_info.module_flag) +
-                                 sizeof(mot_naples_sc800csa_otp_info.module_param) +
-                                 sizeof(mot_naples_sc800csa_otp_info.module_checksum) +
+    } else if (addr == 0x0 && size == 1928) {
+        unsigned int totalSize = sizeof(mot_naples_sc800csa_otp_info.module_param) +
+                                 sizeof(mot_naples_sc800csa_otp_info.moduleChksum) +
+                                 sizeof(mot_naples_sc800csa_otp_info.awb_flag) +
                                  sizeof(mot_naples_sc800csa_otp_info.awb_param) +
-                                 sizeof(mot_naples_sc800csa_otp_info.awb_checksum) +
+                                 sizeof(mot_naples_sc800csa_otp_info.awbChksum) +
+                                 sizeof(mot_naples_sc800csa_otp_info.lsc_flag) +
                                  sizeof(mot_naples_sc800csa_otp_info.lsc_param) +
-                                 sizeof(mot_naples_sc800csa_otp_info.lsc_checksum);
+                                 sizeof(mot_naples_sc800csa_otp_info.lscChksum) +
+                                 sizeof(mot_naples_sc800csa_otp_info.allDataChksum);
         pr_err("mot_naples_sc800csa otp region addr = 0x%x, size = %d  totalSize=%d \n", addr, size, totalSize);
         if (size == totalSize) {
-            data[0] = mot_naples_sc800csa_otp_info.module_flag;
-
-            dataTmp += sizeof(mot_naples_sc800csa_otp_info.module_flag);
 
             memcpy(dataTmp, mot_naples_sc800csa_otp_info.module_param, sizeof(mot_naples_sc800csa_otp_info.module_param));
             dataTmp += sizeof(mot_naples_sc800csa_otp_info.module_param);
 
-            data[23] = mot_naples_sc800csa_otp_info.module_checksum;
-            dataTmp += sizeof(mot_naples_sc800csa_otp_info.module_checksum);
+            data[37] = mot_naples_sc800csa_otp_info.moduleChksum[0];
+            data[38] = mot_naples_sc800csa_otp_info.moduleChksum[1];
+            dataTmp += sizeof(mot_naples_sc800csa_otp_info.moduleChksum);
+
+            data[39] = mot_naples_sc800csa_otp_info.awb_flag;
+            dataTmp += sizeof(mot_naples_sc800csa_otp_info.awb_flag);
 
             memcpy(dataTmp, mot_naples_sc800csa_otp_info.awb_param, sizeof(mot_naples_sc800csa_otp_info.awb_param));
             dataTmp += sizeof(mot_naples_sc800csa_otp_info.awb_param);
 
-            data[47] = mot_naples_sc800csa_otp_info.awb_checksum;
-            dataTmp += sizeof(mot_naples_sc800csa_otp_info.awb_checksum);
+            data[56] = mot_naples_sc800csa_otp_info.awbChksum;
+            dataTmp += sizeof(mot_naples_sc800csa_otp_info.awbChksum);
+
+            data[57] = mot_naples_sc800csa_otp_info.lsc_flag;
+            dataTmp += sizeof(mot_naples_sc800csa_otp_info.lsc_flag);
 
             memcpy(dataTmp, mot_naples_sc800csa_otp_info.lsc_param, sizeof(mot_naples_sc800csa_otp_info.lsc_param));
             dataTmp += sizeof(mot_naples_sc800csa_otp_info.lsc_param);
 
-            data[totalSize - 1] = mot_naples_sc800csa_otp_info.lsc_checksum;
+            data[1926] = mot_naples_sc800csa_otp_info.lscChksum;
+            dataTmp += sizeof(mot_naples_sc800csa_otp_info.lscChksum);
+
+            data[totalSize - 1] = mot_naples_sc800csa_otp_info.allDataChksum;
         } else {
             pr_err("mot_naples_sc800csa otp size != totalSize");
             size = totalSize;
         }
-    } else if (addr == 24 && size == 23) { //read single awb data
-        memcpy(data,(mot_naples_sc800csa_otp_info.awb_param), size);
-        pr_err("add = 0x%x, read awb\n",addr);
-    } else if (size >=1868 && size < 2048 && addr == 48) {
-        memcpy(data, mot_naples_sc800csa_otp_info.lsc_param, size);
-        pr_err("add = 0x%x, read lsc\n",addr);
-    } else if (addr == 1937 && size == 1) {
-        *(u8 *)data = mot_naples_sc800csa_otp_info.lsc_checksum;
-        pr_err("add = 0x%x, read lsc_checksum = %x\n",addr, *(u8 *)data);
-    } else if (addr == 47 && size == 1) {
-        *(u8 *)data = mot_naples_sc800csa_otp_info.awb_checksum;
-        pr_err("add = 0x%x, read awb_checksum = %x\n",addr, *(u8 *)data);
     } else{
         pr_err("mot_naples_sc800csa otp add = 0x%x, size = %d ,read error !!!\n",addr,size);
     }
     return size;
 }
-EXPORT_SYMBOL(mot_naples_sc800csa_read_region);
+EXPORT_SYMBOL(sc800csa_read_region);

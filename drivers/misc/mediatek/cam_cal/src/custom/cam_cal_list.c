@@ -27,7 +27,9 @@ extern unsigned int ov08f_read_region(struct i2c_client *client, unsigned int ad
 extern unsigned int gc08a3_read_region(struct i2c_client *client, unsigned int addr,
 				unsigned char *data, unsigned int size);
 extern unsigned int ov08f_2nd_read_region(struct i2c_client *client, unsigned int addr,
-	unsigned char *data, unsigned int size);
+				unsigned char *data, unsigned int size);
+extern unsigned int sc800csa_read_region(struct i2c_client *client, unsigned int addr,
+				unsigned char *data, unsigned int size);
 #endif
 #if defined(CONFIG_MOT_SBUYA_CAMERA_PROJECT)
 extern unsigned int ov08f_read_region(struct i2c_client *client, unsigned int addr,
@@ -63,6 +65,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{MOT_NAPLES_OV08F_SENSOR_ID, 0x6C, ov08f_read_region}, // otp
 	{MOT_NAPLES_GC08A3_SENSOR_ID, 0x62, gc08a3_read_region}, // otp normal
 	{MOT_NAPLES_OV08F_2ND_SENSOR_ID, 0x6C, ov08f_2nd_read_region}, // otp
+	{MOT_NAPLES_SC800CSA_SENSOR_ID, 0x6C, sc800csa_read_region}, // otp normal
 #elif defined(CONFIG_MOT_SBUYA_CAMERA_PROJECT)
 	{MOT_SBUYA_IMX882_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_SBUYA_OV08F_SENSOR_ID, 0x20, ov08f_read_region}, // otp
