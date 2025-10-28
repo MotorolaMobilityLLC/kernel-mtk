@@ -337,8 +337,9 @@
 		charger_name = "primary_dvchg";
 		reg = <0x6D>;
 		nu2115,intr-gpios = <&pio 5 0x0>;
-		ac_ovp = <13000000>;
-		vbus_ovp = <12000000>;
+		/* Lower OVP thresholds to optimize surge testing per supplier recommendation */
+		ac_ovp = <11000000>;
+		vbus_ovp = <10500000>;
 		bat_ucp_alm = <9200000>;
 		ibat_sns_res = <2>;
 		watchdog_dis;
