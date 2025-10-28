@@ -65,12 +65,6 @@ eint_cp: eint_cp {
 	status = "disabled";
 };
 
-&mt6377keys {
-	home {
-		linux,keycodes = <114>;
-	};
-};
-
 &pio {
 	nfc_spi_cs_mode_spi: nfc_spi_cs_mode_spi {
 		pins_cmd_dat {
