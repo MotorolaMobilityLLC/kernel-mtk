@@ -477,7 +477,6 @@
 	CAR_TUNE_VALUE = <(101)>;
 
 	df-serialnum = "LWNSU52SWD";
-	force_notify_gauge_full = <1>;
 	#include "bat_setting/mt6835_battery_su52_swd_5200mah.dtsi"
 	#include "bat_setting/mt6835_battery_su52_nvt_5200mah.dtsi"
 };
