@@ -54,7 +54,10 @@ int vtdr6126a_range_bpg_ofs[15] = {2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -1
 //#define TM_PANEL_VENDOR_ID  	(TM_PANEL_VENDOR_ID | (0xF << 24))
 #define FOD_CENTER_X 636
 #define FOD_CENTER_Y 2525
-
+#define PANEL_EVT 1
+#define PANEL_DVT1 2
+#define PANEL_DVT2 3
+#define PANEL_PVT 4
 static int current_bl = 0;
 struct tm_vtdr6126a {
 	struct device *dev;
@@ -75,6 +78,7 @@ struct tm_vtdr6126a {
 	atomic_t hbm_mode;
 	atomic_t current_fps;
 	atomic_t dc_mode;
+	int version;
 };
 
 static struct mtk_panel_para_table panel_lhbm_on[] = {
@@ -198,9 +202,12 @@ static void tm_vtdr6126a_panel_init(struct tm_vtdr6126a *ctx)
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x35, 0x00);
 	//dimming on
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x53, 0x28);
+	//DBV DIMING
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x13);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xD0, 0x0F);
-
+if(ctx->version >= PANEL_DVT2) {//dvt2 or later
+	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x55, 0x10);
+}
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x59, 0x09);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x5E, 0x00);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x6B, 0x01);
@@ -208,12 +215,13 @@ static void tm_vtdr6126a_panel_init(struct tm_vtdr6126a *ctx)
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x6D, 0x00);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x6F, 0x01);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x72, 0x00);
-
+if(ctx->version <= PANEL_DVT1) {//evt and dvt1
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xA4, 0x01);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x38, 0);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x6F, 0x01);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xA4, 0x00);
-    //Vesa1.2,SliceNumber:2,Slice,Height:12H,10bit
+}
+	//Vesa1.2,SliceNumber:2,Slice,Height:12H,10bit
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x70, 0x12, 0x00, 0x00, 0xAB, 0x30, 0x80, 0x09, 0x30, 0x04, 0x38, 0x00, 0x0C, 0x02, 0x1C, 0x02, 0x1C, 0x02, 0x00, 0x01, 0x17, 0x00, 0x20, 0x02, 0x1A, 0x00, 0x07, 0x00, 0x01, 0x00, 0xBB, 0x08, 0x7A, 0x18, 0x00, 0x10, 0xF0, 0x07, 0x10, 0x20, 0x00, 0x06, 0x0F, 0x0F, 0x33, 0x0E, 0x1C, 0x2A, 0x38, 0x46, 0x54, 0x62, 0x69, 0x70, 0x77, 0x79, 0x7B, 0x7D, 0x7E, 0x02, 0x02, 0x22, 0x00, 0x2A, 0x40, 0x2A, 0xBE, 0x3A, 0xFC, 0x3A, 0xFA, 0x3A, 0xF8, 0x3B, 0x38, 0x3B, 0x78, 0x3B, 0xB6, 0x4B, 0xB6, 0x4B, 0xF4, 0x4B, 0xF4, 0x6C, 0x34, 0x84, 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
         //SCL
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x10);
@@ -242,9 +250,19 @@ static void tm_vtdr6126a_panel_init(struct tm_vtdr6126a *ctx)
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x65, 0x40);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xCA, 0x04, 0x06, 0x04, 0x06, 0x04, 0x06, 0x03, 0xF6, 0x03, 0xF6, 0x03, 0xF6);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x65, 0x24);
+if(ctx->version <= PANEL_DVT1) {//evt and dvt1
+	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xCA, 0x00, 0xD9, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x00, 0xD1, 0x00, 0xFB, 0x00, 0xFB, 0x00, 0xFB);
+}
+else {
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xCA, 0x00, 0xD6, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0xD4, 0x00, 0xFE, 0x00, 0xFE, 0x00, 0xFE);
+}
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x65, 0x4C);
+if(ctx->version <= PANEL_DVT1) {//evt and dvt1
+	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xCA, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x00, 0xFB, 0x00, 0xFB, 0x00, 0xFB);
+}
+else {
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xCA, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0xFE, 0x00, 0xFE, 0x00, 0xFE);
+}
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x65, 0x58);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xCA, 0x01, 0xAB, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF);
 
@@ -254,7 +272,7 @@ static void tm_vtdr6126a_panel_init(struct tm_vtdr6126a *ctx)
 
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x10);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xCE, 0x20);
-
+if(ctx->version <= PANEL_DVT1) {//evt and dvt1
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xF0, 0xAA,0x14);
     //CLK01
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xBC, 0x90);
@@ -265,7 +283,7 @@ static void tm_vtdr6126a_panel_init(struct tm_vtdr6126a *ctx)
 
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xF0, 0xAA,0x15);
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xB5, 0x33,0x27,0x41,0x33,0x77,0x11,0x30,0x70,0x10,0x24,0x30,0x00,0x44,0x00,0x00,0x40,0x00,0x00);
-
+}
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xF0, 0xAA,0x16);
     //MTE_VRR_BASE=1
 	tm_vtdr6126a_dcs_write_seq_static(ctx, 0xD1, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
@@ -1169,6 +1187,40 @@ static const struct drm_panel_funcs tm_vtdr6126a_drm_funcs = {
 	.get_modes = tm_vtdr6126a_get_modes,
 };
 
+static void lcm_parse_panel_version(struct tm_vtdr6126a *ctx)
+{
+	int rc;
+	struct device_node *chosen = of_find_node_by_name(NULL, "chosen");
+
+	ctx->version = PANEL_PVT;
+	if(chosen) {
+		u32 tmp = 0;
+
+		rc = of_property_read_u32(chosen, "mmi,panel_ver", &tmp);
+		if (!rc) {
+			if (PANEL_EVT == tmp) {
+				ctx->version = PANEL_EVT;
+			} else if(PANEL_DVT1 == tmp) {
+				ctx->version = PANEL_DVT1;
+			} else if(PANEL_DVT2 == tmp) {
+				ctx->version = PANEL_DVT2;
+			} else if(PANEL_PVT == tmp) {
+				ctx->version = PANEL_PVT;
+			} else {
+				ctx->version = PANEL_PVT;
+			}
+			pr_info("get panel_ver:%d\n", ctx->version);
+		}
+		else
+			pr_info("mmi,panel_ver not get\n");
+	}
+	else
+		pr_info("parse_panel chosen node null\n");
+
+	pr_info("parse_panel get panel_ver:%d\n", ctx->version);
+	return;
+}
+
 static int tm_vtdr6126a_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
@@ -1268,8 +1320,8 @@ static int tm_vtdr6126a_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_add(&ctx->panel);
 
-	//parse panel version for evt/dvt
-	//tm_vtdr6126a_parse_panel_version(ctx);
+	//parse panel version for evt/dvt/pvt
+	lcm_parse_panel_version(ctx);
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
