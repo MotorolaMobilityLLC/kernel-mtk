@@ -40,6 +40,8 @@
 #include "mot_sbuya_imx882mipiraw_Sensor.h"
 #include "mot_sbuya_imx882_sensor_setting.h"
 
+#define IMX882_BASEGAIN 128
+
 extern mot_calibration_status_t *SBUYA_IMX882_eeprom_get_calibration_status(void);
 extern mot_calibration_mnf_t *SBUYA_IMX882_eeprom_get_mnf_info(void);
 extern void SBUYA_IMX882_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
@@ -861,16 +863,16 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 	// 882 max gain: 64x
 	kal_uint16 reg_gain = 0x0;
 	kal_uint16 gain_value = gain;
-	kal_uint32 max_gain = 64*BASEGAIN;
-	kal_uint32 min_gain = 1.4287*BASEGAIN;
+	kal_uint32 max_gain = 64*IMX882_BASEGAIN;
+	kal_uint32 min_gain = 1.4287*IMX882_BASEGAIN;
 
 	if((sensor_mode == BINNING_MODE) || (sensor_mode == FPS120_MODE) || (sensor_mode == FPS60_4K_MODE)
 		||(sensor_mode == VIDEOCALL_MODE) ||(sensor_mode == VIDEO_MODE)) {
-		max_gain = 64*BASEGAIN;
-		min_gain = 1.4287*BASEGAIN;
+		max_gain = 64*IMX882_BASEGAIN;
+		min_gain = 1.4287*IMX882_BASEGAIN;
 	} else {
-		max_gain = 16*BASEGAIN;
-		min_gain = BASEGAIN;
+		max_gain = 16*IMX882_BASEGAIN;
+		min_gain = IMX882_BASEGAIN;
 	}
 
 	if (gain_value < min_gain || gain_value > max_gain) {
@@ -882,7 +884,7 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 			gain_value = max_gain;
 	}
 
-	reg_gain = 16384 - (16384*64)/gain_value;
+	reg_gain = 16384 - (16384*IMX882_BASEGAIN)/gain_value;
 	reg_gain = (reg_gain+2)/4*4;
 
 	return (kal_uint16) reg_gain;
@@ -907,16 +909,16 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 static kal_uint16 set_gain_w_gph(kal_uint16 gain, kal_bool gph)
 {
 	kal_uint16 reg_gain;
-	kal_uint32 max_gain = 64*BASEGAIN;
-	kal_uint32 min_gain = 1.4287*BASEGAIN;
+	kal_uint32 max_gain = 64*IMX882_BASEGAIN;
+	kal_uint32 min_gain = 1.4287*IMX882_BASEGAIN;
 
 	if((sensor_mode == BINNING_MODE) || (sensor_mode == FPS120_MODE) || (sensor_mode == FPS60_4K_MODE)
 		||(sensor_mode == VIDEOCALL_MODE) || (sensor_mode == VIDEO_MODE)) {
-		max_gain = 64*BASEGAIN;
-		min_gain = 1.4287*BASEGAIN;
+		max_gain = 64*IMX882_BASEGAIN;
+		min_gain = 1.4287*IMX882_BASEGAIN;
 	} else {
-		max_gain = 16*BASEGAIN;
-		min_gain = BASEGAIN;
+		max_gain = 16*IMX882_BASEGAIN;
+		min_gain = IMX882_BASEGAIN;
 	}
 	if (gain < min_gain || gain > max_gain) {
 		LOG_INF("Error gain setting");
@@ -2490,7 +2492,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		}
 		break;
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
-		*(feature_data + 1) = imgsensor_info.min_gain;
+		*(feature_data + 1) = 92; //1.4287*BASEGAIN
 		*(feature_data + 2) = imgsensor_info.max_gain;
 		if((sensor_mode == CROP_MODE) || (sensor_mode == HW_50M_MODE) || (sensor_mode == XTS_MODE)) {
 			*(feature_data + 1) = BASEGAIN;
