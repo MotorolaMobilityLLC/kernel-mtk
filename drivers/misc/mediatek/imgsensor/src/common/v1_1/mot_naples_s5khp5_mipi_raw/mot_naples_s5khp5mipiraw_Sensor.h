@@ -133,53 +133,53 @@ struct imgsensor_info_struct {
 	kal_uint8 i2c_addr_table[5];
 };
 
-// #define AWB_R_MIN 200
-// #define AWB_R_MAX 880
-// #define AWB_GR_MIN 760
-// #define AWB_GR_MAX 880
-// #define AWB_GB_MIN 760
-// #define AWB_GB_MAX 880
-// #define AWB_B_MIN 200
-// #define AWB_B_MAX 880
+#define AWB_R_MIN 200
+#define AWB_R_MAX 880
+#define AWB_GR_MIN 760
+#define AWB_GR_MAX 880
+#define AWB_GB_MIN 760
+#define AWB_GB_MAX 880
+#define AWB_B_MIN 200
+#define AWB_B_MAX 880
 
-// typedef enum {
-// 	NO_ERRORS,
-// 	CRC_FAILURE,
-// 	LIMIT_FAILURE
-// } calibration_status_t;
+typedef enum {
+	NO_ERRORS,
+	CRC_FAILURE,
+	LIMIT_FAILURE
+} calibration_status_t;
 
-// struct NAPLES_S5KHP5_eeprom_t{
-// 	//MNF_DATA
-// 	uint8_t eeprom_table_version[1];
-// 	uint8_t cal_hw_ver[1];
-// 	uint8_t cal_sw_ver[1];
-// 	uint8_t mpn[8];
-// 	uint8_t actuator_id[1];
-// 	uint8_t lens_id[1];
-// 	uint8_t manufacturer_id[2];
-// 	uint8_t factory_id[2];
-// 	uint8_t manufacture_line[1];
-// 	uint8_t manufacture_date[3];
-// 	uint8_t serial_number[16];
-// 	uint8_t manufacture_crc16[2];
-// };
+struct NAPLES_S5KHP5_eeprom_t{
+	//MNF_DATA
+	uint8_t eeprom_table_version[1];
+	uint8_t cal_hw_ver[1];
+	uint8_t cal_sw_ver[1];
+	uint8_t mpn[8];
+	uint8_t actuator_id[1];
+	uint8_t lens_id[1];
+	uint8_t manufacturer_id[2];
+	uint8_t factory_id[2];
+	uint8_t manufacture_line[1];
+	uint8_t manufacture_date[3];
+	uint8_t serial_number[16];
+	uint8_t manufacture_crc16[2];
+};
 
-// typedef struct {
-// 	uint16_t r;
-// 	uint16_t gr;
-// 	uint16_t gb;
-// 	uint16_t b;
-// 	uint16_t r_g;
-// 	uint16_t b_g;
-// 	uint16_t gr_gb;
-// } awb_t;
+typedef struct {
+	uint16_t r;
+	uint16_t gr;
+	uint16_t gb;
+	uint16_t b;
+	uint16_t r_g;
+	uint16_t b_g;
+	uint16_t gr_gb;
+} awb_t;
 
-// typedef struct {
-// 	uint8_t r_g_golden_min;
-// 	uint8_t r_g_golden_max;
-// 	uint8_t b_g_golden_min;
-// 	uint8_t b_g_golden_max;
-// } awb_limit_t;
+typedef struct {
+	uint8_t r_g_golden_min;
+	uint8_t r_g_golden_max;
+	uint8_t b_g_golden_min;
+	uint8_t b_g_golden_max;
+} awb_limit_t;
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
 	u8 *a_pRecvData, u16 a_sizeRecvData,
 		       u16 i2cId);
@@ -195,7 +195,7 @@ extern int iWriteRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData,
 extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId,
 					u16 transfer_length, u16 timing);
 
-//extern void read_imx230_eeprom(void);
+extern void read_imx230_eeprom(void);
 int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId,
 	u16 transfer_length, u16 timing);
 

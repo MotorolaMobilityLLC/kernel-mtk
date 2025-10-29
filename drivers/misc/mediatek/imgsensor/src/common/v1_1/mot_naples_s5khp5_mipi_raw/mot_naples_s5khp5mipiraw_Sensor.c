@@ -23,9 +23,9 @@
 #define S5KHP5_MAX_GAIN_BINNINGSIZE_PLATFORM 8192    /*64*128, 64 GAINBASE*/
 #define S5KHP5_LIMT_GAIN_BINNINGSIZE_PLATFORM 1024   /*8*128, 8 GAINBASE*/
 
-//extern mot_calibration_status_t *NAPLES_S5KHP5_eeprom_get_calibration_status(void);
-//extern mot_calibration_mnf_t *NAPLES_S5KHP5_eeprom_get_mnf_info(void);
-//extern void NAPLES_S5KHP5_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+extern mot_calibration_status_t *NAPLES_S5KHP5_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *NAPLES_S5KHP5_eeprom_get_mnf_info(void);
+extern void NAPLES_S5KHP5_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
 static bool bIsLongExposure = KAL_FALSE;
 static kal_uint16 mot_naples_s5khp5_table_write_cmos_sensor(kal_uint16 * para, kal_uint32 len);
@@ -800,7 +800,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			LOG_INF("mot_naples_s5khp5 sensor id = 0x%x",*sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				//NAPLES_S5KHP5_eeprom_format_calibration_data(&imgsensor);
+				NAPLES_S5KHP5_eeprom_format_calibration_data(&imgsensor);
 				LOG_INF("mot_naples_s5khp5 i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;
 			}
@@ -1210,8 +1210,8 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	// sensor_info->Custom3DelayFrame = imgsensor_info.custom3_delay_frame;
 
 	/*Apply manufacture info*/
-	//memcpy(&sensor_info->mnf_calibration, NAPLES_S5KHP5_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
-	//memcpy(&sensor_info->calibration_status, NAPLES_S5KHP5_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
+	memcpy(&sensor_info->mnf_calibration, NAPLES_S5KHP5_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, NAPLES_S5KHP5_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
