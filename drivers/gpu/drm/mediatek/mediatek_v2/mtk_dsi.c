@@ -3684,7 +3684,15 @@ static void mtk_output_dsi_enable(struct mtk_dsi *dsi,
 					mode_id, AFTER_DSI_POWERON);
 			}
 		}
-
+		 if (!IS_ERR_OR_NULL(priv->data)
+			&& (priv->data->mmsys_id == MMSYS_MT6835)
+			&& !(dsi->mode_flags & MIPI_DSI_MODE_LPM)) {
+			DDPMSG("%s mtk_dsi_clk_hs_mode\n", __func__);
+			mtk_dsi_clk_hs_mode(dsi, 1);
+			if (dsi->slave_dsi) {
+				mtk_dsi_clk_hs_mode(dsi->slave_dsi, 1);
+			}
+		}
 		if (new_doze_state && !dsi->doze_enabled) {
 			if (ext && ext->funcs &&
 				ext->funcs->doze_enable_start)
@@ -4637,6 +4645,12 @@ int mtk_dsi_read_gce(struct mtk_ddp_comp *comp, void *handle,
 	struct mtk_drm_crtc *mtk_crtc = (struct mtk_drm_crtc *)ptr;
 	int index = 0;
 
+	struct mtk_drm_private *priv = NULL;
+
+
+	if (mtk_crtc && mtk_crtc->base.dev)
+		priv = mtk_crtc->base.dev->dev_private;
+
 	if (mtk_crtc == NULL) {
 		DDPPR_ERR("%s dsi comp not configure CRTC yet", __func__);
 		return -EAGAIN;
@@ -4650,12 +4664,27 @@ int mtk_dsi_read_gce(struct mtk_ddp_comp *comp, void *handle,
 
 	index = drm_crtc_index(&mtk_crtc->base);
 
-	cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + dsi->driver_data->reg_cmdq0_ofs,
-		AS_UINT32(t0), ~0);
-	cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + dsi->driver_data->reg_cmdq1_ofs,
-		AS_UINT32(t1), ~0);
-	cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + DSI_CMDQ_SIZE,
-		0x2, CMDQ_SIZE);
+	if (!IS_ERR_OR_NULL(priv) && !IS_ERR_OR_NULL(priv->data)
+		&& (priv->data->mmsys_id == MMSYS_MT6835)
+		&& !(dsi->mode_flags & MIPI_DSI_MODE_LPM)) {
+		mtk_ddp_write_mask(comp, 0, DSI_TXRX_CTRL, HSTX_CKLP_EN, handle);
+		mtk_ddp_write_mask(comp, DIS_EOT, DSI_TXRX_CTRL, DIS_EOT, handle);
+		cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + dsi->driver_data->reg_cmdq0_ofs,
+			AS_UINT32(t0), ~0);
+		cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + dsi->driver_data->reg_cmdq0_ofs + 4 * 1,
+			AS_UINT32(t0), ~0);
+		cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + dsi->driver_data->reg_cmdq0_ofs + 4 * 2,
+			AS_UINT32(t1), ~0);
+		cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + DSI_CMDQ_SIZE,
+			0x03, CMDQ_SIZE);
+	} else {
+		cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + dsi->driver_data->reg_cmdq0_ofs,
+			AS_UINT32(t0), ~0);
+		cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + dsi->driver_data->reg_cmdq1_ofs,
+			AS_UINT32(t1), ~0);
+		cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + DSI_CMDQ_SIZE,
+			0x2, CMDQ_SIZE);
+	}
 
 	cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + DSI_START,
 		0x0, ~0);
@@ -4687,6 +4716,11 @@ int mtk_dsi_read_gce(struct mtk_ddp_comp *comp, void *handle,
 				dsi->slave_dsi->ddp_comp.regs_pa + DSI_CON_CTRL,
 				DSI_DUAL_EN, DSI_DUAL_EN);
 	}
+	if (!IS_ERR_OR_NULL(priv) && !IS_ERR_OR_NULL(priv->data) && (priv->data->mmsys_id == MMSYS_MT6835)
+		&& !(dsi->mode_flags & MIPI_DSI_MODE_LPM)) {
+		mtk_ddp_write_mask(comp, HSTX_CKLP_EN, DSI_TXRX_CTRL, HSTX_CKLP_EN, handle);
+		mtk_ddp_write_mask(comp, 0, DSI_TXRX_CTRL, DIS_EOT, handle);
+	}
 	return 0;
 }
 
@@ -4699,6 +4733,15 @@ int mtk_dsi_esd_read(struct mtk_ddp_comp *comp, void *handle, void *ptr)
 	unsigned char tx_buf[10];
 	struct DSI_T0_INS t0;
 	struct DSI_T0_INS t1;
+	struct mtk_drm_crtc *mtk_crtc = (struct mtk_drm_crtc *)ptr;
+	struct mtk_drm_private *priv = NULL;
+
+	if (mtk_crtc == NULL) {
+		DDPPR_ERR("%s dsi comp not configure CRTC yet", __func__);
+		return -EAGAIN;
+	}
+	if (mtk_crtc && mtk_crtc->base.dev)
+		priv = mtk_crtc->base.dev->dev_private;
 
 	if (dsi->ext && dsi->ext->params)
 		params = dsi->ext->params;
@@ -4721,11 +4764,17 @@ int mtk_dsi_esd_read(struct mtk_ddp_comp *comp, void *handle, void *ptr)
 			_mtk_dsi_read_ddic_by6382(dsi, handle, &read_msg, i, ptr);
 		} else {
 			t0.CONFG = 0x00;
+			if (!IS_ERR_OR_NULL(priv) && !IS_ERR_OR_NULL(priv->data) && !(dsi->mode_flags & MIPI_DSI_MODE_LPM) && (priv->data->mmsys_id == MMSYS_MT6835)) {
+				t0.CONFG = 0x08;
+			}
 			t0.Data_ID = 0x37;
 			t0.Data0 = params->lcm_esd_check_table[i].count;
 			t0.Data1 = 0;
 
 			t1.CONFG = 0x04;
+			if (!IS_ERR_OR_NULL(priv) && !IS_ERR_OR_NULL(priv->data) && !(dsi->mode_flags & MIPI_DSI_MODE_LPM) && (priv->data->mmsys_id == MMSYS_MT6835)) {
+				t1.CONFG = 0x0c;
+			}
 			t1.Data0 = params->lcm_esd_check_table[i].cmd;
 			t1.Data_ID = (t1.Data0 < 0xB0)
 					     ? DSI_DCS_READ_PACKET_ID
