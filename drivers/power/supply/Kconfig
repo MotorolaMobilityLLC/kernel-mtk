@@ -1166,4 +1166,10 @@ config PHYSICAL_BATT_ID_FEATURE
 	help
 	  Say M for Motorola Physical batt id feature Support
 
+config MOTO_1200_CYCLE
+        bool "1200 cycle support"
+        default n
+        help
+          This is to enable MOTO supports of 1200 cycle feature.
+
 endif # POWER_SUPPLY

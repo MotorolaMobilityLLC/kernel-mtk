@@ -4629,6 +4629,7 @@ static int battery_tcmd_set_bat_cycle(void *input, int val)
 		wakeup_fg_algo(gm, FG_INTR_BAT_CYCLE);
 	} else {
 		gm->is_reset_battery_cycle = false;
+		gm->bat_cycle = val;
 	}
 
 end:

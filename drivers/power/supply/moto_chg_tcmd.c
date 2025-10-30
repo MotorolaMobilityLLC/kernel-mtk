@@ -751,7 +751,7 @@ static ssize_t bat_cycle_show(struct device *dev, struct device_attribute *attr,
 		goto end;
 	}
 
-	if (bat_client->get_bat_cycle) {
+	if (!bat_client->get_bat_cycle) {
 		pr_err("%s get_bat_cycle is null\n", __func__);
 		goto end;
 	}
