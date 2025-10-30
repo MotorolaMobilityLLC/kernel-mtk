@@ -1791,14 +1791,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_AWB_REQ_BY_SCENARIO:
 		switch (*feature_data) {
-        case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-		case MSDK_SCENARIO_ID_CUSTOM2:
-		case MSDK_SCENARIO_ID_CUSTOM3:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 1;
-			break;
-		default:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 0;
-			break;
+			case MSDK_SCENARIO_ID_CUSTOM1:
+			case MSDK_SCENARIO_ID_CUSTOM2:
+				*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 1;
+				break;
+			default:
+				*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 0;
+				break;
 		}
 		break;
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
@@ -2244,7 +2243,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_SET_AWB_GAIN:
 		/* modify to separate 3hdr and remosaic */
 		if ( (imgsensor.sensor_mode == IMGSENSOR_MODE_CUSTOM2) ||
-                     (imgsensor.sensor_mode == IMGSENSOR_MODE_CUSTOM3) ) {
+                     (imgsensor.sensor_mode == IMGSENSOR_MODE_CUSTOM1) ) {
 			/*write AWB gain to sensor*/
 			feedback_awbgain(pSetSensorAWB);
 		} else {
