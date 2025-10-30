@@ -33,8 +33,8 @@
 
 unsigned int boe_td4165_rc_buf_thresh[14] = {896, 1792, 2688, 3584, 4480, 5376,
 		6272, 6720, 7168, 7616, 7744, 7872, 8000, 8064};
-unsigned int boe_td4165_range_min_qp[15] = {0, 0, 1, 1, 3, 3, 3, 3, 3, 3, 5, 5, 5, 7,13};
-unsigned int boe_td4165_range_max_qp[15] = {4, 4, 5, 6, 7, 7, 7, 8, 9, 10, 11, 12, 13, 13, 15,};
+unsigned int boe_td4165_range_min_qp[15] = {0, 0, 1, 1, 3, 3, 3, 3, 3, 3, 5, 5, 5, 7, 13};
+unsigned int boe_td4165_range_max_qp[15] = {4, 4, 5, 6, 7, 7, 7, 8, 9, 10, 11, 12, 13, 13, 15};
 int boe_td4165_range_bpg_ofs[15] = {2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -12, -12, -12, -12};
 
 extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
@@ -223,7 +223,8 @@ static void boe_td4165_panel_init(struct boe_td4165 *ctx)
 		gpiod_set_value(ctx->reset_gpio, 0);
 		udelay(10 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(20);
+		//The time between the release of LCD reset and the transmission of MIPI CMD shall be more than 20 ms.
+		msleep(23);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -321,7 +322,14 @@ static int boe_td4165_unprepare(struct drm_panel *panel)
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		usleep_range(5000,5001);
 		pr_info("%s:boe_td4165: reset_gpio 0\n", __func__);
-
+	}
+	//modify td4165 unprepare sequence: lcd reset low -> VSP VSN low -> tp reset low
+	pr_info("%s:disp: tp_gesture_flag:%d, esd_recovery_flg=%d \n",__func__, tp_gesture_flag, mtkfb_esd_get_recovery_flag());
+	if(!tp_gesture_flag || mtkfb_esd_get_recovery_flag()) {
+		ocp2138_BiasPower_disable(5);
+	}
+	if(!tp_gesture_flag){
+		msleep(5);
 		ctx->tp_reset_gpio = devm_gpiod_get(ctx->dev, "tp_reset", GPIOD_OUT_HIGH);
 		if (IS_ERR(ctx->tp_reset_gpio)) {
 			dev_err(ctx->dev, "%s:boe_td4165: cannot get tp_reset_gpio %ld\n",
@@ -334,10 +342,6 @@ static int boe_td4165_unprepare(struct drm_panel *panel)
 			usleep_range(5000,5001);
 			pr_info("%s:boe_td4165: tp_reset_gpio 0\n", __func__);
 		}
-	}
-	pr_info("%s:disp: tp_gesture_flag:%d, esd_recovery_flg=%d \n",__func__, tp_gesture_flag, mtkfb_esd_get_recovery_flag());
-	if(!tp_gesture_flag || mtkfb_esd_get_recovery_flag()) {
-		ocp2138_BiasPower_disable(5);
 	}
 
 	ctx->error = 0;
@@ -1127,6 +1131,19 @@ static void lcm_shutdown(struct mipi_dsi_device *dsi)
 
 	pr_info("%s: ocp2138_BiasPower_disable\n", __func__);
 	ocp2138_BiasPower_disable(5);
+	//add TP reset low when device shutdown.
+	msleep(5);
+	ctx->tp_reset_gpio = devm_gpiod_get(ctx->dev, "tp_reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->tp_reset_gpio)) {
+			dev_err(ctx->dev, "%s:boe_td4165: cannot get tp_reset_gpio %ld\n",
+				__func__, PTR_ERR(ctx->tp_reset_gpio));
+			//return PTR_ERR(ctx->tp_reset_gpio);
+	} else {
+			gpiod_set_value(ctx->tp_reset_gpio, 0);
+			devm_gpiod_put(ctx->dev, ctx->tp_reset_gpio);
+			usleep_range(5000,5001);
+			pr_info("%s:boe_td4165: tp_reset_gpio 0\n", __func__);
+	}
 }
 
 static const struct of_device_id boe_td4165_of_match[] = {
