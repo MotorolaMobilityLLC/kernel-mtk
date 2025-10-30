@@ -34,7 +34,10 @@
 };
 
 &lk_charger {
-        temp_t4_threshold = <59>;
+		temp_t4_threshold = <45>;
+		temp_t3_threshold = <44>;
+		temp_t1_threshold = <2>;
+		temp_t0_threshold = <1>;
         /* charging current */
         usb_charger_current = <500000>;
         ac_charger_current = <1500000>;
@@ -109,20 +112,17 @@
 
          //mmi config
          mmi,iterm-ma = <255>;
-         mmi,mmi-temp-zones =
-                        <0 4200 1020  0>,
-                        <10 4250 2550 1530>,
+         mmi,batt-max-temp = <45>;
+         mmi,batt-min-temp = <0>;
+         mmi,mmi-temp-zones = <10 4250 2550 1530>,
                         <15 4500 2550 2550>,
-                        <45 4530 3500 3500>,
-                        <60 4200 2550 0>;
+                        <45 4530 3500 3500>;
 
-         mmi,mmi-ffc-zones = <0 4200 255>,
-			<10 4500 255>,
+         mmi,mmi-ffc-zones = <10 4500 255>,
 			<15 4500 255>,
 			<25 4530 738>,
 			<35 4530 907>,
-			<45 4530 1500>,
-			<60 4200 255>;
+			<45 4530 1500>;
 
          mmi,enable-charging-limit;
          mmi,upper-limit-capacity = <65>;
