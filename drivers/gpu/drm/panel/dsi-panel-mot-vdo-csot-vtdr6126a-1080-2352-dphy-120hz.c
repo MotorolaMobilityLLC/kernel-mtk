@@ -52,7 +52,10 @@ int vtdr6126A_range_bpg_ofs[15] = {2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -1
 //panel id, reg 0xF1, value 02 05 5a 51
 #define IL_CSOT_PANEL_VENDOR_ID    0x080B6A53
 //#define IL_CSOT_PANEL_VENDOR_ID  	(csot_ILI_PANEL_VENDOR_ID | (0xF << 24))
-
+#define PANEL_EVT 1
+#define PANEL_DVT1 2
+#define PANEL_DVT2 3
+#define PANEL_PVT 4
 static int tp_gesture_flag = 0;
 /* Tracks the current backlight level to provide context for HBM/LHBM transitions */
 static int current_bl = 0;
@@ -75,6 +78,7 @@ struct csot_vtdr6126A {
 	atomic_t hbm_mode;
 	atomic_t current_fps;
 	atomic_t dc_mode;
+	int version;
 };
 
 //set enable lhbm code, on status
@@ -169,7 +173,6 @@ static void csot_vtdr6126A_dcs_write(struct csot_vtdr6126A *ctx, const void *dat
 	}
 }
 
-
 static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 {
 	//int current_fps = atomic_read(&ctx->current_fps);
@@ -194,19 +197,17 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
-	  //EXIT AOD CMD setting
-	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xA4, 0x01);
-	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x38, 0);
-	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x6F, 0x01);
-	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xA4, 0x00);
-
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x03, 0x01);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x35, 0x00);
 	//dimming on
+if(ctx->version <= PANEL_DVT1) {//dvt1 or before
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x53, 0x28);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x13);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xD0, 0x0F);
-
+} else {
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x53, 0x20);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x55, 0x10);//ACM on
+}
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x59, 0x09);//demura on
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA,0x18);//round corner on
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xB0, 0x80);
@@ -217,6 +218,18 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x6F, 0x01);//VDO mode
 	//vesa,v1.2,slice number=2,slice height=12,3.75x
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x70, 0x12, 0x00, 0x00, 0xAB, 0x30, 0x80, 0x09, 0x30, 0x04, 0x38, 0x00, 0x0C, 0x02, 0x1C, 0x02, 0x1C, 0x02, 0x00, 0x01, 0x17, 0x00, 0x20, 0x02, 0x1A, 0x00, 0x07, 0x00, 0x01, 0x00, 0xBB, 0x08, 0x7A, 0x18, 0x00, 0x10, 0xF0, 0x07, 0x10, 0x20, 0x00, 0x06, 0x0F, 0x0F, 0x33, 0x0E, 0x1C, 0x2A, 0x38, 0x46, 0x54, 0x62, 0x69, 0x70, 0x77, 0x79, 0x7B, 0x7D, 0x7E, 0x02, 0x02, 0x22, 0x00, 0x2A, 0x40, 0x2A, 0xBE, 0x3A, 0xFC, 0x3A, 0xFA, 0x3A, 0xF8, 0x3B, 0x38, 0x3B, 0x78, 0x3B, 0xB6, 0x4B, 0xB6, 0x4B, 0xF4, 0x4B, 0xF4, 0x6C, 0x34, 0x84, 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+if(ctx->version >= PANEL_DVT2) {//dvt2 or later
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x72, 0x00); //PMIC1=SC6010
+//DBV DIMING
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x13);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xD0, 0x0F);
+//MIPI Gatting Error
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x10);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x65, 0x09);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xCF, 0x5B);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x65, 0x0B);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xCF, 0xFD, 0x79);
+}
 	//SCL
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x10);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xB0, 0x05, 0x6A, 0x01, 0x3E, 0x00, 0x04, 0x38, 0x04, 0x98);
@@ -254,6 +267,7 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xB1, 0x02);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x10);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xCE, 0x20);
+if(ctx->version <= PANEL_DVT1) {//dvt1 or before
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x72, 0x00); //PMIC1=SC6010
 
 	//LHBM ratios provided by panel vendor
@@ -261,6 +275,7 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xc1, 0x0D,0xC0,0x0F,0xE4,0x12,0x08,0x1D,0x28,0x36,0xE8,0x39,0x70,0x3B,0xF8,0x3E,0x80,0x3F,0x3E,0x3F,0xFC);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xc2, 0x5E,0x52,0x73,0x50,0x44,0x62,0x40,0x34,0x4F,0x2A,0x22,0x36,0x18,0x14,0x20,0x09,0x06,0x0F,0x97,0x97,0x97,0xB4,0xB3,0xBA,0xC3,0xBF,0xCB,0xC3,0xBF,0xCB);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xc4, 0x01,0xFF,0x02,0x02,0x02,0x04,0x04,0x04,0x04,0x04,0x04,0x06,0x06,0x07,0x1B,0x16,0x1C,0x1E,0x1A,0x1F,0x21,0x20,0x25,0x28,0x28,0x2C,0x3F,0x3C,0x44,0x47,0x44,0x4D);
+}
 	//by V clear DMR LB ERR
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xff, 0x5a,0x80);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x65, 0x25);
@@ -276,10 +291,12 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 	//MTE_VRR_BASE=1,No-otp
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA,0x16);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xD1, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
+if(ctx->version <= PANEL_DVT1) {//dvt1 or before
 	//increase MIPI clk skew tolerance and close MIPI HS timeout
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xf9, 0x10);//Phy clk option increase skew tolerance
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x65, 0x0A);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF9, 0x1E);//close timeout
+}
 	//Source performance:
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xFF, 0x5A,0x81);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x65, 0x03);
@@ -288,6 +305,9 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xf3, 0x58);
 	//AOD MIPI time out off
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xFF, 0x5A,0x80);
+if(ctx->version >= PANEL_DVT2) {//dvt2 or later
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF9, 0x10);
+}
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x65, 0x0A);
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF9, 0x1E);
 	//Page off
@@ -1180,6 +1200,40 @@ static void csot_vtdr6126A_parse_panel_version(struct csot_vtdr6126A*ctx)
 }
 #endif
 
+static void lcm_parse_panel_version(struct csot_vtdr6126A *ctx)
+{
+	int rc;
+	struct device_node *chosen = of_find_node_by_name(NULL, "chosen");
+
+	ctx->version = PANEL_PVT;
+	if(chosen) {
+		u32 tmp = 0;
+
+		rc = of_property_read_u32(chosen, "mmi,panel_ver", &tmp);
+		if (!rc) {
+			if (PANEL_EVT == tmp) {
+				ctx->version = PANEL_EVT;
+			} else if(PANEL_DVT1 == tmp) {
+				ctx->version = PANEL_DVT1;
+			} else if(PANEL_DVT2 == tmp) {
+				ctx->version = PANEL_DVT2;
+			} else if(PANEL_PVT == tmp) {
+				ctx->version = PANEL_PVT;
+			} else {
+				ctx->version = PANEL_PVT;
+			}
+			pr_info("get panel_ver:%d\n", ctx->version);
+		}
+		else
+			pr_info("mmi,panel_ver not get\n");
+	}
+	else
+		pr_info("parse_panel chosen node null\n");
+
+	pr_info("parse_panel get panel_ver:%d\n", ctx->version);
+	return;
+}
+
 static int csot_vtdr6126A_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
@@ -1279,8 +1333,8 @@ static int csot_vtdr6126A_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_add(&ctx->panel);
 
-	//parse panel version for evt/dvt
-	//csot_vtdr6126A_parse_panel_version(ctx);
+	//parse panel version for evt/dvt/pvt
+	lcm_parse_panel_version(ctx);
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
