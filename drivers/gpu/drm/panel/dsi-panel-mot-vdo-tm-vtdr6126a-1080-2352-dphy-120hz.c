@@ -59,6 +59,8 @@ int vtdr6126a_range_bpg_ofs[15] = {2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -1
 #define PANEL_DVT2 3
 #define PANEL_PVT 4
 static int current_bl = 0;
+static int panel_version = 1;
+
 struct tm_vtdr6126a {
 	struct device *dev;
 	struct drm_panel panel;
@@ -956,8 +958,11 @@ static void set_lhbm_alpha(unsigned int bl_level)
 	unsigned int alpha = 0;
 	unsigned int lhbm_alpha_index = bl_level;
 
+	pr_info("%s: panel_version:%d, lhbm_alpha_index:%d\n", __func__, panel_version, lhbm_alpha_index);
+
 	pAlphaTable = &panel_lhbm_on[0];
-	if (lhbm_alpha_index >= ARRAY_SIZE(lhbm_alpha)){
+	if (panel_version <= PANEL_DVT1) {  //dev1 or before
+		if (lhbm_alpha_index >= ARRAY_SIZE(lhbm_alpha)){
 			pAlphaTable[0].para_list[1] = (bl_level >> 8) & 0xFF;
 			pAlphaTable[0].para_list[2] = bl_level & 0xFF;
 			pAlphaTable[1].para_list[1] = 0x10;
@@ -975,6 +980,26 @@ static void set_lhbm_alpha(unsigned int bl_level)
 			pAlphaTable[1].para_list[4] = 0xc0;
 			pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pAlphaTable->para_list[1], pAlphaTable->para_list[2]);
 		}
+	}else {  //dev 2 or more
+		if (lhbm_alpha_index >= ARRAY_SIZE(lhbm_alpha_dvt2)){
+			pAlphaTable[0].para_list[1] = (bl_level >> 8) & 0xFF;
+			pAlphaTable[0].para_list[2] = bl_level & 0xFF;
+			pAlphaTable[1].para_list[1] = 0x10;
+			pAlphaTable[1].para_list[2] = 0x00;
+			pAlphaTable[1].para_list[3] = (bl_level >> 8) & 0xFF;
+			pAlphaTable[1].para_list[4] = bl_level & 0xFF;
+			pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pAlphaTable->para_list[3], pAlphaTable->para_list[4]);
+		} else {
+			alpha = lhbm_alpha_dvt2[lhbm_alpha_index];
+			pAlphaTable[0].para_list[1] = (bl_level >> 8) & 0xFF;
+			pAlphaTable[0].para_list[2] = bl_level & 0xFF;
+			pAlphaTable[1].para_list[1] = (alpha >> 8) & 0xFF;
+			pAlphaTable[1].para_list[2] = alpha & 0xFF;
+			pAlphaTable[1].para_list[3] = 0x0d;
+			pAlphaTable[1].para_list[4] = 0xc0;
+			pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pAlphaTable->para_list[1], pAlphaTable->para_list[2]);
+		}
+	}
 }
 
 static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level, uint32_t fps)
@@ -1217,6 +1242,7 @@ static void lcm_parse_panel_version(struct tm_vtdr6126a *ctx)
 	else
 		pr_info("parse_panel chosen node null\n");
 
+	panel_version = ctx->version;
 	pr_info("parse_panel get panel_ver:%d\n", ctx->version);
 	return;
 }
