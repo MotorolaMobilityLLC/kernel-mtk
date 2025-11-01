@@ -230,10 +230,11 @@ static void boe_td4165_panel_init(struct boe_td4165 *ctx)
 	}
 
 	boe_td4165_dcs_write_seq_static(ctx, 0xB0,0x80);
+	boe_td4165_dcs_write_seq_static(ctx, 0xD6,0x00);
 	boe_td4165_dcs_write_seq_static(ctx, 0x51,0x07,0xFF);
 	boe_td4165_dcs_write_seq_static(ctx, 0x53,0x0C);
 	boe_td4165_dcs_write_seq_static(ctx, 0x55,0x00);
-	boe_td4165_dcs_write_seq_static(ctx, 0xD6,0x00);
+	boe_td4165_dcs_write_seq_static(ctx, 0x35,0x00);
 	boe_td4165_dcs_write_seq_static(ctx, 0xB0,0x83);
 	//Display On
 	boe_td4165_dcs_write_seq_static(ctx, 0x29,0x00);
@@ -1058,7 +1059,7 @@ static int boe_td4165_probe(struct mipi_dsi_device *dsi)
 	ctx->dev = dev;
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
-	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE |  MIPI_DSI_MODE_VIDEO_BURST;
+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST;
 //			 | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET
 //			 | MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
