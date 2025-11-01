@@ -5369,6 +5369,16 @@ int mtk_debug_read_ddic_cellid(unsigned char *cellid, struct cellid_item *cellid
 		else
 			cmd_msg->rx_len[0] = len;
 
+		if (cellid_info->panel_cellid_generic_read) {
+			cmd_msg->type[0] = 0x24;
+
+			if (cellid_info->panel_cellid_offset_reg) {
+				tx[0] = cellid_info->panel_cellid_offset_reg;
+				tx[1] = cellid_info->panel_cellid_offset + dsi_read_max*k;
+			}
+
+			cmd_msg->tx_len[0] = 2;
+		}
 
 		ret = mtk_ddic_dsi_read_cmd(cmd_msg);
 		if (ret != 0) {

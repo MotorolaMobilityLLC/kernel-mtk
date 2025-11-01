@@ -481,6 +481,7 @@ struct cellid_item {
 	unsigned char page_table[PAGE_MAX_NUM][PAGE_CMDS_LEN];
 	unsigned char page_post_table[PAGE_MAX_NUM][PAGE_CMDS_LEN]; //switch page back after read
 	int page_cmd_always; //always set page when set cmd
+	int panel_cellid_generic_read; //DSI read use data type 24h with 2 parameters.
 };
 
 struct mtk_panel_params {

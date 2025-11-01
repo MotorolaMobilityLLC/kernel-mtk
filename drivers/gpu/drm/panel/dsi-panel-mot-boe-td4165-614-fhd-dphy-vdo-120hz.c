@@ -453,19 +453,21 @@ static struct mtk_panel_params ext_params_60hz = {
 	},
 
 	.lcm_cellid = {
-		.panel_cellid_reg = 0x00,
-		.panel_cellid_reg_seq = 1,
+		.panel_cellid_reg = 0xBF,
+		//.panel_cellid_reg_seq = 1,
 		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 1,
-		//.panel_cellid_esd_dis = 1,
-/*		.page_table = {
-			{0x15,0x02,0xFF,0x22},
-			{0x15,0x02,0xFB,0x01}
+		.panel_cellid_read_max = 8,
+		.panel_cellid_offset_reg = 0xBF,
+		.panel_cellid_offset = 0x05,
+		.panel_cellid_generic_read = 1,
+		.panel_cellid_esd_dis = 1,
+		//.page_cmd_always = 1,
+		.page_table = {
+			{0x15,0x02,0xB0,0x80}
 		},
 		.page_post_table = {
-			{0x15,0x02,0xFF,0x10},
-			{0x15,0x02,0xFB,0x01}
-		},*/
+			{0x15,0x02,0xB0,0x83}
+		},
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x01012891,
@@ -548,19 +550,21 @@ static struct mtk_panel_params ext_params_90hz = {
 	},
 
 	.lcm_cellid = {
-		.panel_cellid_reg = 0x00,
-		.panel_cellid_reg_seq = 1,
+		.panel_cellid_reg = 0xBF,
+		//.panel_cellid_reg_seq = 1,
 		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 1,
-		//.panel_cellid_esd_dis = 1,
-/*		.page_table = {
-			{0x15,0x02,0xFF,0x22},
-			{0x15,0x02,0xFB,0x01}
+		.panel_cellid_read_max = 8,
+		.panel_cellid_offset_reg = 0xBF,
+		.panel_cellid_offset = 0x05,
+		.panel_cellid_generic_read = 1,
+		.panel_cellid_esd_dis = 1,
+		//.page_cmd_always = 1,
+		.page_table = {
+			{0x15,0x02,0xB0,0x80}
 		},
 		.page_post_table = {
-			{0x15,0x02,0xFF,0x10},
-			{0x15,0x02,0xFB,0x01}
-		},*/
+			{0x15,0x02,0xB0,0x83}
+		},
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x01012891,
@@ -642,19 +646,21 @@ static struct mtk_panel_params ext_params_120hz = {
 	},
 
 	.lcm_cellid = {
-		.panel_cellid_reg = 0x00,
-		.panel_cellid_reg_seq = 1,
+		.panel_cellid_reg = 0xBF,
+		//.panel_cellid_reg_seq = 1,
 		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 1,
-		//.panel_cellid_esd_dis = 1,
-/*		.page_table = {
-			{0x15,0x02,0xFF,0x22},
-			{0x15,0x02,0xFB,0x01}
+		.panel_cellid_read_max = 8,
+		.panel_cellid_offset_reg = 0xBF,
+		.panel_cellid_offset = 0x05,
+		.panel_cellid_generic_read = 1,
+		.panel_cellid_esd_dis = 1,
+		//.page_cmd_always = 1,
+		.page_table = {
+			{0x15,0x02,0xB0,0x80}
 		},
 		.page_post_table = {
-			{0x15,0x02,0xFF,0x10},
-			{0x15,0x02,0xFB,0x01}
-		},*/
+			{0x15,0x02,0xB0,0x83}
+		},
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x01012891,
