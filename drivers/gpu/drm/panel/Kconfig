@@ -1251,6 +1251,16 @@ config DRM_PANEL_NT37705_ALPHA_CMD_SPR
 	  and uses 24-bits RGB per pixel. It provides a MIPI DSI
 	  interface to host.
 
+config DRM_PANEL_MOT_VDO_BOE_ILI77600A_1080_2400_DPHY_120HZ
+        tristate "BOE 1080*2400 120 HZ VDO ILI77600A panel"
+        depends on OF
+        depends on DRM_MIPI_DSI
+        depends on BACKLIGHT_CLASS_DEVICE
+        default n
+        help
+          Say Y here if you want to enable support for BOE_ILI77600A_1080_2400_DPHY_120HZ
+          panel. It provides a MIPI DSI interface to host.
+
 config DRM_PANEL_NUM_NO_LIMIT
 	tristate "mtk panel num no limit"
 	depends on OF
