@@ -2706,9 +2706,12 @@ static void mtk_battery_daemon_handler(struct mtk_battery *gm, void *nl_data,
 	case FG_DAEMON_CMD_GET_RAC:
 	{
 		int rac;
-
+#if !IS_ENABLED(CONFIG_REMOVE_GAUGE_IMIX_FEATURE)
 		rac = gauge_get_int_property(
 				GAUGE_PROP_PTIM_RESIST);
+#else
+		rac = 0;
+#endif
 		ret_msg->fgd_data_len += sizeof(rac);
 		memcpy(ret_msg->fgd_data, &rac, sizeof(rac));
 		bm_debug("[K]FG_DAEMON_CMD_GET_RAC=%d\n", rac);
@@ -3411,8 +3414,14 @@ static void mtk_battery_daemon_handler(struct mtk_battery *gm, void *nl_data,
 	break;
 	case FG_DAEMON_CMD_GET_IMIX:
 	{
+#if !IS_ENABLED(CONFIG_REMOVE_GAUGE_IMIX_FEATURE)
 		int imix = UNIT_TRANS_10 * fg_get_imix(gm);
+#else
+		int imix;
+		bool valid = 0;
 
+		imix = gauge_get_average_current(gm, &valid);
+#endif
 		ret_msg->fgd_data_len += sizeof(imix);
 		memcpy(ret_msg->fgd_data, &imix, sizeof(imix));
 		bm_debug("[K]FG_DAEMON_CMD_GET_IMIX=%d\n", imix);

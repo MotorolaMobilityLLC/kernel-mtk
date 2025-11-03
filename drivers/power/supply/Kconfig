@@ -1172,4 +1172,10 @@ config MOTO_1200_CYCLE
         help
           This is to enable MOTO supports of 1200 cycle feature.
 
+config REMOVE_GAUGE_IMIX_FEATURE
+	tristate "Remove gauge imix feature Suport"
+	default n
+	help
+	  Say M for Remove gauge imix feature Support
+
 endif # POWER_SUPPLY

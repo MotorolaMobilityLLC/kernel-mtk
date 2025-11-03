@@ -33,6 +33,10 @@
                 mmi,adc-channel-vbat = <100>;
 };
 
+&pbm {
+        status = "disabled";
+};
+
 &lk_charger {
 		temp_t4_threshold = <45>;
 		temp_t3_threshold = <44>;
@@ -45,6 +49,7 @@
         non_std_ac_charger_current = <1000000>;
         charging_host_charger_current = <1500000>;
         boot_battery_voltage = <3560000>;
+        disable-calc-dlpt-imix-r= <1>;
 };
 
 
