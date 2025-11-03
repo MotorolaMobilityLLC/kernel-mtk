@@ -28,7 +28,7 @@
 &i2c5 {
 	clock-frequency = <400000>;
 	sgm4154x_chg: sgm41542@6B {
-		status = "okay";
+		status = "disabled";
 		compatible = "sgm,sgm41542";
 		reg = <0x6B>;
                 io-channels = <&pmic_adc AUXADC_VCDT>;
@@ -102,7 +102,7 @@
 	cps8851_pd: cps8851@4e {
 		compatible = "cps,cps8851";
 		reg = <0x4e>;
-		status = "okay";
+		status = "disabled";
 		cp-tcpc,name = "type_c_port0"; /* tcpc_device's name */
 		cp-tcpc,role_def = <5>; /* 0: Unknown, 1: SNK, 2: SRC */
 					/* 3: DRP, 4: Try.SRC, 5: Try.SNK */
@@ -248,6 +248,149 @@
 			};
 		};
 	};
+	upm7610_pd:upm7610@60 {
+		compatible = "up,upm7610";
+		reg = <0x60>;
+		status = "okay";
+		rt-tcpc,name = "type_c_port0"; /* tcpc_device's name */
+		rt-tcpc,role_def = <5>; /* 0: Unknown, 1: SNK, 2: SRC */
+					/* 3: DRP, 4: Try.SRC, 5: Try.SNK */
+		rt-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
+		rt-tcpc,vconn_supply  = <1>;  /* 0: Never, 1: Always, */
+					      /* 2: EMarkOnly, 3: StartOnly */
+		rt-tcpc,notifier_supply_num = <3>;
+		upm7610pd,intr_gpio = <&pio 8 0x0>;
+		upm7610pd,intr_gpio_num = <8>;
+		pd-data {
+			pd,vid = <0x362f>;
+			pd,pid = <0x7610>;
+			pd,source-cap-ext = <0x7610362f 0x00000000 0x00000000
+					     0x00000000 0x00000000 0x02000000>;
+			pd,mfrs = "UnisemipowerTCPC";
+
+			/*
+			 *	VSAFE5V = 0, MAX_POWER = 1, CUSTOM = 2,
+			 *	MAX_POWER_LV = 0x21, MAX_POWER_LVIC = 0x31
+			 *	MAX_POWER_HV = 0x41, MAX_POWER_HVIC = 0x51
+			 */
+			pd,charging_policy= <0x31>;
+
+			/*
+			 * Fixed 5V, 500 mA <0x00019032>
+			 * Fixed 5V, 1A <0x00019064>
+			 * Fixed 5V, 2A <0x000190c8>
+			 * Fixed 5V, 3A <0x0001912c>
+			 * Fixed 9V, 500 mA <0x0002d032>
+			 * Fixed 9V, 1A <0x0002d064>
+			 * Fixed 9V, 2A <0x0002d0c8>
+			 * Fixed 9V, 3A <0x0002d12c>
+			 * Variable 5-9V, 1A <0x8642d064>
+			 * Variable 5-9V, 2A <0x8642d0c8>
+			 * Variable 5-9V, 3A <0x8642d12c>
+			 * PPS 3V~5.9V, 3A <0xC0761E3C>
+			 */
+			pd,source-pdo-size = <1>;
+			pd,source-pdo-data = <0x00019032>;
+			pd,sink-pdo-size = <1>;
+			pd,sink-pdo-data = <0x000190c8>;
+
+			/*
+			 * No DP, host + device
+			 *	pd,id-vdo-size = <6>;
+			 *	pd,id-vdo-data = <0xd14029cf 0x0 0x17110000
+						  0x41800000 0x0 0x21800000>;
+			 * With DP
+			 *	pd,id-vdo-size = <6>;
+			 *	pd,id-vdo-data = <0xd54029cf 0x0 0x17110000
+						  0x41800000 0x0 0x21800000>;
+			 */
+
+			pd,id-vdo-size = <6>;
+			pd,id-vdo-data = <0xd140362f 0x0 0x76100000
+					  0x41800000 0x0 0x21800000>;
+
+			bat,nr = <1>;
+			pd,country_nr = <0>;
+
+			bat-info0 {
+				bat,vid = <0x362f>;
+				bat,pid = <0x7610>;
+				bat,mfrs = "bat1";
+				bat,design_cap = <3000>;
+			};
+
+			//bat-info1 {
+			//	bat,vid = <0x8abc>;
+			//	bat,pid = <0x5234>;
+			//	bat,mfrs = "bat2";
+			//	bat,design_cap = <4000>;
+			//};
+
+			//country0 {
+			//	pd,country_code = <0x5457>;
+			//	pd,country_len = <2>; /* max len = 26 */
+			//	pd,country_data = <0xff 0xff>;
+			//};
+
+			//country1 {
+			//	pd,country_code = <0x5553>;
+			//	pd,country_len = <3>; /* max len = 26 */
+			//	pd,country_data = <0xf1 0xf2 0xf3>;
+			//};
+		};
+		dpm_caps {
+			local_dr_power;
+			local_dr_data;
+			//local_ext_power;
+			local_usb_comm;
+			//local_usb_suspend;
+			//local_high_cap;
+			//local_give_back;
+			local_no_suspend;
+			local_vconn_supply;
+
+			//attemp_discover_cable_dfp;
+			attemp_enter_dp_mode;
+			attemp_discover_cable;
+			attemp_discover_id;
+
+			/* 0: disable, 1: prefer_snk, 2: prefer_src */
+			pr_check = <0>;
+			//pr_reject_as_source;
+			//pr_reject_as_sink;
+			//pr_check_gp_source;
+			//pr_check_gp_sink;
+
+			/* 0: disable, 1: prefer_ufp, 2: prefer_dfp */
+			dr_check = <0>;
+			//dr_reject_as_dfp;
+			//dr_reject_as_ufp;
+		};
+		displayport {
+			/* connection type = "both", "ufp_d", "dfp_d" */
+			1st_connection = "dfp_d";
+			2nd_connection = "dfp_d";
+			signal,dp_v13;
+			//signal,dp_gen2;
+			//usbr20_not_used;
+			typec,receptacle;
+			ufp_d {
+				//pin_assignment,mode_a;
+				//pin_assignment,mode_b;
+				//pin_assignment,mode_c;
+				//pin_assignment,mode_d;
+				//pin_assignment,mode_e;
+			};
+			dfp_d {
+				//pin_assignment,mode_a;
+				//pin_assignment,mode_b;
+				pin_assignment,mode_c;
+				pin_assignment,mode_d;
+				pin_assignment,mode_e;
+				//pin_assignment,mode_f;
+			};
+		};
+	};
 };
 
 &i2c5 {
@@ -316,7 +459,7 @@
 &i2c0 {
 	clock-frequency = <400000>;
 	sgm41606s_standalone:bq25960-standalone@65 {
-		status = "okay";
+		status = "disabled";
 		compatible = "ti,bq25960-standalone";
 		reg = <0x65>;
 
@@ -333,7 +476,7 @@
 	};
 	nu2115: nu2115-standalone@6D {
 		compatible = "cp,nu2115";
-		status = "okay";
+		status = "disabled";
 		charger_name = "primary_dvchg";
 		reg = <0x6D>;
 		nu2115,intr-gpios = <&pio 5 0x0>;
@@ -376,16 +519,18 @@
 };
 
 &extcon_usb {
-	charger = <&sgm4154x_chg>;
+	charger = <&sc8989x_chg>;
         vbus-current = <1200000>;
 };
 
 &mtk_ctd {
-	bc12 = <&sgm4154x_chg>;
+	bc12 = <&sc8989x_chg>;
 };
 &charger {
-         charger = <&sgm4154x_chg>;
-         charger_configuration= <3>;
+         //mmi,typecotp-charger;
+         charger = <&sc8989x_chg>;
+         //mmi,mos_gpio = <&pio 30 0>;
+         charger_configuration= <0>;
          /* common */
          battery_cv = <4530000>;
          max_charger_voltage = <15000000>;
@@ -397,7 +542,7 @@
          //enable_sw_jeita;
 
          /*pe5 && pdc*/
-         fast_charging_indicator = <0x4014>;
+         fast_charging_indicator = <0x14>;
 
          /* charging current */
          usb_charger_current_suspend = <0>;
@@ -454,6 +599,7 @@
 &mmi_pehv {
 	compatible = "mmi,pehv";
 	gauge = <&mtk_gauge>;
+	status = "disabled";
 	polling-interval = <10000>;
 	vbat-cv = <4560>;
 	start-soc-min = <0>;
@@ -614,7 +760,7 @@
 
 	SHUTDOWN_1_TIME = <(30)>;
 	ACTIVE_TABLE = <(5)>;
-	R_FG_VALUE = <(2)>;
+	R_FG_VALUE = <(5)>;
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
 	CAR_TUNE_VALUE = <(101)>;
 
@@ -623,4 +769,8 @@
 	#include "bat_setting/mt6835_battery_sp52_swd_5200mah.dtsi"
 	#include "bat_setting/mt6835_battery_sp52_cos_5200mah.dtsi"
 
+};
+
+&fusb304 {
+	status = "disabled";
 };

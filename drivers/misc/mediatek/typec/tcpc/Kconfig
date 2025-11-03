@@ -35,6 +35,12 @@ config TCPC_CPS8851
 	help
 	  support oem_tcpc_pd_cps8851
 
+config TCPC_UPM7610
+	tristate "oem tcpc pd upm7610"
+	default n
+	help
+	  support oem_tcpc_pd_upm7610
+
 config TCPC_AW35615
 	tristate "AW35615 TypeC port Controller Driver"
 	depends on TCPC_CLASS
