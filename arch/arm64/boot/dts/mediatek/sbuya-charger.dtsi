@@ -181,9 +181,19 @@
 };
 
 &mtk_gauge {
-	/* bat_id channel */
-	io-channels = <&auxadc 1>;
-	io-channel-names = "batteryID-channel";
+	io-channels = <&pmic_adc AUXADC_BAT_TEMP>,
+			<&pmic_adc AUXADC_BATADC>,
+			<&pmic_adc AUXADC_VBIF>,
+			<&pmic_adc AUXADC_IMP>,
+			<&pmic_adc AUXADC_IMIX_R>,
+			<&auxadc 1>;  /* batteryid io-channels is mt6835 auxadc1 */
+	io-channel-names = "pmic_battery_temp",
+			"pmic_battery_voltage",
+			"pmic_bif_voltage",
+			"pmic_ptim_voltage",
+			"pmic_ptim_r",
+			"batteryID-channel";
+
 	/* bat_id vmin_vmax_id */
 	battery_v_id = <100 500 0
 	1300 1700 1>;
