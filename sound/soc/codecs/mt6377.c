@@ -33,6 +33,13 @@
 #define MAX_DEBUG_WRITE_INPUT 256
 #define CODEC_SYS_DEBUG_SIZE (1024 * 32)
 
+// AW87xxx add
+#if IS_ENABLED(CONFIG_SND_SOC_SYDNEY_SYDNYL_MULTI_AUDIO_PA)
+#include "../mediatek/common/mtk-sp-spk-amp.h"
+extern int aw87xxx_add_codec_controls(void *codec);
+#endif
+// AW87XXX Add end
+
 static ssize_t mt6377_codec_sysfs_read(struct file *filep, struct kobject *kobj,
 				       struct bin_attribute *attr,
 				       char *buf, loff_t offset, size_t size);
@@ -5874,6 +5881,16 @@ static int mt6377_codec_probe(struct snd_soc_component *cmpnt)
 	snd_soc_add_component_controls(cmpnt,
 				       mt6377_snd_vow_controls,
 				       ARRAY_SIZE(mt6377_snd_vow_controls));
+//Add AW87XXX
+#if IS_ENABLED(CONFIG_SND_SOC_SYDNEY_SYDNYL_MULTI_AUDIO_PA)
+	if (audiopa_get_type() == AUDIOPA_AW87564) {
+		ret = aw87xxx_add_codec_controls((void *)cmpnt);
+		if(ret<0){
+			pr_err("%s:pa add_codec_controls failed,err %d\n",__func__,ret);
+			return ret;
+		}
+	}
+#endif
 	priv->hp_current_calibrate_val = get_hp_current_calibrate_val(priv);
 
 	return mt6377_codec_init_reg(cmpnt);

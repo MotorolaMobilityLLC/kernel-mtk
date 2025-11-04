@@ -1527,6 +1527,23 @@ config SND_SOC_FS181X
 	help
 	  Config of FourSemi speaker amplifier.
 
+config SND_SOC_SYDNEY_SYDNYL_MULTI_AUDIO_PA
+	tristate "SoC Audio for multi audio pa"
+	depends on I2C
+	help
+	  This option enables support for multi audio pa.
+
+config SND_SOC_AW87XXX
+	tristate "SoC Audio for awinic AW87XXX Smart K PA"
+	depends on I2C
+	help
+	  This option enables support for AW87XXX Smart K PA.
+
+config SND_SOC_SIPA
+	tristate "SoC Audio for SIPA Smart K PA"
+	depends on I2C
+	help
+	  This option enables support for SIPA Smart K PA.
 
 config SND_SOC_TLV320AIC23
 	tristate

@@ -26,6 +26,13 @@
 #endif
 // FourSemi Add V5 End
 
+// Sipa add
+#if IS_ENABLED(CONFIG_SND_SOC_SYDNEY_SYDNYL_MULTI_AUDIO_PA)
+#include "../common/mtk-sp-spk-amp.h"
+#include "../../codecs/sipa/sipa_aux_dev_if.h"
+#endif
+// Sipa Add end
+
 /*
  * if need additional control for the ext spk amp that is connected
  * after Lineout Buffer / HP Buffer on the codec, put the control in
@@ -1480,8 +1487,18 @@ static int mt6835_mt6377_dev_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "can't find scp audio node\n");
 	}
 #endif
-
 	card->dev = &pdev->dev;
+//add sipa
+#if IS_ENABLED(CONFIG_SND_SOC_SYDNEY_SYDNYL_MULTI_AUDIO_PA)
+	if (audiopa_get_type() == AUDIOPA_SIA8168) {
+		ret = soc_codec_conf_sipa(pdev, card);
+		if (ret) {
+			dev_err(&pdev->dev, "%s soc_codec_conf_sipa fail %d\n",
+					__func__, ret);
+			return ret;
+		}
+	}
+#endif
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
 	if (ret)
 		dev_err(&pdev->dev, "%s snd_soc_register_card fail %d\n",
