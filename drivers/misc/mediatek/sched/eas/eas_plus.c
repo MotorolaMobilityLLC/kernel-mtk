@@ -530,7 +530,7 @@ void mtk_set_wake_flags(void *data, int *wake_flags, unsigned int *mode)
 		*wake_flags &= ~WF_SYNC;
 }
 
-unsigned int new_idle_balance_interval_ns  =  500000;
+unsigned int new_idle_balance_interval_ns  =  1000000;
 unsigned int thermal_headroom_interval_tick =  1;
 
 void set_newly_idle_balance_interval_us(unsigned int interval_us)
