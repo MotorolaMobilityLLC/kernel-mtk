@@ -3435,10 +3435,36 @@ static int mmi_get_fg_v_soc(void)
 	return gauge->gm->fg_cust_data.v_soc;
 }
 
+bool mmi_get_fg_force_notify_full(void)
+{
+	struct mtk_gauge *gauge;
+	struct power_supply *psy;
+
+	psy = power_supply_get_by_name("mtk-gauge");
+	if (psy == NULL) {
+		pr_err("[%s]psy is not rdy\n", __func__);
+		return false;
+	}
+
+	gauge = (struct mtk_gauge *)power_supply_get_drvdata(psy);
+	if (gauge == NULL) {
+		pr_err("[%s]mtk_gauge is not rdy\n", __func__);
+		return false;
+	}
+
+	pr_info("[%s]force_notify_gauge_full is %d\n", __func__, gauge->gm->force_notify_gauge_full);
+
+	return gauge->gm->force_notify_gauge_full;
+}
+
 static bool mmi_get_battery_is_hw_chrg_done(struct mtk_charger *info)
 {
 	bool chg_done = false;
 	int fg_c_soc,fg_v_soc;
+
+	if (!mmi_get_fg_force_notify_full()) {
+		return false;
+	}
 
 	fg_c_soc = mmi_get_fg_c_soc();
 	fg_v_soc = mmi_get_fg_v_soc();
