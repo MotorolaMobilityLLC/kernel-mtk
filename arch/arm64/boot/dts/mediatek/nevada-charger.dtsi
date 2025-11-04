@@ -429,6 +429,7 @@
 	R_FG_VALUE = <(5)>;
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
 	CAR_TUNE_VALUE = <(101)>;
+	FORCE_NOTIFY_GAUGE_FULL = <(1)>;
 
 	df-serialnum = "ATLRL52NVT";
 	#include "bat_setting/mt6835_battery_rl52_atl_5200mah.dtsi"

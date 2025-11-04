@@ -1794,6 +1794,7 @@ void fg_custom_init_from_header(struct mtk_battery *gm)
 	gm->ext_hwocv_swocv_lt_temp = EXT_HWOCV_SWOCV_LT_TEMP;
 
 	gm->no_prop_timeout_control = NO_PROP_TIMEOUT_CONTROL;
+	gm->force_notify_gauge_full = 0;
 
 	fg_cust_data->dc_ratio_sel = DC_RATIO_SEL;
 	fg_cust_data->dc_r_cnt = DC_R_CNT;
@@ -2274,6 +2275,12 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 
 	fg_read_dts_val(np, "NO_BAT_TEMP_COMPENSATE",
 		&(gm->no_bat_temp_compensate), 1);
+
+	fg_read_dts_val(np, "FORCE_NOTIFY_GAUGE_FULL",
+		&(gm->force_notify_gauge_full), 1);
+
+	bm_err("force_notify_gauge_full = %d\n",
+		gm->force_notify_gauge_full);
 
 	fg_read_dts_val(np, "CURR_MEASURE_20A", &(fg_cust_data->curr_measure_20a), 1);
 

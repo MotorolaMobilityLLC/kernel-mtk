@@ -2814,7 +2814,7 @@ static void mtk_battery_daemon_handler(struct mtk_battery *gm, void *nl_data,
 
 #else
 		union power_supply_propval online = {0};
-		if (!IS_ERR_OR_NULL(gm->bs_data.chg_psy)) {
+		if ((gm->force_notify_gauge_full == true) && !IS_ERR_OR_NULL(gm->bs_data.chg_psy)) {
 			power_supply_get_property(gm->bs_data.chg_psy, POWER_SUPPLY_PROP_ONLINE, &online);
 			if (online.intval || (gm->bs_data.bat_status == POWER_SUPPLY_STATUS_CHARGING ||
 				gm->bs_data.bat_status == POWER_SUPPLY_STATUS_FULL))
@@ -4881,7 +4881,7 @@ void notify_fg_chr_full(struct mtk_battery *gm)
 		bm_err("[fg_chr_full_int_handler]\n");
 		wakeup_fg_algo(gm, FG_INTR_CHR_FULL);
 		fg_int_event(gm, EVT_INT_CHR_FULL);
-	} else {
+	} else if (gm->force_notify_gauge_full == true) {
 		bm_err("[schedule_delayed_work fg_delay_update_full_dwork]\n");
 		schedule_delayed_work(&gm->fg_delay_update_full_dwork, msecs_to_jiffies(10000));
 	}
