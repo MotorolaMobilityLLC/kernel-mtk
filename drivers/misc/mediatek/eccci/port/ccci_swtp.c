@@ -326,8 +326,14 @@ SWTP_INIT_END:
 
 }
 
+static struct workqueue_struct *swtp_workqueue;
 int swtp_init(void)
 {
+	swtp_workqueue = alloc_workqueue("swtp_workqueue", WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
+	if (!swtp_workqueue) {
+		CCCI_BOOTUP_LOG(0, SYS, "Failed to create swtp workqueue\n");
+		return -ENOMEM;
+	}
 	/* init woke setting */
 	INIT_DELAYED_WORK(&swtp_data.init_delayed_work,
 		swtp_init_delayed_work);
@@ -347,7 +353,7 @@ int swtp_init(void)
 	spin_lock_init(&swtp_data.spinlock);
 
 	/* schedule init work */
-	schedule_delayed_work(&swtp_data.init_delayed_work, HZ);
+	queue_delayed_work(swtp_workqueue, &swtp_data.init_delayed_work, HZ);
 
 	CCCI_BOOTUP_LOG(0, SYS, "%s end, init_delayed_work scheduled\n",
 		__func__);
