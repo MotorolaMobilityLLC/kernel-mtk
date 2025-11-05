@@ -73,11 +73,11 @@
 #define DSC_XMIT_DELAY              512
 #define DSC_DEC_DELAY               481
 #define DSC_SCALE_VALUE             32
-#define DSC_INCREMENT_INTERVAL      216
+#define DSC_INCREMENT_INTERVAL      171
 #define DSC_DECREMENT_INTERVAL      6
 #define DSC_LINE_BPG_OFFSET         12
-#define DSC_NFL_BPG_OFFSET          2731
-#define DSC_SLICE_BPG_OFFSET        3124
+#define DSC_NFL_BPG_OFFSET          3511
+#define DSC_SLICE_BPG_OFFSET        3905
 #define DSC_INITIAL_OFFSET          6144
 #define DSC_FINAL_OFFSET            4336
 #define DSC_FLATNESS_MINQP          3
