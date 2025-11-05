@@ -15999,6 +15999,11 @@ pointer_reference {
   pointee_type_id: 0x98da7358
 }
 pointer_reference {
+  id: 0x2ca700b4
+  kind: POINTER
+  pointee_type_id: 0x98dce44f
+}
+pointer_reference {
   id: 0x2ca7a402
   kind: POINTER
   pointee_type_id: 0x98de7695
@@ -121102,6 +121107,12 @@ member {
   offset: 64
 }
 member {
+  id: 0xea103e38
+  name: "local_id"
+  type_id: 0x4585663f
+  offset: 96
+}
+member {
   id: 0xeae65a45
   name: "local_id"
   type_id: 0xb3e7bac9
@@ -121142,10 +121153,21 @@ member {
   offset: 64
 }
 member {
+  id: 0x5a60eb21
+  name: "local_node"
+  type_id: 0x0490bb4a
+}
+member {
   id: 0x7dcf9bec
   name: "local_out"
   type_id: 0x2d2736e0
   offset: 768
+}
+member {
+  id: 0x52d5b4d6
+  name: "local_port"
+  type_id: 0x4585663f
+  offset: 64
 }
 member {
   id: 0x5b66efeb
@@ -166736,6 +166758,12 @@ member {
   offset: 2144
 }
 member {
+  id: 0xb57965ef
+  name: "remote_id"
+  type_id: 0x4585663f
+  offset: 224
+}
+member {
   id: 0xb58f02ec
   name: "remote_id"
   type_id: 0xb3e7bac9
@@ -166766,10 +166794,22 @@ member {
   offset: 2064
 }
 member {
+  id: 0xb8316d10
+  name: "remote_node"
+  type_id: 0x0490bb4a
+  offset: 128
+}
+member {
   id: 0x17a11866
   name: "remote_oob_data"
   type_id: 0xd3c80119
   offset: 30080
+}
+member {
+  id: 0x1c084f9b
+  name: "remote_port"
+  type_id: 0x4585663f
+  offset: 192
 }
 member {
   id: 0xadd03a27
@@ -272690,6 +272730,20 @@ struct_union {
   }
 }
 struct_union {
+  id: 0x98dce44f
+  kind: STRUCT
+  name: "v4l2_fwnode_link"
+  definition {
+    bytesize: 32
+    member_id: 0x5a60eb21
+    member_id: 0x52d5b4d6
+    member_id: 0xea103e38
+    member_id: 0xb8316d10
+    member_id: 0x1c084f9b
+    member_id: 0xb57965ef
+  }
+}
+struct_union {
   id: 0xccd4dc1a
   kind: STRUCT
   name: "v4l2_h264_dpb_entry"
@@ -303740,6 +303794,11 @@ function {
   parameter_id: 0x2cd31328
 }
 function {
+  id: 0x1bb191be
+  return_type_id: 0x48b5725f
+  parameter_id: 0x2ca700b4
+}
+function {
   id: 0x1bb3429a
   return_type_id: 0x48b5725f
   parameter_id: 0x2cac4c27
@@ -331108,6 +331167,12 @@ function {
   parameter_id: 0x1d19a9d5
 }
 function {
+  id: 0x9bdbe709
+  return_type_id: 0x6720d32f
+  parameter_id: 0x1a8d1bcb
+  parameter_id: 0x3e10b518
+}
+function {
   id: 0x9bdbf970
   return_type_id: 0x6720d32f
   parameter_id: 0x18bd6530
@@ -331872,6 +331937,12 @@ function {
   parameter_id: 0x31f49752
   parameter_id: 0x4585663f
   parameter_id: 0xf1a6dfed
+}
+function {
+  id: 0x9c1651ff
+  return_type_id: 0x6720d32f
+  parameter_id: 0x0490bb4a
+  parameter_id: 0x2ca700b4
 }
 function {
   id: 0x9c1677f9
@@ -400512,6 +400583,15 @@ elf_symbol {
   full_name: "regulator_count_voltages"
 }
 elf_symbol {
+  id: 0x1e484088
+  name: "regulator_desc_list_voltage_linear"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xfdc87a06
+  type_id: 0x92f2a156
+  full_name: "regulator_desc_list_voltage_linear"
+}
+elf_symbol {
   id: 0x4cf1070c
   name: "regulator_desc_list_voltage_linear_range"
   is_defined: true
@@ -417049,6 +417129,24 @@ elf_symbol {
   full_name: "v4l2_fwnode_endpoint_parse"
 }
 elf_symbol {
+  id: 0x0ce25dcd
+  name: "v4l2_fwnode_parse_link"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xf6f698ec
+  type_id: 0x9c1651ff
+  full_name: "v4l2_fwnode_parse_link"
+}
+elf_symbol {
+  id: 0xccddef4c
+  name: "v4l2_fwnode_put_link"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x84aef099
+  type_id: 0x1bb191be
+  full_name: "v4l2_fwnode_put_link"
+}
+elf_symbol {
   id: 0x6eac099d
   name: "v4l2_g_ctrl"
   is_defined: true
@@ -417724,6 +417822,15 @@ elf_symbol {
   full_name: "vb2_destroy_framevec"
 }
 elf_symbol {
+  id: 0xa9c4bcc0
+  name: "vb2_discard_done"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xd128c014
+  type_id: 0x163b1761
+  full_name: "vb2_discard_done"
+}
+elf_symbol {
   id: 0x03410164
   name: "vb2_dma_contig_memops"
   is_defined: true
@@ -417983,6 +418090,15 @@ elf_symbol {
   crc: 0x777cb86f
   type_id: 0x9b23a5dd
   full_name: "vb2_queue_init"
+}
+elf_symbol {
+  id: 0x4b500e3e
+  name: "vb2_queue_init_name"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xd09bfd6a
+  type_id: 0x9bdbe709
+  full_name: "vb2_queue_init_name"
 }
 elf_symbol {
   id: 0xe44c6ac8
@@ -427421,6 +427537,7 @@ interface {
   symbol_id: 0xf2357f9f
   symbol_id: 0xc16e78d8
   symbol_id: 0xabbc8603
+  symbol_id: 0x1e484088
   symbol_id: 0x4cf1070c
   symbol_id: 0x9e48588d
   symbol_id: 0x3945d02a
@@ -429259,6 +429376,8 @@ interface {
   symbol_id: 0x7ba36329
   symbol_id: 0x2643c2c9
   symbol_id: 0xcb8b4f14
+  symbol_id: 0x0ce25dcd
+  symbol_id: 0xccddef4c
   symbol_id: 0x6eac099d
   symbol_id: 0x58330374
   symbol_id: 0xdb18c924
@@ -429334,6 +429453,7 @@ interface {
   symbol_id: 0xc2eed4fe
   symbol_id: 0x7fb65c50
   symbol_id: 0x61c086ce
+  symbol_id: 0xa9c4bcc0
   symbol_id: 0x03410164
   symbol_id: 0xd187d6a0
   symbol_id: 0xde8f3957
@@ -429363,6 +429483,7 @@ interface {
   symbol_id: 0xdfb89e7e
   symbol_id: 0x33a2f100
   symbol_id: 0xcdf82e93
+  symbol_id: 0x4b500e3e
   symbol_id: 0xe44c6ac8
   symbol_id: 0xd60bdd76
   symbol_id: 0x0b1c01d2
