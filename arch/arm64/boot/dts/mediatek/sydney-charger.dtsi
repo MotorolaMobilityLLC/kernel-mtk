@@ -72,6 +72,7 @@
 		sc,sc8989x,force_vindpm = <0>;
 		sc,sc8989x,vindpm = <18>; /*2600 + val * 100*/
 		mmi,hvdcp-support;
+		mmi,only_buck_qc_support;
 	};
 	/* sydney uses aw35615fcr*/
         aw35615@24 {
