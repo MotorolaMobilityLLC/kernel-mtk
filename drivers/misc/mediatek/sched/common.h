@@ -56,7 +56,6 @@ struct mtk_task {
 	u64 reserved0[MTK_TASK_FLAG];
 	struct vip_task_struct	vip_task;
 	struct moto_stats_task_struct moto_stats_task;
-	u64 on_rq_timestamp;
 };
 
 struct vip_task_group {
