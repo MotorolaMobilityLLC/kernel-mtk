@@ -149,6 +149,7 @@ static int fs15v1_set_scene(struct frsm_dev *frsm_dev,
 		struct scene_table *scene)
 {
 	const struct scene_table *cur_scene;
+	uint16_t val_key;
 	uint16_t val;
 	int ret;
 
@@ -162,14 +163,14 @@ static int fs15v1_set_scene(struct frsm_dev *frsm_dev,
 	if (cur_scene && cur_scene->reg == scene->reg)
 		return 0;
 
-	ret = frsm_reg_read(frsm_dev, FS15V1_1FH_ACCKEY, &val);
+	ret = frsm_reg_read(frsm_dev, FS15V1_1FH_ACCKEY, &val_key);
 	if (ret)
 		return ret;
 
 	ret  = frsm_write_reg_table(frsm_dev, scene->reg);
-	ret |= frsm_reg_write(frsm_dev, FS15V1_1FH_ACCKEY, val);
 	ret |= frsm_reg_read(frsm_dev, FS15V1_3FH_LNMCTRL, &val);
 	frsm_dev->state_lnm = !!(val & FS15V1_3FH_LNMODE_MASK);
+	ret |= frsm_reg_write(frsm_dev, FS15V1_1FH_ACCKEY, val_key);
 
 	return ret;
 }

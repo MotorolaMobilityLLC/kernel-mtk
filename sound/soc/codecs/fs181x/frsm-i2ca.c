@@ -65,6 +65,7 @@ static int frsm_i2c_reg_read(struct frsm_dev *frsm_dev,
 {
 	struct i2c_msg msgs[2];
 	uint8_t buffer[2];
+	int retries = 0;
 	int ret;
 
 	if (frsm_dev == NULL || frsm_dev->i2c == NULL)
@@ -79,9 +80,15 @@ static int frsm_i2c_reg_read(struct frsm_dev *frsm_dev,
 	msgs[1].len = sizeof(buffer);
 	msgs[1].buf = buffer;
 
-	mutex_lock(&frsm_dev->io_lock);
-	ret = i2c_transfer(frsm_dev->i2c->adapter, &msgs[0], ARRAY_SIZE(msgs));
-	mutex_unlock(&frsm_dev->io_lock);
+	do {
+		mutex_lock(&frsm_dev->io_lock);
+		ret = i2c_transfer(frsm_dev->i2c->adapter, &msgs[0], ARRAY_SIZE(msgs));
+		mutex_unlock(&frsm_dev->io_lock);
+		if (ret != ARRAY_SIZE(msgs)) {
+			FRSM_DELAY_MS(5);
+			retries++;
+		}
+	} while (ret != ARRAY_SIZE(msgs) && retries < FRSM_I2C_RETRY);
 
 	if (ret != ARRAY_SIZE(msgs)) {
 		pr_err("read %02x transfer error: %d", reg, ret);
@@ -99,6 +106,7 @@ static int frsm_i2c_reg_write(struct frsm_dev *frsm_dev,
 {
 	struct i2c_msg msgs[1];
 	uint8_t buffer[3];
+	int retries = 0;
 	int ret;
 
 	if (!frsm_dev || !frsm_dev->i2c)
@@ -112,9 +120,15 @@ static int frsm_i2c_reg_write(struct frsm_dev *frsm_dev,
 	msgs[0].len = sizeof(buffer);
 	msgs[0].buf = &buffer[0];
 
-	mutex_lock(&frsm_dev->io_lock);
-	ret = i2c_transfer(frsm_dev->i2c->adapter, &msgs[0], ARRAY_SIZE(msgs));
-	mutex_unlock(&frsm_dev->io_lock);
+	do {
+		mutex_lock(&frsm_dev->io_lock);
+		ret = i2c_transfer(frsm_dev->i2c->adapter, &msgs[0], ARRAY_SIZE(msgs));
+		mutex_unlock(&frsm_dev->io_lock);
+		if (ret != ARRAY_SIZE(msgs)) {
+			FRSM_DELAY_MS(5);
+			retries++;
+		}
+	} while (ret != ARRAY_SIZE(msgs) && retries < FRSM_I2C_RETRY);
 
 	if (ret != ARRAY_SIZE(msgs)) {
 		dev_err(frsm_dev->dev, "write %02x transfer error: %d\n",
@@ -423,8 +437,8 @@ static int frsm_stub_stat_monitor(struct frsm_dev *frsm_dev)
 
 	ret = frsm_stub_tsmute(frsm_dev, false);
 
-	if (frsm_dev && frsm_dev->ops.stat_monitor)
-		ret = frsm_dev->ops.stat_monitor(frsm_dev);
+	//if (frsm_dev && frsm_dev->ops.stat_monitor)
+	//	ret = frsm_dev->ops.stat_monitor(frsm_dev);
 
 	FRSM_FUNC_EXIT(frsm_dev->dev, ret);
 	return ret;
@@ -1055,7 +1069,7 @@ static int frsm_i2c_probe(struct i2c_client *i2c,
 	struct frsm_dev *frsm_dev;
 	int ret;
 
-	dev_dbg(&i2c->dev, "Version: %s\n", FRSM_I2C_VERSION);
+	dev_info(&i2c->dev, "Version: %s %s\n", FRSM_I2C_VERSION, FRSM_I2C_DATE);
 
 	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C)) {
 		dev_err(&i2c->dev, "Failed to check I2C_FUNC_I2C\n");
@@ -1130,6 +1144,11 @@ static void frsm_i2c_shutdown(struct i2c_client *i2c)
 		return;
 
 	frsm_send_event(frsm_dev, EVENT_SET_IDLE);
+
+	/* Reset the device */
+	frsm_i2c_reg_write(frsm_dev, 0x10, 0x0003);
+	FRSM_DELAY_MS(5);
+
 	gpio = frsm_dev->pdata->gpio + FRSM_PIN_SDZ;
 	if (!IS_ERR_OR_NULL(gpio->gpiod))
 		gpiod_set_value(gpio->gpiod, 0);

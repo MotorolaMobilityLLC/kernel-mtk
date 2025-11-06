@@ -210,7 +210,7 @@ static int frsm_i2c_amp_switch(struct frsm_argv *argv)
 		ret  = frsm_send_event(frsm_dev, EVENT_STREAM_OFF);
 		ret |= frsm_send_event(frsm_dev, EVENT_SHUT_DOWN);
 		ret |= frsm_send_event(frsm_dev, EVENT_SET_IDLE);
-		ret |= frsm_send_event(frsm_dev, EVENT_DEV_INIT);
+		//ret |= frsm_send_event(frsm_dev, EVENT_DEV_INIT);
 	}
 
 	return ret;

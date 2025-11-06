@@ -21,7 +21,8 @@
 #define CONFIG_SND_SOC_FRSM_AMP 1
 #define FRSM_I2CA_EXPORT_SUPPORT 1
 
-#define FRSM_I2C_VERSION "v5.2.2.3"
+#define FRSM_I2C_VERSION "v5.2.4.1"
+#define FRSM_I2C_DATE    "20251031"
 
 #define FRSM_STRING_MAX   (32)
 #define FRSM_DEV_MAX      (8)
