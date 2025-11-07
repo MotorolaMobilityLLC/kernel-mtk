@@ -302831,6 +302831,13 @@ function {
   parameter_id: 0x6720d32f
 }
 function {
+  id: 0x19ed6fd8
+  return_type_id: 0x48b5725f
+  parameter_id: 0x275ab027
+  parameter_id: 0x27a7c613
+  parameter_id: 0xf435685e
+}
+function {
   id: 0x19ee8463
   return_type_id: 0x48b5725f
   parameter_id: 0x25db57c0
@@ -338483,6 +338490,12 @@ function {
   parameter_id: 0xf419f1fe
 }
 function {
+  id: 0xa2e1e33f
+  return_type_id: 0x15a30023
+  parameter_id: 0xc93e017b
+  parameter_id: 0xf1a6dfed
+}
+function {
   id: 0xa2ec04d3
   return_type_id: 0xfc0e1dbd
   parameter_id: 0x172847a8
@@ -360086,6 +360099,15 @@ elf_symbol {
   full_name: "bio_endio"
 }
 elf_symbol {
+  id: 0x32725564
+  name: "bio_free_pages"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x8cf7941c
+  type_id: 0x15f0919b
+  full_name: "bio_free_pages"
+}
+elf_symbol {
   id: 0x5a9da856
   name: "bio_init"
   is_defined: true
@@ -360093,6 +360115,15 @@ elf_symbol {
   crc: 0xe34e5e08
   type_id: 0x15c2ff80
   full_name: "bio_init"
+}
+elf_symbol {
+  id: 0x45d23283
+  name: "bio_kmalloc"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xca5e78d8
+  type_id: 0xa2e1e33f
+  full_name: "bio_kmalloc"
 }
 elf_symbol {
   id: 0x1d853176
@@ -378591,6 +378622,15 @@ elf_symbol {
   crc: 0x91cfdae1
   type_id: 0x12e4741f
   full_name: "generic_read_dir"
+}
+elf_symbol {
+  id: 0x9e530296
+  name: "generic_ro_fops"
+  is_defined: true
+  symbol_type: OBJECT
+  crc: 0xed2365c3
+  type_id: 0xf10425d9
+  full_name: "generic_ro_fops"
 }
 elf_symbol {
   id: 0x242af10d
@@ -399717,6 +399757,15 @@ elf_symbol {
   crc: 0x632dd354
   type_id: 0xb799a854
   full_name: "read_swap_cache_async"
+}
+elf_symbol {
+  id: 0x68b1776b
+  name: "readahead_expand"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xd2c5ecb7
+  type_id: 0x19ed6fd8
+  full_name: "readahead_expand"
 }
 elf_symbol {
   id: 0x2886690b
@@ -421089,6 +421138,15 @@ elf_symbol {
   full_name: "zlib_inflate"
 }
 elf_symbol {
+  id: 0x84c3c252
+  name: "zlib_inflateEnd"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x107e5878
+  type_id: 0x814b86be
+  full_name: "zlib_inflateEnd"
+}
+elf_symbol {
   id: 0xf6eda681
   name: "zlib_inflateIncomp"
   is_defined: true
@@ -423039,7 +423097,9 @@ interface {
   symbol_id: 0x5dacbb8b
   symbol_id: 0x3a8604de
   symbol_id: 0x61a552c6
+  symbol_id: 0x32725564
   symbol_id: 0x5a9da856
+  symbol_id: 0x45d23283
   symbol_id: 0x1d853176
   symbol_id: 0xa8878d9e
   symbol_id: 0x1cb0de6c
@@ -425094,6 +425154,7 @@ interface {
   symbol_id: 0x7f639ef1
   symbol_id: 0x6bd69c06
   symbol_id: 0x4c4073c3
+  symbol_id: 0x9e530296
   symbol_id: 0x242af10d
   symbol_id: 0x798f83da
   symbol_id: 0x542785af
@@ -427441,6 +427502,7 @@ interface {
   symbol_id: 0x42f9d663
   symbol_id: 0x5b227eda
   symbol_id: 0x04f125b0
+  symbol_id: 0x68b1776b
   symbol_id: 0x2886690b
   symbol_id: 0x46082c90
   symbol_id: 0x590d247f
@@ -429816,6 +429878,7 @@ interface {
   symbol_id: 0xf158bd25
   symbol_id: 0xee403ebb
   symbol_id: 0x52ed8956
+  symbol_id: 0x84c3c252
   symbol_id: 0xf6eda681
   symbol_id: 0xd7745fba
   symbol_id: 0xd9789392
