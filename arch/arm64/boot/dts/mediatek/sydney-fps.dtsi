@@ -107,11 +107,11 @@
         tee-only;
 
         goodix_tee@0 {
-                compatible = "goodix,goodix-fp";
-                reg = <0>;
-                spi-max-frequency = <10000000>;
-                netlink-event = <30>;
-                status = "okay";
+            compatible = "mediatek,finger-goodix";
+            reg = <0>;
+            spi-max-frequency = <1000000>;
+            netlink-event = <30>;
+            status = "okay";
         };
 
    	jiiov_tee@1 {
@@ -140,17 +140,11 @@
 	goodix_fp: goodix_fp {
 		compatible = "mediatek,fingerprint-goodix";
 		interrupt-parent = <&pio>;
-
 		interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
-		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
-		pinctrl-0 = <&fingerfp_irq_active>;
-		pinctrl-1 = <&fingerfp_rst_high>;
-		pinctrl-2 = <&fingerfp_rst_low>;
-		int-gpios = <&pio 15 0>;
-		rgltr-ctrl-support;
-		fp,vdd-supply = <&mt6377_vfp>;	// ldo for support module vcc
-		fp,voltage-range = <3300000 3300000>;	// ldo voltage default 3.3V
-		fp,vdd-current = <100000>;
+		fp_vdd-supply = <&mt6377_vfp>;
+		goodix_rst = <&pio 7 0x00>;
+		gf,gpio_irq = <&pio 15 0x00>;
+		netlink-event = <30>;
 		status = "okay";
 	};
 };
