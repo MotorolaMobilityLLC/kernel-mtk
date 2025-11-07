@@ -102,6 +102,10 @@ static struct mtk_panel_para_table panel_dc_off[] = {
 	{2, {0x5E,0x00}},
 };
 
+static struct mtk_panel_para_table panel_ripple_on[] = {
+	{2, {0xA6,0x01}},
+};
+
 #define csot_vtdr6126A_dcs_write_seq(ctx, seq...)                                     \
 	({                                                                     \
 		const u8 d[] = {seq};                                          \
@@ -216,6 +220,14 @@ if(ctx->version <= PANEL_DVT1) {//dvt1 or before
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x6C, 0x01);//120hz
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x6D, 0x00);//AOD mode,default AOD1
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x6F, 0x01);//VDO mode
+
+	//water ripple optimize code
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xA4, 0x01);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x14);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xC1, 0x04, 0x47);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x00);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0xA4, 0x00);
+
 	//vesa,v1.2,slice number=2,slice height=12,3.75x
 	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x70, 0x12, 0x00, 0x00, 0xAB, 0x30, 0x80, 0x09, 0x30, 0x04, 0x38, 0x00, 0x0C, 0x02, 0x1C, 0x02, 0x1C, 0x02, 0x00, 0x01, 0x17, 0x00, 0x20, 0x02, 0x1A, 0x00, 0x07, 0x00, 0x01, 0x00, 0xBB, 0x08, 0x7A, 0x18, 0x00, 0x10, 0xF0, 0x07, 0x10, 0x20, 0x00, 0x06, 0x0F, 0x0F, 0x33, 0x0E, 0x1C, 0x2A, 0x38, 0x46, 0x54, 0x62, 0x69, 0x70, 0x77, 0x79, 0x7B, 0x7D, 0x7E, 0x02, 0x02, 0x22, 0x00, 0x2A, 0x40, 0x2A, 0xBE, 0x3A, 0xFC, 0x3A, 0xFA, 0x3A, 0xF8, 0x3B, 0x38, 0x3B, 0x78, 0x3B, 0xB6, 0x4B, 0xB6, 0x4B, 0xF4, 0x4B, 0xF4, 0x6C, 0x34, 0x84, 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 if(ctx->version >= PANEL_DVT2) {//dvt2 or later
@@ -620,6 +632,7 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	.dyn = {
 		.switch_en = 0,
 	},
+	.ripple_optimize_needed = true,
 };
 
 static struct mtk_panel_params ext_params_mode_90 = {
@@ -710,6 +723,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	.dyn = {
 		.switch_en = 0,
 	},
+	.ripple_optimize_needed = true,
 };
 
 static struct mtk_panel_params ext_params_mode_120 = {
@@ -801,6 +815,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 		.switch_en = 0,
 
 	},
+	.ripple_optimize_needed = true,
 };
 
 
@@ -1017,7 +1032,6 @@ static int panel_hbm_set_cmdq(struct csot_vtdr6126A *ctx, void *dsi, dcs_grp_wri
 	return 0;
 }
 
-
 static int panel_dc_set_cmdq(struct csot_vtdr6126A *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t dc_state)
 {
 	unsigned int para_count = 0;
@@ -1032,6 +1046,16 @@ static int panel_dc_set_cmdq(struct csot_vtdr6126A *ctx, void *dsi, dcs_grp_writ
 	}
 	cb(dsi, handle, pTable, para_count);
 	pr_info("%s: current_fps %d, dc_state %d\n", __func__, atomic_read(&ctx->current_fps), dc_state);
+	return 0;
+}
+
+static int panel_ripple_set_cmdq(struct csot_vtdr6126A *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t dc_state)
+{
+	unsigned int para_count = 0;
+
+	para_count = sizeof(panel_ripple_on) / sizeof(struct mtk_panel_para_table);
+	cb(dsi, handle, panel_ripple_on, para_count);
+	pr_info("%s: para_count %u, dc_state %d\n", __func__, para_count, dc_state);
 	return 0;
 }
 
@@ -1088,6 +1112,10 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 		case PARAM_DC:
 			atomic_set(&ctx->dc_mode, param_info.value);
 			panel_dc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+			ret = 0;
+			break;
+		case PARAM_RIPPLE:
+			panel_ripple_set_cmdq(ctx, dsi, cb, handle, param_info.value);
 			ret = 0;
 			break;
 		default:
