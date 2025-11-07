@@ -197,8 +197,14 @@ static void mtk_drm_finish_page_flip(struct mtk_drm_crtc *mtk_crtc)
 static void mtk_drm_crtc_destroy(struct drm_crtc *crtc)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	unsigned int crtc_id = drm_crtc_index(crtc);
 
 	mtk_disp_mutex_put(mtk_crtc->mutex[0]);
+
+	if (mtk_crtc->moto_ots_workqueue && 0 == crtc_id && mtk_crtc->panel_ext
+		&& mtk_crtc->panel_ext->params && mtk_crtc->panel_ext->params->ripple_optimize_needed) {
+		destroy_workqueue(mtk_crtc->moto_ots_workqueue);
+	}
 
 	drm_crtc_cleanup(crtc);
 }
@@ -9763,6 +9769,22 @@ static void mtk_drm_crtc_path_adjust(struct mtk_drm_private *priv, struct drm_cr
 	mtk_crtc->dual_pipe_ddp_ctx.ovl_comp_nr[DDP_FIRST_PATH] = ovl_comp_idx + 1;
 }
 
+static void ripple_optimize_work(struct work_struct *work)
+{
+	struct mtk_drm_crtc *mtk_crtc = container_of(work, struct mtk_drm_crtc, moto_ripple_work.work);
+	static struct panel_param_info ripple_param = {
+		.param_idx = PARAM_RIPPLE,
+		.value = 1,
+	};
+
+	DDPMSG("%s+\n", __func__);
+
+	if (mtk_drm_crtc_set_panel_feature(&mtk_crtc->base, ripple_param))
+		DDPMSG("%s failed -\n", __func__);
+	else
+		DDPMSG("%s success -\n", __func__);
+}
+
 void mtk_drm_crtc_enable(struct drm_crtc *crtc)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
@@ -9935,6 +9957,12 @@ void mtk_drm_crtc_enable(struct drm_crtc *crtc)
 	/* 15. alloc sram if last is MML */
 	if (mtk_crtc->is_mml)
 		mtk_crtc_alloc_sram(mtk_crtc, mtk_crtc->mml_ir_sram.bk_hrt_idx);
+
+	if (mtk_crtc->moto_ots_workqueue && 0 == crtc_id && mtk_crtc->panel_ext
+		&& mtk_crtc->panel_ext->params && mtk_crtc->panel_ext->params->ripple_optimize_needed)  {
+		DDPMSG("%s CRTC%d regular to queue moto_ripple_work \n", __func__, crtc_id);
+		queue_delayed_work(mtk_crtc->moto_ots_workqueue, &mtk_crtc->moto_ripple_work, msecs_to_jiffies(500));
+	}
 
 end:
 	CRTC_MMP_EVENT_END((int) crtc_id, enable,
@@ -10721,6 +10749,12 @@ void mtk_drm_crtc_disable(struct drm_crtc *crtc, bool need_wait)
 
 	CRTC_MMP_EVENT_START((int) crtc_id, disable,
 			mtk_crtc->enabled, 0);
+
+	if (mtk_crtc->moto_ots_workqueue && 0 == crtc_id && mtk_crtc->panel_ext
+		&& mtk_crtc->panel_ext->params && mtk_crtc->panel_ext->params->ripple_optimize_needed) {
+		DDPMSG("%s CRTC%d regular to cancel moto_ripple_work in case fast suspend/resume \n", __func__, crtc_id);
+		cancel_delayed_work_sync(&mtk_crtc->moto_ripple_work);
+	}
 
 	if (mtk_crtc->qos_ctx)
 		mtk_crtc->qos_ctx->last_mmclk_req_idx += 1;
@@ -15136,6 +15170,21 @@ int mtk_drm_crtc_create(struct drm_device *drm_dev,
 		mtk_ddp_comp_io_cmd(output_comp, NULL, DUAL_TE_INIT,
 				&mtk_crtc->base);
 	mtk_crtc->last_aee_trigger_ts = 0;
+
+	if (0 == priv->num_pipes - 1 && mtk_crtc->panel_ext && mtk_crtc->panel_ext->params
+		&& mtk_crtc->panel_ext->params->ripple_optimize_needed && !mtk_crtc->moto_ots_workqueue) {
+		mtk_crtc->moto_ots_workqueue = create_singlethread_workqueue("moto_ots_wq");
+		if (mtk_crtc->moto_ots_workqueue) {
+			INIT_DELAYED_WORK(&mtk_crtc->moto_ripple_work, ripple_optimize_work);
+			DDPMSG("%s CRTC%d queue moto_ripple_work when power on to optimize panel lk effect. \n", __func__, priv->num_pipes - 1);
+			queue_delayed_work(mtk_crtc->moto_ots_workqueue, &mtk_crtc->moto_ripple_work, msecs_to_jiffies(2000));
+		} else {
+			DDPMSG("%s:CRTC%d create moto_ots_workqueue failed +++\n", __func__, priv->num_pipes - 1);
+		}
+	} else {
+		DDPMSG("%s:CRTC%d no need moto_ots_workqueue func. +++\n", __func__, priv->num_pipes - 1);
+	}
+
 	DDPMSG("%s-CRTC%d create successfully\n", __func__,
 		priv->num_pipes - 1);
 
