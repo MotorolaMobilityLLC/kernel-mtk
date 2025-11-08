@@ -478,7 +478,10 @@ static int tm_vtdr6126a_prepare(struct drm_panel *panel)
 		dev_info(ctx->dev, "%s get dvdd failed \n", __func__);
 		return PTR_ERR(ctx->dvdd_supply);
 	} else {
-		regulator_set_voltage(ctx->dvdd_supply, 1200000, 1200000);
+		ret = regulator_set_voltage(ctx->dvdd_supply, 1302000, 1302000);//min:600000, step:6000, max:1800000
+		if (ret < 0)
+			pr_err("set voltage ctx->dvdd_supply fail, ret = %d\n", ret);
+
 		ret = regulator_enable(ctx->dvdd_supply);
 		if (ret) {
 			dev_err(ctx->dev, "failed to enable supply (%d)\n", ret);
@@ -1358,7 +1361,10 @@ static int tm_vtdr6126a_probe(struct mipi_dsi_device *dsi)
 		dev_info(dev, "%s get dvdd failed \n", __func__);
 		return -EPROBE_DEFER;
 	} else {
-		regulator_set_voltage(ctx->dvdd_supply, 1200000, 1200000);
+		ret = regulator_set_voltage(ctx->dvdd_supply, 1302000, 1302000);//min:600000, step:6000, max:1800000
+		if (ret < 0)
+			pr_err("set voltage ctx->dvdd_supply fail, ret = %d\n", ret);
+		/* enable regulator */
 		ret = regulator_enable(ctx->dvdd_supply);
 		if (ret) {
 			dev_err(ctx->dev, "failed to enable supply (%d)\n", ret);
