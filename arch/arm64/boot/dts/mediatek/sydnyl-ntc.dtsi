@@ -508,7 +508,7 @@
 };
 &tboard_thermistor9 {
 	compatible = "mediatek,mt6377-tia-ntc";
-	io-channels = <&auxadc 6>;
+	io-channels = <&auxadc 2>;
 	io-channel-names = "QUIET_NTC";
 	ntc-range-v = <150000>;
 	ntc-pullup-v = <180000>;
@@ -683,7 +683,7 @@
 };
 &tboard_thermistor8 {
 	compatible = "mediatek,mt6377-tia-ntc";
-	io-channels = <&auxadc 5>;
+	io-channels = <&auxadc 3>;
 	io-channel-names = "CHG_NTC";
 	ntc-range-v = <150000>;
 	ntc-pullup-v = <180000>;
@@ -858,7 +858,7 @@
 };
 &tboard_thermistor7 {
 	compatible = "mediatek,mt6377-tia-ntc";
-	io-channels = <&auxadc 4>;
+	io-channels = <&auxadc 6>;
 	io-channel-names = "CAM_NTC";
 	ntc-range-v = <150000>;
 	ntc-pullup-v = <180000>;
@@ -1208,7 +1208,7 @@
 };
 &tboard_thermistor5 {
 	compatible = "mediatek,mt6377-tia-ntc";
-	io-channels = <&auxadc 2>;
+	io-channels = <&auxadc 4>;
 	io-channel-names = "SPK_NTC";
 	ntc-range-v = <150000>;
 	ntc-pullup-v = <180000>;
@@ -1383,7 +1383,7 @@
 };
 &tboard_thermistor_conn {
 	compatible = "mediatek,mt6377-tia-ntc";
-	io-channels = <&auxadc 1>;
+	io-channels = <&auxadc 5>;
 	io-channel-names = "CONN_NTC";
 	ntc-range-v = <150000>;
 	ntc-pullup-v = <180000>;
@@ -1573,11 +1573,6 @@
 		polling-delay = <0>; /* milliseconds */
 		polling-delay-passive = <0>; /* milliseconds */
 		thermal-sensors = <&tboard_thermistor7>;
-	};
-	mtktsflashlight: mtktsflashlight {
-		polling-delay = <0>; /* milliseconds */
-		polling-delay-passive = <0>; /* milliseconds */
-		thermal-sensors = <&tboard_thermistor6>;
 	};
 	tspk_ntc: tspk_ntc {
 		polling-delay = <0>; /* milliseconds */
