@@ -200,6 +200,27 @@ static void recover_eint_setting(u32 eintsts);
 static void recover_moisture_setting(u32 moistureID);
 static void send_status_event(u32 cable_type, u32 status);
 
+#if IS_ENABLED(CONFIG_SND_FCNT_GREEN_RUST)
+int detect_flag = 0;
+
+int get_detect_flag(void)
+{
+	pr_info("%s Greenrust: get_detect_flag = %d\n", __func__, detect_flag);
+
+	return detect_flag;
+}
+EXPORT_SYMBOL(get_detect_flag);
+
+int set_detect_flag(int val)
+{
+	detect_flag = val;
+	pr_info("%s Greenrust: set_detect_flag = %d\n", __func__, detect_flag);
+
+	return 0;
+}
+EXPORT_SYMBOL(set_detect_flag);
+#endif
+
 /* global function declaration */
 inline u32 accdet_read(u32 addr)
 {
@@ -2157,6 +2178,9 @@ void accdet_irq_handle(void)
 	u32 eintID = 0, ret = 0;
 	u32 irq_status = 0, acc_sts = 0, eint_sts = 0;
 
+#if IS_ENABLED(CONFIG_SND_FCNT_GREEN_RUST)
+	set_detect_flag(1);
+#endif
 	eintID = get_triggered_eint();
 	irq_status = accdet_read(ACCDET_IRQ_ADDR);
 	acc_sts = accdet_read(ACCDET_MEM_IN_ADDR);

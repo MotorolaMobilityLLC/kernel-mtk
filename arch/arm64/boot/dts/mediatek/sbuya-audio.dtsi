@@ -48,3 +48,15 @@
 		sound-dai = <&aw883xx_smartpa_0 &aw883xx_smartpa_1>;
 	};
 };
+
+&accdet {
+	headset-mode-setting = <0x500 0x500 1 0x1f0
+				0x800 0x800 0x20 0x44
+				0x4 0x1
+				0x5 0x3 0x3 0x5 0xa>;
+};
+
+&mt6377codec {
+	engpios = <&pio 191 0>;
+	ingpios = <&pio 192 0>;
+};

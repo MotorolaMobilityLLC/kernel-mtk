@@ -24,6 +24,12 @@
 #include "mt6377-accdet.h"
 #endif
 
+#if IS_ENABLED(CONFIG_SND_FCNT_GREEN_RUST)
+#include <linux/of.h>
+#include <linux/of_gpio.h>
+#include <linux/gpio.h>
+#endif
+
 #define MAX_DEBUG_WRITE_INPUT 256
 #define CODEC_SYS_DEBUG_SIZE (1024 * 32)
 
@@ -34,6 +40,42 @@ static ssize_t mt6377_codec_sysfs_write(struct file *filp, struct kobject *kobj,
 					struct bin_attribute *bin_attr,
 					char *buf, loff_t off, size_t count);
 
+#if IS_ENABLED(CONFIG_SND_FCNT_GREEN_RUST)
+int EAR_DET_EN = 0;
+int EAR_DET_IN = 0;
+int get_detect_flag(void);
+int set_detect_flag(int val);
+
+static int headset_switch_get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = get_detect_flag();
+
+	return 0;
+}
+
+static int headset_switch_put(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	int switch_state = ucontrol->value.integer.value[0];
+
+	if(switch_state == 0) {
+		gpio_set_value(EAR_DET_EN, 1);
+		gpio_set_value(EAR_DET_IN, 0);
+	} else if(switch_state == 1) {
+		gpio_set_value(EAR_DET_EN, 0);
+		gpio_set_value(EAR_DET_IN, 0);
+	} else if(switch_state == 2) {
+		gpio_set_value(EAR_DET_EN, 0);
+		gpio_set_value(EAR_DET_IN, 1);
+	} else if(switch_state == 3) {
+		set_detect_flag(0);
+	}
+	pr_info("%s: Greenrust: set_switch_state: %d\n", __func__, switch_state);
+
+	return 0;
+}
+#endif
 
 /* static function declaration */
 static void mt6377_set_gpio_smt(struct mt6377_priv *priv)
@@ -5502,6 +5544,10 @@ static const struct snd_kcontrol_new mt6377_snd_vow_controls[] = {
 	SOC_SINGLE_EXT("Audio_VOW_Periodic",
 		       SND_SOC_NOPM, 0, 0x80000, 0,
 		       audio_vow_cfg_get, audio_vow_cfg_set),
+#if IS_ENABLED(CONFIG_SND_FCNT_GREEN_RUST)
+	SOC_SINGLE_EXT("HEADSET_SWITCH", SND_SOC_NOPM, 0, 3, 0,
+		        headset_switch_get, headset_switch_put),
+#endif
 };
 
 /* misc control */
@@ -7408,6 +7454,31 @@ static int mt6377_parse_dt(struct mt6377_priv *priv)
 
 		return ret;
 	}
+
+#if IS_ENABLED(CONFIG_SND_FCNT_GREEN_RUST)
+	EAR_DET_EN = of_get_named_gpio(np,"engpios", 0);
+	if (gpio_is_valid(EAR_DET_EN)) {
+		ret = gpio_request(EAR_DET_EN, "EAR_DET_EN");
+		if (ret < 0) {
+			dev_err(dev, "Greenrust: EAR_DET_EN requset failed\n");
+		} else {
+			dev_info(dev, "Greenrust: EAR_DET_EN = %d\n", EAR_DET_EN);
+			gpio_direction_output(EAR_DET_EN, 1);
+			gpio_set_value(EAR_DET_EN, 0);
+		}
+	}
+	EAR_DET_IN = of_get_named_gpio(np,"ingpios", 0);
+	if (gpio_is_valid(EAR_DET_IN)) {
+		ret = gpio_request(EAR_DET_IN, "EAR_DET_IN");
+		if (ret < 0) {
+			dev_err(dev, "Greenrust: EAR_DET_IN requset failed\n");
+		} else {
+			dev_info(dev, "Greenrust: EAR_DET_IN = %d\n", EAR_DET_IN);
+			gpio_direction_output(EAR_DET_IN, 1);
+			gpio_set_value(EAR_DET_IN, 1);
+		}
+	}
+#endif
 	return 0;
 }
 

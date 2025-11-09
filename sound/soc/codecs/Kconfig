@@ -1463,6 +1463,12 @@ config SND_SOC_AW883XX
 	help
 	  Support Awinic smartpa driver
 
+config SND_FCNT_GREEN_RUST
+	tristate "Support FCNT green rust prevention"
+	default n
+	help
+	  Support FCNT green rust prevention
+
 config SND_SOC_KANSAS_AUDIO
 	tristate "Support kansas audio"
 	depends on I2C
