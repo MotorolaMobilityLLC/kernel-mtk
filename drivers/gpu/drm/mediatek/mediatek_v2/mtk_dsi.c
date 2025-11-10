@@ -3655,6 +3655,13 @@ static void mtk_output_dsi_enable(struct mtk_dsi *dsi,
 		}
 	}
 
+	if (dsi->panel && dsi->ext->funcs->init_power) {
+		if (!dsi->doze_enabled || force_lcm_update) {
+			dsi->ext->funcs->init_power(dsi->panel);
+			DDPMSG("lcm power up before dsi\n");
+		}
+	}
+
 	ret = mtk_preconfig_dsi_enable(dsi);
 	if (ret < 0) {
 		dev_err(dsi->dev, "config dsi fail: %d", ret);
@@ -3932,6 +3939,13 @@ SKIP_WAIT_FRAME_DONE:
 	mtk_dsi_disable(dsi);
 	mtk_dsi_stop(dsi);
 	mtk_dsi_poweroff(dsi);
+
+	if (dsi->panel && dsi->ext->funcs->power_down) {
+		if (!new_doze_state || force_lcm_update) {
+			dsi->ext->funcs->power_down(dsi->panel);
+			DDPMSG("lcm power down after dsi\n");
+		}
+	}
 
 	if (dsi->slave_dsi) {
 		/* set DSI into ULPS mode */
