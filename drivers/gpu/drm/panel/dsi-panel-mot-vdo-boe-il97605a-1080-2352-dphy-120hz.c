@@ -328,10 +328,12 @@ static void boe_il97605a_panel_init(struct boe_il97605a *ctx)
 	 boe_il97605a_dcs_write_seq_static(ctx, 0xA0, 0x18);
 	 //scalling up end
 	 //init code
-	 //page 5
-	 boe_il97605a_dcs_write_seq_static(ctx, 0xFF, 0x5A,0xA5,0x05);
-	 boe_il97605a_dcs_write_seq_static(ctx, 0x83, 0x83);
-	 //LVD? 03 on / 83 off
+	//enable lvd start
+	 boe_il97605a_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x05);
+	 boe_il97605a_dcs_write_seq_static(ctx, 0x83, 0x07);
+	 boe_il97605a_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x1C);
+	 boe_il97605a_dcs_write_seq_static(ctx, 0xD7, 0x0E);
+	//enable lvd end
 	 //----DSC 10bit 3.75 compress----//
 	 boe_il97605a_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x07);
 	 boe_il97605a_dcs_write_seq_static(ctx, 0x8A, 0x01);
