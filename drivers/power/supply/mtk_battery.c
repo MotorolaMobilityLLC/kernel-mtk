@@ -3529,6 +3529,38 @@ static int batteryid_sysfs_create_group(struct power_supply *psy)
 			&batteryid_sysfs_attr_group);
 }
 #endif
+
+static ssize_t direct_power_supply_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	bool val = 0;
+	sscanf(buf, "%d", &val);
+	set_direct_schedule_chg(val);
+	pr_info("%s:%d store successful\n", __func__,__LINE__);
+	return count;
+}
+
+static ssize_t direct_power_supply_show(struct device *dev,
+				    struct device_attribute *attr,
+				    char *buf)
+{
+	bool direct_schedule_chg;
+	direct_schedule_chg = get_direct_schedule_chg();
+	pr_info("%s:%d read successful\n", __func__,__LINE__);
+	return scnprintf(buf, PAGE_SIZE, "%d\n", direct_schedule_chg);
+}
+
+static DEVICE_ATTR_RW(direct_power_supply);
+
+static int direct_power_supply_device_create_file(struct platform_device *pdev)
+{
+	struct device_node *node = pdev->dev.of_node;
+	if(of_property_read_bool(node, "direct-power-supply-feature-support"))
+		return device_create_file(&(pdev->dev), &dev_attr_direct_power_supply);
+	return 0;
+}
+
 static int battery_sysfs_create_group(struct power_supply *psy)
 {
 	battery_sysfs_init_attrs();
@@ -4715,6 +4747,7 @@ int battery_init(struct platform_device *pdev)
 #if IS_ENABLED(CONFIG_PHYSICAL_BATT_ID_FEATURE)
 	batteryid_sysfs_create_group(gm->bs_data.psy);
 #endif
+	direct_power_supply_device_create_file(pdev);
 	/* for gauge hal hw ocv */
 	gm->bs_data.bat_batt_temp = force_get_tbat(gm, true);
 	mtk_power_misc_init(gm);

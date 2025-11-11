@@ -627,6 +627,7 @@ struct mtk_charger {
 	unsigned long typec_otp_cur_state;
 	/* charge otp ctrl gpio for mos */
 	int charge_tcpc_opt_mos_gpio;
+	bool direct_schedule_chg;
 };
 
 static inline int mtk_chg_alg_notify_call(struct mtk_charger *info,

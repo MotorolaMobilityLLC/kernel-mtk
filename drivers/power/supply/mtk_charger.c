@@ -2436,6 +2436,8 @@ static void charger_check_status(struct mtk_charger *info)
 		charging = false;
 	if (info->sc.disable_charger == true)
 		charging = false;
+	if (info->direct_schedule_chg)
+		charging = false;
 
 	if (info->mmi.pres_chrg_step == STEP_STOP)
 		charging = false;
@@ -2459,13 +2461,13 @@ stop_charging:
 		info->stop_6pin_re_en = false;
 	}
 
-	chr_err("tmp:%d (jeita:%d sm:%d cv:%d en:%d) (sm:%d) en:%d c:%d s:%d ov:%d sc:%d %d %d saf_cmd:%d bat_mon:%d %d\n",
+	chr_err("tmp:%d (jeita:%d sm:%d cv:%d en:%d) (sm:%d) en:%d c:%d s:%d ov:%d sc:%d %d %d saf_cmd:%d bat_mon:%d %d direct_dis_chg:%d\n",
 		temperature, info->enable_sw_jeita, info->sw_jeita.sm,
 		info->sw_jeita.cv, info->sw_jeita.charging, thermal->sm,
 		charging, info->cmd_discharging, info->safety_timeout,
 		info->vbusov_stat, info->sc.disable_charger,
 		info->can_charging, charging, info->safety_timer_cmd,
-		info->enable_vbat_mon, info->batpro_done);
+		info->enable_vbat_mon, info->batpro_done,info->direct_schedule_chg);
 
 	charger_dev_is_enabled(info->chg1_dev, &chg_dev_chgen);
 
@@ -4830,6 +4832,40 @@ void mmi_init(struct mtk_charger *info)
 	info->mmi.init_done = true;
 }
 
+bool set_direct_schedule_chg(bool val){
+
+	mmi_info->direct_schedule_chg = val;
+	_wake_up_charger(mmi_info);
+	return val;
+}
+EXPORT_SYMBOL(set_direct_schedule_chg);
+
+bool get_direct_schedule_chg(){
+	bool val;
+	val = mmi_info->direct_schedule_chg ;
+	_wake_up_charger(mmi_info);
+	return val;
+}
+EXPORT_SYMBOL(get_direct_schedule_chg);
+
+void direct_power_supply_init(struct mtk_charger *info)
+{
+	struct device_node *node;
+	struct device *dev;
+
+	if (!info) {
+		pr_info("[%s]Error info not exist\n",__func__);
+		return;
+	}
+	info->direct_schedule_chg = false;
+	dev = &info->pdev->dev;
+	node = dev->of_node;
+	if (!node) {
+		pr_info("[%s]Error node not exist\n",__func__);
+		return;
+	}
+}
+
 #ifdef MTK_BASE
 static void kpoc_power_off_check(struct mtk_charger *info)
 {
@@ -5155,7 +5191,7 @@ static int charger_routine_thread(void *arg)
 
 		if (is_disable_charger(info) == false &&
 			is_charger_on == true &&
-			info->can_charging == true) {
+			(info->can_charging == true || info->direct_schedule_chg)) {
 			if (info->algo.do_algorithm)
 				info->algo.do_algorithm(info);
 			charger_status_check(info);
@@ -6371,6 +6407,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	mtk_charger_tcmd_register(info);
 	mmi_info = info;
 	mmi_init(info);
+	direct_power_supply_init(info);
 	kthread_run(charger_routine_thread, info, "charger_thread");
 
 	mutex_init(&info->typec_otp_lock);

@@ -290,6 +290,9 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		}
 	}
 
+	if (info->direct_schedule_chg)
+		is_basic = true;
+
 	if (info->enable_sw_jeita) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)
 			&& info->chr_type == POWER_SUPPLY_TYPE_USB)
@@ -663,7 +666,8 @@ static int do_algorithm(struct mtk_charger *info)
 		if (!(ret == ALG_READY || ret == ALG_RUNNING) &&
 			!(ret2 == ALG_READY || ret2 == ALG_RUNNING) &&
 			!(ret3 == ALG_READY || ret3 == ALG_RUNNING) &&
-			!(ret4 == ALG_READY || ret4 == ALG_RUNNING))
+			!(ret4 == ALG_READY || ret4 == ALG_RUNNING) &&
+			!info->direct_schedule_chg)
 			charger_dev_enable(info->chg1_dev, true);
 	}
 

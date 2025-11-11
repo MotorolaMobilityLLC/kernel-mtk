@@ -222,7 +222,8 @@
 	/* bat_id vmin_vmax_id */
 	battery_v_id = <100 500 0
 	1300 1700 1>;
-
+	/*direct charge feature*/
+	direct-power-supply-feature-support;
 	DIFFERENCE_FULLOCV_ITH = <(293)>;  /*gauge cut-off current, should overtop ieoc 50ma*/
 	EMBEDDED_SEL = <(1)>;  /*embedded battery,don't remove the battery for user*/
 	VIR_OLDOCV_DIFF_EMB = <3000>; /*0.1mv*/

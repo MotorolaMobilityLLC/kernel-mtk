@@ -1238,4 +1238,6 @@ extern void fg_bat_temp_int_internal(struct mtk_battery *gm);
 /* mtk_battery_algo.c end */
 extern void disable_all_irq(struct mtk_battery *gm);
 extern int mmi_batt_health_check(void);
+extern bool set_direct_schedule_chg(bool val);
+extern bool get_direct_schedule_chg(void);
 #endif /* __MTK_BATTERY_INTF_H__ */
