@@ -285676,6 +285676,32 @@ enumeration {
   }
 }
 enumeration {
+  id: 0x3589c6a7
+  name: "hibernate_resume_state"
+  definition {
+    underlying_type_id: 0x4585663f
+    enumerator {
+      name: "HIBERNATION_IMAGE_RESTORE_START"
+    }
+    enumerator {
+      name: "HIBERNATION_DEVICE_RESUME_START"
+      value: 1
+    }
+    enumerator {
+      name: "HIBERNATION_DEVICE_RESUME_DONE"
+      value: 2
+    }
+    enumerator {
+      name: "HIBERNATION_IMAGE_RESTORE_DONE"
+      value: 3
+    }
+    enumerator {
+      name: "HIBERNATION_EXIT"
+      value: 4
+    }
+  }
+}
+enumeration {
   id: 0x74acd685
   name: "hid_battery_status"
   definition {
@@ -329029,6 +329055,12 @@ function {
   parameter_id: 0xfc0e1dbd
 }
 function {
+  id: 0x9b799d79
+  return_type_id: 0x6720d32f
+  parameter_id: 0x18bd6530
+  parameter_id: 0x3589c6a7
+}
+function {
   id: 0x9b79ad21
   return_type_id: 0x6720d32f
   parameter_id: 0x18bd6530
@@ -350119,6 +350151,15 @@ elf_symbol {
   full_name: "__traceiter_android_vh_handle_trylock_failed_folio"
 }
 elf_symbol {
+  id: 0xca6eb740
+  name: "__traceiter_android_vh_hibernate_resume_state"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xd37a5ba1
+  type_id: 0x9b799d79
+  full_name: "__traceiter_android_vh_hibernate_resume_state"
+}
+elf_symbol {
   id: 0x089c5048
   name: "__traceiter_android_vh_hibernate_save_cmp_len"
   is_defined: true
@@ -355499,6 +355540,15 @@ elf_symbol {
   crc: 0x78e2c5cf
   type_id: 0x18ccbd2c
   full_name: "__tracepoint_android_vh_handle_trylock_failed_folio"
+}
+elf_symbol {
+  id: 0x70c0847e
+  name: "__tracepoint_android_vh_hibernate_resume_state"
+  is_defined: true
+  symbol_type: OBJECT
+  crc: 0x69e36f0b
+  type_id: 0x18ccbd2c
+  full_name: "__tracepoint_android_vh_hibernate_resume_state"
 }
 elf_symbol {
   id: 0xc388a58e
@@ -421988,6 +422038,7 @@ interface {
   symbol_id: 0xdbe4202a
   symbol_id: 0x88586647
   symbol_id: 0x2b2d07aa
+  symbol_id: 0xca6eb740
   symbol_id: 0x089c5048
   symbol_id: 0x3ec3f8ef
   symbol_id: 0x1ba2e410
@@ -422586,6 +422637,7 @@ interface {
   symbol_id: 0x60a121b4
   symbol_id: 0xf18e312d
   symbol_id: 0x90e3616c
+  symbol_id: 0x70c0847e
   symbol_id: 0xc388a58e
   symbol_id: 0x78f2c5bd
   symbol_id: 0xc62a97aa
