@@ -173,6 +173,7 @@
   __const_udelay
   consume_skb
   contig_page_data
+  copy_from_kernel_nofault
   __copy_overflow
   __cpu_active_mask
   cpu_all_bits
@@ -401,6 +402,7 @@
   devm_pinctrl_register
   devm_platform_get_and_ioremap_resource
   devm_platform_ioremap_resource
+  devm_pm_runtime_enable
   devm_power_supply_register
   devm_pwm_get
   devm_qcom_smem_state_get
@@ -412,6 +414,7 @@
   __devm_regmap_init_mmio_clk
   __devm_regmap_init_spmi_ext
   devm_regulator_bulk_get
+  devm_regulator_bulk_get_enable
   devm_regulator_get
   devm_regulator_get_exclusive
   devm_regulator_get_optional
@@ -555,6 +558,7 @@
   down
   down_interruptible
   down_read
+  down_read_interruptible
   down_timeout
   down_write
   d_path
@@ -914,12 +918,14 @@
   i2c_for_each_dev
   i2c_get_adapter
   i2c_get_dma_safe_msg_buf
+  i2c_new_dummy_device
   i2c_put_adapter
   i2c_put_dma_safe_msg_buf
   i2c_register_driver
   i2c_smbus_xfer
   i2c_transfer
   i2c_transfer_buffer_flags
+  i2c_unregister_device
   i2c_verify_client
   icc_link_create
   icc_node_add
@@ -1447,6 +1453,7 @@
   pci_write_config_dword
   pci_write_config_word
   __per_cpu_offset
+  per_cpu_ptr_to_phys
   perf_aux_output_begin
   perf_aux_output_end
   perf_aux_output_flag
@@ -1558,6 +1565,7 @@
   proc_remove
   proto_register
   proto_unregister
+  __pskb_copy_fclone
   pskb_expand_head
   __pskb_pull_tail
   ___pskb_trim
@@ -1637,6 +1645,7 @@
   register_inet6addr_notifier
   register_inetaddr_notifier
   register_kretprobe
+  register_module_notifier
   register_netdev
   register_netdevice
   register_netdevice_notifier
@@ -1652,9 +1661,11 @@
   regmap_bulk_read
   regmap_bulk_write
   regmap_check_range_table
+  regmap_exit
   regmap_field_read
   regmap_field_update_bits_base
   __regmap_init
+  __regmap_init_i2c
   regmap_irq_get_virq
   regmap_mmio_detach_clk
   regmap_multi_reg_write
@@ -1822,6 +1833,7 @@
   set_next_entity
   set_normalized_timespec64
   set_page_dirty_lock
+  set_page_private
   set_task_cpu
   set_user_nice
   sg_alloc_table
@@ -2105,6 +2117,7 @@
   __traceiter_android_rvh_enqueue_task
   __traceiter_android_rvh_find_busiest_queue
   __traceiter_android_rvh_find_lowest_rq
+  __traceiter_android_rvh_find_new_ilb
   __traceiter_android_rvh_flush_task
   __traceiter_android_rvh_get_nohz_timer_target
   __traceiter_android_rvh_iommu_alloc_insert_iova
@@ -2176,6 +2189,7 @@
   __tracepoint_android_rvh_enqueue_task
   __tracepoint_android_rvh_find_busiest_queue
   __tracepoint_android_rvh_find_lowest_rq
+  __tracepoint_android_rvh_find_new_ilb
   __tracepoint_android_rvh_flush_task
   __tracepoint_android_rvh_get_nohz_timer_target
   __tracepoint_android_rvh_iommu_alloc_insert_iova
@@ -2271,6 +2285,7 @@
   uio_unregister_device
   __unregister_chrdev
   unregister_chrdev_region
+  unregister_die_notifier
   unregister_ftrace_export
   unregister_inet6addr_notifier
   unregister_inetaddr_notifier

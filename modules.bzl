@@ -6,6 +6,7 @@ This module contains a full list of kernel modules
  compiled by GKI.
 """
 
+# LINT.IfChange
 _COMMON_GKI_MODULES_LIST = [
     # keep sorted
     "drivers/block/virtio_blk.ko",
@@ -47,6 +48,7 @@ _COMMON_GKI_MODULES_LIST = [
     "drivers/usb/serial/usbserial.ko",
     "drivers/virtio/virtio_balloon.ko",
     "drivers/virtio/virtio_pci.ko",
+    "drivers/virtio/virtio_pci_legacy_dev.ko",
     "drivers/virtio/virtio_pci_modern_dev.ko",
     "kernel/kheaders.ko",
     "lib/crypto/libarc4.ko",
@@ -98,6 +100,7 @@ _ARM64_GKI_MODULES_LIST = [
     "drivers/misc/open-dice.ko",
     "drivers/ptp/ptp_kvm.ko",
 ]
+# LINT.ThenChange(android/abi_gki_protected_exports_aarch64)
 
 _X86_GKI_MODULES_LIST = [
     # keep sorted
@@ -193,3 +196,18 @@ def get_kunit_modules_list(arch = None):
         ))
 
     return kunit_modules_list
+
+# LINT.IfChange
+_COMMON_UNPROTECTED_MODULES_LIST = [
+    "drivers/block/zram/zram.ko",
+    "kernel/kheaders.ko",
+    "mm/zsmalloc.ko",
+]
+# LINT.ThenChange(android/abi_gki_protected_exports_aarch64)
+
+# buildifier: disable=unnamed-macro
+def get_gki_protected_modules_list(arch = None):
+    all_gki_modules = get_gki_modules_list(arch) + get_kunit_modules_list(arch)
+    unprotected_modules = _COMMON_UNPROTECTED_MODULES_LIST
+    protected_modules = [mod for mod in all_gki_modules if mod not in unprotected_modules]
+    return protected_modules

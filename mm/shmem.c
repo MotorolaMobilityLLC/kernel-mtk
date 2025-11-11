@@ -89,6 +89,10 @@ static struct vfsmount *shm_mnt;
 
 #include "internal.h"
 
+#ifdef CONFIG_MEMFD_ASHMEM_SHIM
+#include "memfd-ashmem-shim.h"
+#endif
+
 #define BLOCKS_PER_PAGE  (PAGE_SIZE/512)
 #define VM_ACCT(size)    (PAGE_ALIGN(size) >> PAGE_SHIFT)
 
@@ -818,6 +822,7 @@ static int shmem_add_to_page_cache(struct folio *folio,
 		mapping->nrpages += nr;
 		__lruvec_stat_mod_folio(folio, NR_FILE_PAGES, nr);
 		__lruvec_stat_mod_folio(folio, NR_SHMEM, nr);
+		trace_android_vh_shmem_mod_shmem(folio->mapping, nr);
 unlock:
 		xas_unlock_irq(&xas);
 	} while (xas_nomem(&xas, gfp));
@@ -845,6 +850,7 @@ static void shmem_delete_from_page_cache(struct folio *folio, void *radswap)
 
 	xa_lock_irq(&mapping->i_pages);
 	error = shmem_replace_entry(mapping, folio->index, folio, radswap);
+	trace_android_vh_shmem_mod_shmem(folio->mapping, -nr);
 	folio->mapping = NULL;
 	mapping->nrpages -= nr;
 	__lruvec_stat_mod_folio(folio, NR_FILE_PAGES, -nr);
@@ -1134,6 +1140,7 @@ whole_folios:
 	}
 
 	shmem_recalc_inode(inode, 0, -nr_swaps_freed);
+	trace_android_vh_shmem_mod_swapped(mapping, -nr_swaps_freed);
 }
 
 void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
@@ -1540,6 +1547,7 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
 			__GFP_HIGH | __GFP_NOMEMALLOC | __GFP_NOWARN,
 			NULL) == 0) {
 		shmem_recalc_inode(inode, 0, 1);
+		trace_android_vh_shmem_mod_swapped(folio->mapping, 1);
 		swap_shmem_alloc(swap);
 		shmem_delete_from_page_cache(folio, swp_to_radix_entry(swap));
 
@@ -1920,6 +1928,7 @@ static int shmem_swapin_folio(struct inode *inode, pgoff_t index,
 		goto failed;
 
 	shmem_recalc_inode(inode, 0, -1);
+	trace_android_vh_shmem_mod_swapped(folio->mapping, -1);
 
 	if (sgp == SGP_WRITE)
 		folio_mark_accessed(folio);
@@ -2409,9 +2418,6 @@ static int shmem_mmap(struct file *file, struct vm_area_struct *vma)
 	ret = seal_check_future_write(info->seals, vma);
 	if (ret)
 		return ret;
-
-	/* arm64 - allow memory tagging on RAM-based files */
-	vm_flags_set(vma, VM_MTE_ALLOWED);
 
 	file_accessed(file);
 	/* This is anonymous shared memory if it is unlinked at the time of mmap */
@@ -3448,8 +3454,7 @@ static int shmem_rename2(struct mnt_idmap *idmap,
 			return error;
 	}
 
-	simple_offset_remove(shmem_get_offset_ctx(old_dir), old_dentry);
-	error = simple_offset_add(shmem_get_offset_ctx(new_dir), old_dentry);
+	error = simple_offset_rename(old_dir, old_dentry, new_dir, new_dentry);
 	if (error)
 		return error;
 
@@ -4504,6 +4509,12 @@ static const struct file_operations shmem_file_operations = {
 	.splice_read	= shmem_file_splice_read,
 	.splice_write	= iter_file_splice_write,
 	.fallocate	= shmem_fallocate,
+#endif
+#ifdef CONFIG_MEMFD_ASHMEM_SHIM
+	.unlocked_ioctl	= memfd_ashmem_shim_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl	= memfd_ashmem_shim_compat_ioctl,
+#endif
 #endif
 };
 

@@ -72,8 +72,6 @@ enum kvm_mode kvm_get_mode(void);
 static inline enum kvm_mode kvm_get_mode(void) { return KVM_MODE_NONE; };
 #endif
 
-DECLARE_STATIC_KEY_FALSE(userspace_irqchip_in_use);
-
 extern unsigned int __ro_after_init kvm_sve_max_vl;
 extern unsigned int __ro_after_init kvm_host_sve_max_vl;
 int __init kvm_arm_init_sve(void);
@@ -226,18 +224,36 @@ struct kvm_smccc_features {
 };
 
 struct kvm_pinned_page {
+	union {
+		struct rb_node		node;
+		struct list_head	list_node;
+	};
 	struct page		*page;
 	u64			ipa;
+	u64			__subtree_last;
 	u8			order;
 	u16			pins;
 };
+
+struct kvm_pinned_page
+*kvm_pinned_pages_iter_first(struct rb_root_cached *root, u64 start, u64 end);
+struct kvm_pinned_page
+*kvm_pinned_pages_iter_next(struct kvm_pinned_page *ppage, u64 start, u64 end);
+
+#define for_ppage_node_in_range(kvm, start, end, __ppage, __tmp)				\
+	for (__ppage = kvm_pinned_pages_iter_first(&(kvm)->arch.pkvm.pinned_pages, start, end - 1);\
+	    __ppage && ({ __tmp = kvm_pinned_pages_iter_next(__ppage, start, end - 1); 1; });	\
+	    __ppage = __tmp)
+
+void kvm_pinned_pages_remove(struct kvm_pinned_page *ppage,
+			     struct rb_root_cached *root);
 
 typedef unsigned int pkvm_handle_t;
 
 struct kvm_protected_vm {
 	pkvm_handle_t handle;
 	struct kvm_hyp_memcache stage2_teardown_mc;
-	struct maple_tree pinned_pages;
+	_ANDROID_KABI_REPLACE(struct maple_tree __unused, struct rb_root_cached pinned_pages);
 	gpa_t pvmfw_load_addr;
 	bool enabled;
 };
@@ -525,6 +541,7 @@ struct kvm_hyp_req {
 #define KVM_HYP_LAST_REQ	0
 #define KVM_HYP_REQ_TYPE_MEM	1
 #define KVM_HYP_REQ_TYPE_MAP	2
+#define KVM_HYP_REQ_TYPE_SPLIT	3
 	u8 type;
 	union {
 		struct {
@@ -539,6 +556,12 @@ struct kvm_hyp_req {
 			unsigned long	guest_ipa;
 			size_t		size;
 		} map;
+#ifndef __GENKSYMS__
+		struct {
+			unsigned long	guest_ipa;
+			size_t		size;
+		} split;
+#endif
 	};
 };
 
@@ -587,6 +610,8 @@ struct kvm_vcpu_arch {
 	/* Values of trap registers for the guest. */
 	u64 hcr_el2;
 	u64 mdcr_el2;
+
+	/* DO NOT USE: Removed upstream. Kept to not break the KMI. */
 	u64 cptr_el2;
 
 	/* Values of trap registers for the host before guest entry. */
@@ -637,7 +662,8 @@ struct kvm_vcpu_arch {
 	struct kvm_guest_debug_arch vcpu_debug_state;
 	struct kvm_guest_debug_arch external_debug_state;
 
-	struct user_fpsimd_state *host_fpsimd_state;	/* hyp VA */
+	/* DO NOT USE: Removed upstream. Kept to not break the KMI. */
+	struct user_fpsimd_state *host_fpsimd_state;
 
 	struct {
 		/* {Break,watch}point registers */
@@ -846,10 +872,6 @@ struct kvm_vcpu_arch {
 /* pKVM host vcpu state is dirty, needs resync (nVHE-only) */
 #define PKVM_HOST_STATE_DIRTY	__vcpu_single_flag(iflags, BIT(7))
 
-/* SVE enabled for host EL0 */
-#define HOST_SVE_ENABLED	__vcpu_single_flag(sflags, BIT(0))
-/* SME enabled for EL0 */
-#define HOST_SME_ENABLED	__vcpu_single_flag(sflags, BIT(1))
 /* Physical CPU not in supported_cpus */
 #define ON_UNSUPPORTED_CPU	__vcpu_single_flag(sflags, BIT(2))
 /* WFIT instruction trapped */
@@ -1330,6 +1352,9 @@ bool kvm_arm_vcpu_stopped(struct kvm_vcpu *vcpu);
 int kvm_iommu_init_driver(void);
 void kvm_iommu_remove_driver(void);
 
+struct page *kvm_iommu_cma_alloc(void);
+bool kvm_iommu_cma_release(struct page *p);
+
 int pkvm_iommu_suspend(struct device *dev);
 int pkvm_iommu_resume(struct device *dev);
 
@@ -1346,6 +1371,7 @@ int kvm_iommu_register_driver(struct kvm_iommu_driver *kern_ops);
 #define HYP_ALLOC_MGT_IOMMU_ID		1
 
 unsigned long __pkvm_reclaim_hyp_alloc_mgt(unsigned long nr_pages);
+int __pkvm_topup_hyp_alloc_mgt_mc(unsigned long id, struct kvm_hyp_memcache *mc);
 int __pkvm_topup_hyp_alloc_mgt(unsigned long id, unsigned long nr_pages,
 			       unsigned long sz_alloc);
 int __pkvm_topup_hyp_alloc_mgt_gfp(unsigned long id, unsigned long nr_pages,

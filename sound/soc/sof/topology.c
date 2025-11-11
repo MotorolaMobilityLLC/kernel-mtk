@@ -1267,8 +1267,8 @@ static int sof_widget_parse_tokens(struct snd_soc_component *scomp, struct snd_s
 			struct snd_sof_tuple *new_tuples;
 
 			num_tuples += token_list[object_token_list[i]].count * (num_sets - 1);
-			new_tuples = krealloc(swidget->tuples,
-					      sizeof(*new_tuples) * num_tuples, GFP_KERNEL);
+			new_tuples = krealloc_array(swidget->tuples,
+						    num_tuples, sizeof(*new_tuples), GFP_KERNEL);
 			if (!new_tuples) {
 				ret = -ENOMEM;
 				goto err;
@@ -2039,6 +2039,8 @@ static int sof_link_unload(struct snd_soc_component *scomp, struct snd_soc_dobj 
 
 	if (!slink)
 		return 0;
+
+	slink->link->platforms->name = NULL;
 
 	kfree(slink->tuples);
 	list_del(&slink->list);

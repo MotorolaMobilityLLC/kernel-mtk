@@ -77,6 +77,12 @@ type 'struct pkvm_module_ops' changed
 type 'enum ftrace_dump_mode' changed
   enumerator 'DUMP_PARAM' (3) was added
 
+1 function symbol(s) removed
+  'int __traceiter_android_vh_suitable_migration_target_bypass(void*, struct page*, bool*)'
+
+1 variable symbol(s) removed
+  'struct tracepoint __tracepoint_android_vh_suitable_migration_target_bypass'
+
 type 'struct cgroup_root' changed
   member 'u8 android_backport_reserved1[28]' was removed
   member 'union { struct callback_head rcu; struct { u8 android_backport_reserved1[28]; }; union { }; }' was added
@@ -86,6 +92,54 @@ type 'struct cgroup_root' changed
 
 1 variable symbol(s) removed
   'struct tracepoint __tracepoint_android_vh_mutex_unlock_slowpath_before_wakeq'
+
+2 function symbol(s) removed
+  'int __traceiter_android_vh_mutex_unlock_slowpath_before_wakeq(void*, struct mutex*)'
+  'int __traceiter_android_vh_suitable_migration_target_bypass(void*, struct page*, bool*)'
+
+2 variable symbol(s) removed
+  'struct tracepoint __tracepoint_android_vh_mutex_unlock_slowpath_before_wakeq'
+  'struct tracepoint __tracepoint_android_vh_suitable_migration_target_bypass'
+
+7 function symbol(s) removed
+  'int xhci_sideband_add_endpoint(struct xhci_sideband*, struct usb_host_endpoint*)'
+  'int xhci_sideband_create_interrupter(struct xhci_sideband*, int, int, bool)'
+  'int xhci_sideband_enable_interrupt(struct xhci_sideband*, u32)'
+  'struct xhci_sideband* xhci_sideband_register(struct usb_device*)'
+  'int xhci_sideband_remove_endpoint(struct xhci_sideband*, struct usb_host_endpoint*)'
+  'void xhci_sideband_remove_interrupter(struct xhci_sideband*)'
+  'void xhci_sideband_unregister(struct xhci_sideband*)'
+
+type 'struct xhci_sideband' changed
+  was fully defined, is now only declared
+
+type 'struct pkvm_module_ops' changed
+  member 'u64 android_kabi_reserved4' was removed
+  member 'union { int(* register_guest_smc_handler)(bool(*)(struct arm_smccc_1_2_regs*, struct arm_smccc_res*, pkvm_handle_t), pkvm_handle_t); struct { u64 android_kabi_reserved4; }; union { }; }' was added
+
+type 'struct pkvm_module_ops' changed
+  member 'u64 android_kabi_reserved5' was removed
+  member 'union { int(* guest_stage2_pa)(pkvm_handle_t, u64, phys_addr_t*); struct { u64 android_kabi_reserved5; }; union { }; }' was added
+
+type 'struct io_ring_ctx' changed
+  member 'struct hlist_head io_buf_list' was removed
+  28 members ('struct wait_queue_head poll_wq' .. 'struct page** sqe_pages') changed
+    offset changed by -64
+
+1 function symbol(s) removed
+  'int __traceiter_android_vh_filemap_fault_before_folio_locked(void*, struct folio*)'
+
+1 variable symbol(s) removed
+  'struct tracepoint __tracepoint_android_vh_filemap_fault_before_folio_locked'
+
+type 'struct kvm_protected_vm' changed
+  member 'struct maple_tree pinned_pages' was removed
+  member 'union { struct rb_root_cached pinned_pages; struct { struct maple_tree __unused; }; union { }; }' was added
+
+type 'struct kvm_hyp_req' changed
+  member changed from 'union { struct { u8 dest; int nr_pages; int sz_alloc; } mem; struct { unsigned long guest_ipa; size_t size; } map; }' to 'union { struct { u8 dest; int nr_pages; int sz_alloc; } mem; struct { unsigned long guest_ipa; size_t size; } map; struct { unsigned long guest_ipa; size_t size; } split; }'
+    type changed from 'union { struct { u8 dest; int nr_pages; int sz_alloc; } mem; struct { unsigned long guest_ipa; size_t size; } map; }' to 'union { struct { u8 dest; int nr_pages; int sz_alloc; } mem; struct { unsigned long guest_ipa; size_t size; } map; struct { unsigned long guest_ipa; size_t size; } split; }'
+      member 'struct { unsigned long guest_ipa; size_t size; } split' was added
 
 type 'struct scm_fp_list' changed
   byte size changed from 2040 to 2048

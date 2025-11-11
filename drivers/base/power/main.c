@@ -36,6 +36,8 @@
 #include <linux/timer.h>
 #include <linux/wakeup_reason.h>
 
+#include <trace/hooks/dtask.h>
+
 #include "../base.h"
 #include "power.h"
 
@@ -239,8 +241,11 @@ static void dpm_wait(struct device *dev, bool async)
 	if (!dev)
 		return;
 
-	if (async || (pm_async_enabled && dev->power.async_suspend))
+	if (async || (pm_async_enabled && dev->power.async_suspend)) {
+		trace_android_vh_dpm_wait_start(dev);
 		wait_for_completion(&dev->power.completion);
+		trace_android_vh_dpm_wait_finish(dev);
+	}
 }
 
 static int dpm_wait_fn(struct device *dev, void *async_ptr)
@@ -895,6 +900,9 @@ static void __device_resume(struct device *dev, pm_message_t state, bool async)
 	if (dev->power.syscore)
 		goto Complete;
 
+	if (!dev->power.is_suspended)
+		goto Complete;
+
 	if (dev->power.direct_complete) {
 		/* Match the pm_runtime_disable() in __device_suspend(). */
 		pm_runtime_enable(dev);
@@ -912,9 +920,6 @@ static void __device_resume(struct device *dev, pm_message_t state, bool async)
 	 * a resumed device, even if the device hasn't been completed yet.
 	 */
 	dev->power.is_prepared = false;
-
-	if (!dev->power.is_suspended)
-		goto Unlock;
 
 	if (dev->pm_domain) {
 		info = "power domain ";
@@ -955,7 +960,6 @@ static void __device_resume(struct device *dev, pm_message_t state, bool async)
 	error = dpm_run_callback(callback, dev, state, info);
 	dev->power.is_suspended = false;
 
- Unlock:
 	device_unlock(dev);
 	dpm_watchdog_clear(&wd);
 
@@ -1239,14 +1243,13 @@ Skip:
 	dev->power.is_noirq_suspended = true;
 
 	/*
-	 * Skipping the resume of devices that were in use right before the
-	 * system suspend (as indicated by their PM-runtime usage counters)
-	 * would be suboptimal.  Also resume them if doing that is not allowed
-	 * to be skipped.
+	 * Devices must be resumed unless they are explicitly allowed to be left
+	 * in suspend, but even in that case skipping the resume of devices that
+	 * were in use right before the system suspend (as indicated by their
+	 * runtime PM usage counters and child counters) would be suboptimal.
 	 */
-	if (atomic_read(&dev->power.usage_count) > 1 ||
-	    !(dev_pm_test_driver_flags(dev, DPM_FLAG_MAY_SKIP_RESUME) &&
-	      dev->power.may_skip_resume))
+	if (!(dev_pm_test_driver_flags(dev, DPM_FLAG_MAY_SKIP_RESUME) &&
+	      dev->power.may_skip_resume) || !pm_runtime_need_not_resume(dev))
 		dev->power.must_resume = true;
 
 	if (dev->power.must_resume)
@@ -1644,6 +1647,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 			pm_runtime_disable(dev);
 			if (pm_runtime_status_suspended(dev)) {
 				pm_dev_dbg(dev, state, "direct-complete ");
+				dev->power.is_suspended = true;
 				goto Complete;
 			}
 

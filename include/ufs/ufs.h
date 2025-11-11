@@ -100,9 +100,10 @@ enum upiu_response_transaction {
 	UPIU_TRANSACTION_REJECT_UPIU	= 0x3F,
 };
 
-/* UPIU Read/Write flags */
+/* UPIU Read/Write flags. See also table "UPIU Flags" in the UFS standard. */
 enum {
 	UPIU_CMD_FLAGS_NONE	= 0x00,
+	UPIU_CMD_FLAGS_CP	= 0x04,
 	UPIU_CMD_FLAGS_WRITE	= 0x20,
 	UPIU_CMD_FLAGS_READ	= 0x40,
 };
@@ -386,8 +387,8 @@ enum {
 
 /* Possible values for dExtendedUFSFeaturesSupport */
 enum {
-	UFS_DEV_LOW_TEMP_NOTIF		= BIT(4),
-	UFS_DEV_HIGH_TEMP_NOTIF		= BIT(5),
+	UFS_DEV_HIGH_TEMP_NOTIF		= BIT(4),
+	UFS_DEV_LOW_TEMP_NOTIF		= BIT(5),
 	UFS_DEV_EXT_TEMP_NOTIF		= BIT(6),
 	UFS_DEV_HPB_SUPPORT		= BIT(7),
 	UFS_DEV_WRITE_BOOSTER_SUP	= BIT(8),

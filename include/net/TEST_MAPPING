@@ -241,6 +241,26 @@
     },
     {
       "name": "vts_kernel_net_tests"
+    },
+    {
+      "name": "CtsJobSchedulerTestCases",
+      "options": [
+        {
+          "include-filter": "android.jobscheduler.cts.ConnectivityConstraintTest#testCellularConstraintExecutedAndStopped"
+        },
+        {
+          "include-filter": "android.jobscheduler.cts.ConnectivityConstraintTest#testConnectivityConstraintExecutes_transitionNetworks"
+        },
+        {
+          "include-filter": "android.jobscheduler.cts.ConnectivityConstraintTest#testConnectivityConstraintExecutes_withMobile"
+        },
+        {
+          "include-filter": "android.jobscheduler.cts.ConnectivityConstraintTest#testEJMeteredConstraintFails_withMobile_DataSaverOn"
+        },
+        {
+          "include-filter": "android.jobscheduler.cts.ConnectivityConstraintTest#testMeteredConstraintFails_withMobile_DataSaverOn"
+        }
+      ]
     }
   ],
   "presubmit-large": [
@@ -289,6 +309,53 @@
       "options": [
         {
           "include-filter": "android.util.cts.FloatMathTest"
+        }
+      ]
+    },
+    {
+      "name": "CtsRootBluetoothTestCases"
+    },
+    {
+      "name": "vts_kernel_net_tests"
+    },
+    {
+      "name": "KernelAbilistTest"
+    },
+    {
+      "name": "VtsAidlHalSensorsTargetTest"
+    },
+    {
+      "name": "VtsBootconfigTest"
+    },
+    {
+      "name": "binderDriverInterfaceTest"
+    },
+    {
+      "name": "binderLibTest"
+    },
+    {
+      "name": "binderSafeInterfaceTest"
+    },
+    {
+      "name": "memunreachable_binder_test"
+    },
+    {
+      "name": "VtsHalBluetoothAudioTargetTest"
+    },
+    {
+      "name": "CtsBionicTestCases"
+    },
+    {
+      "name": "CtsLibcoreTestCases"
+    },
+    {
+      "name": "CtsUsbTests"
+    },
+    {
+      "name": "CtsDrmTestCases",
+      "options": [
+        {
+          "exclude-filter": "android.drm.cts.DRMTest#testForwardLockAccess"
         }
       ]
     }

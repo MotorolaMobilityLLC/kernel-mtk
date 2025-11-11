@@ -12,6 +12,9 @@
 DECLARE_RESTRICTED_HOOK(android_rvh_set_balance_anon_file_reclaim,
 			TP_PROTO(bool *balance_anon_file_reclaim),
 			TP_ARGS(balance_anon_file_reclaim), 1);
+DECLARE_RESTRICTED_HOOK(android_rvh_kswapd_shrink_node,
+			TP_PROTO(unsigned long *nr_reclaimed),
+			TP_ARGS(nr_reclaimed), 1);
 DECLARE_HOOK(android_vh_tune_swappiness,
 	TP_PROTO(int *swappiness),
 	TP_ARGS(swappiness));
@@ -24,6 +27,10 @@ DECLARE_HOOK(android_vh_check_folio_look_around_ref,
 DECLARE_HOOK(android_vh_do_shrink_slab,
 	TP_PROTO(struct shrinker *shrinker, long *freeable),
 	TP_ARGS(shrinker, freeable));
+DECLARE_HOOK(android_vh_do_shrink_slab_ex,
+	TP_PROTO(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+                long *freeable, int priority),
+	TP_ARGS(shrinkctl, shrinker, freeable, priority));
 DECLARE_HOOK(android_vh_throttle_direct_reclaim_bypass,
 	TP_PROTO(bool *bypass),
 	TP_ARGS(bypass));
@@ -31,6 +38,13 @@ DECLARE_HOOK(android_vh_vmscan_kswapd_done,
 	TP_PROTO(int node_id, unsigned int highest_zoneidx, unsigned int alloc_order,
 	        unsigned int reclaim_order),
 	TP_ARGS(node_id, highest_zoneidx, alloc_order, reclaim_order));
+DECLARE_RESTRICTED_HOOK(android_rvh_vmscan_kswapd_wake,
+	TP_PROTO(int node_id, unsigned int highest_zoneidx, unsigned int alloc_order),
+	TP_ARGS(node_id, highest_zoneidx, alloc_order), 1);
+DECLARE_RESTRICTED_HOOK(android_rvh_vmscan_kswapd_done,
+	TP_PROTO(int node_id, unsigned int highest_zoneidx, unsigned int alloc_order,
+			unsigned int reclaim_order),
+	TP_ARGS(node_id, highest_zoneidx, alloc_order, reclaim_order), 1);
 DECLARE_HOOK(android_vh_shrink_folio_list,
 	TP_PROTO(struct folio *folio, bool dirty, bool writeback,
 		bool *activate, bool *keep),
@@ -41,6 +55,15 @@ DECLARE_HOOK(android_vh_inode_lru_isolate,
 DECLARE_HOOK(android_vh_invalidate_mapping_pagevec,
 	TP_PROTO(struct address_space *mapping, bool *skip),
 	TP_ARGS(mapping, skip));
+DECLARE_HOOK(android_vh_keep_reclaimed_folio,
+	TP_PROTO(struct folio *folio, int refcount, bool *keep),
+	TP_ARGS(folio, refcount, keep));
+DECLARE_HOOK(android_vh_clear_reclaimed_folio,
+	TP_PROTO(struct folio *folio, bool reclaimed),
+	TP_ARGS(folio, reclaimed));
+DECLARE_HOOK(android_vh_evict_folios_bypass,
+	TP_PROTO(struct folio *folio, bool *bypass),
+	TP_ARGS(folio, bypass));
 
 enum scan_balance;
 DECLARE_HOOK(android_vh_tune_scan_type,
@@ -92,12 +115,24 @@ DECLARE_HOOK(android_vh_do_folio_trylock,
 	TP_PROTO(struct folio *folio, struct rw_semaphore *sem,
 		bool *got_lock, bool *skip),
 	TP_ARGS(folio, sem, got_lock, skip));
+DECLARE_HOOK(android_vh_shrink_node,
+	TP_PROTO(pg_data_t *pgdat, struct mem_cgroup *memcg),
+	TP_ARGS(pgdat, memcg));
 DECLARE_HOOK(android_vh_shrink_node_memcgs,
 	TP_PROTO(struct mem_cgroup *memcg, bool *skip),
 	TP_ARGS(memcg, skip));
 DECLARE_HOOK(android_vh_should_memcg_bypass,
 	TP_PROTO(struct mem_cgroup *memcg, int priority, bool *bypass),
 	TP_ARGS(memcg, priority, bypass));
+DECLARE_HOOK(android_vh_direct_reclaim_begin,
+	TP_PROTO(int *prio),
+	TP_ARGS(prio));
+DECLARE_HOOK(android_vh_direct_reclaim_end,
+	TP_PROTO(int prio),
+	TP_ARGS(prio));
+DECLARE_HOOK(android_vh_should_split_folio_to_list,
+	TP_PROTO(struct folio *folio, bool *should_split_to_list),
+	TP_ARGS(folio, should_split_to_list));
 #endif /* _TRACE_HOOK_VMSCAN_H */
 /* This part must be outside protection */
 #include <trace/define_trace.h>

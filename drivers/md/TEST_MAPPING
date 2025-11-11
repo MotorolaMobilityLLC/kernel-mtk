@@ -283,6 +283,38 @@
           "include-filter": "android.util.cts.FloatMathTest"
         }
       ]
+    },
+    {
+      "name": "CtsRootBluetoothTestCases"
+    },
+    {
+      "name": "vts_kernel_net_tests"
+    },
+    {
+      "name": "VtsAidlHalSensorsTargetTest"
+    },
+    {
+      "name": "VtsBootconfigTest"
+    },
+    {
+      "name": "VtsHalBluetoothAudioTargetTest"
+    },
+    {
+      "name": "CtsBionicTestCases"
+    },
+    {
+      "name": "CtsLibcoreTestCases"
+    },
+    {
+      "name": "CtsUsbTests"
+    },
+    {
+      "name": "CtsDrmTestCases",
+      "options": [
+        {
+          "exclude-filter": "android.drm.cts.DRMTest#testForwardLockAccess"
+        }
+      ]
     }
   ]
 }

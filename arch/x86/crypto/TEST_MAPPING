@@ -9,8 +9,19 @@
     {
       "path": "system/netd"
     }
- ],
- "presubmit": [
+  ],
+  "presubmit": [
+    {
+      "name": "CtsAppEnumerationTestCases",
+      "options": [
+        {
+          "exclude-annotation": "com.android.testutils.SkipPresubmit"
+        },
+        {
+          "include-filter": "android.appenumeration.cts.AppEnumerationTests"
+        }
+      ]
+    },
     {
       "name": "CtsAppEnumerationTestCases",
       "options": [
@@ -281,6 +292,29 @@
       "options": [
         {
           "include-filter": "android.util.cts.FloatMathTest"
+        }
+      ]
+    },
+    {
+      "name": "CtsRootBluetoothTestCases"
+    },
+    {
+      "name": "vts_kernel_net_tests"
+    },
+    {
+      "name": "binderLibTest"
+    },
+    {
+      "name": "CtsLibcoreTestCases"
+    },
+    {
+      "name": "CtsUsbTests"
+    },
+    {
+      "name": "CtsDrmTestCases",
+      "options": [
+        {
+          "exclude-filter": "android.drm.cts.DRMTest#testForwardLockAccess"
         }
       ]
     }

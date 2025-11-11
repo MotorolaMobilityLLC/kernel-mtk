@@ -247,6 +247,11 @@ static inline bool lru_gen_add_folio(struct lruvec *lruvec, struct folio *folio,
 	int type = folio_is_file_lru(folio);
 	int zone = folio_zonenum(folio);
 	struct lru_gen_folio *lrugen = &lruvec->lrugen;
+	bool skip = false;
+
+	trace_android_vh_lru_gen_add_folio_skip(lruvec, folio, &skip);
+	if (skip)
+		return true;
 
 	VM_WARN_ON_ONCE_FOLIO(gen != -1, folio);
 
@@ -294,6 +299,11 @@ static inline bool lru_gen_del_folio(struct lruvec *lruvec, struct folio *folio,
 {
 	unsigned long flags;
 	int gen = folio_lru_gen(folio);
+	bool skip = false;
+
+	trace_android_vh_lru_gen_del_folio_skip(lruvec, folio, &skip);
+	if (skip)
+		return true;
 
 	if (gen < 0)
 		return false;
@@ -312,6 +322,12 @@ static inline bool lru_gen_del_folio(struct lruvec *lruvec, struct folio *folio,
 	return true;
 }
 
+static inline void folio_migrate_refs(struct folio *new, struct folio *old)
+{
+	unsigned long refs = READ_ONCE(old->flags) & LRU_REFS_MASK;
+
+	set_mask_bits(&new->flags, LRU_REFS_MASK, refs);
+}
 #else /* !CONFIG_LRU_GEN */
 
 static inline bool lru_gen_enabled(void)
@@ -339,12 +355,21 @@ static inline bool lru_gen_del_folio(struct lruvec *lruvec, struct folio *folio,
 	return false;
 }
 
+static inline void folio_migrate_refs(struct folio *new, struct folio *old)
+{
+
+}
 #endif /* CONFIG_LRU_GEN */
 
 static __always_inline
 void lruvec_add_folio(struct lruvec *lruvec, struct folio *folio)
 {
 	enum lru_list lru = folio_lru_list(folio);
+	bool skip = false;
+
+	trace_android_vh_lruvec_add_folio(lruvec, folio, lru, false, &skip);
+	if (skip)
+		return;
 
 	if (lru_gen_add_folio(lruvec, folio, false))
 		return;
@@ -360,6 +385,11 @@ static __always_inline
 void lruvec_add_folio_tail(struct lruvec *lruvec, struct folio *folio)
 {
 	enum lru_list lru = folio_lru_list(folio);
+	bool skip = false;
+
+	trace_android_vh_lruvec_add_folio(lruvec, folio, lru, true, &skip);
+	if (skip)
+		return;
 
 	if (lru_gen_add_folio(lruvec, folio, true))
 		return;
@@ -375,6 +405,11 @@ static __always_inline
 void lruvec_del_folio(struct lruvec *lruvec, struct folio *folio)
 {
 	enum lru_list lru = folio_lru_list(folio);
+	bool skip = false;
+
+	trace_android_vh_lruvec_del_folio(lruvec, folio, lru, &skip);
+	if (skip)
+		return;
 
 	if (lru_gen_del_folio(lruvec, folio, false))
 		return;

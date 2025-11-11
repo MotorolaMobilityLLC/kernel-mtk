@@ -43,6 +43,7 @@
 #include <linux/psi.h>
 #include <linux/ramfs.h>
 #include <linux/page_idle.h>
+#include <linux/page_size_compat.h>
 #include <linux/migrate.h>
 #include <linux/pipe_fs_i.h>
 #include <linux/splice.h>
@@ -64,6 +65,12 @@
 #include <asm/mman.h>
 
 #include "swap.h"
+
+void _trace_android_rvh_mapping_shrinkable(bool *shrinkable)
+{
+	trace_android_rvh_mapping_shrinkable(shrinkable);
+}
+EXPORT_SYMBOL_GPL(_trace_android_rvh_mapping_shrinkable);
 
 /*
  * Shared mappings implemented 30.11.1994. It's not fully working yet,
@@ -203,6 +210,7 @@ static void filemap_unaccount_folio(struct address_space *mapping,
 	__lruvec_stat_mod_folio(folio, NR_FILE_PAGES, -nr);
 	if (folio_test_swapbacked(folio)) {
 		__lruvec_stat_mod_folio(folio, NR_SHMEM, -nr);
+		trace_android_vh_shmem_mod_shmem(folio->mapping, -nr);
 		if (folio_test_pmd_mappable(folio))
 			__lruvec_stat_mod_folio(folio, NR_SHMEM_THPS, -nr);
 	} else if (folio_test_pmd_mappable(folio)) {
@@ -864,6 +872,8 @@ noinline int __filemap_add_folio(struct address_space *mapping,
 {
 	XA_STATE(xas, &mapping->i_pages, index);
 	int huge = folio_test_hugetlb(folio);
+	void *alloced_shadow = NULL;
+	int alloced_order = 0;
 	bool charged = false;
 	long nr = 1;
 
@@ -871,6 +881,7 @@ noinline int __filemap_add_folio(struct address_space *mapping,
 	VM_BUG_ON_FOLIO(folio_test_swapbacked(folio), folio);
 	mapping_set_update(&xas, mapping);
 
+	trace_android_vh_filemap_add_folio(mapping, folio, index);
 	if (!huge) {
 		int error = mem_cgroup_charge(folio, NULL, gfp);
 		VM_BUG_ON_FOLIO(index & (folio_nr_pages(folio) - 1), folio);
@@ -886,13 +897,10 @@ noinline int __filemap_add_folio(struct address_space *mapping,
 	folio->mapping = mapping;
 	folio->index = xas.xa_index;
 
-	do {
-		unsigned int order = xa_get_order(xas.xa, xas.xa_index);
+	for (;;) {
+		int order = -1, split_order = 0;
 		void *entry, *old = NULL;
 
-		if (order > folio_order(folio))
-			xas_split_alloc(&xas, xa_load(xas.xa, xas.xa_index),
-					order, gfp);
 		xas_lock_irq(&xas);
 		xas_for_each_conflict(&xas, entry) {
 			old = entry;
@@ -900,19 +908,33 @@ noinline int __filemap_add_folio(struct address_space *mapping,
 				xas_set_err(&xas, -EEXIST);
 				goto unlock;
 			}
+			/*
+			 * If a larger entry exists,
+			 * it will be the first and only entry iterated.
+			 */
+			if (order == -1)
+				order = xas_get_order(&xas);
+		}
+
+		/* entry may have changed before we re-acquire the lock */
+		if (alloced_order && (old != alloced_shadow || order != alloced_order)) {
+			xas_destroy(&xas);
+			alloced_order = 0;
 		}
 
 		if (old) {
-			if (shadowp)
-				*shadowp = old;
-			/* entry may have been split before we acquired lock */
-			order = xa_get_order(xas.xa, xas.xa_index);
-			if (order > folio_order(folio)) {
+			if (order > 0 && order > folio_order(folio)) {
 				/* How to handle large swap entries? */
 				BUG_ON(shmem_mapping(mapping));
+				if (!alloced_order) {
+					split_order = order;
+					goto unlock;
+				}
 				xas_split(&xas, old, order);
 				xas_reset(&xas);
 			}
+			if (shadowp)
+				*shadowp = old;
 		}
 
 		xas_store(&xas, folio);
@@ -928,9 +950,24 @@ noinline int __filemap_add_folio(struct address_space *mapping,
 				__lruvec_stat_mod_folio(folio,
 						NR_FILE_THPS, nr);
 		}
+
 unlock:
 		xas_unlock_irq(&xas);
-	} while (xas_nomem(&xas, gfp));
+
+		/* split needed, alloc here and retry. */
+		if (split_order) {
+			xas_split_alloc(&xas, old, split_order, gfp);
+			if (xas_error(&xas))
+				goto error;
+			alloced_shadow = old;
+			alloced_order = split_order;
+			xas_reset(&xas);
+			continue;
+		}
+
+		if (!xas_nomem(&xas, gfp))
+			break;
+	}
 
 	if (xas_error(&xas))
 		goto error;
@@ -967,8 +1004,15 @@ int filemap_add_folio(struct address_space *mapping, struct folio *folio,
 		 * get overwritten with something else, is a waste of memory.
 		 */
 		WARN_ON_ONCE(folio_test_active(folio));
-		if (!(gfp & __GFP_WRITE) && shadow)
+		if (!(gfp & __GFP_WRITE) && shadow) {
 			workingset_refault(folio, shadow);
+			trace_android_vh_refault_filemap_add_folio(folio, shadow, gfp, &ret);
+			if (unlikely(ret)) {
+				__filemap_remove_folio(folio, shadow);
+				__folio_clear_locked(folio);
+				return ret;
+			}
+		}
 		folio_add_lru(folio);
 	}
 	return ret;
@@ -1546,6 +1590,28 @@ void folio_unlock(struct folio *folio)
 EXPORT_SYMBOL(folio_unlock);
 
 /**
+ * folio_end_read - End read on a folio.
+ * @folio: The folio.
+ * @success: True if all reads completed successfully.
+ *
+ * When all reads against a folio have completed, filesystems should
+ * call this function to let the pagecache know that no more reads
+ * are outstanding.  This will unlock the folio and wake up any thread
+ * sleeping on the lock.  The folio will also be marked uptodate if all
+ * reads succeeded.
+ *
+ * Context: May be called from interrupt or process context.  May not be
+ * called from NMI context.
+ */
+void folio_end_read(struct folio *folio, bool success)
+{
+	if (likely(success))
+		folio_mark_uptodate(folio);
+	folio_unlock(folio);
+}
+EXPORT_SYMBOL(folio_end_read);
+
+/**
  * folio_end_private_2 - Clear PG_private_2 and wake any waiters.
  * @folio: The folio.
  *
@@ -1887,6 +1953,8 @@ repeat:
 	folio = filemap_get_entry(mapping, index);
 	if (xa_is_value(folio))
 		folio = NULL;
+	trace_android_vh_filemap_get_folio(mapping, index, fgp_flags,
+					gfp, folio);
 	if (!folio)
 		goto no_page;
 
@@ -1947,8 +2015,6 @@ no_page:
 			gfp_t alloc_gfp = gfp;
 
 			err = -ENOMEM;
-			if (order == 1)
-				order = 0;
 			if (order > 0)
 				alloc_gfp |= __GFP_NORETRY | __GFP_NOWARN;
 			folio = filemap_alloc_folio(alloc_gfp, order);
@@ -1968,8 +2034,19 @@ no_page:
 
 		if (err == -EEXIST)
 			goto repeat;
-		if (err)
+		if (err) {
+			/*
+			 * When NOWAIT I/O fails to allocate folios this could
+			 * be due to a nonblocking memory allocation and not
+			 * because the system actually is out of memory.
+			 * Return -EAGAIN so that there caller retries in a
+			 * blocking fashion instead of propagating -ENOMEM
+			 * to the application.
+			 */
+			if ((fgp_flags & FGP_NOWAIT) && err == -ENOMEM)
+				err = -EAGAIN;
 			return ERR_PTR(err);
+		}
 		/*
 		 * filemap_add_folio locks the page, and for mmap
 		 * we expect an unlocked page.
@@ -2237,6 +2314,7 @@ unsigned filemap_get_folios_contig(struct address_space *mapping,
 			*start = folio->index + nr;
 			goto out;
 		}
+		xas_advance(&xas, folio_next_index(folio) - 1);
 		continue;
 put_folio:
 		folio_put(folio);
@@ -2652,7 +2730,7 @@ ssize_t filemap_read(struct kiocb *iocb, struct iov_iter *iter,
 	if (unlikely(!iov_iter_count(iter)))
 		return 0;
 
-	iov_iter_truncate(iter, inode->i_sb->s_maxbytes);
+	iov_iter_truncate(iter, inode->i_sb->s_maxbytes - iocb->ki_pos);
 	folio_batch_init(&fbatch);
 	trace_android_vh_filemap_read(filp, iocb->ki_pos, iov_iter_count(iter));
 
@@ -3032,7 +3110,7 @@ static inline loff_t folio_seek_hole_data(struct xa_state *xas,
 		if (ops->is_partially_uptodate(folio, offset, bsz) ==
 							seek_data)
 			break;
-		start = (start + bsz) & ~(bsz - 1);
+		start = (start + bsz) & ~((u64)bsz - 1);
 		offset += bsz;
 	} while (offset < folio_size(folio));
 unlock:
@@ -3257,6 +3335,11 @@ static struct file *do_async_mmap_readahead(struct vm_fault *vmf,
 	DEFINE_READAHEAD(ractl, file, ra, file->f_mapping, vmf->pgoff);
 	struct file *fpin = NULL;
 	unsigned int mmap_miss;
+	bool skip = false;
+
+	trace_android_vh_do_async_mmap_readahead(vmf, folio, &skip);
+	if (skip)
+		return fpin;
 
 	/* If we don't want any read-ahead, don't bother */
 	if (vmf->vma->vm_flags & VM_RAND_READ || !ra->ra_pages)
@@ -3355,6 +3438,8 @@ retry_find:
 			return VM_FAULT_OOM;
 		}
 	}
+
+	trace_android_vh_filemap_fault_pre_folio_locked(folio);
 
 	if (!lock_folio_maybe_drop_mmap(vmf, folio, &fpin))
 		goto out_retry;
@@ -3617,12 +3702,14 @@ vm_fault_t filemap_map_pages(struct vm_fault *vmf,
 	vm_fault_t ret = 0;
 	unsigned int nr_pages = 0, mmap_miss = 0, mmap_miss_saved;
 	pgoff_t first_pgoff = 0;
+	pgoff_t orig_start_pgoff = start_pgoff;
 
 	rcu_read_lock();
 	folio = next_uptodate_folio(&xas, mapping, end_pgoff);
 	if (!folio)
 		goto out;
 	first_pgoff = xas.xa_index;
+	orig_start_pgoff = xas.xa_index;
 
 	if (filemap_map_pmd(vmf, folio, start_pgoff)) {
 		ret = VM_FAULT_NOPAGE;
@@ -3644,6 +3731,7 @@ vm_fault_t filemap_map_pages(struct vm_fault *vmf,
 		last_pgoff = xas.xa_index;
 		end = folio->index + folio_nr_pages(folio) - 1;
 		nr_pages = min(end, end_pgoff) - xas.xa_index + 1;
+		trace_android_vh_filemap_pages(folio);
 
 		if (!folio_test_large(folio))
 			ret |= filemap_map_order0_folio(vmf,
@@ -3654,6 +3742,7 @@ vm_fault_t filemap_map_pages(struct vm_fault *vmf,
 					nr_pages, &mmap_miss);
 
 		folio_unlock(folio);
+		trace_android_vh_filemap_folio_mapped(folio);
 		folio_put(folio);
 	} while ((folio = next_uptodate_folio(&xas, mapping, end_pgoff)) != NULL);
 	pte_unmap_unlock(vmf->pte, vmf->ptl);
@@ -3666,6 +3755,7 @@ out:
 	else
 		WRITE_ONCE(file->f_ra.mmap_miss, mmap_miss_saved - mmap_miss);
 	trace_android_vh_filemap_map_pages(file, first_pgoff, last_pgoff, ret);
+	trace_android_vh_filemap_map_pages_range(file, orig_start_pgoff, last_pgoff, ret);
 
 	return ret;
 }
@@ -4289,6 +4379,31 @@ resched:
 		}
 	}
 	rcu_read_unlock();
+
+	/* Adjust the counts if emulating the page size */
+	if (__PAGE_SIZE > PAGE_SIZE) {
+		unsigned int nr_sub_pages = __PAGE_SIZE / PAGE_SIZE;
+
+		cs->nr_cache /= nr_sub_pages;
+		cs->nr_dirty /= nr_sub_pages;
+		cs->nr_writeback /= nr_sub_pages;
+		cs->nr_evicted /= nr_sub_pages;
+		cs->nr_recently_evicted /= nr_sub_pages;
+	}
+}
+
+/*
+ * See mincore: reveal pagecache information only for files
+ * that the calling process has write access to, or could (if
+ * tried) open for writing.
+ */
+static inline bool can_do_cachestat(struct file *f)
+{
+	if (f->f_mode & FMODE_WRITE)
+		return true;
+	if (inode_owner_or_capable(file_mnt_idmap(f), file_inode(f)))
+		return true;
+	return file_permission(f, MAY_WRITE) == 0;
 }
 
 /*
@@ -4348,6 +4463,11 @@ SYSCALL_DEFINE4(cachestat, unsigned int, fd,
 	if (is_file_hugepages(f.file)) {
 		fdput(f);
 		return -EOPNOTSUPP;
+	}
+
+	if (!can_do_cachestat(f.file)) {
+		fdput(f);
+		return -EPERM;
 	}
 
 	if (flags != 0) {

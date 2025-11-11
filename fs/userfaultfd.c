@@ -18,6 +18,7 @@
 #include <linux/mm_inline.h>
 #include <linux/mmu_notifier.h>
 #include <linux/poll.h>
+#include <linux/page_size_compat.h>
 #include <linux/slab.h>
 #include <linux/seq_file.h>
 #include <linux/file.h>
@@ -413,32 +414,6 @@ vm_fault_t handle_userfault(struct vm_fault *vmf, unsigned long reason)
 		goto out;
 
 	/*
-	 * If it's already released don't get it. This avoids to loop
-	 * in __get_user_pages if userfaultfd_release waits on the
-	 * caller of handle_userfault to release the mmap_lock.
-	 */
-	if (unlikely(READ_ONCE(ctx->released))) {
-		/*
-		 * Don't return VM_FAULT_SIGBUS in this case, so a non
-		 * cooperative manager can close the uffd after the
-		 * last UFFDIO_COPY, without risking to trigger an
-		 * involuntary SIGBUS if the process was starting the
-		 * userfaultfd while the userfaultfd was still armed
-		 * (but after the last UFFDIO_COPY). If the uffd
-		 * wasn't already closed when the userfault reached
-		 * this point, that would normally be solved by
-		 * userfaultfd_must_wait returning 'false'.
-		 *
-		 * If we were to return VM_FAULT_SIGBUS here, the non
-		 * cooperative manager would be instead forced to
-		 * always call UFFDIO_UNREGISTER before it can safely
-		 * close the uffd.
-		 */
-		ret = VM_FAULT_NOPAGE;
-		goto out;
-	}
-
-	/*
 	 * Check that we can return VM_FAULT_RETRY.
 	 *
 	 * NOTE: it should become possible to return VM_FAULT_RETRY
@@ -473,6 +448,31 @@ vm_fault_t handle_userfault(struct vm_fault *vmf, unsigned long reason)
 	ret = VM_FAULT_RETRY;
 	if (vmf->flags & FAULT_FLAG_RETRY_NOWAIT)
 		goto out;
+
+	if (unlikely(READ_ONCE(ctx->released))) {
+		/*
+		 * If a concurrent release is detected, do not return
+		 * VM_FAULT_SIGBUS or VM_FAULT_NOPAGE, but instead always
+		 * return VM_FAULT_RETRY with lock released proactively.
+		 *
+		 * If we were to return VM_FAULT_SIGBUS here, the non
+		 * cooperative manager would be instead forced to
+		 * always call UFFDIO_UNREGISTER before it can safely
+		 * close the uffd, to avoid involuntary SIGBUS triggered.
+		 *
+		 * If we were to return VM_FAULT_NOPAGE, it would work for
+		 * the fault path, in which the lock will be released
+		 * later.  However for GUP, faultin_page() does nothing
+		 * special on NOPAGE, so GUP would spin retrying without
+		 * releasing the mmap read lock, causing possible livelock.
+		 *
+		 * Here only VM_FAULT_RETRY would make sure the mmap lock
+		 * be released immediately, so that the thread concurrently
+		 * releasing the userfault would always make progress.
+		 */
+		release_fault_lock(vmf);
+		goto out;
+	}
 
 	/* take the reference before dropping the mmap_lock */
 	userfaultfd_ctx_get(ctx);
@@ -718,6 +718,34 @@ void dup_userfaultfd_complete(struct list_head *fcs)
 
 	list_for_each_entry_safe(fctx, n, fcs, list) {
 		dup_fctx(fctx);
+		list_del(&fctx->list);
+		kfree(fctx);
+	}
+}
+
+void dup_userfaultfd_fail(struct list_head *fcs)
+{
+	struct userfaultfd_fork_ctx *fctx, *n;
+
+	/*
+	 * An error has occurred on fork, we will tear memory down, but have
+	 * allocated memory for fctx's and raised reference counts for both the
+	 * original and child contexts (and on the mm for each as a result).
+	 *
+	 * These would ordinarily be taken care of by a user handling the event,
+	 * but we are no longer doing so, so manually clean up here.
+	 *
+	 * mm tear down will take care of cleaning up VMA contexts.
+	 */
+	list_for_each_entry_safe(fctx, n, fcs, list) {
+		struct userfaultfd_ctx *octx = fctx->orig;
+		struct userfaultfd_ctx *ctx = fctx->new;
+
+		atomic_dec(&octx->mmap_changing);
+		VM_BUG_ON(atomic_read(&octx->mmap_changing) < 0);
+		userfaultfd_ctx_put(octx);
+		userfaultfd_ctx_put(ctx);
+
 		list_del(&fctx->list);
 		kfree(fctx);
 	}
@@ -2028,7 +2056,8 @@ static int userfaultfd_move(struct userfaultfd_ctx *ctx,
 		return ret;
 
 	if (uffdio_move.mode & ~(UFFDIO_MOVE_MODE_ALLOW_SRC_HOLES|
-				  UFFDIO_MOVE_MODE_DONTWAKE))
+				  UFFDIO_MOVE_MODE_DONTWAKE|
+				  UFFDIO_MOVE_MODE_CONFIRM_FIXED))
 		return -EINVAL;
 
 	if (mmget_not_zero(mm)) {
@@ -2272,6 +2301,9 @@ static inline bool userfaultfd_syscall_allowed(int flags)
 
 SYSCALL_DEFINE1(userfaultfd, int, flags)
 {
+	if (__PAGE_SIZE != PAGE_SIZE)
+		return -EOPNOTSUPP;
+
 	if (!userfaultfd_syscall_allowed(flags))
 		return -EPERM;
 
@@ -2302,6 +2334,9 @@ static struct miscdevice userfaultfd_misc = {
 static int __init userfaultfd_init(void)
 {
 	int ret;
+
+	if (__PAGE_SIZE != PAGE_SIZE)
+		return 0;
 
 	ret = misc_register(&userfaultfd_misc);
 	if (ret)

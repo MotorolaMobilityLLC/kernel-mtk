@@ -69,6 +69,8 @@
 #define LIST_DIRTY	1
 #define LIST_SIZE	2
 
+#define SCAN_RESCHED_CYCLE	16
+
 /*--------------------------------------------------------------*/
 
 /*
@@ -2418,7 +2420,12 @@ static void __scan(struct dm_bufio_client *c)
 
 			atomic_long_dec(&c->need_shrink);
 			freed++;
-			cond_resched();
+
+			if (unlikely(freed % SCAN_RESCHED_CYCLE == 0)) {
+				dm_bufio_unlock(c);
+				cond_resched();
+				dm_bufio_lock(c);
+			}
 		}
 	}
 }
@@ -2482,7 +2489,8 @@ struct dm_bufio_client *dm_bufio_client_create(struct block_device *bdev, unsign
 	int r;
 	unsigned int num_locks;
 	struct dm_bufio_client *c;
-	char slab_name[27];
+	char slab_name[64];
+	static atomic_t seqno = ATOMIC_INIT(0);
 
 	if (!block_size || block_size & ((1 << SECTOR_SHIFT) - 1)) {
 		DMERR("%s: block size not specified or is not multiple of 512b", __func__);
@@ -2533,7 +2541,8 @@ struct dm_bufio_client *dm_bufio_client_create(struct block_device *bdev, unsign
 	    (block_size < PAGE_SIZE || !is_power_of_2(block_size))) {
 		unsigned int align = min(1U << __ffs(block_size), (unsigned int)PAGE_SIZE);
 
-		snprintf(slab_name, sizeof(slab_name), "dm_bufio_cache-%u", block_size);
+		snprintf(slab_name, sizeof(slab_name), "dm_bufio_cache-%u-%u",
+					block_size, atomic_inc_return(&seqno));
 		c->slab_cache = kmem_cache_create(slab_name, block_size, align,
 						  SLAB_RECLAIM_ACCOUNT, NULL);
 		if (!c->slab_cache) {
@@ -2542,9 +2551,11 @@ struct dm_bufio_client *dm_bufio_client_create(struct block_device *bdev, unsign
 		}
 	}
 	if (aux_size)
-		snprintf(slab_name, sizeof(slab_name), "dm_bufio_buffer-%u", aux_size);
+		snprintf(slab_name, sizeof(slab_name), "dm_bufio_buffer-%u-%u",
+					aux_size, atomic_inc_return(&seqno));
 	else
-		snprintf(slab_name, sizeof(slab_name), "dm_bufio_buffer");
+		snprintf(slab_name, sizeof(slab_name), "dm_bufio_buffer-%u",
+					atomic_inc_return(&seqno));
 	c->slab_buffer = kmem_cache_create(slab_name, sizeof(struct dm_buffer) + aux_size,
 					   0, SLAB_RECLAIM_ACCOUNT, NULL);
 	if (!c->slab_buffer) {

@@ -95,6 +95,16 @@ static int _hyp_smp_processor_id(void)
 	return hyp_smp_processor_id();
 }
 
+static int host_stage2_enable_lazy_pte(u64 pfn, u64 nr_pages)
+{
+	return __pkvm_host_lazy_pte(pfn, nr_pages, true);
+}
+
+static int host_stage2_disable_lazy_pte(u64 pfn, u64 nr_pages)
+{
+	return __pkvm_host_lazy_pte(pfn, nr_pages, false);
+}
+
 const struct pkvm_module_ops module_ops = {
 	.create_private_mapping = __pkvm_create_private_mapping,
 	.alloc_module_va = __pkvm_alloc_module_va,
@@ -114,6 +124,7 @@ const struct pkvm_module_ops module_ops = {
 	.host_stage2_mod_prot = module_change_host_page_prot,
 	.host_stage2_get_leaf = host_stage2_get_leaf,
 	.register_host_smc_handler = __pkvm_register_host_smc_handler,
+	.register_guest_smc_handler = __pkvm_register_guest_smc_handler,
 	.register_default_trap_handler = __pkvm_register_default_trap_handler,
 	.register_illegal_abt_notifier = __pkvm_register_illegal_abt_notifier,
 	.register_psci_notifier = __pkvm_register_psci_notifier,
@@ -153,6 +164,9 @@ const struct pkvm_module_ops module_ops = {
 	.iommu_snapshot_host_stage2 = kvm_iommu_snapshot_host_stage2,
 	.hyp_smp_processor_id = _hyp_smp_processor_id,
 	.iommu_flush_unmap_cache = kvm_iommu_flush_unmap_cache,
+	.host_stage2_enable_lazy_pte = host_stage2_enable_lazy_pte,
+	.host_stage2_disable_lazy_pte = host_stage2_disable_lazy_pte,
+	.guest_stage2_pa = pkvm_guest_stage2_pa,
 };
 
 int __pkvm_init_module(void *module_init)

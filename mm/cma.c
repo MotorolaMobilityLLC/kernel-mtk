@@ -168,6 +168,25 @@ void __init cma_reserve_pages_on_error(struct cma *cma)
 	cma->reserve_pages_on_error = true;
 }
 
+unsigned long cma_get_first_virtzone_base(int nid)
+{
+        struct pglist_data *pgdata;
+        struct zone *zone;
+        int zone_idx;
+
+        pgdata = NODE_DATA(nid);
+        if (!pgdata)
+                return 0;
+
+        for (zone_idx = ZONE_NOSPLIT; zone_idx <= ZONE_NOMERGE; zone_idx++) {
+                zone = &pgdata->node_zones[zone_idx];
+                if (zone->zone_start_pfn)
+                        return zone->zone_start_pfn << PAGE_SHIFT;
+        }
+
+        return 0;
+}
+
 /**
  * cma_init_reserved_mem() - create custom contiguous area from reserved memory
  * @base: Base address of the reserved area
@@ -550,6 +569,7 @@ struct page *__cma_alloc(struct cma *cma, unsigned long count,
 	}
 
 	if (ret && !(gfp_mask & __GFP_NOWARN)) {
+		trace_android_vh_cma_alloc_fail(cma->name, cma->count, count);
 		pr_err_ratelimited("%s: %s: alloc failed, req-size: %lu pages, ret: %d\n",
 				   __func__, cma->name, count, ret);
 		cma_debug_show_areas(cma);
@@ -653,3 +673,7 @@ int cma_for_each_area(int (*it)(struct cma *cma, void *data), void *data)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(cma_for_each_area);
+EXPORT_TRACEPOINT_SYMBOL_GPL(cma_alloc_start);
+EXPORT_TRACEPOINT_SYMBOL_GPL(cma_alloc_busy_retry);
+EXPORT_TRACEPOINT_SYMBOL_GPL(cma_alloc_finish);
+EXPORT_TRACEPOINT_SYMBOL_GPL(cma_release);

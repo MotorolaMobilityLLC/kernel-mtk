@@ -492,6 +492,7 @@
   divider_ro_round_rate_parent
   divider_round_rate_parent
   dma_alloc_attrs
+  dma_alloc_noncontiguous
   dma_alloc_pages
   dma_async_device_register
   dma_async_device_unregister
@@ -516,6 +517,7 @@
   dma_fence_signal
   dma_fence_signal_timestamp_locked
   dma_free_attrs
+  dma_free_noncontiguous
   dma_free_pages
   dma_get_sgtable_attrs
   dma_get_slave_channel
@@ -547,6 +549,8 @@
   dma_unmap_page_attrs
   dma_unmap_resource
   dma_unmap_sg_attrs
+  dma_vmap_noncontiguous
+  dma_vunmap_noncontiguous
   do_trace_netlink_extack
   double_rq_lock
   down
@@ -662,6 +666,7 @@
   extcon_get_property
   extcon_get_state
   extcon_register_notifier
+  extcon_set_property_capability
   extcon_set_state
   extcon_set_state_sync
   fasync_helper
@@ -673,6 +678,7 @@
   _find_next_zero_bit
   find_task_by_vpid
   find_vpid
+  finish_rcuwait
   finish_wait
   firmware_request_nowarn
   flow_keys_dissector
@@ -1179,12 +1185,15 @@
   mmc_cqe_request_done
   mmc_execute_tuning
   mmc_hs200_tuning
+  __mmc_poll_for_busy
+  mmc_prepare_busy_cmd
   mmc_issue_type
   mmc_of_parse
   mmc_regulator_get_supply
   mmc_regulator_set_ocr
   mmc_regulator_set_vqmmc
   mmc_retune_hold
+  mmc_retune_release
   mmc_select_bus_width
   mmc_select_card
   mmc_select_hs
@@ -1764,6 +1773,7 @@
   sdhci_cqe_disable
   sdhci_cqe_enable
   sdhci_cqe_irq
+  sdhci_dumpregs
   sdhci_enable_clk
   sdhci_get_property
   sdhci_pltfm_free
@@ -2055,6 +2065,8 @@
   __traceiter_android_rvh_irqs_disable
   __traceiter_android_rvh_irqs_enable
   __traceiter_android_rvh_is_cpu_allowed
+  __traceiter_android_rvh_mmc_resume
+  __traceiter_android_rvh_mmc_suspend
   __traceiter_android_rvh_new_task_stats
   __traceiter_android_rvh_preempt_disable
   __traceiter_android_rvh_preempt_enable
@@ -2159,6 +2171,8 @@
   __tracepoint_android_rvh_irqs_disable
   __tracepoint_android_rvh_irqs_enable
   __tracepoint_android_rvh_is_cpu_allowed
+  __tracepoint_android_rvh_mmc_resume
+  __tracepoint_android_rvh_mmc_suspend
   __tracepoint_android_rvh_new_task_stats
   __tracepoint_android_rvh_preempt_disable
   __tracepoint_android_rvh_preempt_enable
@@ -2434,6 +2448,7 @@
   __xa_alloc
   __xa_alloc_cyclic
   xa_destroy
+  __xa_erase
   xa_erase
   xa_find
   xa_find_after
