@@ -186,14 +186,12 @@ static void csot_vtdr6126A_panel_init(struct csot_vtdr6126A *ctx)
 		//return;
 	}
 	else {
-		gpiod_set_value(ctx->reset_gpio, 0);
-		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(1 * 1000, 2 * 1000);
+		msleep(5);
 		gpiod_set_value(ctx->reset_gpio, 0);
-		usleep_range(10 * 1000, 12 * 1000);
+		msleep(5);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(25 * 1000, 27 * 1000);
+		msleep(25);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -352,8 +350,7 @@ static int panel_set_gesture_flag(int state)
 	pr_info("%s:disp:set tp_gesture_flag:%d\n", __func__, tp_gesture_flag);
 	return 0;
 }
-
-static int csot_vtdr6126A_unprepare(struct drm_panel *panel)
+static int panel_ext_powerdown(struct drm_panel *panel)
 {
 	struct csot_vtdr6126A *ctx = panel_to_csot_vtdr6126A(panel);
 	int ret = 0;
@@ -363,12 +360,7 @@ static int csot_vtdr6126A_unprepare(struct drm_panel *panel)
 		return 0;
 	}
 	pr_info("%s\n", __func__);
-
-	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x28);
-	msleep(20);
-	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x10);
-	msleep(120);
-
+	msleep(5);
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	gpiod_set_value(ctx->reset_gpio, 0);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
@@ -380,7 +372,7 @@ static int csot_vtdr6126A_unprepare(struct drm_panel *panel)
 			return ret;
 		}
 
-		msleep(5);
+		msleep(10);
 		ret = regulator_disable(ctx->vci_supply);
 		if (ret) {
 			dev_err(ctx->dev, "vci_supply failed to disable supply (%d)\n", ret);
@@ -398,8 +390,23 @@ static int csot_vtdr6126A_unprepare(struct drm_panel *panel)
 	ctx->prepared = false;
 	return 0;
 }
+static int csot_vtdr6126A_unprepare(struct drm_panel *panel)
+{
+	struct csot_vtdr6126A *ctx = panel_to_csot_vtdr6126A(panel);
 
-static int csot_vtdr6126A_prepare(struct drm_panel *panel)
+	if (!ctx->prepared) {
+		pr_info("%s, already unprepared, return\n", __func__);
+		return 0;
+	}
+	pr_info("%s\n", __func__);
+
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x28);
+	msleep(20);
+	csot_vtdr6126A_dcs_write_seq_static(ctx, 0x10);
+	msleep(120);
+	return 0;
+}
+static int panel_ext_init_power(struct drm_panel *panel)
 {
 	struct csot_vtdr6126A *ctx = panel_to_csot_vtdr6126A(panel);
 	int ret;
@@ -450,12 +457,19 @@ static int csot_vtdr6126A_prepare(struct drm_panel *panel)
 		}
 		dev_info(ctx->dev, "%s get dvdd normal \n", __func__);
 	}
-		/*ret = regulator_enable(ctx->dvdd_supply);
-		if (ret) {
-			dev_err(ctx->dev, "failed to enable supply (%d)\n", ret);
-			return ret;
-		}*/
+	msleep(5);
+	return ret;
+}
+static int csot_vtdr6126A_prepare(struct drm_panel *panel)
+{
+	struct csot_vtdr6126A *ctx = panel_to_csot_vtdr6126A(panel);
+	int ret;
 
+	pr_info("%s\n", __func__);
+	if (ctx->prepared) {
+		pr_info("%s, already prepared, return\n", __func__);
+		return 0;
+	}
 	csot_vtdr6126A_panel_init(ctx);
 	ret = ctx->error;
 	if (ret < 0) {
@@ -1103,6 +1117,8 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = csot_vtdr6126A_setbacklight_cmdq,
 	.reset = panel_ext_reset,
+	.init_power = panel_ext_init_power,
+	.power_down = panel_ext_powerdown,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.mode_switch = mode_switch,
 //	.get_lcm_version = panel_get_lcm_version,

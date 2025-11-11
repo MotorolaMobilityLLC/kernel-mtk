@@ -188,9 +188,9 @@ static void tm_vtdr6126a_panel_init(struct tm_vtdr6126a *ctx)
 	}
 	else {
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(15);
+		msleep(5);
 		gpiod_set_value(ctx->reset_gpio, 0);
-		msleep(15);
+		msleep(5);
 		gpiod_set_value(ctx->reset_gpio, 1);
 		msleep(25);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
@@ -391,22 +391,16 @@ static int tm_vtdr6126a_disable(struct drm_panel *panel)
 	return 0;
 }
 
-static int tm_vtdr6126a_unprepare(struct drm_panel *panel)
+static int panel_ext_powerdown(struct drm_panel *panel)
 {
 	struct tm_vtdr6126a *ctx = panel_to_tm_vtdr6126a(panel);
 	int ret = 0;
-
 	if (!ctx->prepared) {
 		pr_info("%s, already unprepared, return\n", __func__);
 		return 0;
 	}
 	pr_info("%s enter\n", __func__);
-
-	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x28);
-	msleep(50);
-	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x10);
-	msleep(150);
-
+	msleep(5);
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	gpiod_set_value(ctx->reset_gpio, 0);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
@@ -418,7 +412,7 @@ static int tm_vtdr6126a_unprepare(struct drm_panel *panel)
 		return ret;
 	}
 
-	msleep(5);
+	msleep(10);
 	ret = regulator_disable(ctx->vci_supply);
 	if (ret) {
 		dev_err(ctx->dev, "vci_supply failed to disable supply (%d)\n", ret);
@@ -436,10 +430,26 @@ static int tm_vtdr6126a_unprepare(struct drm_panel *panel)
 	ctx->prepared = false;
 
 	pr_info("%s-\n", __func__);
+	return ret;
+}
+static int tm_vtdr6126a_unprepare(struct drm_panel *panel)
+{
+	struct tm_vtdr6126a *ctx = panel_to_tm_vtdr6126a(panel);
+
+	if (!ctx->prepared) {
+		pr_info("%s, already unprepared, return\n", __func__);
+		return 0;
+	}
+	pr_info("%s enter\n", __func__);
+
+	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x28);
+	msleep(50);
+	tm_vtdr6126a_dcs_write_seq_static(ctx, 0x10);
+	msleep(150);
+
 	return 0;
 }
-
-static int tm_vtdr6126a_prepare(struct drm_panel *panel)
+static int panel_ext_init_power(struct drm_panel *panel)
 {
 	struct tm_vtdr6126a *ctx = panel_to_tm_vtdr6126a(panel);
 	int ret;
@@ -483,7 +493,16 @@ static int tm_vtdr6126a_prepare(struct drm_panel *panel)
 		}
 		dev_info(ctx->dev, "%s get dvdd normal \n", __func__);
 	}
+	msleep(5);
+	return ret;
+}
 
+static int tm_vtdr6126a_prepare(struct drm_panel *panel)
+{
+	struct tm_vtdr6126a *ctx = panel_to_tm_vtdr6126a(panel);
+	int ret;
+
+	pr_info("%s\n", __func__);
 	tm_vtdr6126a_panel_init(ctx);
 	ret = ctx->error;
 	if (ret < 0) {
@@ -1151,6 +1170,8 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = tm_vtdr6126a_setbacklight_cmdq,
 	.reset = panel_ext_reset,
+	.init_power = panel_ext_init_power,
+	.power_down = panel_ext_powerdown,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.mode_switch = mode_switch,
 //	.get_lcm_version = panel_get_lcm_version,

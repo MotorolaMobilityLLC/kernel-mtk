@@ -436,8 +436,7 @@ static int panel_set_gesture_flag(int state)
 	pr_info("%s:disp:set tp_gesture_flag:%d\n", __func__, tp_gesture_flag);
 	return 0;
 }
-
-static int boe_il97605a_unprepare(struct drm_panel *panel)
+static int panel_ext_powerdown(struct drm_panel *panel)
 {
 	struct boe_il97605a *ctx = panel_to_boe_il97605a(panel);
 	int ret = 0;
@@ -448,17 +447,6 @@ static int boe_il97605a_unprepare(struct drm_panel *panel)
 	}
 	pr_info("%s\n", __func__);
 	printk("[%d  %s]_check_dsi !!\n",__LINE__, __FUNCTION__);
-
-	boe_il97605a_dcs_write_seq_static(ctx, 0x28);
-	msleep(20);
-	boe_il97605a_dcs_write_seq_static(ctx, 0x10);
-
-	boe_il97605a_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x06);
-	boe_il97605a_dcs_write_seq_static(ctx, 0xC5, 0x55);
-	boe_il97605a_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x00);
-
-	msleep(120);
-
 	ctx->prepared = false;
 
 	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
@@ -488,19 +476,38 @@ static int boe_il97605a_unprepare(struct drm_panel *panel)
 	ctx->error = 0;
 	return 0;
 }
-
-static int boe_il97605a_prepare(struct drm_panel *panel)
+static int boe_il97605a_unprepare(struct drm_panel *panel)
 {
 	struct boe_il97605a *ctx = panel_to_boe_il97605a(panel);
-	int ret;
+
+	if (!ctx->prepared) {
+		pr_info("%s, already unprepared, return\n", __func__);
+		return 0;
+	}
+	pr_info("%s\n", __func__);
+	printk("[%d  %s]_check_dsi !!\n",__LINE__, __FUNCTION__);
+
+	boe_il97605a_dcs_write_seq_static(ctx, 0x28);
+	msleep(20);
+	boe_il97605a_dcs_write_seq_static(ctx, 0x10);
+
+	boe_il97605a_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x06);
+	boe_il97605a_dcs_write_seq_static(ctx, 0xC5, 0x55);
+	boe_il97605a_dcs_write_seq_static(ctx, 0xFF, 0x5A, 0xA5, 0x00);
+
+	msleep(120);
+	return 0;
+}
+static int panel_ext_init_power(struct drm_panel *panel)
+{
+	struct boe_il97605a *ctx = panel_to_boe_il97605a(panel);
+	int ret = 0;
 
 	pr_info("%s\n", __func__);
 	if (ctx->prepared) {
 		pr_info("%s, already prepared, return\n", __func__);
 		return 0;
 	}
-
-	if(!tp_gesture_flag) {
 		ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 		gpiod_set_value(ctx->reset_gpio, 0);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
@@ -527,6 +534,19 @@ static int boe_il97605a_prepare(struct drm_panel *panel)
 			dev_err(ctx->dev, "failed to enable supply (%d)\n", ret);
 			return ret;
 		}
+
+	pr_info("disp: %s-\n", __func__);
+	return ret;
+}
+static int boe_il97605a_prepare(struct drm_panel *panel)
+{
+	struct boe_il97605a *ctx = panel_to_boe_il97605a(panel);
+	int ret;
+
+	pr_info("%s\n", __func__);
+	if (ctx->prepared) {
+		pr_info("%s, already prepared, return\n", __func__);
+		return 0;
 	}
 
 	boe_il97605a_panel_init(ctx);
@@ -1214,6 +1234,8 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = boe_il97605a_setbacklight_cmdq,
 	.reset = panel_ext_reset,
+	.init_power = panel_ext_init_power,
+	.power_down = panel_ext_powerdown,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.mode_switch = mode_switch,
 //	.get_lcm_version = panel_get_lcm_version,
