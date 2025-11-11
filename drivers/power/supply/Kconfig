@@ -1160,4 +1160,10 @@ config MOTO_PE50_IBUSOCP_RATIO_UPDATE
 	help
 	   This is config charger pe5 ibusocp update
 
+config PHYSICAL_BATT_ID_FEATURE
+	tristate "Motorola Physical batt id feature Support"
+	default n
+	help
+	  Say M for Motorola Physical batt id feature Support
+
 endif # POWER_SUPPLY
