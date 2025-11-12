@@ -5,3 +5,8 @@ config EXTCON_MTK_USB
 	help
 	  Say Y here to enable extcon support for USB cable detection
 	  on the Mediatek PMIC.
+
+config CP_CONTROL_MOS_AND_USB_MODULE_OUT_5V
+	tristate "Motorola cp control mos and usb module out 5v  Support"
+	help
+	  Say M for Motorola cp control mos and usb module out 5v  Support

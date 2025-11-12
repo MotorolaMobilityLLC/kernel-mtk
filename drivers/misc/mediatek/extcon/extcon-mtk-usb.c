@@ -216,7 +216,71 @@ static int mtk_usb_extcon_psy_init(struct mtk_extcon_info *extcon)
 fail:
 	return ret;
 }
+#if IS_ENABLED(CONFIG_CP_CONTROL_MOS_AND_USB_MODULE_OUT_5V)
+static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
+							bool is_on)
+{
+	struct regulator *vbus = extcon->vbus;
+	struct device *dev = extcon->dev;
+	int ret;
+	struct charger_device *primary_dvchg = get_charger_by_name("primary_dvchg");
 
+	/* vbus is optional */
+	if (!vbus || extcon->vbus_on == is_on)
+		return 0;
+
+	dev_info(dev, "vbus turn %s\n", is_on ? "on" : "off");
+
+	if (is_on) {
+		mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
+		if (extcon->vbus_vol) {
+			ret = regulator_set_voltage(vbus,
+					extcon->vbus_vol, extcon->vbus_vol);
+			if (ret) {
+				dev_err(dev, "vbus regulator set voltage failed\n");
+				return ret;
+			}
+		}
+
+		if (extcon->vbus_cur) {
+			ret = regulator_set_current_limit(vbus,
+					extcon->vbus_cur, extcon->vbus_cur);
+			if (ret) {
+				dev_err(dev, "vbus regulator set current failed\n");
+				return ret;
+			}
+		}
+
+		if (!primary_dvchg) {
+			dev_info(dev, "%s : get primary dvchg device failed\n", __func__);
+		} else {
+			dev_err(dev, "%s : enable otg on charger pump\n", __func__);
+			charger_dev_is_enable_otg(primary_dvchg, true);
+			charger_dev_is_enable_acdrv1(primary_dvchg, true);
+		}
+
+		ret = regulator_enable(vbus);
+		if (ret) {
+			dev_info(dev, "vbus regulator enable failed\n");
+			return ret;
+		}
+	} else {
+		regulator_disable(vbus);
+		mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, false);
+		if (!primary_dvchg) {
+			dev_info(dev, "%s : get primary dvchg device failed\n", __func__);
+		} else {
+			dev_err(dev, "%s : disable otg on charger pump\n", __func__);
+			charger_dev_is_enable_otg(primary_dvchg, false);
+			charger_dev_is_enable_acdrv1(primary_dvchg, false);
+		}
+	}
+
+	extcon->vbus_on = is_on;
+
+	return 0;
+}
+#else
 static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 							bool is_on)
 {
@@ -290,7 +354,7 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 
 	return 0;
 }
-
+#endif
 static int mtk_usb_extcon_vbus_init(struct mtk_extcon_info *extcon)
 {
 	int ret = 0;
