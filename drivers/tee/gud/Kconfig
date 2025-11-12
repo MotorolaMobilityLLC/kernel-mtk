@@ -41,3 +41,11 @@ config FSCRYPT_WRAPED_KEY_MODE_SUPPORT
 	  TEE OS, for things like, wrapped key programming, wrapped key derivation,
 	  and key unwrapping.
 
+config MOTO_TRUSTONIC_TEE_BIND_BIGCORE
+	bool "Motorola: Bind Trustonic TEE to big cores"
+	depends on TRUSTONIC_TEE_SUPPORT
+	default n
+	help
+	  This option allows binding the Trustonic TEE driver threads to the big CPU cores.
+	  This can improve performance of thread running in TEE, such as Fingerprint-on-Display.
+	  If unsure, say n.
