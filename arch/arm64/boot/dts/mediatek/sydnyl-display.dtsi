@@ -14,6 +14,20 @@
 	force_dyn_mipi_change;
 };
 
+&i2c6 {
+	id = <6>;
+
+	i2c_lcd_bias_mtk:i2c_lcd_bias@3e {
+		compatible = "ocp,bias_ocp2138";
+		reg = <0x3e>;
+		ocp,lcd-bias-enn-gpio = <&pio 151 0>;
+		ocp,lcd-bias-enp-gpio = <&pio 150 0>;
+		biasp_en_pin = <150>;
+		biasn_en_pin = <151>;
+		status = "okay";
+	};
+};
+
 &mtk_leds {
 	/delete-property/ compatible;
 	/delete-property/ led_mode;
@@ -25,9 +39,10 @@
 	backlight {
 		label = "lcd-backlight";
 		led_mode = <4>;
-		max-brightness = <16383>;
-		max-hw-brightness = <16383>;
-		default-brightness = <3000>;
+		max-brightness = <2047>;
+		max-hw-brightness = <2047>;
+		default-brightness = <889>;
+		lk-default-brightness = <889>;
 		default-state = "on";
 	};
 };
@@ -99,10 +114,7 @@
 		reg = <0>;
 
 		reset-gpios = <&pio 86 0>;
-		dvdd-supply = <&lcd_dvdd>;
-		vci-supply = <&lcd_avdd>;
-		vddi_en-gpios = <&pio 191 0>;
-
+		tp_reset-gpios = <&pio 147 0>;
 		pinctrl-names = "default";
 
 		port {
