@@ -1261,6 +1261,17 @@ config DRM_PANEL_MOT_VDO_BOE_ILI77600A_1080_2400_DPHY_120HZ
           Say Y here if you want to enable support for BOE_ILI77600A_1080_2400_DPHY_120HZ
           panel. It provides a MIPI DSI interface to host.
 
+config DRM_PANEL_MOT_VDO_TM_ILI79505A_720_1600_DPHY_120HZ
+        tristate "TM 720*1600 120 HZ VDO ILI79505A panel"
+        depends on OF
+        depends on DRM_MIPI_DSI
+        depends on BACKLIGHT_CLASS_DEVICE
+        default n
+        help
+          Say Y here if you want to enable support for TM_ILI79505A_720_1600_DPHY_120HZ
+          panel. It provides a MIPI DSI interface to host.
+
+
 config DRM_PANEL_NUM_NO_LIMIT
 	tristate "mtk panel num no limit"
 	depends on OF
