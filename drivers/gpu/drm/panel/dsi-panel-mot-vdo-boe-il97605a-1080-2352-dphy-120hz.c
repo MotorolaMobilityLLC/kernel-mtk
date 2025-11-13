@@ -639,6 +639,7 @@ static struct mtk_panel_params ext_params_mode_60 = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.lcm_color_mode = MTK_DRM_COLOR_MODE_DISPLAY_P3,
 	.lcm_cellid = {
 		.panel_cellid_reg = 0xF2,
 		.panel_cellid_len = 23,
@@ -744,6 +745,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.lcm_color_mode = MTK_DRM_COLOR_MODE_DISPLAY_P3,
 	.lcm_cellid = {
 		.panel_cellid_reg = 0xF2,
 		.panel_cellid_len = 23,
@@ -850,6 +852,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.lcm_color_mode = MTK_DRM_COLOR_MODE_DISPLAY_P3,
 	.lcm_cellid = {
 		.panel_cellid_reg = 0xF2,
 		.panel_cellid_len = 23,
