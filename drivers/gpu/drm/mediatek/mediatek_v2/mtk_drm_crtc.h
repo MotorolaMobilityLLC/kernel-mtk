@@ -972,9 +972,6 @@ struct mtk_drm_crtc {
 
 	bool skip_frame;
 	bool is_dsc_output_swap;
-
-	struct workqueue_struct *moto_ots_workqueue;
-	struct delayed_work moto_ripple_work;
 };
 
 struct mtk_crtc_state {

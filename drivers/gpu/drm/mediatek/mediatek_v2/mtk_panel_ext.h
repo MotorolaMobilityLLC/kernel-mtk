@@ -560,7 +560,6 @@ struct mtk_panel_params {
 	struct cellid_item lcm_cellid;
 	bool check_panel_feature;
 	bool change_fps_by_vfp_send_cmd;
-	bool ripple_optimize_needed;
 };
 
 struct mtk_panel_ext {
