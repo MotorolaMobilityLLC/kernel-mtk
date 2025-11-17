@@ -63,7 +63,7 @@
 		pinctrl-3 = <&ctp_gt9896s_reset_suspend>;
 		pinctrl-4 = <&ctp_gt9896s_spi_mode>;
                 focaltech,max-touch-number = <10>;
-                focaltech,display-coords = <0 0 1272 2772>;
+                focaltech,display-coords = <0 0 20352 44352>;
                 mmi,enable-gestures;
                 mmi,power-off-suspend;
                 focaltech,report_gesture_key = <59>;
