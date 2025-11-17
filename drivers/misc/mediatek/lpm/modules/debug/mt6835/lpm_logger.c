@@ -431,6 +431,43 @@ static void suspend_spm_rsc_req_check
 	dump_lp_sw_request();
 }
 
+#ifdef CONFIG_MOTO_SYS_MONITOR
+#define WAKEUP_NAME_SIZE 32
+static int extract_subsys_name(const char *input, char *out, size_t out_size)
+{
+	const char *first, *second, *third;
+	size_t len;
+
+	if (!input || !out || out_size == 0)
+		return -EINVAL;
+
+	first = strchr(input, '_');
+	if (!first)
+		{
+		   strscpy(out, input, out_size);
+		   return 0;
+		}
+
+	second = strchr(first + 1, '_');
+	if (!second)
+		goto copyp;
+
+	third = strchr(second + 1, '_');
+	if (!third)
+		goto copyp;
+
+	len = third - first - 1;
+	if (len == 0)
+		return -ENODATA;
+
+copyp:
+        if((first + 1) != NULL && (first + 1) >= input && (first + 1) <= (input + (strlen(input) - 1)))
+	      strscpy(out, first + 1, out_size);
+
+	return 0;
+}
+#endif
+
 static int lpm_show_message(int type, const char *prefix, void *data)
 {
 	struct lpm_spm_wake_status *wakesrc = log_help.wakesrc;
@@ -449,6 +486,9 @@ static int lpm_show_message(int type, const char *prefix, void *data)
 	int i = 0, log_size = 0, log_type = 0;
 	unsigned int wr = WR_UNKNOWN;
 	const char *scenario = prefix ?: "UNKNOWN";
+#ifdef CONFIG_MOTO_SYS_MONITOR
+	char wake[WAKEUP_NAME_SIZE] = "";
+#endif
 
 	log_type = ((struct lpm_issuer *)data)->log_type;
 
@@ -614,8 +654,10 @@ static int lpm_show_message(int type, const char *prefix, void *data)
 				if (IS_LOGBUF(buf, wakesrc_str[i]))
 					strncat(buf, wakesrc_str[i],
 						strlen(wakesrc_str[i]));
-
 				wr = WR_WAKE_SRC;
+#ifdef CONFIG_MOTO_SYS_MONITOR
+				set_wakesrc_irq(i);
+#endif
 			}
 		}
 		WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
@@ -625,6 +667,9 @@ static int lpm_show_message(int type, const char *prefix, void *data)
 			"%s wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x 0x%x, ",
 			scenario, buf, wakesrc->timer_out, wakesrc->r13,
 			wakesrc->debug_flag, wakesrc->debug_flag1);
+#ifdef CONFIG_MOTO_SYS_MONITOR
+                extract_subsys_name(buf, wake, WAKEUP_NAME_SIZE);
+#endif
 
 		log_size += scnprintf(log_buf + log_size,
 			LOG_BUF_OUT_SZ - log_size,
@@ -676,6 +721,11 @@ static int lpm_show_message(int type, const char *prefix, void *data)
 				spm_26M_off_pct =
 					(100 * plat_mmio_read(SPM_BK_VTCXO_DUR))
 							/ wakesrc->timer_out;
+#ifdef CONFIG_MOTO_SYS_MONITOR
+			        set_apss_time(PCM_TICK_TO_SEC(wakesrc->timer_out));
+			        set_26M_Off_time(PCM_TICK_TO_SEC(plat_mmio_read(SPM_BK_VTCXO_DUR)));
+			        set_wakesrc_name(wake);
+#endif
 			}
 			log_size += scnprintf(log_buf + log_size,
 				LOG_BUF_OUT_SZ - log_size,

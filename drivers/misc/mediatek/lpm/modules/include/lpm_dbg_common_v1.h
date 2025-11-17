@@ -172,4 +172,11 @@ int spm_common_dbg_dump(void);
 int lpm_dbg_pm_init(void);
 void lpm_dbg_pm_exit(void);
 
+#ifdef CONFIG_MOTO_SYS_MONITOR
+void set_apss_time(u32 time);
+void set_26M_Off_time(u32 time);
+void set_wakesrc_irq(int wake_irq);
+void set_wakesrc_name(char *wakeup_name);
+#endif
+
 #endif /* __MTK_DBG_COMMON_H__ */

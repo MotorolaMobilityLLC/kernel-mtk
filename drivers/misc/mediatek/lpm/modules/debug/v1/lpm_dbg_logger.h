@@ -10,4 +10,7 @@ int lpm_logger_init(void);
 
 void lpm_logger_deinit(void);
 
+u32 get_sys_lpm_sleep_time(int index);
+u32 get_wakeup_R12_index(void);
+char *get_wakeup_R12_source(void);
 #endif

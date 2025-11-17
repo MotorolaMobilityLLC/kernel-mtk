@@ -80,3 +80,12 @@ config MTK_LPM_MT6886
 	  for power management.
 	  Set Y to select this feature for specific platform-mt6886.
 	  If unsure, set N to disable.
+
+config MOTO_SYS_MONITOR
+	bool "LPM support for Moto Sys Monitor module"
+	default n
+	help
+	  Select MOTO_SYS_MONITOR
+	  for collecting low power data from kernel lpm module
+	  Set Y to select this feature for sys monitor.
+	  If unsure, set N to disable.
