@@ -42,7 +42,7 @@
 		max-brightness = <2047>;
 		max-hw-brightness = <2047>;
 		default-brightness = <889>;
-		lk-default-brightness = <1461>;
+		lk-default-brightness = <889>;
 		default-state = "on";
 	};
 };
@@ -110,7 +110,6 @@
 		/delete-property/ pm-enable-gpios;
 		/delete-property/ reset-gpios;
 		/delete-property/gate-ic;
-		compatible = "p,boe,il77600a,672";
 
 		reg = <0>;
 
