@@ -35364,6 +35364,11 @@ pointer_reference {
   pointee_type_id: 0xde680909
 }
 pointer_reference {
+  id: 0x3d132f3c
+  kind: POINTER
+  pointee_type_id: 0xde0c5a6e
+}
+pointer_reference {
   id: 0x3d1364e9
   kind: POINTER
   pointee_type_id: 0xde0d753a
@@ -81027,6 +81032,12 @@ member {
   offset: 1088
 }
 member {
+  id: 0x37a7cc74
+  name: "clk_hw"
+  type_id: 0x0ae4a2c7
+  offset: 320
+}
+member {
   id: 0x36da2d7c
   name: "clk_list_head"
   type_id: 0xd3c80119
@@ -84247,6 +84258,12 @@ member {
   name: "con_id"
   type_id: 0x3e10b518
   offset: 128
+}
+member {
+  id: 0xd70e055b
+  name: "con_id"
+  type_id: 0x3e10b518
+  offset: 192
 }
 member {
   id: 0x7717d8b7
@@ -290976,6 +290993,19 @@ struct_union {
   }
 }
 struct_union {
+  id: 0xde0c5a6e
+  kind: STRUCT
+  name: "clk_lookup"
+  definition {
+    bytesize: 48
+    member_id: 0x0fa6c6af
+    member_id: 0x8e5720f5
+    member_id: 0xd70e055b
+    member_id: 0xc8d1bb4c
+    member_id: 0x37a7cc74
+  }
+}
+struct_union {
   id: 0x08a8a88b
   kind: STRUCT
   name: "clk_ops"
@@ -387926,6 +387956,11 @@ function {
   parameter_id: 0x3ee7bddd
 }
 function {
+  id: 0x1fdc9a5c
+  return_type_id: 0x48b5725f
+  parameter_id: 0x3d132f3c
+}
+function {
   id: 0x1fdd3c97
   return_type_id: 0x48b5725f
   parameter_id: 0x3c0e9e79
@@ -453765,6 +453800,24 @@ elf_symbol {
   full_name: "clk_unregister_gate"
 }
 elf_symbol {
+  id: 0xdf9b5d08
+  name: "clkdev_add"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x3a15db68
+  type_id: 0x1fdc9a5c
+  full_name: "clkdev_add"
+}
+elf_symbol {
+  id: 0x56748a0b
+  name: "clkdev_drop"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x3a15db68
+  type_id: 0x1fdc9a5c
+  full_name: "clkdev_drop"
+}
+elf_symbol {
   id: 0x7de0b44a
   name: "clock_t_to_jiffies"
   is_defined: true
@@ -459245,6 +459298,15 @@ elf_symbol {
   crc: 0xfd885604
   type_id: 0x10943c29
   full_name: "devm_devfreq_unregister_notifier"
+}
+elf_symbol {
+  id: 0xb3d128c7
+  name: "devm_devfreq_unregister_opp_notifier"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xef07f58f
+  type_id: 0x1093c795
+  full_name: "devm_devfreq_unregister_opp_notifier"
 }
 elf_symbol {
   id: 0x8ed64fa4
@@ -519174,6 +519236,8 @@ interface {
   symbol_id: 0x68c84c24
   symbol_id: 0x40da6f1f
   symbol_id: 0x9d70bb80
+  symbol_id: 0xdf9b5d08
+  symbol_id: 0x56748a0b
   symbol_id: 0x7de0b44a
   symbol_id: 0xa72e6674
   symbol_id: 0x430bfeda
@@ -519783,6 +519847,7 @@ interface {
   symbol_id: 0x6415475c
   symbol_id: 0x2bf23b7c
   symbol_id: 0x97301de5
+  symbol_id: 0xb3d128c7
   symbol_id: 0x8ed64fa4
   symbol_id: 0x4e304be8
   symbol_id: 0x6bf4c5d2
