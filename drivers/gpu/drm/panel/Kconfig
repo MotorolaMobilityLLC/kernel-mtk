@@ -1272,6 +1272,16 @@ config DRM_PANEL_MOT_VDO_TM_ILI79505A_720_1600_DPHY_120HZ
           panel. It provides a MIPI DSI interface to host.
 
 
+config DRM_PANEL_MOT_VDO_TXD_TD4160_720_1604_DPHY_120HZ
+        tristate "TXD 720*1604 120 HZ VDO TD4160 panel"
+        depends on OF
+        depends on DRM_MIPI_DSI
+        depends on BACKLIGHT_CLASS_DEVICE
+        default n
+        help
+          Say Y here if you want to enable support for TXD_TD4160_720_1604_DPHY_120HZ
+          panel. It provides a MIPI DSI interface to host.
+
 config DRM_PANEL_NUM_NO_LIMIT
 	tristate "mtk panel num no limit"
 	depends on OF
