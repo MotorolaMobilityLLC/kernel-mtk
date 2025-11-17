@@ -18,3 +18,4 @@
 ../motorola/kernel/modules/drivers/misc/hall
 ../motorola/kernel/modules/drivers/sensors
 ../motorola/kernel/modules/drivers/power/mmi_pephv
+../motorola/kernel/modules/drivers/power/mmi_qns_system
