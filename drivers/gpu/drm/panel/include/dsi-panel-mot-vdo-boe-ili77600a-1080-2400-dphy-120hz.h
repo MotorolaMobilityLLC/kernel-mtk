@@ -62,7 +62,7 @@
 #define DSC_DSC_LINE_BUF_DEPTH      9
 #define DSC_BP_ENABLE               1
 #define DSC_BIT_PER_PIXEL           128
-#define DSC_SLICE_HEIGHT            12
+#define DSC_SLICE_HEIGHT            8
 #define DSC_SLICE_WIDTH             540
 #define DSC_CHUNK_SIZE              540
 #define DSC_XMIT_DELAY              512

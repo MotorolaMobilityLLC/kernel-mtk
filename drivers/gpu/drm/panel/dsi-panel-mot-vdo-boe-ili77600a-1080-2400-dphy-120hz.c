@@ -363,7 +363,7 @@ static int boe_ili77600a_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode performance_mode_120hz = {
-	.clock		= 333180,
+	.clock	= ((FRAME_WIDTH + MODE_120_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_120_VFP + VSA + VBP)*MODE_120_FPS)/1000,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
@@ -375,7 +375,7 @@ static const struct drm_display_mode performance_mode_120hz = {
 };
 
 static const struct drm_display_mode performance_mode_60hz = {
-	.clock		= 332910,
+	.clock	= ((FRAME_WIDTH + MODE_60_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_60_VFP + VSA + VBP)*MODE_60_FPS)/1000,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -387,7 +387,7 @@ static const struct drm_display_mode performance_mode_60hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 333315,
+	.clock	= ((FRAME_WIDTH + MODE_90_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_90_VFP + VSA + VBP)*MODE_90_FPS)/1000,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -417,7 +417,7 @@ static struct mtk_panel_params ext_params_mode_60 = {
 		.panel_cellid_read_max = 1,
 		.panel_cellid_esd_dis = 1,
 		.page_table = {
-			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x0B},
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x06},
 		},
 		.page_post_table = {
 			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x00},
@@ -425,7 +425,7 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x01050791,
-	.panel_name = "boe_ili77600a_vid_1080_2400",
+	.panel_name = "boe_il77600a_672",
 	.panel_supplier = "boe",
 	.lcm_index = 2,
 	.hbm_type = HBM_MODE_RAMPING,
@@ -501,7 +501,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x10050a91,
-	.panel_name = "boe_ili77600a_vid_1080_2400",
+	.panel_name = "boe_il77600a_672",
 	.panel_supplier = "boe",
 	.lcm_index = 2,
 	.hbm_type = HBM_MODE_RAMPING,
@@ -576,7 +576,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	},
 	.panel_ver = 1,
 	//.panel_id = 0x10050a91,
-	.panel_name = "boe_ili77600a_vid_1080_2400",
+	.panel_name = "boe_il77600a_672",
 	.panel_supplier = "boe",
 	.lcm_index = 2,
 	.hbm_type = HBM_MODE_RAMPING,
@@ -630,21 +630,17 @@ static struct mtk_panel_params ext_params_mode_120 = {
 static int boe_ili77600a_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
-	pr_info("%s: skip for using bl ic, level=%d\n", __func__, level);
+	static char bl_tb0[] = { 0x51, 0x7f, 0xff };
 
-#if 0
+	pr_info("%s backlight = %d\n", __func__, level);
 
-	if (!cb) {
-		pr_info("%s cb NULL!\n", __func__);
+	bl_tb0[1] = (level >> 8) & 0x7F;
+	bl_tb0[2] = level & 0xFF;
+
+	if (!cb)
 		return -1;
-	}
 
-	bl_tb0[1] = (u8)(level&0xFF);
-	bl_tb0[2] = (u8)((level>>8)&0x7);
-
-	pr_info("%s set level:%d, bl_tb:0x%02x%02x\n", __func__, level, bl_tb0[1], bl_tb0[2]);
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
-#endif
 
 	return 0;
 }
@@ -695,11 +691,6 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 	return 0;
-}
-
-static enum mtk_lcm_version panel_get_lcm_version(void)
-{
-	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
 }
 
 static int panel_cabc_set_cmdq(struct boe_ili77600a *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
@@ -817,7 +808,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = boe_ili77600a_setbacklight_cmdq,
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
-	.get_lcm_version = panel_get_lcm_version,
+//	.get_lcm_version = panel_get_lcm_version,
 //	.ata_check = panel_ata_check,
 	.set_gesture_flag = panel_set_gesture_flag,
 	.panel_feature_set = panel_feature_set,
@@ -900,39 +891,6 @@ static const struct drm_panel_funcs boe_ili77600a_drm_funcs = {
 	.get_modes = boe_ili77600a_get_modes,
 };
 
-#if 0
-static void boe_ili77600a_parse_panel_version(struct boe_ili77600a *ctx)
-{
-#if BOE_PANEL_EVT_V0_SUPPORT
-	int rc;
-	struct device_node *chosen = of_find_node_by_name(NULL, "chosen");
-
-	ctx->version = PANEL_V1;
-	if(chosen) {
-		u32 tmp_id = 0;
-
-		rc = of_property_read_u32(chosen, "mmi,panel_vendor_id", &tmp_id);
-		if (!rc) {
-			if (BOE_ILI_PANEL_V0_VENDOR_ID == tmp_id) {
-				ctx->version = PANEL_V0;
-				pr_info("boe_ili77600a panel version v0, ver=%d, vendor_id=0x%x\n", ctx->version, tmp_id);
-			}
-			else
-				pr_info("boe_ili77600a get vendor_id:0x%x\n", tmp_id);
-		}
-		else
-			pr_info("boe_ili77600a mmi,panel_vendor_id not get\n");
-	}
-	else
-		pr_info("boe_ili77600a_parse_panel_version: chosen node null\n");
-
-	pr_info("parse boe_ili77600a panel version:%d\n", ctx->version);
-#endif
-
-	return;
-}
-#endif
-
 static int boe_ili77600a_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
@@ -996,9 +954,6 @@ static int boe_ili77600a_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_add(&ctx->panel);
 
-	//parse panel version for evt/dvt
-	//boe_ili77600a_parse_panel_version(ctx);
-
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
 		drm_panel_remove(&ctx->panel);
@@ -1048,20 +1003,20 @@ static const struct of_device_id boe_ili77600a_of_match[] = {
 #if defined(CONFIG_DRM_PANEL_NUM_NO_LIMIT)
 		.compatible = "boe_il77600a_672",
 #else
-		.compatible = "boe,il77600a,vdo,120hz",
+		.compatible = "boe,il77600a,672",
 #endif
 	},
 	{}
 };
 
 MODULE_DEVICE_TABLE(of, boe_ili77600a_of_match);
-//boe_il77600a_vid_672_1080
+
 static struct mipi_dsi_driver boe_ili77600a_driver = {
 	.probe = boe_ili77600a_probe,
 	.remove = boe_ili77600a_remove,
 	.shutdown = lcm_shutdown,
 	.driver = {
-		.name = "boe,il77600a,672",
+		.name = "boe_il77600a_672",
 		.owner = THIS_MODULE,
 		.of_match_table = boe_ili77600a_of_match,
 	},
@@ -1072,4 +1027,3 @@ module_mipi_dsi_driver(boe_ili77600a_driver);
 MODULE_AUTHOR("mediatek");
 MODULE_DESCRIPTION("boe ili77600a incell 120hz Panel Driver");
 MODULE_LICENSE("GPL v2");
-
