@@ -1271,6 +1271,15 @@ config DRM_PANEL_MOT_VDO_CSOT_TD4376B_1080_2400_DPHY_120HZ
           Say Y here if you want to enable support for CSOT_TD4376B_1080_2400_DPHY_120HZ
           panel. It provides a MIPI DSI interface to host.
 
+config DRM_PANEL_MOT_VDO_TXD_ILI77600A_1080_2400_DPHY_120HZ
+        tristate "TXD 1080*2400 120 HZ VDO ILI77600A panel"
+        depends on OF
+        depends on DRM_MIPI_DSI
+        depends on BACKLIGHT_CLASS_DEVICE
+        default n
+        help
+          Say Y here if you want to enable support for TXD_ILI77600A_1080_2400_DPHY_120HZ
+
 config DRM_PANEL_MOT_VDO_TM_ILI79505A_720_1600_DPHY_120HZ
         tristate "TM 720*1600 120 HZ VDO ILI79505A panel"
         depends on OF
