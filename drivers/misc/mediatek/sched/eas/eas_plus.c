@@ -950,21 +950,18 @@ unsigned long calc_pwr(int cpu, unsigned long task_util)
 #endif
 
 #if IS_ENABLED(CONFIG_SMP)
-/* huangzq2: is rt InputDispatcher or not */
-static inline bool is_rt_input_dispatcher(struct task_struct *task)
+/* huangzq2: Check if the given task is RT UX task */
+static inline bool is_rt_ux_task(struct task_struct *task)
 {
-    return task && task->mm && task_has_rt_policy(task)
-           && strncmp(task->comm, "InputDispatcher", TASK_COMM_LEN) == 0;
+    return task && task->mm && task_has_rt_policy(task) && task->prio == 98
+           && uclamp_eff_value(task, UCLAMP_MIN) > 0;
 }
 
 static inline bool should_honor_rt_sync(struct rq *rq, struct task_struct *p,
 					bool sync)
 {
-	/* huangzq2: don't honor sync flag if current is InputDispatcher.
-	* InputDispatcher usually still run 1~5ms after waking up input consumer,
-	* hence introduced 1~5ms latency if we honor sync flag.
-	*/
-	if (is_rt_input_dispatcher(rq->curr)) return false;
+    /* huangzq2: RT UX task has its own core selection logic.*/
+    if (is_rt_ux_task(rq->curr) || is_rt_ux_task(p)) return false;
 
 	/*
 	 * If the waker is CFS, then an RT sync wakeup would preempt the waker
