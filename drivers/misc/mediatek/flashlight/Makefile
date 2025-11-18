@@ -25,6 +25,7 @@ obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY)       += flashlights-dummy.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY_GPIO)  += flashlights-dummy-gpio.o
 obj-$(CONFIG_MTK_FLASHLIGHT_VEGAS)     += flashlights-ocp8135-pwm.o
 obj-$(CONFIG_MTK_FLASHLIGHT_ORLANDO)     += flashlights-orlando-ocp8135-pwm.o
+obj-$(CONFIG_MTK_FLASHLIGHT_SYDNEY)     += flashlights-sydney-sgm3785s-pwm.o
 obj-$(CONFIG_MTK_FLASHLIGHT_NAPLES)     += flashlights-naples-ocp8135-pwm.o
 obj-$(CONFIG_MTK_FLASHLIGHT_SBUYA_AW36515)     += flashlights-sbuya-aw36515.o
 obj-$(CONFIG_MTK_FLASHLIGHT_SBUYA_SGM37864)     += flashlights-sbuya-sgm37864.o
@@ -56,6 +57,9 @@ ccflags-y += -DCONFIG_MTK_FLASHLIGHT_VEGAS
 endif
 ifeq ($(CONFIG_MTK_FLASHLIGHT_ORLANDO),m)
 ccflags-y += -DCONFIG_MTK_FLASHLIGHT_ORLANDO
+endif
+ifeq ($(CONFIG_MTK_FLASHLIGHT_SYDNEY),m)
+ccflags-y += -DCONFIG_MTK_FLASHLIGHT_SYDNEY
 endif
 ifeq ($(CONFIG_MTK_FLASHLIGHT_NAPLES),m)
 ccflags-y += -DCONFIG_MTK_FLASHLIGHT_NAPLES

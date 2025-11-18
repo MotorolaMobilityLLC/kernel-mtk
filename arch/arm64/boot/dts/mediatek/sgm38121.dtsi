@@ -1,0 +1,36 @@
+&i2c5 {
+	status = "ok";
+	cam_pmicsgm: sgm38121@28 {
+        compatible = "sgm,sgm38121";
+		reg = <0x28>;
+		cs-gpios = <&pio 22 0>;
+		//vin1-supply = <&dcdc_out_v14>;
+		init-value = <0x00>;
+
+		regulators {
+			 cam_dvdd_front1: ldo1 { //dvdd1
+				regulator-name = "ldo1";
+				regulator-min-microvolt = <528000>;
+				regulator-max-microvolt = <1200000>;
+			};
+
+			cam_dvdd_main0: ldo2 { //dvdd2
+				regulator-name = "ldo2";
+				regulator-min-microvolt = <528000>;
+				regulator-max-microvolt = <1200000>;
+			};
+
+			cam_avdd_front1: ldo3 { //avdd1
+				regulator-name = "ldo3";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <2800000>;
+			};
+
+			cam_avdd_main0: ldo4 { //avdd2
+				regulator-name = "ldo4";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <2800000>;
+			};
+		};
+	};
+};

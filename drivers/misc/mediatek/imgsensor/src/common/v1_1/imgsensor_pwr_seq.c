@@ -103,6 +103,50 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #endif
 #endif
 
+//Sydney bring up
+#if defined(CONFIG_MOT_SYDNEY_CAMERA_PROJECT)
+#if defined(MOT_SYDNEY_IMX882_SENSOR_ID)
+    {
+        SENSOR_DRVNAME_MOT_SYDNEY_IMX882_MIPI_RAW,
+        {
+            {SensorMCLK, Vol_High, 3},
+            {RST, Vol_Low, 1},
+            {DOVDD, Vol_1800, 3},
+            {DVDD, Vol_1100, 3},
+            {AVDD, Vol_2800, 6},
+            {AFVDD, Vol_2800, 1},
+            {RST, Vol_High, 5},
+        },
+    },
+#endif
+#if defined(MOT_SYDNEY_GC32E1_MIPI_RAW)
+    {
+        SENSOR_DRVNAME_MOT_SYDNEY_GC32E1_MIPI_RAW,
+        {
+            {SensorMCLK, Vol_High, 0},
+            {RST, Vol_Low, 1},
+            {DOVDD, Vol_1800, 6},
+            {DVDD, Vol_1200, 6},
+            {AVDD, Vol_2800, 6},
+            {RST, Vol_High, 4},
+        },
+    },
+#endif
+#if defined(MOT_SYDNEY_SC821CS_UW_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_SYDNEY_SC821CS_UW_MIPI_RAW,
+		{
+			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
+			{DOVDD, Vol_1800, 3},
+			{DVDD, Vol_1200, 1},
+			{AVDD, Vol_2800, 4},
+			{RST, Vol_High, 7}
+		},
+	},
+#endif
+#endif
+
 //Naples bring up
 #if defined(CONFIG_MOT_NAPLES_CAMERA_PROJECT)
 #if defined(MOT_NAPLES_S5KHM9_SENSOR_ID)

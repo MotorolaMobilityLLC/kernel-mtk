@@ -27,6 +27,11 @@ const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
 	{0, 0, 0, "flashlights_orlando_ocp8135_pwm", 0, 0},
 };
+#elif defined(CONFIG_MTK_FLASHLIGHT_SYDNEY)
+const struct flashlight_device_id flashlight_id[] = {
+	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
+	{0, 0, 0, "flashlights-sydney-sgm3785s-pwm", 0, 0},
+};
 #elif defined(CONFIG_MTK_FLASHLIGHT_NAPLES)
 const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */

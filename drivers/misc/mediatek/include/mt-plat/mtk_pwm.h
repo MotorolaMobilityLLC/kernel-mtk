@@ -9,7 +9,7 @@
 #include <linux/types.h>
 #if defined(CONFIG_MOT_VEGAS_CAMERA_PROJECT)
 #include "mtk_pwm_hal.h"
-#elif defined(CONFIG_MOT_NAPLES_CAMERA_PROJECT)
+#elif defined(CONFIG_MOT_NAPLES_CAMERA_PROJECT) || defined(CONFIG_MOT_SYDNEY_CAMERA_PROJECT)
 #include "mtk_pwm_hal.h"
 #else
 #include <mt-plat/mtk_pwm_hal.h>

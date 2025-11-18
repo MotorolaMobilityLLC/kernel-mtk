@@ -44,30 +44,44 @@
 			output-high;
 		};
 	};
-	camera_pins_cam0_avdd_gpio_0: cam0@6 {
+	camera_pins_cam2_avdd_gpio_0: cam2@6 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			pinmux = <PINMUX_GPIO26__FUNC_GPIO26>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-	camera_pins_cam0_avdd_gpio_1: cam0@7 {
+	camera_pins_cam2_avdd_gpio_1: cam2@7 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			pinmux = <PINMUX_GPIO26__FUNC_GPIO26>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
-	camera_pins_cam0_dvdd_gpio_0: cam0@8 {
+	camera_pins_cam2_dvdd_gpio_0: cam2@8 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO23__FUNC_GPIO23>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-	camera_pins_cam0_dvdd_gpio_1: cam0@9 {
+	camera_pins_cam2_dvdd_gpio_1: cam2@9 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO23__FUNC_GPIO23>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam0_af_0: vcamaf0@10 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam0_af_1: vcamaf1@11 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -167,14 +181,14 @@
 
 	flashlight_gpio_high: flashlight@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO147__FUNC_GPIO147>;
+			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	flashlight_gpio_low: flashlight@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO147__FUNC_GPIO147>;
+			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -204,21 +218,6 @@
 	};
 };
 
-/delete-node/ &mt6377_vio28;
-&main_pmic{
-	regulators {
-		mt6377_vio28: vio28 {
-			regulator-compatible = "VIO28";
-			regulator-name = "mt6377_vio28";
-			regulator-min-microvolt = <2800000>;
-			regulator-max-microvolt = <2800000>;
-			regulator-enable-ramp-delay = <200>;
-			regulator-allowed-modes = <0 2>;
-			regulator-allow-set-load;
-		};
-	};
-};
-
 &kd_camera_hw1 {
 	pinctrl-names = "default",
 			"cam0_rst0", "cam0_rst1",
@@ -232,7 +231,9 @@
 			"cam1_mclk_6mA", "cam1_mclk_8mA",
 			"cam2_mclk_off",
 			"cam2_mclk_2mA", "cam2_mclk_4mA",
-			"cam2_mclk_6mA", "cam2_mclk_8mA";
+			"cam2_mclk_6mA", "cam2_mclk_8mA",
+			"cam2_ldo_vcama_0",  "cam2_ldo_vcama_1",
+			"cam2_ldo_vcamd_0",  "cam2_ldo_vcamd_1";
 
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst_0>;
@@ -256,25 +257,26 @@
 	pinctrl-19 = <&camera_pins_cam2_mclk_4ma>;
 	pinctrl-20 = <&camera_pins_cam2_mclk_6ma>;
 	pinctrl-21 = <&camera_pins_cam2_mclk_8ma>;
+	pinctrl-22 = <&camera_pins_cam2_avdd_gpio_0>;
+	pinctrl-23 = <&camera_pins_cam2_avdd_gpio_1>;
+	pinctrl-24 = <&camera_pins_cam2_dvdd_gpio_0>;
+	pinctrl-25 = <&camera_pins_cam2_dvdd_gpio_1>;
 
 	/* main (wide)*/
-	cam0_vcamio-supply = <&mt6377_vio18>;
-	cam0_vcama-supply = <&cam_avdd_rear_main>;
-	cam0_vcamd-supply = <&cam_dvdd_rear_main>;
-	cam0_vcamaf-supply = <&mt6377_vio28>;
-	cam1_vcamio-supply = <&mt6377_vio18>;
-	cam1_vcama-supply = <&cam_avdd_front>;
-	cam1_vcamd-supply = <&cam_dvdd_front>;
-	cam2_vcamio-supply = <&mt6377_vio18>;
-	cam2_vcama-supply = <&cam_avdd_read_wide>;
-	cam2_vcamd-supply = <&cam_dvdd_read_wide>;
+	cam0_vcamio-supply = <&mt6377_vaud18>;
+	cam0_vcama-supply = <&cam_avdd_main0>;
+	cam0_vcamd-supply = <&cam_dvdd_main0>;
+	cam1_vcamio-supply = <&mt6377_vaud18>;
+	cam1_vcama-supply = <&cam_avdd_front1>;
+	cam1_vcamd-supply = <&cam_dvdd_front1>;
+	cam2_vcamio-supply = <&mt6377_vaud18>;
 
 	cam0_pin_mclk = "mclk";
 	cam0_pin_rst = "gpio";
 	cam0_pin_vcama = "regulator";
 	cam0_pin_vcamio = "regulator";
 	cam0_pin_vcamd = "regulator";
-	cam0_pin_vcamaf = "regulator";
+	cam0_pin_vcamaf = "gpio";
 	cam1_pin_mclk = "mclk";
 	cam1_pin_rst = "gpio";
 	cam1_pin_vcama = "regulator";
@@ -283,12 +285,12 @@
 	cam2_pin_mclk = "mclk";
 	cam2_pin_rst = "gpio";
 	cam2_pin_vcamio = "regulator";
-	cam2_pin_vcama = "regulator";
-	cam2_pin_vcamd = "regulator";
+	cam2_pin_vcama = "gpio";
+	cam2_pin_vcamd = "gpio";
 
-	cam0_enable_sensor = "mot_naples_s5khm9_mipi_raw mot_naples_imx882_mipi_raw";
-	cam1_enable_sensor = "mot_naples_s5kkds_mipi_raw mot_naples_gc32e1_mipi_raw";
-	cam2_enable_sensor = "mot_naples_ov08f_mipi_raw mot_naples_gc08a3_mipi_raw";
+	cam0_enable_sensor = "mot_sydney_imx882_mipi_raw";
+	cam1_enable_sensor = "mot_sydney_gc32e1_mipi_raw";
+	cam2_enable_sensor = "mot_sydney_sc821cs_uw_mipi_raw";
 	status = "okay";
 };
 /* CAMERA GPIO end */
@@ -317,13 +319,6 @@
 &i2c4 {
 	status = "okay";
 	clock-frequency = <400000>;
-
-	mtk_camera_eeprom2:camera_eeprom2@6C {
-		compatible = "mediatek,camera_eeprom";
-		reg = <0x6C>;
-		status = "okay";
-	};
-
 	camera_main_two_mtk:camera_main_two@47 {
 		compatible = "mediatek,camera_main_two";
 		#thermal-sensor-cells = <0>;
@@ -377,12 +372,12 @@
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_naples_s5khm9_mipi_raw mot_naples_imx882_mipi_raw mot_naples_s5kkds_mipi_raw mot_naples_gc32e1_mipi_raw mot_naples_ov08f_mipi_raw mot_naples_gc08a3_mipi_raw";
+       cust-sensor = "mot_sydney_imx882_mipi_raw mot_sydney_gc32e1_mipi_raw mot_sydney_sc821cs_uw_mipi_raw";
 };
 
 /* CAMERA Flashlight */
-&flashlights_naples {
-	compatible = "mediatek,flashlights_naples_ocp8135_pwm";
+&flashlights_sydney {
+	compatible = "mediatek,flashlights_sydney_sgm3785s_pwm";
 	pinctrl-names = "default",
 		"flashlight_gpio_high",
 		"flashlight_gpio_low",
