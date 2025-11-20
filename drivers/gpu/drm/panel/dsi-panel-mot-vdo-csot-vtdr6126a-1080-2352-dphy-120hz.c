@@ -640,6 +640,7 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	},
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
+	.fps_switch_cmd_to_vdo_data_delay_us = 10,
 	.dyn_fps = {
 		.switch_en = 1,
 		.vact_timing_fps = 120,
@@ -732,6 +733,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	},
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
+	.fps_switch_cmd_to_vdo_data_delay_us = 10,
 	.dyn_fps = {
 		.switch_en = 1,
 		.vact_timing_fps = 120,
@@ -824,6 +826,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	},
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
+	.fps_switch_cmd_to_vdo_data_delay_us = 10,
 	.dyn_fps = {
 		.switch_en = 1,
 		.vact_timing_fps = 120,
