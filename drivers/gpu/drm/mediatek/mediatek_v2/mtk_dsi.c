@@ -6367,10 +6367,15 @@ void mipi_dsi_dcs_write_gce(struct mtk_dsi *dsi, struct cmdq_pkt *handle,
 void mipi_dsi_dcs_write_gce_dyn(struct mtk_dsi *dsi, struct cmdq_pkt *handle,
 				  const void *data, size_t len)
 {
+	struct mtk_panel_params *params = NULL;
+
 	struct mipi_dsi_msg msg = {
 		.tx_buf = data,
 		.tx_len = len
 	};
+
+	if (dsi->ext && dsi->ext->params)
+		params = dsi->ext->params;
 
 	switch (len) {
 	case 0:
@@ -6396,6 +6401,10 @@ void mipi_dsi_dcs_write_gce_dyn(struct mtk_dsi *dsi, struct cmdq_pkt *handle,
 		dsi->ddp_comp.regs_pa + DSI_START, 0x0, ~0);
 	cmdq_pkt_write(handle, dsi->ddp_comp.cmdq_base,
 		dsi->ddp_comp.regs_pa + DSI_START, 0x1, ~0);
+
+	if (params && params->fps_switch_cmd_to_vdo_data_delay_us) {
+		cmdq_pkt_sleep(handle, CMDQ_US_TO_TICK(params->fps_switch_cmd_to_vdo_data_delay_us), mtk_get_gpr(&dsi->ddp_comp, handle));
+	}
 
 	mtk_dsi_poll_for_idle(dsi, handle);
 }

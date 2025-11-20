@@ -561,6 +561,7 @@ struct mtk_panel_params {
 	bool check_panel_feature;
 	bool change_fps_by_vfp_send_cmd;
 	bool ripple_optimize_needed;
+	unsigned int fps_switch_cmd_to_vdo_data_delay_us;
 };
 
 struct mtk_panel_ext {
