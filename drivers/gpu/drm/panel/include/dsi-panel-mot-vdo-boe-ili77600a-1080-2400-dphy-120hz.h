@@ -34,6 +34,12 @@
 #define MODE_120_DATA_RATE          850
 /*Parameter setting for mode 3 End*/
 
+#define MODE_30_FPS                 30
+#define MODE_30_VFP                 7500
+#define MODE_30_HFP                 24
+
+#define MODE_30_DATA_RATE            850
+
 //Parameter setting for mode 0 Start
 #define MODE_60_FPS                 60
 #define MODE_60_VFP                 2520

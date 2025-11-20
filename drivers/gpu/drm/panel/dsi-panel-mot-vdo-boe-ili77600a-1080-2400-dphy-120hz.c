@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (c) 2019 MediaTek Inc.
+ * Copyright (c) 2025 Motorola Mobility LLC
  */
 
 #include <linux/backlight.h>
@@ -186,12 +186,14 @@ static void boe_ili77600a_panel_init(struct boe_ili77600a *ctx)
 		//return;
 	}
 	else {
-		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 0);
 		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
 		usleep_range(10 * 1000, 12 * 1000);
+		gpiod_set_value(ctx->reset_gpio, 0);
+		usleep_range(10 * 1000, 12 * 1000);
+		gpiod_set_value(ctx->reset_gpio, 1);
+		usleep_range(20000, 22000);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -282,12 +284,11 @@ static int boe_ili77600a_unprepare(struct drm_panel *panel)
 		return 0;
 	}
 	pr_info("%s\n", __func__);
-	printk("[%d  %s]_check_dsi !!\n",__LINE__, __FUNCTION__);
 	msleep(1);
 	boe_ili77600a_dcs_write_seq_static(ctx, 0x28);
 	msleep(20);
 	boe_ili77600a_dcs_write_seq_static(ctx, 0x10);
-	msleep(80);
+	msleep(120);
 
 	ctx->prepared = false;
 
@@ -374,6 +375,18 @@ static const struct drm_display_mode performance_mode_120hz = {
 	.vtotal = FRAME_HEIGHT + MODE_120_VFP + VSA + VBP,
 };
 
+static const struct drm_display_mode performance_mode_30hz = {
+	.clock	= ((FRAME_WIDTH + MODE_30_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_30_VFP + VSA + VBP)*MODE_30_FPS)/1000,
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + MODE_30_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_30_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_30_HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_30_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_30_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_30_VFP + VSA + VBP,
+};
+
 static const struct drm_display_mode performance_mode_60hz = {
 	.clock	= ((FRAME_WIDTH + MODE_60_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_60_VFP + VSA + VBP)*MODE_60_FPS)/1000,
 	.hdisplay = FRAME_WIDTH,
@@ -399,6 +412,83 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 #if defined(CONFIG_MTK_PANEL_EXT)
+static struct mtk_panel_params ext_params_mode_30 = {
+	//.change_fps_by_vfp_send_cmd = 0,
+	//.vfp_low_power = 20,
+	.data_rate = DATA_RATE,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.lcm_cellid = {
+		.panel_cellid_reg = 0x10,
+		.panel_cellid_reg_seq = 1,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 1,
+		.panel_cellid_esd_dis = 1,
+		.page_table = {
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x06},
+		},
+		.page_post_table = {
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x00},
+		},
+	},
+	.panel_ver = 1,
+	//.panel_id = 0x01050791,
+	.panel_name = "boe_il77600a_672",
+	.panel_supplier = "boe",
+	.lcm_index = 0,
+	.hbm_type = HBM_MODE_RAMPING,
+	.max_bl_level = 2047,
+	.ssc_enable = 1,
+	.lane_swap_en = 0,
+	.lp_perline_en = 0,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable                =  DSC_ENABLE,
+		.ver                   =  DSC_VER,
+		.slice_mode            =  DSC_SLICE_MODE,
+		.rgb_swap              =  DSC_RGB_SWAP,
+		.dsc_cfg               =  DSC_DSC_CFG,
+		.rct_on                =  DSC_RCT_ON,
+		.bit_per_channel       =  DSC_BIT_PER_CHANNEL,
+		.dsc_line_buf_depth    =  DSC_DSC_LINE_BUF_DEPTH,
+		.bp_enable             =  DSC_BP_ENABLE,
+		.bit_per_pixel         =  DSC_BIT_PER_PIXEL,
+		.pic_height            =  FRAME_HEIGHT,
+		.pic_width             =  FRAME_WIDTH,
+		.slice_height          =  DSC_SLICE_HEIGHT,
+		.slice_width           =  DSC_SLICE_WIDTH,
+		.chunk_size            =  DSC_CHUNK_SIZE,
+		.xmit_delay            =  DSC_XMIT_DELAY,
+		.dec_delay             =  DSC_DEC_DELAY,
+		.scale_value           =  DSC_SCALE_VALUE,
+		.increment_interval    =  DSC_INCREMENT_INTERVAL,
+		.decrement_interval    =  DSC_DECREMENT_INTERVAL,
+		.line_bpg_offset       =  DSC_LINE_BPG_OFFSET,
+		.nfl_bpg_offset        =  DSC_NFL_BPG_OFFSET,
+		.slice_bpg_offset      =  DSC_SLICE_BPG_OFFSET,
+		.initial_offset        =  DSC_INITIAL_OFFSET,
+		.final_offset          =  DSC_FINAL_OFFSET,
+		.flatness_minqp        =  DSC_FLATNESS_MINQP,
+		.flatness_maxqp        =  DSC_FLATNESS_MAXQP,
+		.rc_model_size         =  DSC_RC_MODEL_SIZE,
+		.rc_edge_factor        =  DSC_RC_EDGE_FACTOR,
+		.rc_quant_incr_limit0  =  DSC_RC_QUANT_INCR_LIMIT0,
+		.rc_quant_incr_limit1  =  DSC_RC_QUANT_INCR_LIMIT1,
+		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
+		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
+	},
+	.lfr_enable = LFR_EN,
+	.lfr_minimum_fps = MODE_30_FPS,
+
+};
+
 static struct mtk_panel_params ext_params_mode_60 = {
 	//.change_fps_by_vfp_send_cmd = 0,
 	//.vfp_low_power = 20,
@@ -427,7 +517,7 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	//.panel_id = 0x01050791,
 	.panel_name = "boe_il77600a_672",
 	.panel_supplier = "boe",
-	.lcm_index = 2,
+	.lcm_index = 0,
 	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
@@ -503,7 +593,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	//.panel_id = 0x10050a91,
 	.panel_name = "boe_il77600a_672",
 	.panel_supplier = "boe",
-	.lcm_index = 2,
+	.lcm_index = 0,
 	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
@@ -578,7 +668,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	//.panel_id = 0x10050a91,
 	.panel_name = "boe_il77600a_672",
 	.panel_supplier = "boe",
-	.lcm_index = 2,
+	.lcm_index = 0,
 	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
@@ -670,7 +760,9 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 		return ret;
 
 	pr_info("%s:disp: mode fps=%d", __func__, drm_mode_vrefresh(m));
-	if (drm_mode_vrefresh(m) == MODE_60_FPS)
+	if (drm_mode_vrefresh(m) == MODE_30_FPS)
+		ext->params = &ext_params_mode_30;
+	else if (drm_mode_vrefresh(m) == MODE_60_FPS)
 		ext->params = &ext_params_mode_60;
 	else if (drm_mode_vrefresh(m) == MODE_90_FPS)
 		ext->params = &ext_params_mode_90;
@@ -684,7 +776,7 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 static int panel_ext_reset(struct drm_panel *panel, int on)
 {
 	struct boe_ili77600a *ctx = panel_to_boe_ili77600a(panel);
-
+	pr_info("%s:disp: ext reset on=%d", __func__, on);
 	ctx->reset_gpio =
 		devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 		gpiod_set_value(ctx->reset_gpio, on);
@@ -819,12 +911,12 @@ static int boe_ili77600a_get_modes(struct drm_panel *panel,
 						struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
-	//struct drm_display_mode *mode_1;
+	struct drm_display_mode *mode_1;
 	struct drm_display_mode *mode_2;
 	struct drm_display_mode *mode_3;
 
 	mode = drm_mode_duplicate(connector->dev, &performance_mode_120hz);
-	printk("[%d  %s]disp: mode:\n",__LINE__, __FUNCTION__,mode);
+	pr_info("disp: mode: %p\n", mode);
 	if (!mode) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
 			performance_mode_120hz.hdisplay,
@@ -837,9 +929,8 @@ static int boe_ili77600a_get_modes(struct drm_panel *panel,
 	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
 	drm_mode_probed_add(connector, mode);
 
-#if 0
 	mode_1 = drm_mode_duplicate(connector->dev, &performance_mode_30hz);
-	printk("[%d  %s]disp mode:%d\n",__LINE__, __FUNCTION__,mode_1);
+	pr_info("disp: mode: %p\n", mode_1);
 	if (!mode_1) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
 			performance_mode_30hz.hdisplay,
@@ -850,10 +941,9 @@ static int boe_ili77600a_get_modes(struct drm_panel *panel,
 	drm_mode_set_name(mode_1);
 	mode_1->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(connector, mode_1);
-#endif
 
 	mode_2 = drm_mode_duplicate(connector->dev, &performance_mode_60hz);
-	printk("[%d  %s]disp mode:%d\n",__LINE__, __FUNCTION__,mode_2);
+	pr_info("disp: mode: %p\n", mode_2);
 	if (!mode_2) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
 			performance_mode_60hz.hdisplay,
@@ -878,7 +968,7 @@ static int boe_ili77600a_get_modes(struct drm_panel *panel,
 	drm_mode_probed_add(connector, mode_3);
 	connector->display_info.width_mm = 70;
 	connector->display_info.height_mm = 156;
-	printk("[%d  %s]end\n",__LINE__, __FUNCTION__);
+	pr_info("end\n");
 
 	return 1;
 }
@@ -1024,6 +1114,6 @@ static struct mipi_dsi_driver boe_ili77600a_driver = {
 
 module_mipi_dsi_driver(boe_ili77600a_driver);
 
-MODULE_AUTHOR("mediatek");
+MODULE_AUTHOR("Motorola Mobility");
 MODULE_DESCRIPTION("boe ili77600a incell 120hz Panel Driver");
 MODULE_LICENSE("GPL v2");
