@@ -58,7 +58,7 @@ struct csot_td4376b {
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
-	{2, {0x55, 0x01}},
+	{2, {0x55, 0x02}},
 };
 
 static struct mtk_panel_para_table panel_cabc_mv[] = {
@@ -227,18 +227,23 @@ static void csot_td4376b_panel_init(struct csot_td4376b *ctx)
 	csot_td4376b_dcs_write_seq_static(ctx, 0xD6, 0x00);
 	csot_td4376b_dcs_write_seq_static(ctx, 0xE7, 0x11, 0x00, 0x89, 0x30, 0x80, 0x09, 0x60, 0x04, 0x38, 0x00, 0x08, 0x02, 0x1c, 0x02, 0x1c, 0x02, 0x00, 0x02, 0x0e, 0x20, 0x00, 0xBB, 0x00, 0x07, 0x0c, 0x0D, 0xB7, 0x0C, 0xB7);
 
+	csot_td4376b_dcs_write_seq_static(ctx, 0xB8, 0x31, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00);
+	csot_td4376b_dcs_write_seq_static(ctx, 0xB9, 0x7D, 0x5B, 0x00, 0x00, 0x00, 0x00, 0x00);
+	csot_td4376b_dcs_write_seq_static(ctx, 0xBA, 0x7D, 0x5B, 0x00, 0x00, 0x00, 0x00, 0x00);
+	csot_td4376b_dcs_write_seq_static(ctx, 0xCE, 0x5D, 0x60, 0x62, 0x65, 0x69, 0x6C, 0x76, 0x81, 0x8D, 0x99, 0xA4, 0xB0, 0xC2, 0xD4, 0xE8, 0xF3, 0xF7, 0xFF, 0x01, 0x7A, 0x0f, 0x0f, 0x00, 0x43, 0x69, 0x5a, 0x40, 0x43, 0x00, 0x00, 0x00, 0x64, 0xfa, 0x00, 0x00);
+
 	csot_td4376b_dcs_write_seq_static(ctx, 0x51, 0x07,0xFF);
 	csot_td4376b_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	csot_td4376b_dcs_write_seq_static(ctx, 0x55, 0x00);
 	csot_td4376b_dcs_write_seq_static(ctx, 0x31, 0x00);
 	csot_td4376b_dcs_write_seq_static(ctx, 0xB0, 0x03);
 
-	msleep(2);
-
+	//Sleep Out
 	csot_td4376b_dcs_write_seq_static(ctx, 0x11);
-	msleep(120);
+	//Display On
 	csot_td4376b_dcs_write_seq_static(ctx, 0x29);
-	csot_td4376b_dcs_write_seq_static(ctx, 0x51, 0x06, 0x66);
+	// Adjust display on delay per new vendor timing sequence`
+	usleep_range(80*1000, 81*1000);
 
 	now = ktime_get();
 	ctx->screen_on_timestamp = ktime_to_ms(now);
@@ -321,7 +326,14 @@ static int csot_td4376b_unprepare(struct drm_panel *panel)
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		usleep_range(5000,5001);
 		pr_info("%s:csot_td4376b: reset_gpio 0\n", __func__);
-
+	}
+	// Disable bias power before resetting GPIOs per new power-off sequence
+	pr_info("%s:disp: tp_gesture_flag:%d, esd_recovery_flg=%d \n",__func__, tp_gesture_flag, mtkfb_esd_get_recovery_flag());
+	if(!tp_gesture_flag || mtkfb_esd_get_recovery_flag()) {
+		ocp2138_BiasPower_disable(5);
+	}
+	if(!tp_gesture_flag){
+		msleep(5);
 		ctx->tp_reset_gpio = devm_gpiod_get(ctx->dev, "tp_reset", GPIOD_OUT_HIGH);
 		if (IS_ERR(ctx->tp_reset_gpio)) {
 			dev_err(ctx->dev, "%s:csot_td4376b: cannot get tp_reset_gpio %ld\n",
@@ -334,10 +346,6 @@ static int csot_td4376b_unprepare(struct drm_panel *panel)
 			usleep_range(5000,5001);
 			pr_info("%s:csot_td4376b: tp_reset_gpio 0\n", __func__);
 		}
-	}
-	pr_info("%s:disp: tp_gesture_flag:%d, esd_recovery_flg=%d \n",__func__, tp_gesture_flag, mtkfb_esd_get_recovery_flag());
-	if(!tp_gesture_flag || mtkfb_esd_get_recovery_flag()) {
-		ocp2138_BiasPower_disable(5);
 	}
 
 	ctx->error = 0;
@@ -400,6 +408,18 @@ static int csot_td4376b_enable(struct drm_panel *panel)
 	return 0;
 }
 
+static const struct drm_display_mode performance_mode_30hz = {
+	.clock		=  (int)((FRAME_WIDTH + HFP + HSA + HBP) * (FRAME_HEIGHT + MODE_30_VFP + VSA + VBP) * MODE_30_FPS / 1000),
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + MODE_30_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_30_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_30_HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_30_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_30_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_30_VFP + VSA + VBP,
+};
+
 static const struct drm_display_mode performance_mode_60hz = {
 	.clock		=  (int)((FRAME_WIDTH + HFP + HSA + HBP) * (FRAME_HEIGHT + MODE_60_VFP + VSA + VBP) * MODE_60_FPS / 1000),
 	.hdisplay = FRAME_WIDTH,
@@ -437,6 +457,76 @@ static const struct drm_display_mode performance_mode_120hz = {
 };
 
 #if defined(CONFIG_MTK_PANEL_EXT)
+static struct mtk_panel_params ext_params_30hz = {
+	.data_rate = DATA_RATE,
+	//.vfp_low_power = 880,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0A,
+		.count = 1,
+		.para_list[0] = 0x9C,
+	},
+
+	.lcm_cellid = {
+		.panel_cellid_reg = 0x00,
+		.panel_cellid_reg_seq = 1,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 1,
+	},
+	.panel_ver = 1,
+	//.panel_id = 0x01012891,
+	.panel_name = "csot_td4376b_672",
+	.panel_supplier = "csot",
+	.lcm_index = 2,
+	.hbm_type = HBM_MODE_RAMPING,
+	.max_bl_level = 2047,
+	.ssc_enable = 1,
+	.lane_swap_en = 0,
+	.lp_perline_en = 0,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable                =  DSC_ENABLE,
+		.ver                   =  DSC_VER,
+		.slice_mode            =  DSC_SLICE_MODE,
+		.rgb_swap              =  DSC_RGB_SWAP,
+		.dsc_cfg               =  DSC_DSC_CFG,
+		.rct_on                =  DSC_RCT_ON,
+		.bit_per_channel       =  DSC_BIT_PER_CHANNEL,
+		.dsc_line_buf_depth    =  DSC_DSC_LINE_BUF_DEPTH,
+		.bp_enable             =  DSC_BP_ENABLE,
+		.bit_per_pixel         =  DSC_BIT_PER_PIXEL,
+		.pic_height            =  FRAME_HEIGHT,
+		.pic_width             =  FRAME_WIDTH,
+		.slice_height          =  DSC_SLICE_HEIGHT,
+		.slice_width           =  DSC_SLICE_WIDTH,
+		.chunk_size            =  DSC_CHUNK_SIZE,
+		.xmit_delay            =  DSC_XMIT_DELAY,
+		.dec_delay             =  DSC_DEC_DELAY,
+		.scale_value           =  DSC_SCALE_VALUE,
+		.increment_interval    =  DSC_INCREMENT_INTERVAL,
+		.decrement_interval    =  DSC_DECREMENT_INTERVAL,
+		.line_bpg_offset       =  DSC_LINE_BPG_OFFSET,
+		.nfl_bpg_offset        =  DSC_NFL_BPG_OFFSET,
+		.slice_bpg_offset      =  DSC_SLICE_BPG_OFFSET,
+		.initial_offset        =  DSC_INITIAL_OFFSET,
+		.final_offset          =  DSC_FINAL_OFFSET,
+		.flatness_minqp        =  DSC_FLATNESS_MINQP,
+		.flatness_maxqp        =  DSC_FLATNESS_MAXQP,
+		.rc_model_size         =  DSC_RC_MODEL_SIZE,
+		.rc_edge_factor        =  DSC_RC_EDGE_FACTOR,
+		.rc_quant_incr_limit0  =  DSC_RC_QUANT_INCR_LIMIT0,
+		.rc_quant_incr_limit1  =  DSC_RC_QUANT_INCR_LIMIT1,
+		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
+		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
+	},
+	.lfr_enable = LFR_EN,
+	.lfr_minimum_fps = MODE_30_FPS,
+
+};
+
 static struct mtk_panel_params ext_params_60hz = {
 	.data_rate = DATA_RATE,
 	//.vfp_low_power = 880,
@@ -695,6 +785,8 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 
 	if (drm_mode_vrefresh(m) == MODE_120_FPS)
 		ext->params = &ext_params_120hz;
+	else if (drm_mode_vrefresh(m) == MODE_30_FPS)
+		ext->params = &ext_params_30hz;
 	else if (drm_mode_vrefresh(m) == MODE_60_FPS)
 		ext->params = &ext_params_60hz;
 	else if (drm_mode_vrefresh(m) == MODE_90_FPS)
@@ -854,7 +946,7 @@ static int csot_td4376b_get_modes(struct drm_panel *panel,
 					struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
-	//struct drm_display_mode *mode_1;
+	struct drm_display_mode *mode_1;
 	struct drm_display_mode *mode_2;
 	struct drm_display_mode *mode_3;
 
@@ -872,7 +964,6 @@ static int csot_td4376b_get_modes(struct drm_panel *panel,
 	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
 	drm_mode_probed_add(connector, mode);
 
-#if 0
 	mode_1 = drm_mode_duplicate(connector->dev, &performance_mode_30hz);
 	printk("[%d  %s]disp mode:%d\n",__LINE__, __FUNCTION__,mode_1);
 	if (!mode_1) {
@@ -885,7 +976,6 @@ static int csot_td4376b_get_modes(struct drm_panel *panel,
 	drm_mode_set_name(mode_1);
 	mode_1->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(connector, mode_1);
-#endif
 
 	mode_2 = drm_mode_duplicate(connector->dev, &performance_mode_60hz);
 	printk("[%d  %s]disp mode:%d\n",__LINE__, __FUNCTION__,mode_2);
@@ -1059,7 +1149,7 @@ static struct mipi_dsi_driver csot_td4376b_driver = {
 
 module_mipi_dsi_driver(csot_td4376b_driver);
 
-MODULE_AUTHOR("mediatek");
+MODULE_AUTHOR("Motorola Mobility LLC");
 MODULE_DESCRIPTION("csot td4376b incell 120hz Panel Driver");
 MODULE_LICENSE("GPL v2");
 
