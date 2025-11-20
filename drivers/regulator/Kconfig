@@ -1523,6 +1523,18 @@ config MOTO_AW37004
 	    This option enables support for the aw37004 power connected
 	    through I2C. Say Y to enable support for the aw37004 .
 
+config MOTO_DIO8015
+	tristate "DIO8015 regulator driver"
+	help
+	    This option enables support for the dio8015 power connected
+	    through I2C. Say Y to enable support for the dio8015 .
+
+config MOTO_DIO80151C
+	tristate "DIO80151C regulator driver"
+	help
+	    This option enables support for the dio80151c power connected
+	    through I2C. Say Y to enable support for the dio80151c .
+
 config MOTO_SGM38121
 	tristate "SGM38121 regulator driver"
 	help
