@@ -514,6 +514,15 @@ static int do_algorithm(struct mtk_charger *info)
 					dev_name(&alg->dev), pdata->thermal_charging_current_limit,
 					info->mmi.min_therm_current_limit);
 				continue;
+			} else if ((info->mmi.low_limit_temperature > -1) && (info->mmi.high_limit_temperature > 0)
+				&& ((info->battery_temp < info->mmi.low_limit_temperature)
+				|| (info->battery_temp >= info->mmi.high_limit_temperature))
+				&& ((alg->alg_id & PE5_ID) || (alg->alg_id & PEHV_ID))) {
+				charger_dev_enable(info->chg1_dev, true);
+				chg_alg_stop_algo(alg);
+				chr_err("%s: alg:%s due to high or low temp limit:%d\n", __func__,
+					dev_name(&alg->dev), info->battery_temp);
+				continue;
 			}
 
 			if (info->alg_new_arbitration && info->alg_unchangeable &&

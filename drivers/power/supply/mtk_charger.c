@@ -4441,6 +4441,15 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 				  &info->mmi.lower_limit_capacity);
 	if (rc)
 		info->mmi.lower_limit_capacity = 0;
+	rc = of_property_read_u32(node, "mmi,high-limit-temperature",
+				  &info->mmi.high_limit_temperature);
+	if (rc)
+		info->mmi.high_limit_temperature = 0;
+
+	rc = of_property_read_u32(node, "mmi,low-limit-temperature",
+				  &info->mmi.low_limit_temperature);
+	if (rc)
+		info->mmi.low_limit_temperature = -1;
 
 	rc = of_property_read_u32(node, "mmi,vfloat-comp-uv",
 				  &info->mmi.vfloat_comp_mv);

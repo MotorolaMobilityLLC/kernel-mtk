@@ -391,6 +391,8 @@ struct mmi_params {
 	enum charging_limit_modes	charging_limit_modes;
 	int			upper_limit_capacity;
 	int			lower_limit_capacity;
+	int			high_limit_temperature;
+	int			low_limit_temperature;
 	int			base_fv_mv;
 	int			vfloat_comp_mv;
 	int			batt_health;
