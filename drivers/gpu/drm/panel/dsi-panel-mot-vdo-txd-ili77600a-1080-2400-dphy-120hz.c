@@ -187,12 +187,13 @@ static void txd_ili77600a_panel_init(struct txd_ili77600a *ctx)
 		//return;
 	}
 	else {
-		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(1 * 1000, 2 * 1000);
-		gpiod_set_value(ctx->reset_gpio, 0);
-		usleep_range(1 * 1000, 2 * 1000);
+		//based on another project like il99506
 		gpiod_set_value(ctx->reset_gpio, 1);
 		usleep_range(10 * 1000, 12 * 1000);
+		gpiod_set_value(ctx->reset_gpio, 0);
+		usleep_range(10 * 1000, 12 * 1000);
+		gpiod_set_value(ctx->reset_gpio, 1);
+		usleep_range(20000, 22000);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -287,7 +288,7 @@ static int txd_ili77600a_unprepare(struct drm_panel *panel)
 	txd_ili77600a_dcs_write_seq_static(ctx, 0x28);
 	msleep(20);
 	txd_ili77600a_dcs_write_seq_static(ctx, 0x10);
-	msleep(80);
+	msleep(120);
 
 	ctx->prepared = false;
 
@@ -363,7 +364,7 @@ static int txd_ili77600a_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode performance_mode_120hz = {
-	.clock		= 333180,
+	.clock	= ((FRAME_WIDTH + MODE_120_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_120_VFP + VSA + VBP)*MODE_120_FPS)/1000,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
@@ -374,8 +375,20 @@ static const struct drm_display_mode performance_mode_120hz = {
 	.vtotal = FRAME_HEIGHT + MODE_120_VFP + VSA + VBP,
 };
 
+static const struct drm_display_mode performance_mode_30hz = {
+	.clock	= ((FRAME_WIDTH + MODE_30_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_30_VFP + VSA + VBP)*MODE_30_FPS)/1000,
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + MODE_30_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_30_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_30_HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_30_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_30_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_30_VFP + VSA + VBP,
+};
+
 static const struct drm_display_mode performance_mode_60hz = {
-	.clock		= 332910,
+	.clock	= ((FRAME_WIDTH + MODE_60_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_60_VFP + VSA + VBP)*MODE_60_FPS)/1000,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -387,7 +400,7 @@ static const struct drm_display_mode performance_mode_60hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 333315,
+	.clock	= ((FRAME_WIDTH + MODE_90_HFP + HSA + HBP)*(FRAME_HEIGHT + MODE_90_VFP + VSA + VBP)*MODE_90_FPS)/1000,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -399,6 +412,84 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 #if defined(CONFIG_MTK_PANEL_EXT)
+static struct mtk_panel_params ext_params_mode_30 = {
+	//.change_fps_by_vfp_send_cmd = 0,
+	//.vfp_low_power = 20,
+	.data_rate = DATA_RATE,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.lcm_cellid = {
+		.panel_cellid_reg = 0x10,
+		.panel_cellid_reg_seq = 1,
+		.panel_cellid_len = 23,
+		.panel_cellid_read_max = 1,
+		.panel_cellid_esd_dis = 1,
+		.page_table = {
+			{
+                        },
+		},
+		.page_post_table = {
+			{0x39, 0x04, 0xFF, 0x5A, 0xA5, 0x00},
+		},
+	},
+	.panel_ver = 1,
+	//.panel_id = 0x01050791,
+	.panel_name = "txd_il77600a_672",
+	.panel_supplier = "txd",
+	.lcm_index = 0,
+	.hbm_type = HBM_MODE_RAMPING,
+	.max_bl_level = 2047,
+	.ssc_enable = 1,
+	.lane_swap_en = 0,
+	.lp_perline_en = 0,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable                =  DSC_ENABLE,
+		.ver                   =  DSC_VER,
+		.slice_mode            =  DSC_SLICE_MODE,
+		.rgb_swap              =  DSC_RGB_SWAP,
+		.dsc_cfg               =  DSC_DSC_CFG,
+		.rct_on                =  DSC_RCT_ON,
+		.bit_per_channel       =  DSC_BIT_PER_CHANNEL,
+		.dsc_line_buf_depth    =  DSC_DSC_LINE_BUF_DEPTH,
+		.bp_enable             =  DSC_BP_ENABLE,
+		.bit_per_pixel         =  DSC_BIT_PER_PIXEL,
+		.pic_height            =  FRAME_HEIGHT,
+		.pic_width             =  FRAME_WIDTH,
+		.slice_height          =  DSC_SLICE_HEIGHT,
+		.slice_width           =  DSC_SLICE_WIDTH,
+		.chunk_size            =  DSC_CHUNK_SIZE,
+		.xmit_delay            =  DSC_XMIT_DELAY,
+		.dec_delay             =  DSC_DEC_DELAY,
+		.scale_value           =  DSC_SCALE_VALUE,
+		.increment_interval    =  DSC_INCREMENT_INTERVAL,
+		.decrement_interval    =  DSC_DECREMENT_INTERVAL,
+		.line_bpg_offset       =  DSC_LINE_BPG_OFFSET,
+		.nfl_bpg_offset        =  DSC_NFL_BPG_OFFSET,
+		.slice_bpg_offset      =  DSC_SLICE_BPG_OFFSET,
+		.initial_offset        =  DSC_INITIAL_OFFSET,
+		.final_offset          =  DSC_FINAL_OFFSET,
+		.flatness_minqp        =  DSC_FLATNESS_MINQP,
+		.flatness_maxqp        =  DSC_FLATNESS_MAXQP,
+		.rc_model_size         =  DSC_RC_MODEL_SIZE,
+		.rc_edge_factor        =  DSC_RC_EDGE_FACTOR,
+		.rc_quant_incr_limit0  =  DSC_RC_QUANT_INCR_LIMIT0,
+		.rc_quant_incr_limit1  =  DSC_RC_QUANT_INCR_LIMIT1,
+		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
+		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
+	},
+	.lfr_enable = LFR_EN,
+	.lfr_minimum_fps = MODE_30_FPS,
+
+};
+
 static struct mtk_panel_params ext_params_mode_60 = {
 	//.change_fps_by_vfp_send_cmd = 0,
 	//.vfp_low_power = 20,
@@ -427,7 +518,7 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	//.panel_id = 0x01050791,
 	.panel_name = "txd_il77600a_672",
 	.panel_supplier = "txd",
-	.lcm_index = 2,
+	.lcm_index = 0,
 	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
@@ -503,7 +594,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	//.panel_id = 0x10050a91,
 	.panel_name = "txd_il77600a_672",
 	.panel_supplier = "txd",
-	.lcm_index = 2,
+	.lcm_index = 0,
 	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
@@ -578,7 +669,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	//.panel_id = 0x10050a91,
 	.panel_name = "txd_il77600a_672",
 	.panel_supplier = "txd",
-	.lcm_index = 2,
+	.lcm_index = 0,
 	.hbm_type = HBM_MODE_RAMPING,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
@@ -630,21 +721,17 @@ static struct mtk_panel_params ext_params_mode_120 = {
 static int txd_ili77600a_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
-	pr_info("%s: skip for using bl ic, level=%d\n", __func__, level);
+	static char bl_tb0[] = { 0x51, 0x7f, 0xff };
 
-#if 0
+	pr_info("%s backlight = %d\n", __func__, level);
 
-	if (!cb) {
-		pr_info("%s cb NULL!\n", __func__);
+	bl_tb0[1] = (level >> 8) & 0x7;
+	bl_tb0[2] = level & 0xFF;
+
+	if (!cb)
 		return -1;
-	}
 
-	bl_tb0[1] = (u8)(level&0xFF);
-	bl_tb0[2] = (u8)((level>>8)&0x7);
-
-	pr_info("%s set level:%d, bl_tb:0x%02x%02x\n", __func__, level, bl_tb0[1], bl_tb0[2]);
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
-#endif
 
 	return 0;
 }
@@ -674,7 +761,9 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 		return ret;
 
 	pr_info("%s:disp: mode fps=%d", __func__, drm_mode_vrefresh(m));
-	if (drm_mode_vrefresh(m) == MODE_60_FPS)
+	if (drm_mode_vrefresh(m) == MODE_30_FPS)
+		ext->params = &ext_params_mode_30;
+	else if (drm_mode_vrefresh(m) == MODE_60_FPS)
 		ext->params = &ext_params_mode_60;
 	else if (drm_mode_vrefresh(m) == MODE_90_FPS)
 		ext->params = &ext_params_mode_90;
@@ -823,11 +912,12 @@ static int txd_ili77600a_get_modes(struct drm_panel *panel,
 						struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
+	struct drm_display_mode *mode_1;
 	struct drm_display_mode *mode_2;
 	struct drm_display_mode *mode_3;
 
 	mode = drm_mode_duplicate(connector->dev, &performance_mode_120hz);
-	pr_info("[%d  %s]disp: mode:%d:\n",__LINE__, __FUNCTION__,mode);
+	pr_info("disp: added mode with vrefresh %d\n", drm_mode_vrefresh(mode));
 	if (!mode) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
 			performance_mode_120hz.hdisplay,
@@ -840,8 +930,21 @@ static int txd_ili77600a_get_modes(struct drm_panel *panel,
 	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
 	drm_mode_probed_add(connector, mode);
 
+	mode_1 = drm_mode_duplicate(connector->dev, &performance_mode_30hz);
+	pr_info("disp: added mode with vrefresh %d\n", drm_mode_vrefresh(mode_1));
+	if (!mode_1) {
+		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			performance_mode_30hz.hdisplay,
+			performance_mode_30hz.vdisplay,
+			drm_mode_vrefresh(&performance_mode_30hz));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_1);
+	mode_1->type = DRM_MODE_TYPE_DRIVER;
+	drm_mode_probed_add(connector, mode_1);
+
 	mode_2 = drm_mode_duplicate(connector->dev, &performance_mode_60hz);
-	pr_info("[%d  %s]disp mode:%d\n",__LINE__, __FUNCTION__,mode_2);
+	pr_info("disp: added mode with vrefresh %d\n", drm_mode_vrefresh(mode_2));
 	if (!mode_2) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
 			performance_mode_60hz.hdisplay,
@@ -866,7 +969,7 @@ static int txd_ili77600a_get_modes(struct drm_panel *panel,
 	drm_mode_probed_add(connector, mode_3);
 	connector->display_info.width_mm = 70;
 	connector->display_info.height_mm = 156;
-	pr_info("[%d  %s]end\n",__LINE__, __FUNCTION__);
+	pr_info("end\n");
 
 	return 1;
 }
@@ -878,39 +981,6 @@ static const struct drm_panel_funcs txd_ili77600a_drm_funcs = {
 	.enable = txd_ili77600a_enable,
 	.get_modes = txd_ili77600a_get_modes,
 };
-
-#if 0
-static void txd_ili77600a_parse_panel_version(struct txd_ili77600a *ctx)
-{
-#if TXD_PANEL_EVT_V0_SUPPORT
-	int rc;
-	struct device_node *chosen = of_find_node_by_name(NULL, "chosen");
-
-	ctx->version = PANEL_V1;
-	if(chosen) {
-		u32 tmp_id = 0;
-
-		rc = of_property_read_u32(chosen, "mmi,panel_vendor_id", &tmp_id);
-		if (!rc) {
-			if (TXD_ILI_PANEL_V0_VENDOR_ID == tmp_id) {
-				ctx->version = PANEL_V0;
-				pr_info("txd_ili77600a panel version v0, ver=%d, vendor_id=0x%x\n", ctx->version, tmp_id);
-			}
-			else
-				pr_info("txd_ili77600a get vendor_id:0x%x\n", tmp_id);
-		}
-		else
-			pr_info("txd_ili77600a mmi,panel_vendor_id not get\n");
-	}
-	else
-		pr_info("txd_ili77600a_parse_panel_version: chosen node null\n");
-
-	pr_info("parse txd_ili77600a panel version:%d\n", ctx->version);
-#endif
-
-	return;
-}
-#endif
 
 static int txd_ili77600a_probe(struct mipi_dsi_device *dsi)
 {
@@ -975,9 +1045,6 @@ static int txd_ili77600a_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_add(&ctx->panel);
 
-	//parse panel version for evt/dvt
-	//txd_ili77600a_parse_panel_version(ctx);
-
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
 		drm_panel_remove(&ctx->panel);
@@ -1034,7 +1101,7 @@ static const struct of_device_id txd_ili77600a_of_match[] = {
 };
 
 MODULE_DEVICE_TABLE(of, txd_ili77600a_of_match);
-//txd_il77600a_vid_672_1080
+
 static struct mipi_dsi_driver txd_ili77600a_driver = {
 	.probe = txd_ili77600a_probe,
 	.remove = txd_ili77600a_remove,

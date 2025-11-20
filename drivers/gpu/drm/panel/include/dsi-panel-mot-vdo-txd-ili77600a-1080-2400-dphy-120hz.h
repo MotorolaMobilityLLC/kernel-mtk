@@ -27,28 +27,29 @@
 #define VSA                         4
 #define VBP                         44
 
-/*Parameter setting for mode 3 Start*/
 #define MODE_120_FPS                120
 #define MODE_120_VFP                44
 #define MODE_120_HFP                24
 
 #define MODE_120_DATA_RATE          850
-/*Parameter setting for mode 3 End*/
 
-//Parameter setting for mode 0 Start
+#define MODE_30_FPS                 30
+#define MODE_30_VFP                 7500
+#define MODE_30_HFP                 24
+
+#define MODE_30_DATA_RATE            850
+
 #define MODE_60_FPS                 60
 #define MODE_60_VFP                 2520
 #define MODE_60_HFP                 24
 
-#define MODE_0_DATA_RATE            850
-//Parameter setting for mode 0 End
-//Parameter setting for mode 2 Start
+#define MODE_60_DATA_RATE            850
+
 #define MODE_90_FPS                 90
 #define MODE_90_VFP                 870
 #define MODE_90_HFP                 24
 
 #define MODE_90_DATA_RATE           850
-//Parameter setting for mode 2 End
 
 #define LFR_EN                      1
 /* DSC RELATED */
@@ -63,7 +64,7 @@
 #define DSC_DSC_LINE_BUF_DEPTH      9
 #define DSC_BP_ENABLE               1
 #define DSC_BIT_PER_PIXEL           128
-#define DSC_SLICE_HEIGHT            12
+#define DSC_SLICE_HEIGHT            8
 #define DSC_SLICE_WIDTH             540
 #define DSC_CHUNK_SIZE              540
 #define DSC_XMIT_DELAY              512
