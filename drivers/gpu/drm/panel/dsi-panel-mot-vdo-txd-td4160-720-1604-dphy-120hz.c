@@ -58,10 +58,14 @@ struct txd_td4160 {
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
-	{2, {0x55, 0x01}},
+	{7, {0xB9, 0x35, 0x39, 0x00, 0xbe, 0x00, 0x00}},
+	{31, {0xCE, 0x77, 0x52, 0x66, 0x74, 0x7D, 0x82, 0x87, 0x8E, 0x98, 0x9F, 0xB7, 0xD2, 0xEA, 0xF0, 0xF4, 0xF9, 0xFC, 0xFF, 0x00, 0x4B, 0x04, 0x04, 0x00, 0x04, 0x04, 0x62, 0x43, 0x69, 0x5A, 0x73}},
+	{2, {0x55, 0x02}},
 };
 
 static struct mtk_panel_para_table panel_cabc_mv[] = {
+	{7, {0xBA, 0x85, 0x55, 0x00, 0xbe, 0x00, 0x00}},
+	{31, {0xCE, 0x77, 0x52, 0x66, 0x74, 0x7D, 0x82, 0x87, 0x8E, 0x98, 0x9F, 0xB7, 0xD2, 0xEA, 0xF0, 0xF4, 0xF9, 0xFC, 0xFF, 0x00, 0x4B, 0x04, 0x04, 0x00, 0x04, 0x04, 0x62, 0x43, 0x69, 0x5A, 0x73}},
 	{2, {0x55, 0x03}},
 };
 
@@ -184,7 +188,7 @@ static void txd_td4160_panel_init(struct txd_td4160 *ctx)
 	ktime_t now;
 	pr_info("disp: %s+\n", __func__);
 
-	ocp2138_BiasPower_enable(15,15,5);
+	ocp2138_BiasPower_enable(20,20,5);
 
 	txd_panel_tp_reset(ctx);
 
@@ -200,7 +204,8 @@ static void txd_td4160_panel_init(struct txd_td4160 *ctx)
 		gpiod_set_value(ctx->reset_gpio, 0);
 		udelay(10 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		msleep(20);
+		//The time between the release of LCD reset and the transmission of MIPI CMD shall be more than 20 ms.
+		msleep(23);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -210,12 +215,11 @@ static void txd_td4160_panel_init(struct txd_td4160 *ctx)
 	txd_td4160_dcs_write_seq_static(ctx, 0x55, 0x00);
 	txd_td4160_dcs_write_seq_static(ctx, 0x35, 0x00);
 
-	msleep(2);
-
+	//Sleep Out
 	txd_td4160_dcs_write_seq_static(ctx, 0x11);
-	msleep(120);
+	//Display On
 	txd_td4160_dcs_write_seq_static(ctx, 0x29);
-	txd_td4160_dcs_write_seq_static(ctx, 0x51, 0x06, 0x66);
+	usleep_range(80*1000, 81*1000);
 
 	now = ktime_get();
 	ctx->screen_on_timestamp = ktime_to_ms(now);
@@ -298,7 +302,13 @@ static int txd_td4160_unprepare(struct drm_panel *panel)
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		usleep_range(5000,5001);
 		pr_info("%s:txd_td4160: reset_gpio 0\n", __func__);
-
+	}
+	pr_info("%s:disp: tp_gesture_flag:%d, esd_recovery_flg=%d \n",__func__, tp_gesture_flag, mtkfb_esd_get_recovery_flag());
+	if(!tp_gesture_flag || mtkfb_esd_get_recovery_flag()) {
+		ocp2138_BiasPower_disable(5);
+	}
+	if(!tp_gesture_flag){
+		msleep(5);
 		ctx->tp_reset_gpio = devm_gpiod_get(ctx->dev, "tp_reset", GPIOD_OUT_HIGH);
 		if (IS_ERR(ctx->tp_reset_gpio)) {
 			dev_err(ctx->dev, "%s:txd_td4160: cannot get tp_reset_gpio %ld\n",
@@ -311,10 +321,6 @@ static int txd_td4160_unprepare(struct drm_panel *panel)
 			usleep_range(5000,5001);
 			pr_info("%s:txd_td4160: tp_reset_gpio 0\n", __func__);
 		}
-	}
-	pr_info("%s:disp: tp_gesture_flag:%d, esd_recovery_flg=%d \n",__func__, tp_gesture_flag, mtkfb_esd_get_recovery_flag());
-	if(!tp_gesture_flag || mtkfb_esd_get_recovery_flag()) {
-		ocp2138_BiasPower_disable(5);
 	}
 
 	ctx->error = 0;
@@ -412,7 +418,7 @@ static const struct drm_display_mode performance_mode_120hz = {
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 static struct mtk_panel_params ext_params_60hz = {
-	.pll_clk = 578,
+	.data_rate = DATA_RATE,
 	//.vfp_low_power = 880,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -426,7 +432,8 @@ static struct mtk_panel_params ext_params_60hz = {
 		.panel_cellid_reg = 0x00,
 		.panel_cellid_reg_seq = 1,
 		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 1,
+		.panel_cellid_read_max = 4,
+
 	},
 	.dsc_params = {
 		.enable                =  DSC_ENABLE,
@@ -435,7 +442,7 @@ static struct mtk_panel_params ext_params_60hz = {
 	//.panel_id = 0x01012891,
 	.panel_name = "txd_td4160_vid_667_720_120hz",
 	.panel_supplier = "txd",
-	.lcm_index = 2,
+	.lcm_index = 0,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -454,11 +461,10 @@ static struct mtk_panel_params ext_params_90hz = {
 	},
 
 	.lcm_cellid = {
-		.panel_cellid_reg = 0x00,
+		.panel_cellid_reg = 0xA1,
 		.panel_cellid_reg_seq = 1,
 		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 1,
-		//.panel_cellid_esd_dis = 1,
+		.panel_cellid_read_max = 4,
 	},
 	.dsc_params = {
 		.enable                =  DSC_ENABLE,
@@ -467,7 +473,7 @@ static struct mtk_panel_params ext_params_90hz = {
 	//.panel_id = 0x01012891,
 	.panel_name = "txd_td4160_vid_667_720_120hz",
 	.panel_supplier = "txd",
-	.lcm_index = 2,
+	.lcm_index = 0,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -485,11 +491,10 @@ static struct mtk_panel_params ext_params_120hz = {
 		.para_list[0] = 0x9C,
 	},
 	.lcm_cellid = {
-		.panel_cellid_reg = 0x00,
+		.panel_cellid_reg = 0xA1,
 		.panel_cellid_reg_seq = 1,
 		.panel_cellid_len = 23,
-		.panel_cellid_read_max = 1,
-		//.panel_cellid_esd_dis = 1,
+		.panel_cellid_read_max = 4,
 	},
 	.dsc_params = {
 		.enable                =  DSC_ENABLE,
@@ -498,7 +503,7 @@ static struct mtk_panel_params ext_params_120hz = {
 	//.panel_id = 0x01012891,
 	.panel_name = "txd_td4160_vid_667_720_120hz",
 	.panel_supplier = "txd",
-	.lcm_index = 2,
+	.lcm_index = 0,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_RAMPING,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -674,24 +679,11 @@ static struct mtk_panel_funcs ext_funcs = {
 static int txd_td4160_get_modes(struct drm_panel *panel,
 					struct drm_connector *connector)
 {
-	struct drm_display_mode *mode;
 	struct drm_display_mode *mode_1;
 
 	struct drm_display_mode *mode_2;
 	struct drm_display_mode *mode_3;
 
-	mode = drm_mode_duplicate(connector->dev, &performance_mode_60hz);
-	pr_info("[%d  %s]disp: mode:%d\n",__LINE__, __FUNCTION__,mode);
-	if (!mode) {
-		dev_info(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
-			 performance_mode_60hz.hdisplay, performance_mode_60hz.vdisplay,
-			 drm_mode_vrefresh(&performance_mode_60hz));
-		return -ENOMEM;
-	}
-
-	drm_mode_set_name(mode);
-	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
-	drm_mode_probed_add(connector, mode);
 
 	mode_1 = drm_mode_duplicate(connector->dev, &performance_mode_60hz);
 	pr_info("[%d  %s]disp mode:%d\n",__LINE__, __FUNCTION__,mode_1);
@@ -782,8 +774,6 @@ static int txd_td4160_probe(struct mipi_dsi_device *dsi)
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
 	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE |  MIPI_DSI_MODE_VIDEO_BURST;
-//			 | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET
-//			 | MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
 	backlight = of_parse_phandle(dev->of_node, "backlight", 0);
 	if (backlight) {
@@ -860,7 +850,18 @@ static void lcm_shutdown(struct mipi_dsi_device *dsi)
 
 	pr_info("%s: ocp2138_BiasPower_disable\n", __func__);
 	ocp2138_BiasPower_disable(5);
-
+	//add TP reset low when device shutdown.
+	msleep(5);
+	ctx->tp_reset_gpio = devm_gpiod_get(ctx->dev, "tp_reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->tp_reset_gpio)) {
+			dev_err(ctx->dev, "%s:txd_td4160: cannot get tp_reset_gpio %ld\n",
+				__func__, PTR_ERR(ctx->tp_reset_gpio));
+	} else {
+			gpiod_set_value(ctx->tp_reset_gpio, 0);
+			devm_gpiod_put(ctx->dev, ctx->tp_reset_gpio);
+			usleep_range(5000,5001);
+			pr_info("%s:txd_td4160: tp_reset_gpio 0\n", __func__);
+	}
 }
 
 static const struct of_device_id txd_td4160_of_match[] = {
