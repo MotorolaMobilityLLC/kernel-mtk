@@ -39,6 +39,7 @@
 #include <linux/of.h>
 #include <linux/workqueue.h>
 #include <linux/list.h>
+#include <linux/pinctrl/consumer.h>
 #include "flashlight.h"
 #include "flashlight-dt.h"
 #include "flashlight-core.h"
@@ -71,6 +72,9 @@
 #define SGM37864_ENABLE_LED2          (0x02)
 #define SGM37864_ENABLE_LED2_TORCH    (0x0A)
 #define SGM37864_ENABLE_LED2_FLASH    (0x0E)
+
+#define SGM37864_ENABLE_LED1_TORCH_HW    (0x11)
+#define SGM37864_ENABLE_LED1_FLASH_HW    (0x21)
 
 #define SGM37864_REG_DUMMY            (0x0A)
 
@@ -159,6 +163,79 @@ static const unsigned char sgm37864_flash_level[SGM37864_LEVEL_NUM] = {
 static volatile unsigned char sgm37864_reg_enable;
 static volatile int sgm37864_level_ch1 = -1;
 
+/* define pinctrl */
+#define SGM37864_PINCTRL_PIN_HWEN 0
+#define SGM37864_PINCTRL_PINSTATE_LOW 0
+#define SGM37864_PINCTRL_PINSTATE_HIGH 1
+#define SGM37864_PINCTRL_STATE_HWEN_HIGH "hwen-high"
+#define SGM37864_PINCTRL_STATE_HWEN_LOW  "hwen-low"
+struct pinctrl *sgm37864_hwen_pinctrl;
+struct pinctrl_state *sgm37864_hwen_high;
+struct pinctrl_state *sgm37864_hwen_low;
+static int sgm37864_flash_torch_hw_enable = 1;
+
+static int sgm37864_pinctrl_init(struct i2c_client *client)
+{
+	int ret = 0;
+
+	/* get pinctrl */
+	sgm37864_hwen_pinctrl = devm_pinctrl_get(&client->dev);
+	if (IS_ERR(sgm37864_hwen_pinctrl)) {
+		pr_err("Failed to get flashlight pinctrl.\n");
+		ret = PTR_ERR(sgm37864_hwen_pinctrl);
+		return ret;
+	}
+
+	/* Flashlight HWEN pin initialization */
+	sgm37864_hwen_high = pinctrl_lookup_state(
+			sgm37864_hwen_pinctrl,
+			SGM37864_PINCTRL_STATE_HWEN_HIGH);
+	if (IS_ERR(sgm37864_hwen_high)) {
+		pr_err("Failed to init (%s)\n",
+			SGM37864_PINCTRL_STATE_HWEN_HIGH);
+		ret = PTR_ERR(sgm37864_hwen_high);
+	}
+	sgm37864_hwen_low = pinctrl_lookup_state(
+			sgm37864_hwen_pinctrl,
+			SGM37864_PINCTRL_STATE_HWEN_LOW);
+	if (IS_ERR(sgm37864_hwen_low)) {
+		pr_err("Failed to init (%s)\n", SGM37864_PINCTRL_STATE_HWEN_LOW);
+		ret = PTR_ERR(sgm37864_hwen_low);
+	}
+
+	return ret;
+}
+
+static int sgm37864_pinctrl_set(int pin, int state)
+{
+	int ret = 0;
+
+	if (IS_ERR(sgm37864_hwen_pinctrl)) {
+		pr_info("pinctrl is not available\n");
+		return -1;
+	}
+
+	switch (pin) {
+	case SGM37864_PINCTRL_PIN_HWEN:
+		if (state == SGM37864_PINCTRL_PINSTATE_LOW &&
+				!IS_ERR(sgm37864_hwen_low))
+			pinctrl_select_state(sgm37864_hwen_pinctrl,
+					sgm37864_hwen_low);
+		else if (state == SGM37864_PINCTRL_PINSTATE_HIGH &&
+				!IS_ERR(sgm37864_hwen_high))
+			pinctrl_select_state(sgm37864_hwen_pinctrl,
+					sgm37864_hwen_high);
+		else
+			pr_info("set err, pin(%d) state(%d)\n", pin, state);
+		break;
+	default:
+		pr_info("set err, pin(%d) state(%d)\n", pin, state);
+		break;
+	}
+
+	return ret;
+}
+
 static int sgm37864_is_torch(int level)
 {
 
@@ -236,19 +313,48 @@ static void sgm37864_soft_reset(void)
 static int sgm37864_enable_ch1(void)
 {
 	unsigned char reg, val;
+	int ret;
 
 	reg = SGM37864_REG_ENABLE;
-	if (!sgm37864_is_torch(sgm37864_level_ch1)) {
-		/* torch mode */
-		sgm37864_reg_enable |= SGM37864_ENABLE_LED1_TORCH;
+	if (sgm37864_flash_torch_hw_enable) {
+		if (!sgm37864_is_torch(sgm37864_level_ch1)) {
+			/* torch mode */
+			sgm37864_reg_enable |= SGM37864_ENABLE_LED1_TORCH_HW;
+		} else {
+			/* flash mode */
+			sgm37864_reg_enable |= SGM37864_ENABLE_LED1_FLASH_HW;
+		}
+		val = sgm37864_reg_enable;
+
+		ret = sgm37864_i2c_write(sgm37864_i2c_client, reg, val);
+		if (ret < 0) {
+			pr_err("Error sgm37864_enable_ch1 i2c write\n");
+			return ret;
+		}
+
+		ret = sgm37864_pinctrl_set(SGM37864_PINCTRL_PIN_HWEN, SGM37864_PINCTRL_PINSTATE_HIGH);
+		if (ret < 0) {
+			pr_err("Error sgm37864_enable_ch1 pinctrl\n");
+			return ret;
+		}
 	} else {
-		/* flash mode */
-		sgm37864_reg_enable |= SGM37864_ENABLE_LED1_FLASH;
+		if (!sgm37864_is_torch(sgm37864_level_ch1)) {
+			/* torch mode */
+			sgm37864_reg_enable |= SGM37864_ENABLE_LED1_TORCH;
+		} else {
+			/* flash mode */
+			sgm37864_reg_enable |= SGM37864_ENABLE_LED1_FLASH;
+		}
+		val = sgm37864_reg_enable;
+
+		ret = sgm37864_i2c_write(sgm37864_i2c_client, reg, val);
+		if (ret < 0) {
+			pr_err("Error sgm37864_enable_ch1 i2c write\n");
+			return ret;
+		}
 	}
 
-	val = sgm37864_reg_enable;
-
-	return sgm37864_i2c_write(sgm37864_i2c_client, reg, val);
+	return ret;
 }
 
 static int sgm37864_enable(int channel)
@@ -268,18 +374,48 @@ static int sgm37864_enable(int channel)
 static int sgm37864_disable_ch1(void)
 {
 	unsigned char reg, val;
+	int ret;
 
 	reg = SGM37864_REG_ENABLE;
-	if (sgm37864_reg_enable & SGM37864_MASK_ENABLE_LED2) {
-		/* if LED 2 is enable, disable LED 1 */
-		sgm37864_reg_enable &= (~SGM37864_ENABLE_LED1);
-	} else {
-		/* if LED 2 is enable, disable LED 1 and clear mode */
-		sgm37864_reg_enable &= (~SGM37864_ENABLE_LED1_FLASH);
-	}
-	val = sgm37864_reg_enable;
+	if (sgm37864_flash_torch_hw_enable) {
+		if (sgm37864_reg_enable & SGM37864_MASK_ENABLE_LED2) {
+			/* if LED 2 is enable, disable LED 1 */
+			sgm37864_reg_enable &= (~SGM37864_ENABLE_LED1);
+		} else {
+			/* if LED 2 is enable, disable LED 1 and clear mode */
+			sgm37864_reg_enable &= (~SGM37864_ENABLE_LED1_FLASH_HW);
+		}
+		val = sgm37864_reg_enable;
 
-	return sgm37864_i2c_write(sgm37864_i2c_client, reg, val);
+		ret = sgm37864_i2c_write(sgm37864_i2c_client, reg, val);
+		if (ret < 0) {
+			pr_err("Error sgm37864_enable_ch1 i2c write\n");
+			return ret;
+		}
+
+		ret = sgm37864_pinctrl_set(SGM37864_PINCTRL_PIN_HWEN, SGM37864_PINCTRL_PINSTATE_LOW);
+		if (ret < 0) {
+			pr_err("Error sgm37864_enable_ch1 pinctrl\n");
+			return ret;
+		}
+	} else {
+		if (sgm37864_reg_enable & SGM37864_MASK_ENABLE_LED2) {
+			/* if LED 2 is enable, disable LED 1 */
+			sgm37864_reg_enable &= (~SGM37864_ENABLE_LED1);
+		} else {
+			/* if LED 2 is enable, disable LED 1 and clear mode */
+			sgm37864_reg_enable &= (~SGM37864_ENABLE_LED1_FLASH);
+		}
+		val = sgm37864_reg_enable;
+
+		ret = sgm37864_i2c_write(sgm37864_i2c_client, reg, val);
+		if (ret < 0) {
+			pr_err("Error sgm37864_enable_ch1 i2c write\n");
+			return ret;
+		}
+	}
+
+	return ret;
 }
 
 static int sgm37864_disable(int channel)
@@ -637,6 +773,14 @@ sgm37864_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	i2c_set_clientdata(client, chip);
 	sgm37864_i2c_client = client;
 	pr_info("%s Probe SGM37864 start.\n", __func__,sgm37864_i2c_client->addr);
+
+	if (sgm37864_flash_torch_hw_enable) {
+		if (sgm37864_pinctrl_init(client) < 0){
+			pr_err("Failed to sgm37864_pinctrl_init\n");
+			err = -ENODEV;
+			goto err_free;
+		}
+	}
 
 	/* init mutex and spinlock */
 	mutex_init(&chip->lock);

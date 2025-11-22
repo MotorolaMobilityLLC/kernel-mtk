@@ -39,6 +39,7 @@
 #include <linux/of.h>
 #include <linux/workqueue.h>
 #include <linux/list.h>
+#include <linux/pinctrl/consumer.h>
 #include "flashlight.h"
 #include "flashlight-dt.h"
 #include "flashlight-core.h"
@@ -71,6 +72,9 @@
 #define AW36515_ENABLE_LED2          (0x02)
 #define AW36515_ENABLE_LED2_TORCH    (0x0A)
 #define AW36515_ENABLE_LED2_FLASH    (0x0E)
+
+#define AW36515_ENABLE_LED1_TORCH_HW    (0x11)
+#define AW36515_ENABLE_LED1_FLASH_HW    (0x21)
 
 #define AW36515_REG_DUMMY            (0x0A)
 
@@ -160,6 +164,79 @@ static const unsigned char aw36515_flash_level[AW36515_LEVEL_NUM] = {
 static volatile unsigned char aw36515_reg_enable;
 static volatile int aw36515_level_ch1 = -1;
 
+/* define pinctrl */
+#define AW36515_PINCTRL_PIN_HWEN 0
+#define AW36515_PINCTRL_PINSTATE_LOW 0
+#define AW36515_PINCTRL_PINSTATE_HIGH 1
+#define AW36515_PINCTRL_STATE_HWEN_HIGH "hwen-high"
+#define AW36515_PINCTRL_STATE_HWEN_LOW  "hwen-low"
+struct pinctrl *aw36515_hwen_pinctrl;
+struct pinctrl_state *aw36515_hwen_high;
+struct pinctrl_state *aw36515_hwen_low;
+static int aw36515_flash_torch_hw_enable = 1;
+
+static int aw36515_pinctrl_init(struct i2c_client *client)
+{
+	int ret = 0;
+
+	/* get pinctrl */
+	aw36515_hwen_pinctrl = devm_pinctrl_get(&client->dev);
+	if (IS_ERR(aw36515_hwen_pinctrl)) {
+		pr_err("Failed to get flashlight pinctrl.\n");
+		ret = PTR_ERR(aw36515_hwen_pinctrl);
+		return ret;
+	}
+
+	/* Flashlight HWEN pin initialization */
+	aw36515_hwen_high = pinctrl_lookup_state(
+			aw36515_hwen_pinctrl,
+			AW36515_PINCTRL_STATE_HWEN_HIGH);
+	if (IS_ERR(aw36515_hwen_high)) {
+		pr_err("Failed to init (%s)\n",
+			AW36515_PINCTRL_STATE_HWEN_HIGH);
+		ret = PTR_ERR(aw36515_hwen_high);
+	}
+	aw36515_hwen_low = pinctrl_lookup_state(
+			aw36515_hwen_pinctrl,
+			AW36515_PINCTRL_STATE_HWEN_LOW);
+	if (IS_ERR(aw36515_hwen_low)) {
+		pr_err("Failed to init (%s)\n", AW36515_PINCTRL_STATE_HWEN_LOW);
+		ret = PTR_ERR(aw36515_hwen_low);
+	}
+
+	return ret;
+}
+
+static int aw36515_pinctrl_set(int pin, int state)
+{
+	int ret = 0;
+
+	if (IS_ERR(aw36515_hwen_pinctrl)) {
+		pr_info("pinctrl is not available\n");
+		return -1;
+	}
+
+	switch (pin) {
+	case AW36515_PINCTRL_PIN_HWEN:
+		if (state == AW36515_PINCTRL_PINSTATE_LOW &&
+				!IS_ERR(aw36515_hwen_low))
+			pinctrl_select_state(aw36515_hwen_pinctrl,
+					aw36515_hwen_low);
+		else if (state == AW36515_PINCTRL_PINSTATE_HIGH &&
+				!IS_ERR(aw36515_hwen_high))
+			pinctrl_select_state(aw36515_hwen_pinctrl,
+					aw36515_hwen_high);
+		else
+			pr_info("set err, pin(%d) state(%d)\n", pin, state);
+		break;
+	default:
+		pr_info("set err, pin(%d) state(%d)\n", pin, state);
+		break;
+	}
+
+	return ret;
+}
+
 static int aw36515_is_torch(int level)
 {
 
@@ -237,19 +314,48 @@ static void aw36515_soft_reset(void)
 static int aw36515_enable_ch1(void)
 {
 	unsigned char reg, val;
+	int ret;
 
 	reg = AW36515_REG_ENABLE;
-	if (!aw36515_is_torch(aw36515_level_ch1)) {
-		/* torch mode */
-		aw36515_reg_enable |= AW36515_ENABLE_LED1_TORCH;
+	if (aw36515_flash_torch_hw_enable) {
+		if (!aw36515_is_torch(aw36515_level_ch1)) {
+			/* torch mode */
+			aw36515_reg_enable |= AW36515_ENABLE_LED1_TORCH_HW;
+		} else {
+			/* flash mode */
+			aw36515_reg_enable |= AW36515_ENABLE_LED1_FLASH_HW;
+		}
+		val = aw36515_reg_enable;
+
+		ret = aw36515_i2c_write(aw36515_i2c_client, reg, val);
+		if (ret < 0) {
+			pr_err("Error aw36515_enable_ch1 i2c write\n");
+			return ret;
+		}
+
+		ret = aw36515_pinctrl_set(AW36515_PINCTRL_PIN_HWEN, AW36515_PINCTRL_PINSTATE_HIGH);
+		if (ret < 0) {
+			pr_err("Error aw36515_enable_ch1 pinctrl\n");
+			return ret;
+		}
 	} else {
-		/* flash mode */
-		aw36515_reg_enable |= AW36515_ENABLE_LED1_FLASH;
+		if (!aw36515_is_torch(aw36515_level_ch1)) {
+			/* torch mode */
+			aw36515_reg_enable |= AW36515_ENABLE_LED1_TORCH;
+		} else {
+			/* flash mode */
+			aw36515_reg_enable |= AW36515_ENABLE_LED1_FLASH;
+		}
+		val = aw36515_reg_enable;
+
+		ret = aw36515_i2c_write(aw36515_i2c_client, reg, val);
+		if (ret < 0) {
+			pr_err("Error aw36515_enable_ch1 i2c write\n");
+			return ret;
+		}
 	}
 
-	val = aw36515_reg_enable;
-
-	return aw36515_i2c_write(aw36515_i2c_client, reg, val);
+	return ret;
 }
 
 static int aw36515_enable(int channel)
@@ -269,18 +375,48 @@ static int aw36515_enable(int channel)
 static int aw36515_disable_ch1(void)
 {
 	unsigned char reg, val;
+	int ret;
 
 	reg = AW36515_REG_ENABLE;
-	if (aw36515_reg_enable & AW36515_MASK_ENABLE_LED2) {
-		/* if LED 2 is enable, disable LED 1 */
-		aw36515_reg_enable &= (~AW36515_ENABLE_LED1);
-	} else {
-		/* if LED 2 is enable, disable LED 1 and clear mode */
-		aw36515_reg_enable &= (~AW36515_ENABLE_LED1_FLASH);
-	}
-	val = aw36515_reg_enable;
+	if (aw36515_flash_torch_hw_enable) {
+		if (aw36515_reg_enable & AW36515_MASK_ENABLE_LED2) {
+			/* if LED 2 is enable, disable LED 1 */
+			aw36515_reg_enable &= (~AW36515_ENABLE_LED1);
+		} else {
+			/* if LED 2 is enable, disable LED 1 and clear mode */
+			aw36515_reg_enable &= (~AW36515_ENABLE_LED1_FLASH_HW);
+		}
+		val = aw36515_reg_enable;
 
-	return aw36515_i2c_write(aw36515_i2c_client, reg, val);
+		ret = aw36515_i2c_write(aw36515_i2c_client, reg, val);
+		if (ret < 0) {
+			pr_err("Error aw36515_enable_ch1 i2c write\n");
+			return ret;
+		}
+
+		ret = aw36515_pinctrl_set(AW36515_PINCTRL_PIN_HWEN, AW36515_PINCTRL_PINSTATE_LOW);
+		if (ret < 0) {
+			pr_err("Error aw36515_enable_ch1 pinctrl\n");
+			return ret;
+		}
+	} else {
+		if (aw36515_reg_enable & AW36515_MASK_ENABLE_LED2) {
+			/* if LED 2 is enable, disable LED 1 */
+			aw36515_reg_enable &= (~AW36515_ENABLE_LED1);
+		} else {
+			/* if LED 2 is enable, disable LED 1 and clear mode */
+			aw36515_reg_enable &= (~AW36515_ENABLE_LED1_FLASH);
+		}
+		val = aw36515_reg_enable;
+
+		ret = aw36515_i2c_write(aw36515_i2c_client, reg, val);
+		if (ret < 0) {
+			pr_err("Error aw36515_enable_ch1 i2c write\n");
+			return ret;
+		}
+	}
+
+	return ret;
 }
 
 static int aw36515_disable(int channel)
@@ -661,6 +797,14 @@ aw36515_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	i2c_set_clientdata(client, chip);
 	aw36515_i2c_client = client;
 	pr_info("%s Probe AW36515 start.\n", __func__,aw36515_i2c_client->addr);
+
+	if (aw36515_flash_torch_hw_enable) {
+		if (aw36515_pinctrl_init(client) < 0){
+			pr_err("Failed to aw36515_pinctrl_init\n");
+			err = -ENODEV;
+			goto err_free;
+		}
+	}
 
 	/* init mutex and spinlock */
 	mutex_init(&chip->lock);
