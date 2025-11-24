@@ -214,6 +214,7 @@ int MOT_NAPLES_AK7377AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 	g_pAF_Opened = pAF_Opened;
 
 	LOG_INF("+\n");
+	mdelay(7);
 	if (*g_pAF_Opened == 0) {
 		LOG_INF("Set power donw +\n");
 		LOG_INF("Set power donw -\n");
