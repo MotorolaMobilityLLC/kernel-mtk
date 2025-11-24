@@ -51,14 +51,6 @@
        MTK,disable_rdma_underflow = <1>;
 };
 
-&cam_pmic {
-	/delete-property/ init-value;
-
-	/* default dio8501 output status, 1001 bit 1 --> dvdd, bit 4 --> vci */
-	init-value = <0x09>;
-	status = "okay";
-};
-
 &pio {
 	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
 		pins_cmd_dat {
