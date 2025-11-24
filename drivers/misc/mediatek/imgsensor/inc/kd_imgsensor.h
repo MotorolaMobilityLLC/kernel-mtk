@@ -423,8 +423,8 @@
 #define SENSOR_DRVNAME_MOT_SYDNEY_GC32E1_MIPI_RAW        "mot_sydney_gc32e1_mipi_raw"
 #define MOT_SYDNEY_SC821CS_UW_SENSOR_ID                  0xD18A
 #define SENSOR_DRVNAME_MOT_SYDNEY_SC821CS_UW_MIPI_RAW    "mot_sydney_sc821cs_uw_mipi_raw"
-#define MOT_SYDNEY_GC08A3_UW_SENSOR_ID                   0x08A3
-
+#define MOT_SYDNEY_GC50F6A_SENSOR_ID                     0x50F6
+#define SENSOR_DRVNAME_MOT_SYDNEY_GC50F6A_MIPI_RAW       "mot_sydney_gc50f6a_mipi_raw"
 //Naples bringup
 #define MOT_NAPLES_S5KHM9_SENSOR_ID                      0x1AD9
 #define SENSOR_DRVNAME_MOT_NAPLES_S5KHM9_MIPI_RAW        "mot_naples_s5khm9_mipi_raw"
