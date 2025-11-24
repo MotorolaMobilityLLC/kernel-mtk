@@ -319,10 +319,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		SENSOR_DRVNAME_MOT_SBUYA_OV08F_MIPI_RAW,
 		{
 			{RST, Vol_Low, 1},
-			{DOVDD, Vol_1800, 4},
+			{DOVDD, Vol_1800, 6},
 			{SensorMCLK, Vol_High, 1},
-			{AVDD, Vol_2800, 4},
-			{DVDD, Vol_1200, 9},
+			{AVDD, Vol_2800, 6},
+			{DVDD, Vol_1200, 11},
 			{RST, Vol_High, 11},
 		},
     },

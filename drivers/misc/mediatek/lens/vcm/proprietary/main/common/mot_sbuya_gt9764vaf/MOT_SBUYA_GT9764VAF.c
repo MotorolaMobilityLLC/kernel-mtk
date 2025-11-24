@@ -255,6 +255,7 @@ int MOT_SBUYA_GT9764VAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_Opened = pAF_Opened;
 
+	mdelay(8);
 	LOG_INF("+\n");
 	if (*g_pAF_Opened == 0) {
 		LOG_INF("Set power donw +\n");
