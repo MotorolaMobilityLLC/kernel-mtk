@@ -1155,6 +1155,8 @@ struct mtk_battery {
 
 	unsigned long manufacturing_date;
 	unsigned long first_usage_date;
+
+	int battery_standard_design;
 };
 
 struct mtk_battery_sysfs_field_info {

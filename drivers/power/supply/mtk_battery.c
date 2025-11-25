@@ -923,9 +923,11 @@ static int battery_psy_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
 		if (check_cap_level(bs_data->bat_capacity) ==
-			POWER_SUPPLY_CAPACITY_LEVEL_UNKNOWN)
+			POWER_SUPPLY_CAPACITY_LEVEL_UNKNOWN) {
 			val->intval = 0;
-		else {
+		} else if (gm->battery_standard_design) {
+			val->intval = gm->battery_standard_design * 1000;
+		} else {
 			int q_max_mah = 0;
 			int q_max_uah = 0;
 
@@ -2456,6 +2458,10 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 		&(gm->ext_hwocv_swocv_lt), 1);
 	fg_read_dts_val(np, "EXT_HWOCV_SWOCV_LT_TEMP",
 		&(gm->ext_hwocv_swocv_lt_temp), 1);
+	ret = fg_read_dts_val(np, "BATTERY_STANDARD_DESIGN",
+		&(gm->battery_standard_design), 1);
+	if (ret == -1)
+		gm->battery_standard_design = 0;
 
 	fg_read_dts_val(np, "DC_RATIO_SEL", &(fg_cust_data->dc_ratio_sel), 1);
 	fg_read_dts_val(np, "DC_R_CNT", &(fg_cust_data->dc_r_cnt), 1);
