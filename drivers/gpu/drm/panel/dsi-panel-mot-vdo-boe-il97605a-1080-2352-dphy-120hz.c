@@ -716,8 +716,6 @@ static struct mtk_panel_params ext_params_mode_60 = {
 			.range_bpg_ofs = il97605a_range_bpg_ofs,
 		},
 	},
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
 	.dyn_fps = {
 		.switch_en = 1,
 		.vact_timing_fps = 120,
@@ -822,8 +820,6 @@ static struct mtk_panel_params ext_params_mode_90 = {
 			.range_bpg_ofs = il97605a_range_bpg_ofs,
 		},
 	},
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
 	.dyn_fps = {
 		.switch_en = 1,
 		.vact_timing_fps = 120,
@@ -929,8 +925,6 @@ static struct mtk_panel_params ext_params_mode_120 = {
 			.range_bpg_ofs = il97605a_range_bpg_ofs,
 		},
 	},
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
 	.dyn_fps = {
 		.switch_en = 1,
 		.vact_timing_fps = 120,

@@ -675,8 +675,6 @@ static struct mtk_panel_params ext_params_mode_60 = {
 			.range_bpg_ofs = vtdr6126a_range_bpg_ofs,
 		},
 	},
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = 60,
 	.fps_switch_cmd_to_vdo_data_delay_us = 10,
 	.dyn_fps = {
 		.switch_en = 1,
@@ -768,8 +766,6 @@ static struct mtk_panel_params ext_params_mode_90 = {
 			.range_bpg_ofs = vtdr6126a_range_bpg_ofs,
 		},
 	},
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = 60,
 	.fps_switch_cmd_to_vdo_data_delay_us = 10,
 	.dyn_fps = {
 		.switch_en = 1,
@@ -863,8 +859,6 @@ static struct mtk_panel_params ext_params_mode_120 = {
 			.range_bpg_ofs = vtdr6126a_range_bpg_ofs,
 		},
 	},
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = 60,
 	.fps_switch_cmd_to_vdo_data_delay_us = 10,
 	.dyn_fps = {
 		.switch_en = 1,
