@@ -621,7 +621,6 @@
 	R_FG_VALUE = <(2)>;
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
 	CAR_TUNE_VALUE = <(101)>;
-	BATTERY_STANDARD_DESIGN = <(5200)>;
 
 	df-serialnum = "ATLSP52NVT";
 	#include "bat_setting/mt6835_battery_sp52_atl_5200mah.dtsi"

@@ -481,7 +481,6 @@ struct fuel_gauge_custom_data {
 	int r_fg_value;
 	int com_r_fg_value;
 	int mtk_chr_exist;
-	int battery_standard_design;
 
 	/* Dynamic cv*/
 	int dynamic_cv_factor;
