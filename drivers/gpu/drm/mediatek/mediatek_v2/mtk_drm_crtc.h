@@ -975,6 +975,7 @@ struct mtk_drm_crtc {
 
 	struct workqueue_struct *moto_ots_workqueue;
 	struct delayed_work moto_ripple_work;
+	unsigned int cur_backlight;
 };
 
 struct mtk_crtc_state {
