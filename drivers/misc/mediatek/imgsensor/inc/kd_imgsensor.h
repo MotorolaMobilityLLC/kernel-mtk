@@ -429,7 +429,8 @@
 #define SENSOR_DRVNAME_MOT_SYDNEY_SC821CS_MIPI_RAW       "mot_sydney_sc821cs_mipi_raw"
 #define MOT_SYDNEY_S5KHM9_SENSOR_ID                      0x1AD9
 #define SENSOR_DRVNAME_MOT_SYDNEY_S5KHM9_MIPI_RAW        "mot_sydney_s5khm9_mipi_raw"
-
+#define MOT_SYDNEY_SC201ACS_SENSOR_ID                    0xEB52
+#define SENSOR_DRVNAME_MOT_SYDNEY_SC201ACS_MIPI_RAW      "mot_sydney_sc201acs_mipi_raw"
 //Naples bringup
 #define MOT_NAPLES_S5KHM9_SENSOR_ID                      0x1AD9
 #define SENSOR_DRVNAME_MOT_NAPLES_S5KHM9_MIPI_RAW        "mot_naples_s5khm9_mipi_raw"

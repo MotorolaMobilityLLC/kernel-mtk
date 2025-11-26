@@ -186,6 +186,18 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         },
     },
 #endif
+#if defined(MOT_SYDNEY_SC201ACS_SENSOR_ID)
+    {
+        SENSOR_DRVNAME_MOT_SYDNEY_SC201ACS_MIPI_RAW,
+        {
+            {SensorMCLK, Vol_High, 3},
+            {RST, Vol_Low, 1},
+            {DOVDD, Vol_1800, 3},
+            {AVDD, Vol_2800, 6},
+            {RST, Vol_High, 5},
+        },
+    },
+#endif
 #endif
 
 //Naples bring up
