@@ -285,3 +285,12 @@ config MTK_LENS_WV511AAF_SUPPORT
 	  This config is used to enable the corresponding
 	  lens driver for the camera sensor module
 	  Set as y if the driver is used in this project
+
+config MOT_DRV_AK7377_HALL_TEST
+        tristate "mot drv AK7377 hall test"
+        depends on MTK_LENS
+        help
+          mot drv AK7377 hall test
+          This config is used to enable AK7377 hall test
+          config for the factory camera test
+          Set as y if the driver is used in this project

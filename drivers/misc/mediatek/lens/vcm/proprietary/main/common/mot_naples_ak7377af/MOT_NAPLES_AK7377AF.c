@@ -27,6 +27,17 @@
 #define LOG_INF(format, args...)
 #endif
 
+#if IS_ENABLED (CONFIG_MOT_DRV_AK7377_HALL_TEST)
+typedef struct {
+       int max_val;
+       int min_val;
+} motAfTestData;
+
+static int gethall_mode = -1;
+#define AF_HALL_I2C_ADDR 0x84
+#define AFIOC_G_AFPOS _IOWR('A', 35, int)
+#endif
+
 static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
@@ -100,6 +111,73 @@ static int initAF(void)
 	return 0;
 }
 
+#if IS_ENABLED (CONFIG_MOT_DRV_AK7377_HALL_TEST)
+#define AK7377A_SET_POSITION_ADDR 0x00
+#define AK7377A_MOVE_DELAY_US 8400
+static inline int ak7377_hall_test_set_positon(u16 pos)
+{
+	int retry = 3;
+	int ret;
+	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
+	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
+	while (--retry > 0) {
+		ret = i2c_smbus_write_word_data(g_pstAF_I2Cclient, AK7377A_SET_POSITION_ADDR,
+					 swab16(pos << 4));
+		if (ret < 0) {
+			usleep_range(AK7377A_MOVE_DELAY_US,
+				     AK7377A_MOVE_DELAY_US + 1000);
+		} else {
+			break;
+		}
+	}
+
+	return 0;
+}
+
+static inline int ak7377_hall_test_getresult(int mode, unsigned char read_addr)
+{
+	// int i4RetValue = 0;
+	int retry = 10;
+	int ret;
+	int val;
+	int val_L = 0;
+	int val_H = 0;
+	int max_val =0;
+	int min_val=0;
+
+	msleep(2);
+	while (retry > 0)
+	{
+		// ret = i2c_master_send(g_pstAF_I2Cclient, &read_addr, 2);
+		ret = i2c_smbus_read_word_data(g_pstAF_I2Cclient, read_addr);
+		val_L=(ret & 0xf000) >> 12;
+		val_H = (ret & 0x00ff) << 4;
+		val = val_L | val_H;
+		LOG_INF("[af_hall_test] value =%d",val);
+		msleep(2);
+		if(mode == 0)
+		{
+			if(val  > max_val)
+			{
+				max_val=val;
+			}
+		}else{
+			if(val  < min_val)
+			{
+				min_val=val;
+			}
+		}
+		retry--;
+	}
+	if(mode == 0)
+	{
+		return max_val;
+	}else{
+		return min_val;
+	}
+}
+#endif
+
 static inline int setVCMPos(unsigned long a_u4Position)
 {
 	int i4RetValue = 0;
@@ -151,6 +229,9 @@ long MOT_NAPLES_AK7377AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 		    unsigned long a_u4Param)
 {
 	long i4RetValue = 0;
+#if IS_ENABLED (CONFIG_MOT_DRV_AK7377_HALL_TEST)
+	motAfTestData afdata = {0};
+#endif
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
@@ -159,6 +240,10 @@ long MOT_NAPLES_AK7377AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 		break;
 
 	case AFIOC_T_MOVETO:
+#if IS_ENABLED (CONFIG_MOT_DRV_AK7377_HALL_TEST)
+		if(gethall_mode >=0)
+		break;
+#endif
 		i4RetValue = moveAF(a_u4Param);
 		break;
 
@@ -169,6 +254,20 @@ long MOT_NAPLES_AK7377AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 	case AFIOC_T_SETMACROPOS:
 		i4RetValue = setAFMacro(a_u4Param);
 		break;
+
+#if IS_ENABLED (CONFIG_MOT_DRV_AK7377_HALL_TEST)
+	case AFIOC_G_AFPOS:
+		gethall_mode = 0;
+		i4RetValue = ak7377_hall_test_set_positon(0x0FFF);              //4095
+		afdata.max_val = ak7377_hall_test_getresult(gethall_mode, 0x84);           //mode: 0 marco
+		gethall_mode = 1;
+		i4RetValue = ak7377_hall_test_set_positon(0x0000);              //0
+		afdata.min_val = ak7377_hall_test_getresult(gethall_mode, 0x84);           //mode: 1 inf
+		gethall_mode = -1;
+		i4RetValue =(afdata.max_val << 16) | afdata.min_val;
+		LOG_INF("[af_hall_test] pos max=%x, min=%x, return%lx",afdata.max_val, afdata.min_val, i4RetValue);
+		break;
+#endif
 
 	default:
 		LOG_INF("No CMD\n");
