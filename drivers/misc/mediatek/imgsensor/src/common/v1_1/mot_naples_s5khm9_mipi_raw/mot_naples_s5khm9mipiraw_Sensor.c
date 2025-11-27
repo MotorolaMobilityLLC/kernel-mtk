@@ -994,6 +994,8 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
 			set_shutter(ae_ctrl[SHUTTER_NE_FRM_1]);
 			set_gain(ae_ctrl[GAIN_NE_FRM_1]);
 		}
+		write_cmos_sensor(0xFCFC, 0x4000);
+		write_cmos_sensor(0x0104, 0x0000);
 		break;
 	case MSDK_SCENARIO_ID_CUSTOM1:
 		spin_lock(&imgsensor_drv_lock);
@@ -1018,6 +1020,8 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
 			set_shutter(ae_ctrl[SHUTTER_NE_FRM_1]);
 			set_gain(ae_ctrl[GAIN_NE_FRM_1]);
 		}
+		write_cmos_sensor(0xFCFC, 0x4000);
+		write_cmos_sensor(0x0104, 0x0000);
 		break;
 	default:
 		LOG_INF("error! wrong setting in set_seamless_switch = %d", scenario_id);
@@ -1803,6 +1807,15 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_gain;
 		*(feature_data + 2) = imgsensor_info.max_gain;
+		switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CUSTOM1:
+			case MSDK_SCENARIO_ID_CUSTOM2:
+				*(feature_data + 2) = 8 * BASEGAIN;
+				break;
+			default:
+				*(feature_data + 2) = 64 * BASEGAIN;
+				break;
+		}
 		break;
 	case SENSOR_FEATURE_GET_BASE_GAIN_ISO_AND_STEP:
 		*(feature_data + 0) = imgsensor_info.min_gain_iso;
@@ -1812,6 +1825,15 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_shutter;
 		*(feature_data + 2) = imgsensor_info.exp_step;
+		switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CUSTOM1:
+			case MSDK_SCENARIO_ID_CUSTOM2:
+				*(feature_data + 1) = 24;
+				break;
+			default:
+				*(feature_data + 1) = 8;
+				break;
+		}
 		break;
 	case SENSOR_FEATURE_GET_PIXEL_CLOCK_FREQ_BY_SCENARIO:
 		switch (*feature_data) {
@@ -2125,6 +2147,20 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*(feature_data + 1) = 1;
 		/* margin info by scenario */
 		*(feature_data + 2) = imgsensor_info.margin;
+		switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CUSTOM1:
+			case MSDK_SCENARIO_ID_CUSTOM2:
+				*(feature_data + 2) = 25;
+				break;
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			case MSDK_SCENARIO_ID_CUSTOM3:
+			case MSDK_SCENARIO_ID_CUSTOM4:
+				*(feature_data + 2) = 13;
+				break;
+			default:
+				*(feature_data + 2) = 19;
+				break;
+		}
 		break;
 	case SENSOR_FEATURE_SET_HDR_SHUTTER:
 		LOG_INF("SENSOR_FEATURE_SET_HDR_SHUTTER LE=%d, SE=%d\n", (UINT16)*feature_data, (UINT16)*(feature_data+1));
@@ -2148,14 +2184,14 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			*feature_return_para_32 = 1; /*BINNING_AVERAGED*/
+			*feature_return_para_32 = 1310; /*BINNING_AVERAGED*/
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM1:
 		case MSDK_SCENARIO_ID_CUSTOM2:
-			*feature_return_para_32 = 1; // we need fae provide new test data
+			*feature_return_para_32 = 1000; // we need fae provide new test data
 			break;
 		default:
-			*feature_return_para_32 = 1; /*BINNING_AVERAGED*/
+			*feature_return_para_32 = 1310; /*BINNING_AVERAGED*/
 			break;
 		}
 		LOG_INF("SENSOR_FEATURE_GET_BINNING_TYPE AE_binning_type:%d,\n",
