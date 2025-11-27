@@ -36,6 +36,9 @@ eint_cp: eint_cp {
 	};
 };
 
+&mt6377keys {
+	mediatek,long-press-mode = <2>;
+};
 /* KEY GPIO standardization start */
 &pio{
 	aikey_gpio_default:key-default {
