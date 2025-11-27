@@ -289,7 +289,7 @@
 	cam2_pin_vcamd = "gpio";
 
 	cam0_enable_sensor = "mot_sydney_imx882_mipi_raw mot_sydney_gc50f6a_mipi_raw";
-	cam1_enable_sensor = "mot_sydney_gc32e1_mipi_raw mot_sydney_sc821cs_mipi_raw";
+	cam1_enable_sensor = "mot_sydney_gc32e1_mipi_raw mot_sydney_sc821cs_mipi_raw mot_sydney_gc08a3_mipi_raw";
 	cam2_enable_sensor = "mot_sydney_sc821cs_uw_mipi_raw mot_sydney_sc201acs_mipi_raw";
 	status = "okay";
 };
@@ -372,7 +372,7 @@
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_sydney_imx882_mipi_raw mot_sydney_gc32e1_mipi_raw mot_sydney_sc821cs_uw_mipi_raw mot_sydney_gc50f6a_mipi_raw mot_sydney_sc821cs_mipi_raw mot_sydney_sc201acs_mipi_raw";
+       cust-sensor = "mot_sydney_imx882_mipi_raw mot_sydney_gc32e1_mipi_raw mot_sydney_sc821cs_uw_mipi_raw mot_sydney_gc50f6a_mipi_raw mot_sydney_sc821cs_mipi_raw mot_sydney_sc201acs_mipi_raw mot_sydney_gc08a3_mipi_raw";
 };
 
 /* CAMERA Flashlight */
