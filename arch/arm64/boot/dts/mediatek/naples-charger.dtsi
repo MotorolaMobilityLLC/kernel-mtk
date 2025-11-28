@@ -452,7 +452,7 @@
          mmi,min-cp-therm-current-ua = <1400000>;
          mmi,power-max-design-mw = <18000>;
          mmi,mmi-cycle-cv-steps =<100 20>;
-         mmi,low-limit-temperature = <0>;
+         mmi,low-limit-temperature = <15>;
          mmi,high-limit-temperature = <45>;
 };
 
