@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *     mot_sydney_gc50f6amipiraw_Sensor.c
+ *     mot_sydney_gc50f6a_2ndmipiraw_Sensor.c
  *
  * Project:
  * --------
@@ -30,7 +30,7 @@
  * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
  *============================================================================
  */
-#define PFX "mot_sydney_gc50f6a_camera_sensor"
+#define PFX "mot_sydney_gc50f6a_2nd_camera_sensor"
 #define pr_fmt(fmt) PFX "[%s] " fmt, __func__
 
 #include <linux/videodev2.h>
@@ -48,7 +48,7 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "mot_sydney_gc50f6amipiraw_Sensor.h"
+#include "mot_sydney_gc50f6a_2ndmipiraw_Sensor.h"
 
 #define MULTI_WRITE 1
 #define LONG_EXP         0
@@ -59,7 +59,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = MOT_SYDNEY_GC50F6A_SENSOR_ID,
+	.sensor_id = MOT_SYDNEY_GC50F6A_2ND_SENSOR_ID,
 	.checksum_value = 0xe5d32119,
 	.pre = {
 		.pclk = 495000000,
@@ -94,6 +94,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 502400000,
 		.max_framerate = 300, */
+
 	},
 	.normal_video = {
 		.pclk = 905000000,
@@ -161,7 +162,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_Gr,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
-	.i2c_addr_table = {0x20, 0xff},
+	.i2c_addr_table = {0x94, 0xff},
 	/* record sensor support all write id addr,
 	 * only supprt 4 must end with 0xff
 	 */
@@ -174,6 +175,7 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[5] = {
 	{0x02, 0x0A,   0x00,   0x08, 0x40, 0x00,
 	0x00, 0x2B, 0x1000, 0x0C00, 0x01, 0x00, 0x0000, 0x0000,
 	0x03, 0x2b, 0x0200, 0x05f8, 0x03, 0x00, 0x0000, 0x0000},
+
 	/* Capture mode setting*/
 	{0x02, 0x0A,   0x00,   0x08, 0x40, 0x00,
 	0x00, 0x2B, 0x2000, 0x1800, 0x01, 0x00, 0x0000, 0x0000},
@@ -184,9 +186,11 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[5] = {
 	{0x02, 0x0A,   0x00,   0x08, 0x40, 0x00,
 	0x00, 0x2B, 0x1000, 0x0A00, 0x01, 0x00, 0x0000, 0x0000,
 	0x03, 0x2b, 0x0200, 0x0500, 0x03, 0x00, 0x0000, 0x0000},
+
 	/* HS Video mode setting*/
 	{0x02, 0x0A,   0x00,   0x08, 0x40, 0x00,
 	0x00, 0x2B, 0x0780, 0x0438, 0x01, 0x00, 0x0000, 0x0000},
+
 	/* Slim Video mode setting*/
 	{0x02, 0x0A,   0x00,   0x08, 0x40, 0x00,
 	0x00, 0x2B, 0x1000, 0x0C00, 0x01, 0x00, 0x0000, 0x0000},
@@ -207,7 +211,7 @@ static struct imgsensor_struct imgsensor = {
 	.test_pattern = KAL_FALSE,
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,
 	.ihdr_mode = 0, /* sensor need support LE, SE with HDR feature */
-	.i2c_write_id = 0x20, /* record current sensor's i2c write id */
+	.i2c_write_id = 0x94, /* record current sensor's i2c write id */
 };
 
 /* Sensor output window information */
@@ -260,9 +264,9 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info_4096x2560 = {
 static kal_uint16 read_cmos_sensor_8(kal_uint32 addr)
 {
 	kal_uint16 get_byte = 0;
-	char pu_send_cmd[2] = {
-		(char)((addr >> 8) & 0xff),
-		(char)(addr & 0xff)
+	char pu_send_cmd[2] = { 
+		(char)((addr >> 8) & 0xff), 
+		(char)(addr & 0xff) 
 	};
 
 	iReadRegI2C(pu_send_cmd, 2, (u8 *)&get_byte, 1, imgsensor.i2c_write_id);
@@ -285,9 +289,9 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 static void write_cmos_sensor_8(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[3] = {
-		(char)((addr >> 8) & 0xff),
-		(char)(addr & 0xff),
-		(char)(para & 0xff)
+		(char)((addr >> 8) & 0xff), 
+		(char)(addr & 0xff), 
+		(char)(para & 0xff) 
 	};
 
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
@@ -634,7 +638,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 	return ERROR_NONE;
 }
 
-kal_uint16 mot_sydney_gc50f6a_init_addr_data[] = {
+kal_uint16 mot_sydney_gc50f6a_2nd_init_addr_data[] = {
 0x0315,0x80,
 0x0fe2,0x1f,
 0x0fa2,0x03,
@@ -1130,7 +1134,7 @@ kal_uint16 mot_sydney_gc50f6a_init_addr_data[] = {
 0x0080,0x30,
 };
 
-kal_uint16 mot_sydney_gc50f6a_4096x3072_pre_data[] = {
+kal_uint16 mot_sydney_gc50f6a_2nd_4096x3072_pre_data[] = {
 
 
 0x0315,0x80,
@@ -1656,7 +1660,7 @@ kal_uint16 mot_sydney_gc50f6a_4096x3072_pre_data[] = {
 
 };
 
-kal_uint16 mot_sydney_gc50f6a_8192x6144_cap_data[] = {
+kal_uint16 mot_sydney_gc50f6a_2nd_8192x6144_cap_data[] = {
 
 0x0315,0x80,
 0x0fe2,0x1f,
@@ -2180,7 +2184,7 @@ kal_uint16 mot_sydney_gc50f6a_8192x6144_cap_data[] = {
 
 };
 
-kal_uint16 mot_sydney_gc50f6a_4096x2560_video_data[] = {
+kal_uint16 mot_sydney_gc50f6a_2nd_4096x2560_video_data[] = {
 0x0315,0x80,
 0x0fe2,0x1f,
 0x0fa2,0x03,
@@ -2694,7 +2698,7 @@ kal_uint16 mot_sydney_gc50f6a_4096x2560_video_data[] = {
 
 };
 
-kal_uint16 mot_sydney_gc50f6a_4096x2560_custom1_data[] = {
+kal_uint16 mot_sydney_gc50f6a_2nd_4096x2560_custom1_data[] = {
 0x0315,0x80,
 0x0fe2,0x1f,
 0x0fa2,0x03,
@@ -3207,7 +3211,7 @@ kal_uint16 mot_sydney_gc50f6a_4096x2560_custom1_data[] = {
 0x0112,0x99,
 };
 
-kal_uint16 mot_sydney_gc50f6a_1920x1080_hs_data[] = {
+kal_uint16 mot_sydney_gc50f6a_2nd_1920x1080_hs_data[] = {
 	0x0315,0x80,
 0x0fe2,0x1f,
 0x0fa2,0x03,
@@ -3708,23 +3712,23 @@ kal_uint16 mot_sydney_gc50f6a_1920x1080_hs_data[] = {
 0x0112,0x99,
 };
 
-kal_uint16 mot_sydney_gc50f6a_1280x720_slim_data[] = {
+kal_uint16 mot_sydney_gc50f6a_2nd_1280x720_slim_data[] = {
 
 };
 
 static void sensor_init(void)
 {
 	pr_debug("[%s] init_start\n", __func__);
-	table_write_cmos_sensor(mot_sydney_gc50f6a_init_addr_data,
-		sizeof(mot_sydney_gc50f6a_init_addr_data)/sizeof(kal_uint16));
+	table_write_cmos_sensor(mot_sydney_gc50f6a_2nd_init_addr_data,
+		sizeof(mot_sydney_gc50f6a_2nd_init_addr_data)/sizeof(kal_uint16));
 	pr_debug("[%s] init_End\n", __func__);
 }	/*	  sensor_init  */
 
 static void preview_setting(void)
 {
 	pr_debug("%s preview_Start\n", __func__);
-	table_write_cmos_sensor(mot_sydney_gc50f6a_4096x3072_pre_data,
-		sizeof(mot_sydney_gc50f6a_4096x3072_pre_data)/sizeof(kal_uint16));
+	table_write_cmos_sensor(mot_sydney_gc50f6a_2nd_4096x3072_pre_data,
+		sizeof(mot_sydney_gc50f6a_2nd_4096x3072_pre_data)/sizeof(kal_uint16));
 	ratio = 1;
 	pr_debug("%s preview_End\n", __func__);
 }
@@ -3732,8 +3736,8 @@ static void preview_setting(void)
 static void capture_setting(void)
 {
 	pr_debug("[%s] capture_Start\n", __func__);
-		table_write_cmos_sensor(mot_sydney_gc50f6a_8192x6144_cap_data,
-		sizeof(mot_sydney_gc50f6a_8192x6144_cap_data)/sizeof(kal_uint16));
+		table_write_cmos_sensor(mot_sydney_gc50f6a_2nd_8192x6144_cap_data,
+		sizeof(mot_sydney_gc50f6a_2nd_8192x6144_cap_data)/sizeof(kal_uint16));
 	ratio = 2;
 	pr_debug("[%s] capture_End\n", __func__);
 }
@@ -3741,8 +3745,8 @@ static void capture_setting(void)
 static void normal_video_setting(void)
 {
 	pr_debug("[%s] normal_video_Start\n", __func__);
-	table_write_cmos_sensor(mot_sydney_gc50f6a_4096x2560_custom1_data,
-		sizeof(mot_sydney_gc50f6a_4096x2560_custom1_data)/sizeof(kal_uint16));
+	table_write_cmos_sensor(mot_sydney_gc50f6a_2nd_4096x2560_custom1_data,
+		sizeof(mot_sydney_gc50f6a_2nd_4096x2560_custom1_data)/sizeof(kal_uint16));
 	ratio = 1;
 	pr_debug("[%s] normal_video_End\n", __func__);
 }
@@ -3750,10 +3754,10 @@ static void normal_video_setting(void)
 static void hs_video_setting(void)
 {
 	pr_debug("[%s] hs_video_Start, 1280x720@120fps\n", __func__);
-	table_write_cmos_sensor(mot_sydney_gc50f6a_4096x2560_video_data,
-		sizeof(mot_sydney_gc50f6a_4096x2560_video_data)/sizeof(kal_uint16));
-	table_write_cmos_sensor(mot_sydney_gc50f6a_1920x1080_hs_data,
-		sizeof(mot_sydney_gc50f6a_1920x1080_hs_data)/sizeof(kal_uint16));
+	table_write_cmos_sensor(mot_sydney_gc50f6a_2nd_4096x2560_video_data,
+		sizeof(mot_sydney_gc50f6a_2nd_4096x2560_video_data)/sizeof(kal_uint16));
+	table_write_cmos_sensor(mot_sydney_gc50f6a_2nd_1920x1080_hs_data,
+		sizeof(mot_sydney_gc50f6a_2nd_1920x1080_hs_data)/sizeof(kal_uint16));
 	ratio = 1;
 	pr_debug("[%s] hs_video_End\n", __func__);
 }
@@ -3761,8 +3765,8 @@ static void hs_video_setting(void)
 static void slim_video_setting(void)
 {
 	pr_debug("[%s] slim_video_Start, 1280x720@30fps\n", __func__);
-	table_write_cmos_sensor(mot_sydney_gc50f6a_1280x720_slim_data,
-		sizeof(mot_sydney_gc50f6a_1280x720_slim_data)/sizeof(kal_uint16));
+	table_write_cmos_sensor(mot_sydney_gc50f6a_2nd_1280x720_slim_data,
+		sizeof(mot_sydney_gc50f6a_2nd_1280x720_slim_data)/sizeof(kal_uint16));
 	ratio = 1;
 	pr_debug("[%s] slim_video_End\n", __func__);
 }
@@ -3812,12 +3816,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				pr_debug("[mot_sydney_gc50f6a_camera_sensor]get_imgsensor_id:i2c write id: 0x%x, sensor id: 0x%x\n",
+				pr_debug("[mot_sydney_gc50f6a_2nd_camera_sensor]get_imgsensor_id:i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
-				mot_sydney_gc50f6a_read_crosstalk_data();//jesse added
+				mot_sydney_gc50f6a_2nd_read_crosstalk_data();//jesse added
 				return ERROR_NONE;
 			}
-			pr_debug("[mot_sydney_gc50f6a_camera_sensor]get_imgsensor_id:Read sensor id fail, write id: 0x%x, id: 0x%x\n",
+			pr_debug("[mot_sydney_gc50f6a_2nd_camera_sensor]get_imgsensor_id:Read sensor id fail, write id: 0x%x, id: 0x%x\n",
 				imgsensor.i2c_write_id, *sensor_id);
 			retry--;
 		} while (retry > 0);
@@ -3846,7 +3850,7 @@ static kal_uint16 read_eeprom(kal_uint16 addr)
 
 static kal_uint8 ct_read_data[CROSSTALK_BUF_SIZE];
 
-void mot_sydney_gc50f6a_read_crosstalk_data(void)
+void mot_sydney_gc50f6a_2nd_read_crosstalk_data(void)
 {
 	kal_uint16 i = 0;
 	kal_uint16 ct_flag = 0;
@@ -3883,7 +3887,7 @@ void mot_sydney_gc50f6a_read_crosstalk_data(void)
 }
 
 
-void mot_sydney_gc50f6a_write_crosstalk_data(void)
+void mot_sydney_gc50f6a_2nd_write_crosstalk_data(void)
 {
 	kal_uint32 i = 0, page = 0, j = 0;
 	kal_uint32 start_page = 0x06, start_addr = 0x0600;
@@ -3893,12 +3897,14 @@ void mot_sydney_gc50f6a_write_crosstalk_data(void)
 	write_cmos_sensor_8(0x001f, 0x01);
 	mdelay(5);
 	pr_debug("start write crosstalk_data!\n");
+
+
 	for (page = 0;  page < 2; page++)
 	{
 		write_cmos_sensor_8(0x0004, start_page+0x10*page);
 		for (i = 0; i < 128 && j < CROSSTALK_BUF_SIZE - 1 ; i++)
 		{
-			write_cmos_sensor(start_addr+2*i, ((ct_read_data[j] << 8) & 0xFF00)|ct_read_data[j+1]);
+			write_cmos_sensor(start_addr+2*i, ((ct_read_data[j] << 8) & 0xFF00)|ct_read_data[j+1]);	
 			j=j+2;
 			pr_debug("XTCdata = 0x%x\n",read_cmos_sensor_8(start_addr+2*i));
 			pr_debug("XTCdata = 0x%x\n",read_cmos_sensor_8(start_addr+2*i+1));
@@ -3947,11 +3953,12 @@ static kal_uint32 open(void)
 		do {
 			sensor_id = return_sensor_id();
 			if (sensor_id == imgsensor_info.sensor_id) {
-				pr_debug("[mot_sydney_gc50f6a_camera_sensor]open:i2c write id: 0x%x, sensor id: 0x%x\n",
+				pr_debug("[mot_sydney_gc50f6a_2nd_camera_sensor]open:i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, sensor_id);
+
 				break;
 			}
-			pr_debug("[mot_sydney_gc50f6a_camera_sensor]open:Read sensor id fail, write id: 0x%x, id: 0x%x\n",
+			pr_debug("[mot_sydney_gc50f6a_2nd_camera_sensor]open:Read sensor id fail, write id: 0x%x, id: 0x%x\n",
 				imgsensor.i2c_write_id, sensor_id);
 			retry--;
 		} while (retry > 0);
@@ -3966,7 +3973,7 @@ static kal_uint32 open(void)
 	/* initail sequence write in  */
 	sensor_init();
 
-	mot_sydney_gc50f6a_write_crosstalk_data();
+	mot_sydney_gc50f6a_2nd_write_crosstalk_data();
 
 	spin_lock(&imgsensor_drv_lock);
 
@@ -4884,7 +4891,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	control,
 	close
 };
-UINT32 MOT_SYDNEY_GC50F6A_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 MOT_SYDNEY_GC50F6A_2ND_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* Check Sensor status here */
 	if (pfFunc != NULL)
