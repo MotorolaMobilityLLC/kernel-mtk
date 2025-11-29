@@ -178,6 +178,8 @@
   clk_bulk_put_all
   clk_bulk_unprepare
   __clk_determine_rate
+  clkdev_add
+  clkdev_drop
   clk_disable
   clk_divider_ops
   clk_enable
@@ -227,6 +229,7 @@
   clk_set_rate
   clk_set_rate_range
   clk_unprepare
+  clk_unregister
   clockevents_config_and_register
   clocks_calc_mult_shift
   close_fd
@@ -512,6 +515,7 @@
   devm_devfreq_register_notifier
   devm_devfreq_remove_device
   devm_devfreq_unregister_notifier
+  devm_devfreq_unregister_opp_notifier
   devm_extcon_dev_allocate
   devm_extcon_dev_register
   devm_extcon_register_notifier
@@ -550,6 +554,7 @@
   devm_memremap
   devm_memunmap
   devm_mfd_add_devices
+  devm_mmc_alloc_host
   devm_nvmem_cell_get
   devm_nvmem_device_get
   devm_nvmem_register
@@ -926,6 +931,7 @@
   drm_property_create_blob
   drm_property_create_range
   drm_property_lookup_blob
+  drm_property_replace_global_blob
   drm_read
   drm_release
   drm_universal_plane_init
@@ -1659,6 +1665,7 @@
   mempool_free
   mempool_free_slab
   mempool_init_noprof
+  mempool_resize
   memremap
   memscan
   mem_section
@@ -3035,6 +3042,10 @@
   __traceiter_android_vh_freq_qos_add_request
   __traceiter_android_vh_freq_qos_remove_request
   __traceiter_android_vh_freq_qos_update_request
+  __traceiter_android_vh_gzvm_destroy_vm_post_process
+  __traceiter_android_vh_gzvm_handle_demand_page_post
+  __traceiter_android_vh_gzvm_handle_demand_page_pre
+  __traceiter_android_vh_gzvm_vcpu_exit_reason
   __traceiter_android_vh_iommu_iovad_alloc_iova
   __traceiter_android_vh_iommu_iovad_free_iova
   __traceiter_android_vh_is_fpsimd_save
@@ -3047,6 +3058,7 @@
   __traceiter_android_vh_rwsem_read_wait_start
   __traceiter_android_vh_rwsem_write_wait_finish
   __traceiter_android_vh_rwsem_write_wait_start
+  __traceiter_android_vh_dump_dl_server
   __traceiter_android_vh_sched_pelt_multiplier
   __traceiter_android_vh_scheduler_tick
   __traceiter_android_vh_setscheduler_uclamp
@@ -3159,6 +3171,10 @@
   __tracepoint_android_vh_freq_qos_add_request
   __tracepoint_android_vh_freq_qos_remove_request
   __tracepoint_android_vh_freq_qos_update_request
+  __tracepoint_android_vh_gzvm_destroy_vm_post_process
+  __tracepoint_android_vh_gzvm_handle_demand_page_post
+  __tracepoint_android_vh_gzvm_handle_demand_page_pre
+  __tracepoint_android_vh_gzvm_vcpu_exit_reason
   __tracepoint_android_vh_iommu_iovad_alloc_iova
   __tracepoint_android_vh_iommu_iovad_free_iova
   __tracepoint_android_vh_is_fpsimd_save
@@ -3171,6 +3187,7 @@
   __tracepoint_android_vh_rwsem_read_wait_start
   __tracepoint_android_vh_rwsem_write_wait_finish
   __tracepoint_android_vh_rwsem_write_wait_start
+  __tracepoint_android_vh_dump_dl_server
   __tracepoint_android_vh_sched_pelt_multiplier
   __tracepoint_android_vh_scheduler_tick
   __tracepoint_android_vh_setscheduler_uclamp
@@ -3792,3 +3809,4 @@
   zlib_inflateInit2
   zlib_inflateReset
   zlib_inflate_workspacesize
+  zs_lookup_class_index

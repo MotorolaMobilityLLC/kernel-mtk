@@ -23,7 +23,7 @@ use kernel::{
     fs::{File, LocalFile},
     ioctl::_IOC_SIZE,
     miscdevice::{loff_t, IovIter, Kiocb, MiscDevice, MiscDeviceOptions, MiscDeviceRegistration},
-    mm::virt::{flags as vma_flags, VmAreaNew},
+    mm::virt::{flags as vma_flags, VmaNew},
     page::{page_align, PAGE_MASK, PAGE_SIZE},
     page_size_compat::__page_align,
     prelude::*,
@@ -38,6 +38,8 @@ const ASHMEM_NAME_LEN: usize = bindings::ASHMEM_NAME_LEN as usize;
 const ASHMEM_FULL_NAME_LEN: usize = bindings::ASHMEM_FULL_NAME_LEN as usize;
 const ASHMEM_NAME_PREFIX_LEN: usize = bindings::ASHMEM_NAME_PREFIX_LEN as usize;
 const ASHMEM_NAME_PREFIX: [u8; ASHMEM_NAME_PREFIX_LEN] = *b"dev/ashmem/";
+
+const ASHMEM_MAX_SIZE: usize = usize::MAX >> 1;
 
 const PROT_READ: usize = bindings::PROT_READ as usize;
 const PROT_EXEC: usize = bindings::PROT_EXEC as usize;
@@ -163,11 +165,11 @@ impl MiscDevice for Ashmem {
         )
     }
 
-    fn mmap(me: Pin<&Ashmem>, _file: &File, vma: &VmAreaNew) -> Result<()> {
+    fn mmap(me: Pin<&Ashmem>, _file: &File, vma: &VmaNew) -> Result<()> {
         let asma = &mut *me.inner.lock();
 
         // User needs to SET_SIZE before mapping.
-        if asma.size == 0 {
+        if asma.size == 0 || asma.size >= ASHMEM_MAX_SIZE {
             return Err(EINVAL);
         }
 
@@ -296,18 +298,11 @@ impl MiscDevice for Ashmem {
 
 impl Ashmem {
     fn set_name(&self, reader: UserSliceReader) -> Result<isize> {
-        let mut local_name = [0u8; ASHMEM_NAME_LEN];
-        let mut len = reader.strncpy_from_user(&mut local_name)?;
+        let mut buf = [0u8; ASHMEM_NAME_LEN];
+        let name = reader.strcpy_into_buf(&mut buf)?.as_bytes();
 
-        // If the zero terminator is missing, the string is truncated to `ASHMEM_NAME_LEN-1` so
-        // that `get_name` can return it and has enough space to add a zero terminator.
-        if len == ASHMEM_NAME_LEN {
-            len -= 1;
-            local_name[len] = 0;
-        }
-
-        let mut v = KVec::with_capacity(len, GFP_KERNEL)?;
-        v.extend_from_slice(&local_name[..len], GFP_KERNEL)?;
+        let mut v = KVec::with_capacity(name.len(), GFP_KERNEL)?;
+        v.extend_from_slice(name, GFP_KERNEL)?;
 
         let mut asma = self.inner.lock();
         if asma.file.is_some() {
@@ -423,18 +418,17 @@ impl Ashmem {
             None => return Err(EINVAL),
         };
 
+        let max_size = page_align(asma.size);
+        let remaining = max_size.checked_sub(offset).ok_or(EINVAL)?;
+
         // Per custom, you can pass zero for len to mean "everything onward".
-        let len = if cmd_len == 0 {
-            page_align(asma.size) - offset
-        } else {
-            cmd_len
-        };
+        let len = if cmd_len == 0 { remaining } else { cmd_len };
 
         if (offset | len) & !PAGE_MASK != 0 {
             return Err(EINVAL);
         }
         let len_plus_offset = offset.checked_add(len).ok_or(EINVAL)?;
-        if page_align(asma.size) < len_plus_offset {
+        if max_size < len_plus_offset {
             return Err(EINVAL);
         }
 

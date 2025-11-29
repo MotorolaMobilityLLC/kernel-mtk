@@ -810,6 +810,11 @@
   dma_heap_get_dev
   dma_heap_get_drvdata
   dma_heap_get_name
+  dma_iova_free
+  dma_iova_link
+  dma_iova_sync
+  dma_iova_try_alloc
+  dma_iova_unlink
   dmam_alloc_attrs
   dma_map_page_attrs
   dma_map_resource
@@ -1619,9 +1624,9 @@
   irq_create_fwspec_mapping
   irq_create_mapping_affinity
   irq_dispose_mapping
+  __irq_domain_alloc_fwnode
   __irq_domain_alloc_irqs
   irq_domain_alloc_irqs_parent
-  __irq_domain_alloc_fwnode
   irq_domain_create_hierarchy
   irq_domain_disconnect_hierarchy
   irq_domain_free_fwnode
@@ -1656,9 +1661,9 @@
   irq_work_queue
   irq_work_queue_on
   irq_work_sync
-  is_vmalloc_addr
   isolate_and_split_free_page
   isolate_anon_lru_page
+  is_vmalloc_addr
   iterate_fd
   jiffies
   jiffies_to_msecs
@@ -2326,10 +2331,6 @@
   phy_init
   phy_init_eee
   phy_init_hw
-  phy_pm_runtime_get
-  phy_pm_runtime_get_sync
-  phy_pm_runtime_put
-  phy_pm_runtime_put_sync
   phylink_connect_phy
   phylink_create
   phylink_destroy
@@ -2360,6 +2361,10 @@
   phy_mac_interrupt
   phy_modify
   phy_modify_mmd
+  phy_pm_runtime_get
+  phy_pm_runtime_get_sync
+  phy_pm_runtime_put
+  phy_pm_runtime_put_sync
   phy_power_off
   phy_power_on
   phy_print_status
@@ -2514,12 +2519,12 @@
   ptp_clock_register
   ptp_clock_unregister
   ptp_parse_header
+  putback_movable_pages
   put_cmsg
   __put_cred
   put_device
   put_disk
   put_iova_domain
-  putback_movable_pages
   __put_net
   put_pid
   put_sg_io_hdr
@@ -3371,6 +3376,7 @@
   __traceiter_android_rvh_sched_rebalance_domains
   __traceiter_android_rvh_sched_setaffinity
   __traceiter_android_rvh_schedule
+  __traceiter_android_rvh_scmi_limit_notify_cb
   __traceiter_android_rvh_select_fallback_rq
   __traceiter_android_rvh_select_task_rq_fair
   __traceiter_android_rvh_select_task_rq_rt
@@ -3409,6 +3415,9 @@
   __traceiter_android_vh_dump_throttled_rt_tasks
   __traceiter_android_vh_encrypt_page
   __traceiter_android_vh_free_task
+  __traceiter_android_vh_freq_qos_add_request
+  __traceiter_android_vh_freq_qos_remove_request
+  __traceiter_android_vh_freq_qos_update_request
   __traceiter_android_vh_ftrace_dump_buffer
   __traceiter_android_vh_ftrace_format_check
   __traceiter_android_vh_ftrace_oops_enter
@@ -3512,6 +3521,7 @@
   __tracepoint_android_rvh_sched_rebalance_domains
   __tracepoint_android_rvh_sched_setaffinity
   __tracepoint_android_rvh_schedule
+  __tracepoint_android_rvh_scmi_limit_notify_cb
   __tracepoint_android_rvh_select_fallback_rq
   __tracepoint_android_rvh_select_task_rq_fair
   __tracepoint_android_rvh_select_task_rq_rt
@@ -3547,9 +3557,12 @@
   __tracepoint_android_vh_cpuidle_psci_enter
   __tracepoint_android_vh_cpuidle_psci_exit
   __tracepoint_android_vh_do_wake_up_sync
-  __tracepoint_android_vh_encrypt_page
   __tracepoint_android_vh_dump_throttled_rt_tasks
+  __tracepoint_android_vh_encrypt_page
   __tracepoint_android_vh_free_task
+  __tracepoint_android_vh_freq_qos_add_request
+  __tracepoint_android_vh_freq_qos_remove_request
+  __tracepoint_android_vh_freq_qos_update_request
   __tracepoint_android_vh_ftrace_dump_buffer
   __tracepoint_android_vh_ftrace_format_check
   __tracepoint_android_vh_ftrace_oops_enter

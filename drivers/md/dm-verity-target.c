@@ -23,7 +23,6 @@
 #include <linux/string.h>
 #include <linux/jump_label.h>
 #include <linux/security.h>
-#include <trace/hooks/dmv_debug.h>
 
 #define DM_MSG_PREFIX			"verity"
 
@@ -396,24 +395,18 @@ static int verity_verify_level(struct dm_verity *v, struct dm_verity_io *io,
 			r = -EAGAIN;
 			goto release_ret_r;
 		} else if (verity_fec_decode(v, io, DM_VERITY_BLOCK_TYPE_METADATA,
-					     want_digest, hash_block, data) == 0) {
-			trace_android_vh_handle_add_fec_mismatch_blks(hash_block, v->data_dev->name);
+					     want_digest, hash_block, data) == 0)
 			aux->hash_verified = 1;
-		} else {
-			trace_android_vh_handle_metadata_error(v,
-				hash_block, io, want_digest);
-			if (verity_handle_err(v,
-					DM_VERITY_BLOCK_TYPE_METADATA,
-					hash_block)) {
-				struct bio *bio;
-
-				io->had_mismatch = true;
-				bio = dm_bio_from_per_bio_data(io, v->ti->per_io_data_size);
-				dm_audit_log_bio(DM_MSG_PREFIX, "verify-metadata", bio,
-						block, 0);
-				r = -EIO;
-				goto release_ret_r;
-			}
+		else if (verity_handle_err(v,
+					   DM_VERITY_BLOCK_TYPE_METADATA,
+					   hash_block)) {
+			struct bio *bio;
+			io->had_mismatch = true;
+			bio = dm_bio_from_per_bio_data(io, v->ti->per_io_data_size);
+			dm_audit_log_bio(DM_MSG_PREFIX, "verify-metadata", bio,
+					 block, 0);
+			r = -EIO;
+			goto release_ret_r;
 		}
 	}
 
@@ -530,14 +523,12 @@ static int verity_handle_data_hash_mismatch(struct dm_verity *v,
 	}
 #if defined(CONFIG_DM_VERITY_FEC)
 	if (verity_fec_decode(v, io, DM_VERITY_BLOCK_TYPE_DATA, want_digest,
-			      blkno, data) == 0) {
-		trace_android_vh_handle_add_fec_mismatch_blks(blkno, v->data_dev->name);
+			      blkno, data) == 0)
 		return 0;
-	}
 #endif
 	if (bio->bi_status)
 		return -EIO; /* Error correction failed; Just return error */
-	trace_android_vh_handle_data_error(v, blkno, io, data, want_digest);
+
 	if (verity_handle_err(v, DM_VERITY_BLOCK_TYPE_DATA, blkno)) {
 		io->had_mismatch = true;
 		dm_audit_log_bio(DM_MSG_PREFIX, "verify-data", bio, blkno, 0);
@@ -627,10 +618,8 @@ static int verity_verify_io(struct dm_verity_io *io)
 		void *data;
 
 		if (v->validated_blocks && bio->bi_status == BLK_STS_OK &&
-		    likely(test_bit(blkno, v->validated_blocks))) {
-			trace_android_vh_handle_add_skipped_blks(NULL);
+		    likely(test_bit(blkno, v->validated_blocks)))
 			continue;
-		}
 
 		block = &io->pending_blocks[io->num_pending];
 
@@ -905,8 +894,6 @@ static int verity_map(struct dm_target *ti, struct bio *bio)
 	io->n_blocks = bio->bi_iter.bi_size >> v->data_dev_block_bits;
 	io->had_mismatch = false;
 
-	trace_android_vh_handle_add_blks_map(io->n_blocks, v->data_dev->name);
-
 	bio->bi_end_io = verity_end_io;
 	bio->bi_private = io;
 	io->iter = bio->bi_iter;
@@ -918,6 +905,13 @@ static int verity_map(struct dm_target *ti, struct bio *bio)
 	submit_bio_noacct(bio);
 
 	return DM_MAPIO_SUBMITTED;
+}
+
+static void verity_postsuspend(struct dm_target *ti)
+{
+	struct dm_verity *v = ti->private;
+	flush_workqueue(v->verify_wq);
+	dm_bufio_client_reset(v->bufio);
 }
 
 /*
@@ -1197,6 +1191,9 @@ static int verity_alloc_most_once(struct dm_verity *v)
 {
 	struct dm_target *ti = v->ti;
 
+	if (v->validated_blocks)
+		return 0;
+
 	/* the bitset can only handle INT_MAX blocks */
 	if (v->data_blocks > INT_MAX) {
 		ti->error = "device too large to use check_at_most_once";
@@ -1219,6 +1216,9 @@ static int verity_alloc_zero_digest(struct dm_verity *v)
 	int r = -ENOMEM;
 	struct dm_verity_io *io;
 	u8 *zero_data;
+
+	if (v->zero_digest)
+		return 0;
 
 	v->zero_digest = kmalloc(v->digest_size, GFP_KERNEL);
 
@@ -1650,8 +1650,6 @@ static int verity_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 	argv += 10;
 	argc -= 10;
 
-	trace_android_vh_handle_get_b_info(v->data_dev->name);
-
 	/* Optional parameters */
 	if (argc) {
 		as.argc = argc;
@@ -1661,7 +1659,7 @@ static int verity_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 			goto bad;
 	}
 
-	/* Root hash signature is  a optional parameter*/
+	/* Root hash signature is an optional parameter */
 	r = verity_verify_root_hash(root_hash_digest_to_validate,
 				    strlen(root_hash_digest_to_validate),
 				    verify_args.sig,
@@ -1897,6 +1895,7 @@ static struct target_type verity_target = {
 	.ctr		= verity_ctr,
 	.dtr		= verity_dtr,
 	.map		= verity_map,
+	.postsuspend	= verity_postsuspend,
 	.status		= verity_status,
 	.prepare_ioctl	= verity_prepare_ioctl,
 	.iterate_devices = verity_iterate_devices,

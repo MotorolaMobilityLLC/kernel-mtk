@@ -141,7 +141,10 @@ impl<T> ArrayRangeAllocator<T> {
             state: DescriptorState::new(is_oneway, debug_id, pid),
         };
         // Insert the value at the given index to keep the array sorted.
-        self.ranges.insert_within_capacity(insert_at_idx, new_range).ok().unwrap();
+        self.ranges
+            .insert_within_capacity(insert_at_idx, new_range)
+            .ok()
+            .unwrap();
 
         Ok(insert_at_offset)
     }
@@ -186,7 +189,7 @@ impl<T> ArrayRangeAllocator<T> {
         Ok(freed_range)
     }
 
-    pub(crate) fn reservation_commit(&mut self, offset: usize, data: Option<T>) -> Result {
+    pub(crate) fn reservation_commit(&mut self, offset: usize, data: &mut Option<T>) -> Result {
         // This could use a binary search, but linear scans are usually faster for small arrays.
         let range = self
             .ranges
@@ -198,7 +201,7 @@ impl<T> ArrayRangeAllocator<T> {
             return Err(ENOENT);
         };
 
-        range.state = DescriptorState::Allocated(reservation.clone().allocate(data));
+        range.state = DescriptorState::Allocated(reservation.clone().allocate(data.take()));
         Ok(())
     }
 

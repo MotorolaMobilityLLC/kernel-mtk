@@ -458,6 +458,7 @@ static void gunyah_vm_clean_resources(struct gunyah_vm *ghvm)
 	}
 
 	list_for_each_entry_safe(ghrsc, riter, &ghvm->resources, list) {
+		list_del(&ghrsc->list);
 		gunyah_rm_free_resource(ghrsc);
 	}
 	mutex_unlock(&ghvm->resources_lock);
@@ -583,11 +584,19 @@ static int gunyah_vm_rm_notification_status(struct gunyah_vm *ghvm, void *data)
 		return NOTIFY_OK;
 
 	/* All other state transitions are synchronous to a corresponding RM call */
-	if (payload->vm_status == GUNYAH_RM_VM_STATUS_RESET) {
+	switch (payload->vm_status) {
+	case GUNYAH_RM_VM_STATUS_RESET_FAILED:
+		dev_warn(ghvm->parent, "VM: %u RESET failed with status %u\n",
+			 ghvm->vmid, payload->vm_status);
+		fallthrough;
+	case GUNYAH_RM_VM_STATUS_RESET:
 		down_write(&ghvm->status_lock);
 		ghvm->vm_status = payload->vm_status;
 		up_write(&ghvm->status_lock);
 		wake_up(&ghvm->vm_status_wait);
+		break;
+	default:
+		break;
 	}
 
 	return NOTIFY_DONE;
@@ -1147,7 +1156,8 @@ static void _gunyah_vm_put(struct kref *kref)
 		/* clang-format off */
 		if (!ret)
 			wait_event(ghvm->vm_status_wait,
-				   ghvm->vm_status == GUNYAH_RM_VM_STATUS_RESET);
+				   (ghvm->vm_status == GUNYAH_RM_VM_STATUS_RESET) ||
+				   (ghvm->vm_status == GUNYAH_RM_VM_STATUS_RESET_FAILED));
 		else
 			dev_err(ghvm->parent, "Failed to reset the vm: %d\n", ret);
 

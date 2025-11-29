@@ -45,6 +45,8 @@
   __pmd_trans_huge_lock
   __pte_offset_map_lock
   __show_mem
+  __traceiter_android_vh_page_cache_ra_order_bypass
+  __tracepoint_android_vh_page_cache_ra_order_bypass
   __traceiter_android_vh_slab_alloc_node
   __tracepoint_android_vh_slab_alloc_node
   __traceiter_android_vh_slab_free
@@ -273,8 +275,6 @@
   __traceiter_android_vh_f2fs_improve_priority
   __tracepoint_android_vh_f2fs_restore_priority
   __traceiter_android_vh_f2fs_restore_priority
-  __traceiter_android_vh_f2fs_set_bio_flag
-  __tracepoint_android_vh_f2fs_set_bio_flag
   __tracepoint_android_vh_io_statistics
   __traceiter_android_vh_io_statistics
   __traceiter_android_vh_ufs_eh_timed_out
@@ -299,6 +299,8 @@
   __traceiter_scsi_dispatch_cmd_done
   __tracepoint_f2fs_write_begin
   __traceiter_f2fs_write_begin
+  __tracepoint_f2fs_submit_folio_write
+  __traceiter_f2fs_submit_folio_write
   __tracepoint_android_vh_f2fs_printk
   __traceiter_android_vh_f2fs_printk
   __tracepoint_android_vh_f2fs_create

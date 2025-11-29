@@ -13,6 +13,7 @@
   free_hpage
   gcma_alloc_range
   gcma_free_range
+  gcma_stat_get
   generic_file_read_iter
   generic_perform_write
   get_pfnblock_flags_mask
@@ -33,6 +34,7 @@
   register_gcma_area
   scsi_device_quiesce
   scsi_device_resume
+  blk_queue_rq_timeout
   swp_swapcount
   __traceiter_android_rvh_die_kernel_fault
   __traceiter_android_rvh_do_el1_undef
@@ -52,7 +54,11 @@
   __traceiter_android_vh_filemap_map_pages
   __traceiter_android_vh_filemap_read
   __traceiter_android_vh_free_pages_ok_bypass
+  __traceiter_android_vh_free_page_bypass
+  __traceiter_android_vh_free_folio_bypass
   __traceiter_android_vh_free_pages_prepare_bypass
+  __traceiter_android_vh_gcma_cc_allow_nonworkingset
+  __traceiter_android_vh_gcma_cc_store_page_bypass
   __traceiter_android_vh_is_fpsimd_save
   __traceiter_android_vh_logbuf
   __traceiter_android_vh_logbuf_pr_cont
@@ -70,6 +76,8 @@
   __traceiter_android_vh_show_smap
   __traceiter_android_vh_smaps_pte_entry
   __traceiter_android_vh_split_large_folio_bypass
+  __traceiter_android_vh_try_to_freeze_todo
+  __traceiter_android_vh_try_to_freeze_todo_unfrozen
   __traceiter_android_vh_tune_scan_control
   __traceiter_android_vh_use_vm_swappiness
   __traceiter_android_vh_warn_alloc_tune_ratelimit
@@ -78,12 +86,6 @@
   __traceiter_android_vh_zs_shrinker_bypass
   __traceiter_console
   __traceiter_vm_unmapped_area
-  __traceiter_android_vh_handle_add_skipped_blks
-  __traceiter_android_vh_handle_data_error
-  __traceiter_android_vh_handle_metadata_error
-  __traceiter_android_vh_handle_add_blks_map
-  __traceiter_android_vh_handle_add_fec_mismatch_blks
-  __traceiter_android_vh_handle_get_b_info
   __tracepoint_android_rvh_die_kernel_fault
   __tracepoint_android_rvh_do_el1_undef
   __tracepoint_android_rvh_do_sp_pc_abort
@@ -102,7 +104,11 @@
   __tracepoint_android_vh_filemap_map_pages
   __tracepoint_android_vh_filemap_read
   __tracepoint_android_vh_free_pages_ok_bypass
+  __tracepoint_android_vh_free_page_bypass
+  __tracepoint_android_vh_free_folio_bypass
   __tracepoint_android_vh_free_pages_prepare_bypass
+  __tracepoint_android_vh_gcma_cc_allow_nonworkingset
+  __tracepoint_android_vh_gcma_cc_store_page_bypass
   __tracepoint_android_vh_is_fpsimd_save
   __tracepoint_android_vh_logbuf
   __tracepoint_android_vh_logbuf_pr_cont
@@ -121,6 +127,8 @@
   __tracepoint_android_vh_smaps_pte_entry
   __tracepoint_android_vh_split_large_folio_bypass
   __tracepoint_android_vh_tune_scan_control
+  __tracepoint_android_vh_try_to_freeze_todo
+  __tracepoint_android_vh_try_to_freeze_todo_unfrozen
   __tracepoint_android_vh_use_vm_swappiness
   __tracepoint_android_vh_warn_alloc_tune_ratelimit
   __tracepoint_android_vh_warn_alloc_show_mem_bypass
@@ -128,10 +136,4 @@
   __tracepoint_android_vh_zs_shrinker_bypass
   __tracepoint_console
   __tracepoint_vm_unmapped_area
-  __tracepoint_android_vh_handle_add_fec_mismatch_blks
-  __tracepoint_android_vh_handle_data_error
-  __tracepoint_android_vh_handle_metadata_error
-  __tracepoint_android_vh_handle_add_skipped_blks
-  __tracepoint_android_vh_handle_add_blks_map
-  __tracepoint_android_vh_handle_get_b_info
   yield
