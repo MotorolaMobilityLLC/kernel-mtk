@@ -397,6 +397,19 @@ void pe_give_country_info_entry(struct pd_port *pd_port)
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
 
 /*
+ * [PD3.1] Figure 8-168 Give Revision State Diagram
+ */
+
+#if CONFIG_USB_PD_REV30_REVISION_LOCAL
+void pe_give_revision_entry(struct pd_port *pd_port)
+{
+	PE_STATE_WAIT_TX_SUCCESS(pd_port);
+
+	pd_dpm_send_revision(pd_port);
+}
+#endif	/* CONFIG_USB_PD_REV30_REVISION_LOCAL */
+
+/*
  * [PD3.0] Unsupported, Unrecognized UVDM and Unsupported SVDM.
  */
 

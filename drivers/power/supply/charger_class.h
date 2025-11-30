@@ -439,4 +439,5 @@ extern int charger_dev_get_protocol(struct charger_device *chg_dev, int *val);
 extern int charger_dev_config_qc_charger(struct charger_device *chg_dev);
 extern int charger_dev_set_dp_dm(struct charger_device *chg_dev, int val);
 extern int charger_dev_get_dp_dm(struct charger_device *chg_dev, int *val);
+extern struct charger_device *get_charger_by_name(const char *name);
 #endif /*LINUX_POWER_CHARGER_CLASS_H*/

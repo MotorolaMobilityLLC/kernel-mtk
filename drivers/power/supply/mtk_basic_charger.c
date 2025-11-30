@@ -97,6 +97,23 @@ static bool is_typec_adapter(struct mtk_charger *info)
 	return false;
 }
 
+static bool is_pd_rdy(struct mtk_charger *info)
+{
+	if (IS_ERR_OR_NULL(info)) {
+		pr_err("%s:ddata is ERR or NULL\n", __func__);
+		return false;
+	}
+
+	pr_info("%s pd_type:%d\n", __func__, info->pd_type);
+
+	if (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO ||
+		info->pd_type == MTK_PD_CONNECT_PE_READY_SNK ||
+		info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_PD30)
+		return true;
+	else
+		return false;
+}
+
 static bool support_fast_charging(struct mtk_charger *info)
 {
 	struct chg_alg_device *alg;
@@ -114,18 +131,22 @@ static bool support_fast_charging(struct mtk_charger *info)
 		    ((alg->alg_id & info->fast_charging_indicator) == 0))
 			continue;
 
-		charger_dev_qc_is_detect(info->chg1_dev, &qc_is_detect);
-		charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
-		if(qc_is_detect == true && alg->alg_id  != PE5_ID) {
-			chr_err("qc is detecting and skip detect others type\n");
-			return ret;
-		} else if (qc_chg_type == USB_TYPE_QC30) {
-			if(charger_dev_config_qc_charger(info->chg1_dev) != 0) {
-				chr_err("config_qc_charger set dpdm failed\n");
-			} else {
-				chr_err("it is HVDCP set ICL 3A  qc_chg_type = %d\n",qc_chg_type);
+		if (is_pd_rdy(info)) {
+			chr_err("pd detect!!!\n");
+		} else {
+			charger_dev_qc_is_detect(info->chg1_dev, &qc_is_detect);
+			charger_dev_get_protocol(info->chg1_dev, &qc_chg_type);
+			if(qc_is_detect == true && alg->alg_id  != PE5_ID) {
+				chr_err("qc is detecting and skip detect others type\n");
+				return ret;
+			} else if (qc_chg_type == USB_TYPE_QC30) {
+				if(charger_dev_config_qc_charger(info->chg1_dev) != 0) {
+					chr_err("config_qc_charger set dpdm failed\n");
+				} else {
+					chr_err("it is HVDCP set ICL 3A  qc_chg_type = %d\n",qc_chg_type);
+				}
+				return ret;
 			}
-			return ret;
 		}
 
 		chg_alg_set_current_limit(alg, &info->setting);

@@ -100,6 +100,9 @@ static const char *const pe_state_name[] = {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
 	"PE_SNK_GET_SOURCE_CAP_EXT",
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	"PE_SNK_GIVE_SINK_CAP_EXT",
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 #if CONFIG_USB_PD_REV30_STATUS_REMOTE
 	"PE_SNK_GET_SOURCE_STATUS",
 #endif	/* CONFIG_USB_PD_REV30_STATUS_REMOTE */
@@ -160,6 +163,9 @@ static const char *const pe_state_name[] = {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
 	"PE_DR_SRC_GET_SOURCE_CAP_EXT",
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	"PE_DR_SRC_GIVE_SINK_CAP_EXT",
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 #endif	/* CONFIG_USB_PD_REV30 */
 #endif	/* CONFIG_USB_PD_PR_SWAP */
 /******************* VCONN_SWAP *******************/
@@ -255,6 +261,9 @@ static const char *const pe_state_name[] = {
 #if CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL
 	"PE_GIVE_COUNTRY_INFO",
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
+#if CONFIG_USB_PD_REV30_REVISION_LOCAL
+	"PE_GIVE_REVISION",
+#endif	/* CONFIG_USB_PD_REV30_REVISION_LOCAL */
 
 	"PE_VDM_NOT_SUPPORTED",
 #if IS_ENABLED(CONFIG_TCPC_SC2150)
@@ -376,6 +385,9 @@ static const char *const pe_state_name[] = {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
 	"SNK_GET_CAP_EX",
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	"SNK_GIVE_CAP_EX",
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 #if CONFIG_USB_PD_REV30_STATUS_REMOTE
 	"SNK_GET_STATUS",
 #endif	/* CONFIG_USB_PD_REV30_STATUS_REMOTE */
@@ -437,6 +449,9 @@ static const char *const pe_state_name[] = {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
 	"DR_SRC_GET_CAP_EXT",
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	"DR_SRC_GIVE_CAP_EX",
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 #endif	/* CONFIG_USB_PD_REV30 */
 #endif	/* CONFIG_USB_PD_PR_SWAP */
 /******************* VCONN_SWAP *******************/
@@ -532,6 +547,9 @@ static const char *const pe_state_name[] = {
 #if CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL
 	"GIVE_CI",
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
+#if CONFIG_USB_PD_REV30_REVISION_LOCAL
+	"GIVE_REV",
+#endif	/* CONFIG_USB_PD_REV30_REVISION_LOCAL */
 
 	"VDM_NO_SUPP",
 #if IS_ENABLED(CONFIG_TCPC_SC2150)
@@ -663,6 +681,9 @@ static const struct pe_state_actions pe_state_actions[] = {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
 	PE_STATE_ACTIONS(pe_snk_get_source_cap_ext),
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	PE_STATE_ACTIONS(pe_snk_give_sink_cap_ext),
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 #if CONFIG_USB_PD_REV30_STATUS_REMOTE
 	PE_STATE_ACTIONS(pe_snk_get_source_status),
 #endif	/* CONFIG_USB_PD_REV30_STATUS_REMOTE */
@@ -724,6 +745,9 @@ static const struct pe_state_actions pe_state_actions[] = {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
 	PE_STATE_ACTIONS(pe_dr_src_get_source_cap_ext),
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	PE_STATE_ACTIONS(pe_dr_src_give_sink_cap_ext),
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 #endif	/* CONFIG_USB_PD_REV30 */
 #endif	/* CONFIG_USB_PD_PR_SWAP */
 /******************* VCONN_SWAP *******************/
@@ -819,6 +843,9 @@ static const struct pe_state_actions pe_state_actions[] = {
 #if CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL
 	PE_STATE_ACTIONS(pe_give_country_info),
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
+#if CONFIG_USB_PD_REV30_REVISION_LOCAL
+	PE_STATE_ACTIONS(pe_give_revision),
+#endif	/* CONFIG_USB_PD_REV30_REVISION_LOCAL */
 	PE_STATE_ACTIONS(pe_vdm_not_supported),
 #if IS_ENABLED(CONFIG_TCPC_SC2150)
 	PE_STATE_ACTIONS(pe_give_revision),

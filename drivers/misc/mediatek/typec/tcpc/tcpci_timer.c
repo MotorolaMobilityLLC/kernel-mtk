@@ -18,6 +18,9 @@
 #define TIMEOUT_RANGE(min, max)		((min * 4000 + max * 1000) / 5)
 #endif /* CONFIG_TCPC_SC2150 */
 
+#define PD_TIMER_SENDER_RESPONSE_TIMEOUT_20 TIMEOUT_VAL(26)
+#define PD_TIMER_SENDER_RESPONSE_TIMEOUT_30 TIMEOUT_VAL(28)
+
 static inline uint64_t tcpc_get_timer_tick(struct tcpc_device *tcpc)
 {
 	uint64_t tick;
@@ -184,6 +187,9 @@ static inline void on_pe_timer_timeout(
 		struct tcpc_device *tcpc, uint32_t timer_id)
 {
 	struct pd_event pd_event = {0};
+#ifdef CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT
+	int timeout = -1;
+#endif /* CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT */
 #if IS_ENABLED(CONFIG_TCPC_SC2150)
 	int rv = 0;
 	uint32_t chip_vid = 0;
@@ -244,6 +250,27 @@ static inline void on_pe_timer_timeout(
 		TCPC_INFO("pe_idle tout\n");
 		pd_put_pe_event(&tcpc->pd_port, PD_PE_IDLE);
 		break;
+#ifdef CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT
+	case PD_TIMER_SENDER_RESPONSE:
+		if (!tcpc->alert_done.done) {
+			/* alert thread is handling, but not sure is TXRX event
+			just for not block TXRX event ASAP */
+			TCPC_INFO("alert_pending\n");
+			timeout =
+			wait_for_completion_interruptible_timeout(&tcpc->alert_done,
+								  msecs_to_jiffies(3));
+			TCPC_INFO("timeout = %d\n", timeout);
+			/* if get rx_event, no need to put SENDER_RESPONSE event */
+			if (timeout > 0 && tcpc->is_rx_event)
+				break;
+		}
+//#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0))
+		fallthrough;
+//#else
+		/* pass through */
+//#endif
+#endif /* CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT */
+
 #if IS_ENABLED(CONFIG_TCPC_SC2150)
 	case PD_TIMER_HARD_RESET_COMPLETE:
 		rv = tcpci_get_chip_vid(tcpc, &chip_vid);
@@ -356,6 +383,9 @@ void tcpc_enable_wakeup_timer(struct tcpc_device *tcpc, bool en)
 void tcpc_enable_timer(struct tcpc_device *tcpc, uint32_t timer_id)
 {
 	uint32_t r, mod, tout;
+#if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
+	uint8_t pd_rev = pd_get_rev(&tcpc->pd_port, tcpc->pd_port.last_sop_type);
+#endif	/* CONFIG_USB_POWER_DELIVERY */
 
 	TCPC_TIMER_DBG("Enable %s\n", tcpc_timer_desc[timer_id].name);
 	if (timer_id >= PD_TIMER_NR) {
@@ -374,6 +404,14 @@ void tcpc_enable_timer(struct tcpc_device *tcpc, uint32_t timer_id)
 		tcpc->tx_time_diff = 0;
 	}
 #endif
+
+#if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
+	if (timer_id == PD_TIMER_SENDER_RESPONSE) {
+		tout = pd_rev >= PD_REV30 ?
+			PD_TIMER_SENDER_RESPONSE_TIMEOUT_30 :
+			PD_TIMER_SENDER_RESPONSE_TIMEOUT_20;
+	}
+#endif	/* CONFIG_USB_POWER_DELIVERY */
 
 #if CONFIG_USB_PD_RANDOM_FLOW_DELAY
 	if (timer_id == PD_TIMER_DFP_FLOW_DELAY ||

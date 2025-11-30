@@ -37,6 +37,9 @@ static const char * const pd_ctrl_msg_name[] = {
 	"fr_swap",
 	"get_pps",
 	"get_cc",
+	"get_snk_cap_ex",
+	"ctrl17",
+	"get_rev",
 #if IS_ENABLED(CONFIG_TCPC_SC2150)
 	"get_sink_cap_ext",
 	"get_source_info",
@@ -71,7 +74,7 @@ static const char * const pd_data_msg_name[] = {
 	"data9",
 	"dataA",
 	"dataB",
-	"dataC",
+	"rev",
 	"dataD",
 	"dataE",
 	"vdm",
@@ -101,6 +104,7 @@ static const char *const pd_ext_msg_name[] = {
 	"pps_status",
 	"ci",
 	"cc",
+	"snk_cap_ex",
 };
 
 static inline void print_ext_msg_event(struct tcpc_device *tcpc, uint8_t msg)

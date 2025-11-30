@@ -696,6 +696,9 @@ void pd_dpm_snk_standby_power(struct pd_port *pd_port)
 		/* Case6 Decreasing the Current, t1 i = new */
 		ma = pd_port->request_i_new;
 		type = TCP_VBUS_CTRL_STANDBY;
+	} else if (pd_port->request_v_new == pd_port->request_v) {
+		ma = standby_curr;
+		type = TCP_VBUS_CTRL_STANDBY;
 	}
 
 	if (ma >= 0) {
@@ -1760,10 +1763,17 @@ int pd_dpm_send_sink_cap_ext(struct pd_port *pd_port)
 }
 #endif /* CONFIG_TCPC_SC2150 */
 
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+int pd_dpm_send_sink_cap_ext(struct pd_port *pd_port)
+{
+	return pd_send_sop_ext_msg(pd_port, PD_EXT_SINK_CAP_EXT,
+		PD_SKEDB_SIZE, &pd_port->snk_cap_ext);
+}
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
+
 #if CONFIG_USB_PD_REV30_BAT_CAP_LOCAL
 static const struct pd_battery_capabilities c_invalid_bcdb = {
-	0xffff, 0, PD_BCDB_BAT_CAP_NOT_PRESENT,
-	PD_BCDB_BAT_CAP_NOT_PRESENT, PD_BCDB_BAT_TYPE_INVALID
+	0xffff, 0, 0, 0, PD_BCDB_BAT_TYPE_INVALID
 };
 
 int pd_dpm_send_battery_cap(struct pd_port *pd_port)
@@ -1969,6 +1979,20 @@ int pd_dpm_send_country_info(struct pd_port *pd_port)
 		 cidb_size, &cidb);
 }
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
+
+#if CONFIG_USB_PD_REV30_REVISION_LOCAL
+int pd_dpm_send_revision(struct pd_port *pd_port)
+{
+	uint32_t rmdo;
+	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
+
+	rmdo = RMDO(PD_REV_MAJOR, PD_REV_MINOR, PD_VER_MAJOR, PD_VER_MINOR);
+	DPM_INFO("send_revision:0x%08x\n", rmdo);
+
+	return pd_send_sop_data_msg(pd_port, PD_DATA_REVISION,
+		PD_RMDO_SIZE, &rmdo);
+}
+#endif	/* CONFIG_USB_PD_REV30_REVISION_LOCAL */
 
 #if CONFIG_USB_PD_REV30_ALERT_REMOTE
 void pd_dpm_inform_alert(struct pd_port *pd_port)

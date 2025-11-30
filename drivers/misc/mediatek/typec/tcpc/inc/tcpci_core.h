@@ -536,7 +536,10 @@ struct tcpc_device {
 	enum tcpc_cable_type typec_cable_type;
 #endif /* CONFIG_CABLE_TYPE_DETECTION */
 	bool typec_otp;
-	struct completion alert_done;
+#ifdef CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT
+ 	struct completion alert_done;
+	bool is_rx_event;
+#endif /* CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT */
 	long long alert_max_access_time;
 };
 
@@ -566,6 +569,25 @@ static inline uint8_t pd_get_rev(struct pd_port *pd_port, uint8_t sop_type)
 static inline bool pd_check_rev30(struct pd_port *pd_port)
 {
 	return pd_get_rev(pd_port, TCPC_TX_SOP) >= PD_REV30;
+}
+
+static inline uint8_t pd_get_svdm_ver(struct pd_port *pd_port, uint8_t sop_type)
+{
+	uint8_t svdm_ver;
+
+	svdm_ver = (PD_REV_MAJOR >= 3 && PD_REV_MINOR >= 1 &&
+		PD_VER_MAJOR >= 1 && PD_VER_MINOR >= 6) ?
+		SVDM_VER21 : SVDM_VER20;;
+
+	if (pd_get_rev(pd_port, sop_type) < PD_REV30)
+		return SVDM_VER10;
+
+#if CONFIG_USB_PD_REV30_SYNC_SVDM_VER
+	svdm_ver = sop_type == TCPC_TX_SOP ?
+		pd_port->svdm_version[0] : pd_port->svdm_version[1];
+#endif	/* CONFIG_USB_PD_REV30_SYNC_SVDM_VER */
+
+	return svdm_ver;
 }
 #endif /* CONFIG_USB_POWER_DELIVERY */
 

@@ -37,6 +37,7 @@
 #define PD_VERDO_SIZE   1
 #endif /* CONFIG_TCPC_SC2150 */
 #define PD_ADO_SIZE		1
+#define PD_RMDO_SIZE	1
 
 /*
  * Battery Status Data Object (BSDO)
@@ -101,6 +102,17 @@
 #define ADO_GET_STATUS_ONCE_MASK    ADO(\
 		ADO_ALERT_BAT_CHANGED|ADO_ALERT_SRC_IN_CHANGED,\
 		0xff, 0xff)
+/*
+ * Revision Message Data Object (RMDO)
+ * ----------
+ * <31:28>  :: Revision.major
+ * <27:24>  :: Revision.minor
+ * <23:20>  :: Version.major
+ * <19:16>  :: Version.minor
+ */
+#define RMDO(rev_major, rev_minor, ver_major, ver_minor)	\
+	(((rev_major) << 28) | ((rev_minor) << 24) | ((ver_major) << 20) |\
+	((ver_minor) << 16))
 
 /* PD30 Extend Message Data Object */
 
@@ -210,6 +222,34 @@ struct pd_source_cap_ext {
 	uint8_t	batteries;
 	uint8_t	source_pdp;
 	uint8_t	epr_source_pdp;
+};
+
+/* SKEDB, Sink_Capabilities_Extended */
+
+#define PD_SKEDB_SIZE	24
+
+#define PD_SKEDB_BATTERIES(swap_nr, fixed_nr)	\
+	(swap_nr << 4 | fixed_nr)
+
+struct pd_sink_cap_ext {
+	uint16_t	vid;
+	uint16_t	pid;
+	uint32_t	xid;
+	uint8_t	fw_ver;
+	uint8_t	hw_ver;
+	uint8_t	skedb_ver;
+	uint8_t	load_step;
+	uint16_t	sink_load_char;
+	uint8_t	compliance;
+	uint8_t	touch_temp;
+	uint8_t	battery_info;
+	uint8_t	sink_modes;
+	uint8_t	sink_min_pdp;
+	uint8_t	sink_op_pdp;
+	uint8_t sink_max_pdp;
+	uint8_t epr_sink_min_pdp;
+	uint8_t epr_sink_op_pdp;
+	uint8_t epr_sink_max_pdp;
 };
 
 /* GBSDB, Get_Battery_Status */

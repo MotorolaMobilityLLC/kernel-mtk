@@ -252,12 +252,13 @@ static void pd_parse_log_src_cap_ext(struct pd_source_cap_ext *cap)
 		cap->peak_current[1],
 		cap->peak_current[2]);
 
-	pr_info("%s touch_temp = %d, source_inputs = 0x%x, batteries = 0x%x, source_pdp = 0x%x\n",
+	pr_info("%s touch_temp = %d, source_inputs = 0x%x, batteries = 0x%x, source_pdp = 0x%x, epr_source_pdp = 0x%x\n",
 		__func__,
 		cap->touch_temp,
 		cap->source_inputs,
 		cap->batteries,
-		cap->source_pdp);
+		cap->source_pdp,
+		cap->epr_source_pdp);
 }
 #endif /* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL	*/
 
@@ -290,6 +291,26 @@ static inline void pd_parse_pdata_src_cap_ext(
 		pr_err("%s get sink-cap-ext fail\n", __func__);
 #endif /* CONFIG_TCPC_SC2150 */
 
+}
+
+static inline void pd_parse_pdata_snk_cap_ext(
+	struct pd_port *pd_port, struct device_node *np)
+{
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	int ret = 0;
+
+	ret = of_property_read_u32_array(np, "pd,sink-cap-ext",
+		(u32 *) &pd_port->snk_cap_ext,
+		sizeof(struct pd_sink_cap_ext)/4);
+
+	if (ret < 0)
+		pr_err("%s get sink-cap-ext fail\n", __func__);
+
+#if CONFIG_USB_PD_REV30_BAT_INFO
+	pd_port->snk_cap_ext.battery_info =
+		PD_SKEDB_BATTERIES(0, pd_port->bat_nr);
+#endif	/* CONFIG_USB_PD_REV30_BAT_INFO */
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 }
 
 static inline void pd_parse_pdata_mfrs(
@@ -341,6 +362,11 @@ static inline void pd_parse_pdata_mfrs(
 	pd_port->src_cap_ext.vid = vid;
 	pd_port->src_cap_ext.pid = pid;
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
+
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	pd_port->snk_cap_ext.vid = vid;
+	pd_port->snk_cap_ext.pid = pid;
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 
 	pd_port->id_vdos[0] &= ~PD_IDH_VID_MASK;
 	pd_port->id_vdos[0] |= PD_IDH_VID(vid);
@@ -442,6 +468,7 @@ static int pd_parse_pdata(struct pd_port *pd_port)
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_AUTHORITY */
 
 		pd_parse_pdata_src_cap_ext(pd_port, np);
+		pd_parse_pdata_snk_cap_ext(pd_port, np);
 		pd_parse_pdata_mfrs(pd_port, np);
 	}
 
@@ -889,6 +916,21 @@ static void pd_init_spec_revision(struct pd_port *pd_port)
 #endif	/* CONFIG_USB_PD_REV30_SYNC_SPEC_REV */
 }
 
+static void pd_init_svdm_version(struct pd_port *pd_port)
+{
+#if CONFIG_USB_PD_REV30_SYNC_SVDM_VER
+	uint8_t ver = SVDM_VER10;
+
+	if (pd_port->tcpc->tcpc_flags & TCPC_FLAGS_PD_REV30)
+		ver = (PD_REV_MAJOR >= 3 && PD_REV_MINOR >= 1 &&
+			PD_VER_MAJOR >= 1 && PD_VER_MINOR >= 6) ?
+			SVDM_VER21 : SVDM_VER20;
+
+	pd_port->svdm_version[0] = ver;
+	pd_port->svdm_version[1] = ver;
+#endif	/* CONFIG_USB_PD_REV30_SYNC_SVDM_VER */
+}
+
 int pd_init_message_hdr(struct pd_port *pd_port, bool act_as_sink)
 {
 	if (act_as_sink) {
@@ -902,6 +944,7 @@ int pd_init_message_hdr(struct pd_port *pd_port, bool act_as_sink)
 	}
 
 	pd_init_spec_revision(pd_port);
+	pd_init_svdm_version(pd_port);
 	return pd_update_msg_header(pd_port);
 }
 
@@ -998,6 +1041,7 @@ int pd_reset_local_hw(struct pd_port *pd_port)
 
 	pd_set_data_role(pd_port, dr);
 	pd_init_spec_revision(pd_port);
+	pd_init_svdm_version(pd_port);
 	pd_dpm_notify_pe_hardreset(pd_port);
 	PE_DBG("reset_local_hw\n");
 
@@ -1095,13 +1139,14 @@ int pd_send_message(struct pd_port *pd_port, uint8_t sop_type,
 	/* ext-cmd 15 is reserved */
 	if ((count > 0) && (msg == PD_DATA_VENDOR_DEF) && !ext)
 #else
-	if ((count > 0) && (msg == PD_DATA_VENDOR_DEF))
+	if ((count > 0) && !ext && (msg == PD_DATA_VENDOR_DEF))
 #endif /* CONFIG_TCPC_SC2150 */
 		type = PD_TX_STATE_WAIT_CRC_VDM;
 
 	pe_data->msg_id_tx[sop_type] = (msg_id+1) % PD_MSG_ID_MAX;
 
 	pd_notify_pe_transmit_msg(pd_port, type);
+	pd_port->last_sop_type = sop_type;
 	ret = tcpci_transmit(pd_port->tcpc, sop_type, msg_hdr, data);
 	if (ret < 0)
 		PD_ERR("[SendMsg] Failed, %d\n", ret);
@@ -1244,7 +1289,7 @@ int pd_send_svdm_request(struct pd_port *pd_port,
 #endif	/* CONFIG_USB_PD_STOP_SEND_VDM_IF_RX_BUSY */
 
 	int ret;
-	uint8_t ver = SVDM_REV10;
+	uint8_t ver;
 	uint32_t payload[PD_DATA_OBJ_SIZE];
 
 	if (cnt > VDO_MAX_NR) {
@@ -1252,8 +1297,7 @@ int pd_send_svdm_request(struct pd_port *pd_port,
 		return -EINVAL;
 	}
 
-	if (pd_get_rev(pd_port, sop_type) >= PD_REV30)
-		ver = SVDM_REV20;
+	ver = pd_get_svdm_ver(pd_port, sop_type);
 
 	payload[0] = VDO_S(svid, ver, CMDT_INIT, vdm_cmd, obj_pos);
 	memcpy(&payload[1], data_obj, sizeof(uint32_t) * cnt);
@@ -1285,14 +1329,13 @@ int pd_reply_svdm_request(struct pd_port *pd_port,
 	int rv;
 	uint32_t alert_status;
 #endif	/* CONFIG_USB_PD_STOP_REPLY_VDM_IF_RX_BUSY */
-	uint8_t ver = SVDM_REV10;
+	uint8_t ver;
 	uint32_t payload[PD_DATA_OBJ_SIZE];
 	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
 
 	PD_BUG_ON(cnt > VDO_MAX_NR);
 
-	if (pd_check_rev30(pd_port))
-		ver = SVDM_REV20;
+	ver = pd_get_svdm_ver(pd_port, TCPC_TX_SOP);
 
 	payload[0] = VDO_REPLY(ver, reply, pd_get_msg_vdm_hdr(pd_port));
 

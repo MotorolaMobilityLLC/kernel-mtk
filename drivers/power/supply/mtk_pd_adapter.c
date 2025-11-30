@@ -43,6 +43,8 @@
 /* PD */
 #include <tcpm.h>
 #include "adapter_class.h"
+#include "charger_class.h"
+#include "mtk_charger_algorithm_class.h"
 
 #define PHY_MODE_DPDMPULLDOWN_SET 3
 #define PHY_MODE_DPDMPULLDOWN_CLR 4
@@ -173,12 +175,32 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 	struct mtk_pd_adapter_info *pinfo;
 	struct adapter_device *adapter;
 	int ret = 0, sink_mv, sink_ma;
+	static struct charger_device *chg1_dev = NULL;
+	static struct charger_device *primary_dvchg = NULL;
 
 	pinfo = container_of(pnb, struct mtk_pd_adapter_info, pd_nb);
 	adapter = pinfo->adapter_dev;
 
 	pr_notice("PD charger event:%d %d\n", (int)event,
 		(int)noti->pd_state.connected);
+	if (chg1_dev == NULL) {
+		chg1_dev = get_charger_by_name("primary_chg");
+		if (chg1_dev == NULL || IS_ERR(chg1_dev)) {
+			pr_err("%s Couldn't get chg1_dev\n", __func__);
+			ret = -1;
+		} else {
+			pr_err("%s Found chg1_dev!!!\n", __func__);
+		}
+	}
+	if (primary_dvchg == NULL) {
+		primary_dvchg = get_charger_by_name("primary_dvchg");
+		if (primary_dvchg == NULL || IS_ERR(primary_dvchg)) {
+			pr_err("%s Couldn't get primary_dvchg\n", __func__);
+			ret = -1;
+	  	} else {
+			pr_err("%s Found primary_dvchg!!!\n", __func__);
+	  	}
+	}
 
 	switch (event) {
 	case TCP_NOTIFY_PD_STATE:
@@ -280,6 +302,51 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 				pinfo->enable_pp = false;
 				pd_adapter_enable_power_path(false);
 			}
+		}
+		if ((sink_ma <= 100) && (sink_mv == 5000) && (noti->vbus_state.type == TCP_VBUS_CTRL_PD_REQUEST)) {
+			ret = charger_dev_enable_hz(chg1_dev, true);
+			pr_err("%s TCP_NOTIFY_SINK_VBUS hiz set!!!\n", __func__);
+			{
+				struct chg_alg_device *alg;
+
+				alg = get_chg_alg_by_name("pe5");
+				if (NULL != alg) {
+					chg_alg_set_prop(alg, ALG_PE5_STOP, true);
+				}
+			}
+		} else if ((sink_ma <= 100) && (sink_mv == 5000)
+			&& ((noti->vbus_state.type == TCP_VBUS_CTRL_PD_STANDBY)
+			|| (noti->vbus_state.type == TCP_VBUS_CTRL_PD_STANDBY_UP)
+			|| (noti->vbus_state.type == TCP_VBUS_CTRL_PD_STANDBY_DOWN))) {
+			ret = charger_dev_enable_hz(chg1_dev, true);
+			pr_err("%s TCP_NOTIFY_SINK_VBUS hiz set 02!!!\n", __func__);
+		} else if ((sink_ma == 0) && (sink_mv == 0)) {
+			break;
+		} else {
+
+			static struct power_supply *chg_psy = NULL;
+			union power_supply_propval prop;
+
+			chg_psy = power_supply_get_by_name("primary_chg");
+			if (chg_psy == NULL || IS_ERR(chg_psy)) {
+				pr_err("%s Couldn't get chg_psy\n", __func__);
+				ret = -1;
+			} else {
+				prop.intval = true;
+				ret = power_supply_set_property(chg_psy, POWER_SUPPLY_PROP_VOLTAGE_MIN, &prop);
+			}
+			ret = charger_dev_enable_hz(chg1_dev, false);
+			pr_err("%s TCP_NOTIFY_SINK_VBUS hiz false sink_ma=%d\n", __func__, sink_ma);
+		}
+		break;
+	case TCP_NOTIFY_SOURCE_VBUS:
+		pr_info("%s: source vbus %dmV %dmA type(0x%02x) %d\n", __func__,
+			noti->vbus_state.mv, noti->vbus_state.ma, noti->vbus_state.type);
+		if (noti->vbus_state.mv == 5000) {
+			charger_dev_is_enable_otg(primary_dvchg, true);
+			charger_dev_is_enable_acdrv1(primary_dvchg, true);
+			//mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
+			charger_dev_enable_otg(chg1_dev, true);
 		}
 		break;
 	}

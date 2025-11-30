@@ -403,7 +403,10 @@ struct tcpc_device *tcpc_device_register(struct device *parent,
 	for (i = 0; i < TCP_NOTIFY_IDX_NR; i++)
 		srcu_init_notifier_head(&tcpc->evt_nh[i]);
 
-	init_completion(&tcpc->alert_done);
+#ifdef CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT
+ 	init_completion(&tcpc->alert_done);
+	tcpc->is_rx_event = false;
+#endif /* CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT */
 	mutex_init(&tcpc->access_lock);
 	mutex_init(&tcpc->typec_lock);
 	mutex_init(&tcpc->timer_lock);

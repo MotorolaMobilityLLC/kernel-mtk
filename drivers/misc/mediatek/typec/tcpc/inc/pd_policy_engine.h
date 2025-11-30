@@ -234,6 +234,9 @@ enum pd_pe_state {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
 	PE_SNK_GET_SOURCE_CAP_EXT,
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	PE_SNK_GIVE_SINK_CAP_EXT,
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 #if CONFIG_USB_PD_REV30_STATUS_REMOTE
 	PE_SNK_GET_SOURCE_STATUS,
 #endif	/* CONFIG_USB_PD_REV30_STATUS_REMOTE */
@@ -299,6 +302,9 @@ enum pd_pe_state {
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
 	PE_DR_SRC_GET_SOURCE_CAP_EXT,
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	PE_DR_SRC_GIVE_SINK_CAP_EXT,
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 #endif	/* CONFIG_USB_PD_REV30 */
 #endif	/* CONFIG_USB_PD_PR_SWAP */
 
@@ -406,6 +412,9 @@ enum pd_pe_state {
 #if CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL
 	PE_GIVE_COUNTRY_INFO,
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
+#if CONFIG_USB_PD_REV30_REVISION_LOCAL
+	PE_GIVE_REVISION,
+#endif	/* CONFIG_USB_PD_REV30_REVISION_LOCAL */
 	PE_VDM_NOT_SUPPORTED,
 #if IS_ENABLED(CONFIG_TCPC_SC2150)
 	PE_GIVE_REVISION,
@@ -620,6 +629,10 @@ void pe_snk_get_source_cap_ext_entry(
 void pe_snk_get_source_cap_ext_exit(
 	struct pd_port *pd_port);
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+void pe_snk_give_sink_cap_ext_entry(
+	struct pd_port *pd_port);
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 #if CONFIG_USB_PD_REV30_STATUS_REMOTE
 void pe_snk_get_source_status_entry(
 	struct pd_port *pd_port);
@@ -728,6 +741,10 @@ void pe_dr_snk_give_source_cap_entry(
 void pe_dr_snk_give_source_cap_ext_entry(
 	struct pd_port *pd_port);
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL */
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+void pe_dr_src_give_sink_cap_ext_entry(
+	struct pd_port *pd_port);
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 #if CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
 void pe_dr_src_get_source_cap_ext_entry(
 	struct pd_port *pd_port);
@@ -926,6 +943,10 @@ void pe_get_country_info_exit(
 void pe_give_country_info_entry(
 	struct pd_port *pd_port);
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
+#if CONFIG_USB_PD_REV30_REVISION_LOCAL
+void pe_give_revision_entry(
+	struct pd_port *pd_port);
+#endif	/* CONFIG_USB_PD_REV30_REVISION_LOCAL */
 void pe_vdm_not_supported_entry(
 	struct pd_port *pd_port);
 #endif /* CONFIG_USB_PD_REV30 */

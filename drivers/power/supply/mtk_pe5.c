@@ -942,7 +942,11 @@ static int pe50_set_dvchg_charging(struct pe50_algo_info *info, bool en)
 		return ret;
 	if (!en) {
 		pe50_hal_set_cv(info->alg, CHG1, data->cv_limit * 1000);
-		ret = pe50_hal_enable_hz(info->alg, CHG1, false);
+		if (!data->is_commomcharger_stop) {
+			ret = pe50_hal_enable_hz(info->alg, CHG1, false);
+		} else {
+			data->is_commomcharger_stop = false;
+		}
 		if (ret < 0) {
 			PE50_ERR("disable swchg hz fail(%d)\n", ret);
 			return ret;
@@ -1168,6 +1172,7 @@ static inline void pe50_init_algo_data(struct pe50_algo_info *info)
 	data->is_vbat_over_cv = false;
 	data->ignore_ibusucpf = false;
 	data->force_ta_cv = false;
+	data->is_commomcharger_stop = false;
 	data->vbat_cv = desc->vbat_cv;
 	data->vbat_cv_no_ircmp = desc->vbat_cv;
 	data->cv_lower_bound = desc->vbat_cv - PE50_CV_LOWER_BOUND_GAP;
@@ -1439,6 +1444,9 @@ static int pe50_calculate_rcable_by_swchg(struct pe50_algo_info *info)
 		data->r_cable_by_swchg = precise_div(abs(vbus2 - vbus1) * 1000,
 					     abs(ibus2 - ibus1));
         PE50_INFO("r_cable_by_swchg=%d", data->r_cable_by_swchg);
+	PE50_ERR("%s: (%d)\n", __func__, data->is_commomcharger_stop);
+	if (data->is_commomcharger_stop)
+		return 0;
 	pe50_hal_enable_charging(info->alg, CHG1, false);
 
 	ret = pe50_hal_set_aicr(info->alg, CHG1, aicr);
@@ -1636,6 +1644,9 @@ static int pe50_algo_init_with_ta_cv(struct pe50_algo_info *info)
 	if (ret < 0) {
 		PE50_ERR("calculate rcable by swchg fail(%d)\n", ret);
 	}
+
+	if (data->is_commomcharger_stop)
+		goto out;
 
 	ret = pe50_hal_enable_hz(info->alg, CHG1, true);
 	if (ret < 0) {
@@ -4006,6 +4017,9 @@ int pe50_set_prop(struct chg_alg_device *alg,
 		break;
 	case ALG_REF_VBAT:
 		data->ref_vbat = value;
+		break;
+	case ALG_PE5_STOP:
+		data->is_commomcharger_stop = value;
 		break;
 	default:
 		break;

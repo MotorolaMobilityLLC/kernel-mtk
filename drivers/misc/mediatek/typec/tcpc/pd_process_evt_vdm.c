@@ -211,7 +211,8 @@ static bool pd_vdm_state_transit(
 	if (vdm_cmdt == CMDT_INIT) {	/* Recv */
 		if (!vdm_is_state_transition_available(
 			pd_port, true, state_transition)) {
-			PE_TRANSIT_STATE(pd_port, PE_UFP_VDM_SEND_NAK);
+			if (PD_VDO_CMD(pd_port->curr_vdm_hdr) != CMD_ATTENTION)
+				PE_TRANSIT_STATE(pd_port, PE_UFP_VDM_SEND_NAK);
 			return true;
 		}
 
@@ -238,6 +239,10 @@ enum {
 	VDM_STATE_TRANSIT_CHECK_TX = 3,
 };
 
+#ifndef MIN
+#define MIN(a, b)       ((a < b) ? (a) : (b))
+#endif
+
 static bool pe_check_vdm_state_transit_valid(
 	struct pd_port *pd_port, uint8_t transit_type, uint8_t *vdm_cmdt,
 	const struct vdm_state_transition *state_transition)
@@ -246,6 +251,7 @@ static bool pe_check_vdm_state_transit_valid(
 	uint8_t vdm_cmd;
 	uint8_t cable_cmd;
 	uint8_t vdm_cmd_flags;
+	uint8_t svdm_ver;
 	uint32_t curr_vdm_hdr;
 
 	curr_state = pd_port->pe_state_curr;
@@ -263,7 +269,7 @@ static bool pe_check_vdm_state_transit_valid(
 	curr_vdm_hdr = pd_port->curr_vdm_hdr;
 
 	vdm_cmd = PD_VDO_CMD(curr_vdm_hdr);
-	*vdm_cmdt = PD_VDO_CMDT(curr_vdm_hdr);
+	svdm_ver = PD_VDO_VER(curr_vdm_hdr);
 
 	if (state_transition->vdm_cmd != vdm_cmd)
 		return false;
@@ -277,6 +283,15 @@ static bool pe_check_vdm_state_transit_valid(
 	if (cable_cmd && curr_state != state_transition->vdm_request_state)
 		return false;
 
+#if CONFIG_USB_PD_REV30_SYNC_SVDM_VER
+	if (vdm_cmd == CMD_DISCOVER_IDENT)
+	{
+		if (transit_type == VDM_STATE_TRANSIT_SOP_CMD)
+			pd_port->svdm_version[0] = MIN(pd_port->svdm_version[0], svdm_ver);
+		else if (transit_type == VDM_STATE_TRANSIT_SOP_PRIME_CMD)
+			pd_port->svdm_version[1] = MIN(pd_port->svdm_version[1], svdm_ver);
+	}
+#endif	/* CONFIG_USB_PD_REV30_SYNC_SVDM_VER */
 	return true;
 }
 
@@ -843,7 +858,8 @@ static inline void pd_parse_tcp_dpm_evt_uvdm(struct pd_port *pd_port)
 #if CONFIG_USB_PD_SVDM
 	if (pd_check_rev30(pd_port) &&
 		(pd_port->uvdm_data[0] & VDO_SVDM_TYPE))
-		pd_port->uvdm_data[0] |= VDO_SVDM_VERS(SVDM_REV20);
+		pd_port->uvdm_data[0] |= VDO_SVDM_VERS(pd_get_svdm_ver(pd_port,
+			pd_get_svdm_ver(pd_port, TCPC_TX_SOP)));
 #endif	/* CONFIG_USB_PD_SVDM */
 }
 #endif	/* CONFIG_USB_PD_CUSTOM_VDM */

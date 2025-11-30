@@ -194,6 +194,7 @@ struct pe50_algo_data {
 	int mmi_therm_vol_thres;
 	int mmi_therm_step;
 	int mmi_max_ibat;
+	bool is_commomcharger_stop;
 };
 
 /* Setting from dtsi */

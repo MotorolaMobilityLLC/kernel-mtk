@@ -80,7 +80,7 @@ static inline bool dc_dfp_send_en_unlock(struct pd_port *pd_port,
 	if (pd_port->pe_data.dc_pps_mode) {
 		pd_port->uvdm_data[0] = VDO_S(
 			USB_VID_DIRECTCHARGE,
-			SVDM_REV20,
+			SVDM_VER20,
 			CMDT_INIT,
 			RTDC_SVDM_PPS_AUTHORIZATION,
 			0);

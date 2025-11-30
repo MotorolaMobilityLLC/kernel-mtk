@@ -1531,6 +1531,9 @@ static inline bool typec_attached_snk_cc_change(struct tcpc_device *tcpc)
 			return true;
 #endif	/* CONFIG_TYPEC_CAP_CUSTOM_HV */
 
+#if IS_ENABLED(CONFIG_USB_POWER_DELIVERY)
+	if (!tcpc->pd_port.pe_data.pd_connected)
+#endif /* CONFIG_USB_POWER_DELIVERY */
 		tcpci_sink_vbus(tcpc,
 				TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SINK_5V, -1);
 	}

@@ -165,6 +165,14 @@ static inline bool pd_process_ctrl_msg(
 			return true;
 		break;
 #endif	/* CONFIG_USB_PD_REV30_STATUS_LOCAL */
+
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	case PD_CTRL_GET_SINK_CAP_EXT:
+		if (PE_MAKE_STATE_TRANSIT_SINGLE(
+			PE_SNK_READY, PE_SNK_GIVE_SINK_CAP_EXT))
+			return true;
+		break;
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
 #endif	/* CONFIG_USB_PD_REV30 */
 
 	default:

@@ -299,10 +299,10 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 		dev_info(dev, "primary_charger, vbus turn %s\n", is_on ? "on" : "off");
 		if (is_on) {
 			dev_err(dev, "%s : enable otg on charger pump\n", __func__);
-			charger_dev_is_enable_otg(primary_dvchg, true);
-			charger_dev_is_enable_acdrv1(primary_dvchg, true);
+			/*charger_dev_is_enable_otg(primary_dvchg, true);
+			charger_dev_is_enable_acdrv1(primary_dvchg, true);*/
 			mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
-			charger_dev_enable_otg(primary_charger, true);
+			//charger_dev_enable_otg(primary_charger, true);
 			if(extcon->vbus_cur)
 				charger_dev_set_boost_current_limit(primary_charger,extcon->vbus_cur);
 			dev_info(dev, "vbus_cur:%d\n",extcon->vbus_cur);
@@ -438,6 +438,7 @@ static int mtk_extcon_tcpc_notifier(struct notifier_block *nb,
 	case TCP_NOTIFY_DR_SWAP:
 		dev_info(dev, "%s dr_swap, new role=%d\n",
 				__func__, noti->swap_state.new_role);
+		DelayforSwap:
 		if (noti->swap_state.new_role == PD_ROLE_UFP &&
 				extcon->c_role != USB_ROLE_DEVICE) {
 			dev_info(dev, "switch role to device\n");
@@ -448,6 +449,10 @@ static int mtk_extcon_tcpc_notifier(struct notifier_block *nb,
 			dev_info(dev, "switch role to host\n");
 			mtk_usb_extcon_set_role(extcon, USB_ROLE_NONE);
 			mtk_usb_extcon_set_role(extcon, USB_ROLE_HOST);
+		} else {
+			dev_info(dev, "%s: Delay for swap...\n", __func__);
+			msleep(500);
+			goto DelayforSwap;
 		}
 		break;
 	}

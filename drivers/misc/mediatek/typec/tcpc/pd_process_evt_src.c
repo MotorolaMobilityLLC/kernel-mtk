@@ -76,14 +76,14 @@ static inline bool pd_process_ctrl_msg_good_crc(
 }
 
 static inline bool pd_process_ctrl_msg_get_sink_cap(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+	struct pd_port *pd_port, uint8_t next)
 {
 	if (pd_port->pe_state_curr != PE_SRC_READY)
 		return false;
 
 #if CONFIG_USB_PD_PR_SWAP
 	if (pd_port->dpm_caps & DPM_CAP_LOCAL_DR_POWER) {
-		PE_TRANSIT_STATE(pd_port, PE_DR_SRC_GIVE_SINK_CAP);
+		PE_TRANSIT_STATE(pd_port, next);
 		return true;
 	}
 #endif	/* CONFIG_USB_PD_PR_SWAP */
@@ -134,7 +134,7 @@ static inline bool pd_process_ctrl_msg(
 		break;
 
 	case PD_CTRL_GET_SINK_CAP:
-		if (pd_process_ctrl_msg_get_sink_cap(pd_port, pd_event))
+		if (pd_process_ctrl_msg_get_sink_cap(pd_port, PE_DR_SRC_GIVE_SINK_CAP))
 			return true;
 		break;
 
@@ -176,6 +176,15 @@ static inline bool pd_process_ctrl_msg(
 			return true;
 		break;
 #endif	/* CONFIG_USB_PD_REV30_PPS_SOURCE */
+
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+	case PD_CTRL_GET_SINK_CAP_EXT:
+		if (pd_process_ctrl_msg_get_sink_cap(
+			pd_port, PE_DR_SRC_GIVE_SINK_CAP_EXT))
+			return true;
+		break;
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
+
 #endif	/* CONFIG_USB_PD_REV30 */
 
 	default:

@@ -140,6 +140,9 @@ static inline bool pd_process_data_msg_bist(
 
 	case BDO_MODE_CARRIER2:
 		PE_DBG("bist_cm2\n");
+		/* Stop sinking to help eye diagram case. */
+		if (pd_port->power_role == PD_ROLE_SINK)
+			tcpci_sink_vbus(tcpc, TCP_VBUS_CTRL_PD, TCPC_VBUS_SINK_5V, 0);
 		PE_TRANSIT_STATE(pd_port, PE_BIST_CARRIER_MODE_2);
 		pd_noitfy_pe_bist_mode(pd_port, PD_BIST_MODE_DISABLE);
 		return true;
@@ -308,6 +311,14 @@ static inline bool pd_process_ctrl_msg(
 		}
 		break;
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_CODE_LOCAL */
+
+#if CONFIG_USB_PD_REV30_REVISION_LOCAL
+	case PD_CTRL_GET_REVISION:
+		ret = PE_MAKE_STATE_TRANSIT_SINGLE(
+			pe_get_curr_ready_state(pd_port),
+			PE_GIVE_REVISION);
+		break;
+#endif	/* CONFIG_USB_PD_REV30_REVISION_LOCAL */
 
 	case PD_CTRL_NOT_SUPPORTED:
 		pd_cancel_dpm_reaction(pd_port);

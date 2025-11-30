@@ -268,6 +268,19 @@ void pe_snk_get_source_cap_ext_exit(struct pd_port *pd_port)
 #endif	/* CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE */
 
 /*
+ * [PD3.1] Figure 8-150 Sink Give Sink Capabilities Extended State Diagram
+ */
+
+#if CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL
+void pe_snk_give_sink_cap_ext_entry(struct pd_port *pd_port)
+{
+	PE_STATE_WAIT_TX_SUCCESS(pd_port);
+
+	pd_dpm_send_sink_cap_ext(pd_port);
+}
+#endif	/* CONFIG_USB_PD_REV30_SNK_CAP_EXT_LOCAL */
+
+/*
  * [PD3.0] Figure 8-79 Sink Port Get Source Status State Diagram
  */
 

@@ -132,6 +132,7 @@ enum chg_alg_props {
 	ALG_LOG_LEVEL,
 	ALG_REF_VBAT,
 	ALG_WLC_STATE,
+	ALG_PE5_STOP,
 };
 
 struct chg_alg_ops {
