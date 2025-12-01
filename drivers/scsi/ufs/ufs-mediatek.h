@@ -15,7 +15,7 @@
 #include "ufshcd.h"
 
 #ifdef CONFIG_UFSFEATURE
-#include "ufsfeature.h"
+#include "V3/ufsfeature.h"
 #endif
 
 /*

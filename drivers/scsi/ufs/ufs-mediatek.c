@@ -1164,7 +1164,9 @@ static void ufs_mtk_trace_vh_compl_command_vend_ss(struct ufs_hba *hba,
 	int result = 0;
 	int scsi_status;
 	int ocs;
+#if !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
+#endif
 
 	if (!cmd)
 		return;
@@ -1183,6 +1185,9 @@ static void ufs_mtk_trace_vh_compl_command_vend_ss(struct ufs_hba *hba,
 			scsi_status = be32_to_cpu(header->dword_1) &
 				MASK_SCSI_STATUS;
 			if (scsi_status == SAM_STAT_GOOD) {
+#if defined(CONFIG_UFSHID_V3)
+				ufsf_upiu_check_for_ccd(lrbp);
+#else
 				ufsf_hpb_noti_rb(ufsf, lrbp);
 				if (ufsf_upiu_check_for_ccd(lrbp)) {
 					ufsf_copy_sense_data(lrbp);
@@ -1197,16 +1202,18 @@ static void ufs_mtk_trace_vh_compl_command_vend_ss(struct ufs_hba *hba,
 					 */
 					result |= GOOD_CCD;
 				}
+#endif
 			}
 		}
 	}
-#if defined(CONFIG_UFSHID)
+#if defined(CONFIG_UFSHID) && !defined(CONFIG_UFSHID_V3)
 	/* Check if it is the last request to be completed */
 	if (!out_tasks && !out_reqs)
 		schedule_work(&ufsf->on_idle_work);
 #endif
 }
 
+#if !defined(CONFIG_UFSHID_V3)
 static void ufs_mtk_trace_vh_send_tm_command_vend_ss(void *data, struct ufs_hba *hba,
 			int tag, int str_t)
 {
@@ -1215,6 +1222,7 @@ static void ufs_mtk_trace_vh_send_tm_command_vend_ss(void *data, struct ufs_hba 
 	if (str_t == UFS_TM_COMP)
 		ufsf_reset_lu(ufsf);
 }
+#endif
 
 static void ufs_mtk_trace_vh_update_sdev_vend_ss(void *data, struct scsi_device *sdev)
 {
@@ -1225,6 +1233,7 @@ static void ufs_mtk_trace_vh_update_sdev_vend_ss(void *data, struct scsi_device 
 		ufsf_slave_configure(ufsf, sdev);
 }
 
+#if !defined(CONFIG_UFSHID_V3)
 static void ufs_mtk_trace_vh_send_command_vend_ss(void *data, struct ufs_hba *hba,
 				struct ufshcd_lrb *lrbp)
 {
@@ -1232,6 +1241,7 @@ static void ufs_mtk_trace_vh_send_command_vend_ss(void *data, struct ufs_hba *hb
 
 	ufsf_hid_acc_io_stat(ufsf, lrbp);
 }
+#endif
 #endif
 
 static void ufs_mtk_trace_vh_send_command(void *data, struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
@@ -1395,21 +1405,25 @@ static struct tracepoints_table interests[] = {
 		.func = ufs_mtk_trace_vh_prepare_command_vend_ss,
 		.vend = UFS_VEND_SAMSUNG
 	},
+#if !defined(CONFIG_UFSHID_V3)
 	{
 		.name = "android_vh_ufs_send_tm_command",
 		.func = ufs_mtk_trace_vh_send_tm_command_vend_ss,
 		.vend = UFS_VEND_SAMSUNG
 	},
+#endif
 	{
 		.name = "android_vh_ufs_update_sdev",
 		.func = ufs_mtk_trace_vh_update_sdev_vend_ss,
 		.vend = UFS_VEND_SAMSUNG
 	},
+#if !defined(CONFIG_UFSHID_V3)
 	{
 		.name = "android_vh_ufs_send_command",
 		.func = ufs_mtk_trace_vh_send_command_vend_ss,
 		.vend = UFS_VEND_SAMSUNG
 	},
+#endif
 #endif
 };
 
@@ -3315,6 +3329,11 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op,
 	struct arm_smccc_res res;
 
 	if (status == PRE_CHANGE) {
+#if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHID_V3)
+		err = ufsf_suspend(ufs_mtk_get_ufsf(hba), pm_op == UFS_SYSTEM_PM);
+		if (err)
+			return err;
+#endif
 		err = ufs_mtk_suspend_check(hba, pm_op);
 		if (err)
 			return err;
@@ -3362,6 +3381,11 @@ static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 {
 	int err;
 	struct arm_smccc_res res;
+#if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHID_V3)
+	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
+
+	schedule_work(&ufsf->resume_work);
+#endif
 
 	if (hba->ufshcd_state != UFSHCD_STATE_OPERATIONAL)
 		ufs_mtk_dev_vreg_set_lpm(hba, false);
@@ -3552,7 +3576,11 @@ static void ufs_mtk_fixup_dev_quirks(struct ufs_hba *hba)
 #if IS_ENABLED(CONFIG_UFSFEATURE)
 	if (hba->dev_info.wmanufacturerid == UFS_VENDOR_SAMSUNG) {
 		host->ufsf.hba = hba;
+#if defined(CONFIG_UFSHID_V3)
+		ufsf_set_init_state(hba);
+#else
 		ufsf_set_init_state(ufs_mtk_get_ufsf(hba));
+#endif
 	}
 #endif
 }
@@ -3619,6 +3647,18 @@ static void ufs_mtk_event_notify(struct ufs_hba *hba,
 #endif
 	}
 #endif
+#if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHID_V3)
+	if (evt == UFS_EVT_DEV_RESET && val == 0)
+		/*
+		 * In case of device reset, it may be called repeatedly.
+		 * However, since the cost of initializing flags is small,
+		 * it is performed redundantly.
+		 */
+		ufsf_reset_lu(ufs_mtk_get_ufsf(hba));
+
+	if (evt == UFS_EVT_WL_SUSP_ERR)
+		ufsf_resume(ufs_mtk_get_ufsf(hba), true);
+#endif
 }
 
 static int ufs_mtk_auto_hibern8_disable(struct ufs_hba *hba)
@@ -3653,7 +3693,7 @@ static int ufs_mtk_auto_hibern8_disable(struct ufs_hba *hba)
 
 void ufs_mtk_setup_task_mgmt(struct ufs_hba *hba, int tag, u8 tm_function)
 {
-#if IS_ENABLED(CONFIG_UFSFEATURE)
+#if IS_ENABLED(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 
 	if (ufsf->hba && (tm_function == UFS_LOGICAL_RESET))
@@ -3935,7 +3975,7 @@ int ufs_mtk_system_suspend(struct device *dev)
 	int ret = 0;
 	struct ufs_hba *hba = dev_get_drvdata(dev);
 	struct ufs_mtk_host *host;
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 #endif
 
@@ -3943,7 +3983,7 @@ int ufs_mtk_system_suspend(struct device *dev)
 	if (down_trylock(&host->rpmb_sem))
 		return -EBUSY;
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	if (ufsf->hba)
 		ufsf_suspend(ufsf);
 #endif
@@ -3960,7 +4000,7 @@ int ufs_mtk_system_suspend(struct device *dev)
 		ufs_mtk_dev_vreg_set_lpm(hba, true);
 out:
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	/* We assume link is off */
 	if (ret && ufsf)
 		ufsf_resume(ufsf, true);
@@ -3976,7 +4016,7 @@ int ufs_mtk_system_resume(struct device *dev)
 	int ret = 0;
 	struct ufs_hba *hba = dev_get_drvdata(dev);
 	struct ufs_mtk_host *host;
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 	bool is_link_off = ufshcd_is_link_off(hba);
 #endif
@@ -3985,7 +4025,7 @@ int ufs_mtk_system_resume(struct device *dev)
 
 	ret = ufshcd_system_resume(dev);
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	if (!ret && ufsf->hba)
 		ufsf_resume(ufsf, is_link_off);
 #endif
@@ -4004,7 +4044,7 @@ int ufs_mtk_runtime_suspend(struct device *dev)
 	struct ufs_mtk_host *host = ufshcd_get_variant(hba);
 	int ret = 0;
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 
 	if (ufsf->hba)
@@ -4015,7 +4055,7 @@ int ufs_mtk_runtime_suspend(struct device *dev)
 	if (!ret)
 		ufs_mtk_dev_vreg_set_lpm(hba, true);
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	/* We assume link is off */
 	if (ret && ufsf->hba)
 		ufsf_resume(ufsf, true);
@@ -4033,7 +4073,7 @@ int ufs_mtk_runtime_resume(struct device *dev)
 	int ret = 0;
 	struct ufs_mtk_host *host = ufshcd_get_variant(hba);
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 	bool is_link_off = ufshcd_is_link_off(hba);
 #endif
@@ -4045,7 +4085,7 @@ int ufs_mtk_runtime_resume(struct device *dev)
 
 	ret = ufshcd_runtime_resume(dev);
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	if (!ret && ufsf->hba)
 		ufsf_resume(ufsf, is_link_off);
 #endif
@@ -4055,7 +4095,7 @@ int ufs_mtk_runtime_resume(struct device *dev)
 
 void ufs_mtk_shutdown(struct platform_device *pdev)
 {
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct device *dev = &pdev->dev;
 	struct ufs_hba *hba = dev_get_drvdata(dev);
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
