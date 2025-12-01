@@ -524,21 +524,17 @@ static struct mtk_panel_params ext_params_mode_120 = {
 static int tm_ili79505a_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
-	pr_info("%s: skip for using bl ic, level=%d\n", __func__, level);
+	u8 bl_tb0[] = { 0x51, 0x00, 0x00 };
 
-#if 0
+	pr_info("%s backlight = %d\n", __func__, level);
 
-	if (!cb) {
-		pr_info("%s cb NULL!\n", __func__);
+	bl_tb0[1] = (level >> 8) & 0x7;
+	bl_tb0[2] = level & 0xFF;
+
+	if (!cb)
 		return -1;
-	}
 
-	bl_tb0[1] = (u8)(level&0xFF);
-	bl_tb0[2] = (u8)((level>>8)&0x7);
-
-	pr_info("%s set level:%d, bl_tb:0x%02x%02x\n", __func__, level, bl_tb0[1], bl_tb0[2]);
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
-#endif
 
 	return 0;
 }
@@ -589,11 +585,6 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 	return 0;
-}
-
-static enum mtk_lcm_version panel_get_lcm_version(void)
-{
-	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
 }
 
 static int panel_cabc_set_cmdq(struct tm_ili79505a *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
@@ -711,7 +702,6 @@ static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = tm_ili79505a_setbacklight_cmdq,
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
-	.get_lcm_version = panel_get_lcm_version,
 //	.ata_check = panel_ata_check,
 	.set_gesture_flag = panel_set_gesture_flag,
 	.panel_feature_set = panel_feature_set,
