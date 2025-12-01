@@ -90,6 +90,7 @@
 
 //Begin: Add lens driver name for sydney
 #define MOT_SYDNEY_AFDRV_GT9764V "MOT_SYDNEY_GT9764VAF"
+#define MOT_SYDNEY_AFDRV_PD9402V "MOT_SYDNEY_PD9402VAF"
 //End
 
 //Begin: Add lens driver name for naples
