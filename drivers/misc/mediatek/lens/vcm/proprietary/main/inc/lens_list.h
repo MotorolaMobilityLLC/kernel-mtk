@@ -507,6 +507,22 @@ extern int MOT_SYDNEY_PD9402VAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 extern int MOT_SYDNEY_PD9402VAF_GetFileName(unsigned char *pFileName);
 //End
 
+//Begin: Add lens driver interface for SYDNEY
+#define MOT_SYDNEY_GT9778W_SetI2CClient MOT_SYDNEY_GT9778WAF_SetI2Cclient
+#define MOT_SYDNEY_GT9778W_Ioctl MOT_SYDNEY_GT9778WAF_Ioctl
+#define MOT_SYDNEY_GT9778W_Release MOT_SYDNEY_GT9778WAF_Release
+#define MOT_SYDNEY_GT9778W_PowerDown MOT_SYDNEY_GT9778WAF_PowerDown
+#define MOT_SYDNEY_GT9778W_GetFileName MOT_SYDNEY_GT9778WAF_GetFileName
+extern int MOT_SYDNEY_GT9778WAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_SYDNEY_GT9778WAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+				unsigned long a_u4Param);
+extern int MOT_SYDNEY_GT9778WAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_SYDNEY_GT9778WAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int MOT_SYDNEY_GT9778WAF_GetFileName(unsigned char *pFileName);
+//End
+
 //Begin: Add lens driver interface for Naples
 #define MOT_NAPLES_GT9764_SetI2CClient MOT_NAPLES_GT9764AF_SetI2Cclient
 #define MOT_NAPLES_GT9764_Ioctl MOT_NAPLES_GT9764AF_Ioctl

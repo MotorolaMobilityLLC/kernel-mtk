@@ -329,7 +329,7 @@ static kal_uint32 return_sensor_id(void)
 	kal_uint32 sensor_id = 0;
 
 	sensor_id = (read_cmos_sensor_8(0x03f0) << 8) | read_cmos_sensor_8(0x03f1);
-	return sensor_id;
+	return sensor_id + 1;
 }
 
 static void set_dummy(void)
