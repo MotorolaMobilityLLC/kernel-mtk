@@ -355,6 +355,12 @@
 		status = "okay";
 	};
 };
+&camera_af_hw_node {
+	pinctrl-names = "camaf_m1_gpio_on",	"camaf_m1_gpio_off";
+	pinctrl-0 = <&camera_pins_cam0_af_1>;
+	pinctrl-1 = <&camera_pins_cam0_af_0>;
+	status = "okay";
+};
 /* CAMERA AF end */
 
 /* CAMERA TZ config */
