@@ -5854,12 +5854,24 @@ static void mtk_dsi_cmdq(struct mtk_dsi *dsi, const struct mipi_dsi_msg *msg)
 	u8 config, cmdq_size, cmdq_off, type = msg->type;
 	u32 reg_val, cmdq_mask, i;
 	unsigned long goto_addr;
+	struct mtk_drm_crtc *mtk_crtc = dsi->ddp_comp.mtk_crtc;
+	struct mtk_drm_private *priv = NULL;
+
+	if (mtk_crtc && mtk_crtc->base.dev)
+		priv = mtk_crtc->base.dev->dev_private;
 
 	if (MTK_DSI_HOST_IS_READ(type))
 		config = BTA;
-	else
+	else {
 		config = (msg->tx_len > 2) ? LONG_PACKET : SHORT_PACKET;
-
+		if (!IS_ERR_OR_NULL(priv) && !IS_ERR_OR_NULL(priv->data)
+			&& (priv->data->mmsys_id == MMSYS_MT6835)
+			&& !(dsi->mode_flags & MIPI_DSI_MODE_LPM)
+			&&(tx_buf[0] == 0x28 || tx_buf[0] == 0x10)
+			&& msg->tx_len == 1) {
+			config |= HSTX;
+		}
+	}
 	if (msg->tx_len > 2) {
 		cmdq_size = 1 + (msg->tx_len + 3) / 4;
 		cmdq_off = 4;
