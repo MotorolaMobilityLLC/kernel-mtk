@@ -501,7 +501,7 @@
 
                 mmi,batid_v_ref = <1800000>;
                 mmi,batid_r_pull = <100000>;
-                mmi,batt-ids-map = "1", "ATLSP52NVT", "2", "LWNSP52SWD", "3", "COSSP52COS";
+                mmi,batt-ids-map = "1", "LWNSS52SWD", "2", "ATLSS52NVT", "3", "VEKSS52VEK";
 
                 mmi,adc-channel-cpu = <0>;
                 mmi,adc-channel-charger = <2>;
@@ -767,10 +767,10 @@
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
 	CAR_TUNE_VALUE = <(101)>;
 
-	df-serialnum = "ATLSP52NVT";
-	#include "bat_setting/mt6835_battery_sp52_atl_5200mah.dtsi"
-	#include "bat_setting/mt6835_battery_sp52_swd_5200mah.dtsi"
-	#include "bat_setting/mt6835_battery_sp52_cos_5200mah.dtsi"
+	df-serialnum = "LWNSS52SWD";
+	#include "bat_setting/mt6835_battery_sy52_swd_5200mah.dtsi"
+	#include "bat_setting/mt6835_battery_sy52_atl_5200mah.dtsi"
+	#include "bat_setting/mt6835_battery_sy52_vek_5200mah.dtsi"
 
 };
 
