@@ -167,14 +167,14 @@
 
 	flashlight_gpio_high: flashlight@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO147__FUNC_GPIO147>;
+			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	flashlight_gpio_low: flashlight@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO147__FUNC_GPIO147>;
+			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -363,8 +363,8 @@
 };
 
 /* CAMERA Flashlight */
-&flashlights_naples {
-	compatible = "mediatek,flashlights_naples_ocp8135_pwm";
+&flashlights_sydney {
+	compatible = "mediatek,flashlights_sydney_sgm3785s_pwm";
 	pinctrl-names = "default",
 		"flashlight_gpio_high",
 		"flashlight_gpio_low",
