@@ -81,7 +81,7 @@
 		omnivision,ubl-max-freq = <3000000>;
 		omnivision,ubl-byte-delay-us = <20>;
 
-		omnivision,supported_gesture_type = <0x06>;
+		omnivision,supported_gesture_type = <0x04>;
         };
 };
 
