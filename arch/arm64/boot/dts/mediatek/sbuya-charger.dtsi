@@ -303,6 +303,7 @@
 
 	df-serialnum = "LWNR071SWD";
 	#include "bat_setting/mt6835_battery_sbuya_swd_5000mah.dtsi"
+	#include "bat_setting/mt6835_battery_sbuya_nvt_5000mah.dtsi"
 };
 
 &pio {

@@ -1,7 +1,7 @@
 serialnum_0 = "LWNR071SWD";
-battery1_profile_t0_num = <100>;
-battery1_profile_t0_col = <3>;
-battery1_profile_t0 =
+battery0_profile_t0_num = <100>;
+battery0_profile_t0_col = <3>;
+battery0_profile_t0 =
 <
     0       44471   611
     510     44304   611
@@ -104,9 +104,9 @@ battery1_profile_t0 =
     50002   34032   873
     50512   34032   873
 >;
-battery1_profile_t1_num = <100>;
-battery1_profile_t1_col = <3>;
-battery1_profile_t1 =
+battery0_profile_t1_num = <100>;
+battery0_profile_t1_col = <3>;
+battery0_profile_t1 =
 <
     0       44636   830
     510     44449   831
@@ -210,9 +210,9 @@ battery1_profile_t1 =
     50512   33575   1250
 >;
 
-battery1_profile_t2_num = <100>;
-battery1_profile_t2_col = <3>;
-battery1_profile_t2 =
+battery0_profile_t2_num = <100>;
+battery0_profile_t2_col = <3>;
+battery0_profile_t2 =
 <
     0       44506   1553
     510     44337   1553
@@ -316,9 +316,9 @@ battery1_profile_t2 =
     50512   33341   13353
 >;
 
-battery1_profile_t3_num = <100>;
-battery1_profile_t3_col = <3>;
-battery1_profile_t3 =
+battery0_profile_t3_num = <100>;
+battery0_profile_t3_col = <3>;
+battery0_profile_t3 =
 <
     0       44550   2707
     510     44344   2706
@@ -422,9 +422,9 @@ battery1_profile_t3 =
     50512   34000   15000
 >;
 
-battery1_profile_t4_num = <100>;
-battery1_profile_t4_col = <3>;
-battery1_profile_t4 =
+battery0_profile_t4_num = <100>;
+battery0_profile_t4_col = <3>;
+battery0_profile_t4 =
 <
     0       44562   5328
     510     44327   5326
