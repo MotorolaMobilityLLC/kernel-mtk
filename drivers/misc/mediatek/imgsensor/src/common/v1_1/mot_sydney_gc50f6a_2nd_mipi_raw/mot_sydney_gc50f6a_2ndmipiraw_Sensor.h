@@ -36,10 +36,10 @@
 #define I2C_BUFFER_LEN  3
 #endif
 
-#define GC50F6_IMAGE_NORMAL           1
+#define GC50F6_IMAGE_NORMAL           0
 #define GC50F6_IMAGE_H_MIRROR         0
 #define GC50F6_IMAGE_V_MIRROR         0
-#define GC50F6_IMAGE_HV_MIRROR        0
+#define GC50F6_IMAGE_HV_MIRROR        1
 
 #if GC50F6_IMAGE_NORMAL
 #define MIRROR	     0x00
