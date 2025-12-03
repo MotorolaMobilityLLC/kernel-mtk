@@ -154,7 +154,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 };
 
 static struct imgsensor_struct imgsensor = {
-	.mirror = IMAGE_NORMAL,				//mirrorflip information
+	.mirror = IMAGE_HV_MIRROR,				//mirrorflip information
 	.sensor_mode = IMGSENSOR_MODE_INIT,
 	.shutter = 0x4de,
 	.gain = 0x40,
