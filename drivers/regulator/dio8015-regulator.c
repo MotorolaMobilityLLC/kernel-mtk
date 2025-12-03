@@ -240,7 +240,7 @@ static int dio8015_regulator_init(struct dio8015 *chip)
 	};
 
 	const unsigned int initial_voltage[DIO8015_MAX_REGULATORS] = {
-		0x64,//LDO1 DVDD 1.2V
+		0x74,//LDO1 DVDD 1.3V
 		0x64,//LDO2 DVDD 1.2V
 		0x80,//LDO3 AVDD 2.8V
 		0x80,//LDO4 AVDD 2.8V
