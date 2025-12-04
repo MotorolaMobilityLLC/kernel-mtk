@@ -31,7 +31,6 @@
 #endif
 
 #include "mot_sydney_sc821cs_uw_mipi_raw_Sensor.h"
-#include "mot_sydney_sc821cs_uw_sensor_setting.h"
 
 #define MOT_SYDNEY_SC821CS_UW_SENSOR_GAIN_MAX_VALID_INDEX  6
 #define MOT_SYDNEY_SC821CS_UW_SENSOR_GAIN_MAP_SIZE         6
@@ -179,40 +178,6 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[8] ={
 };
 
 #define I2C_BUFFER_LEN 445
-
-static kal_uint16 mot_sydney_sc821cs_uw_table_write_cmos_sensor(
-					kal_uint16 *para, kal_uint32 len)
-{
-	char puSendCmd[I2C_BUFFER_LEN];
-	kal_uint32 tosend, IDX;
-	kal_uint16 addr = 0, addr_last = 0, data;
-
-	tosend = 0;
-	IDX = 0;
-	while (len > IDX) {
-		addr = para[IDX];
-
-		{
-			puSendCmd[tosend++] = (char)(addr >> 8);
-			puSendCmd[tosend++] = (char)(addr & 0xFF);
-			data = para[IDX + 1];
-			puSendCmd[tosend++] = (char)(data & 0xFF);
-			IDX += 2;
-			addr_last = addr;
-		}
-
-		if ((I2C_BUFFER_LEN - tosend) < 3 ||
-			len == IDX ||
-			addr != addr_last) {
-			iBurstWriteReg_multi(puSendCmd, tosend,
-				imgsensor.i2c_write_id,
-				3, imgsensor_info.i2c_speed);
-
-			tosend = 0;
-		}
-	}
-	return 0;
-}
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
@@ -368,7 +333,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	kal_int16 gain_index;
 	kal_uint16 MOT_SYDNEY_SC821CS_UW_AGC_Param[MOT_SYDNEY_SC821CS_UW_SENSOR_GAIN_MAP_SIZE][2] = {
 		{  1024,  0x00 },
-		{  2048,  0x08 },
+		{  2048,  0x01 },
 		{  4096,  0x03 },
 		{  8192,  0x07 },
 	};
@@ -393,73 +358,6 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 	LOG_INF(PFX, "le: 0x%x, se: 0x%x, gain: 0x%x\n", le, se, gain);
 }
 
-/*
-static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 target_frame_length)
-{
-   kal_uint16 realtime_fps = 0;
-    //kal_uint32 frame_length = 0;
-   kal_int32 dummy_line = 0;
-
-////min_frame_length
-
-	 0x3500, 0x3501, 0x3502 will increase VBLANK to get exposure larger than frame exposure
-	 AE doesn't update sensor gain at capture mode, thus extra exposure lines must be updated here
-
-	// OV Recommend Solution
-	// if shutter bigger than frame_length, should extend frame length first
-	//printk("pangfei shutter %d line %d\n",shutter,__LINE__);
-	spin_lock(&imgsensor_drv_lock);
-
-  if(target_frame_length > 1){
-     dummy_line = target_frame_length - imgsensor.frame_length;
-  }
-
-     imgsensor.frame_length = imgsensor.frame_length + dummy_line;
-
-	if (shutter > imgsensor.frame_length - imgsensor_info.margin)
-		imgsensor.frame_length = shutter + imgsensor_info.margin;
-
-	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-		imgsensor.frame_length = imgsensor_info.max_frame_length;
-	spin_unlock(&imgsensor_drv_lock);
-
-	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
-	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
-
-    if (imgsensor.autoflicker_en) {
-        realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
-        if(realtime_fps >= 297 && realtime_fps <= 305)
-            set_max_framerate(296,0);
-        else if(realtime_fps >= 147 && realtime_fps <= 150)
-            set_max_framerate(146,0);
-        else {
-              // Extend frame length
-              // write_cmos_sensor8_8(0x0104, 0x01);
-              //write_cmos_sensor8(0x326d, (imgsensor.frame_length >> 16) & 0x7f);
-              write_cmos_sensor8(0x320e, (imgsensor.frame_length >> 8) & 0xff);
-              write_cmos_sensor8(0x320f, imgsensor.frame_length & 0xFF);
-              //write_cmos_sensor8_8(0x0104, 0x00);
-            }
-    } else {
-              // Extend frame length
-              //write_cmos_sensor8(0x0104, 0x01);
-              //write_cmos_sensor8(0x326d, (imgsensor.frame_length >> 16) & 0x7f);
-              write_cmos_sensor8(0x320e, imgsensor.frame_length >> 8);
-              write_cmos_sensor8(0x320f, imgsensor.frame_length & 0xFF);
-              //write_cmos_sensor8(0x0104, 0x00);
-    }
-    // Update Shutter
-    shutter = shutter *2;
-    //shutter = 3;
-    //write_cmos_sensor8(0x3802,0x01);//group hold on
-    //write_cmos_sensor8(0x3e20, (shutter >> 20) & 0x0F);
-    write_cmos_sensor8(0x3e00, (shutter >> 12) & 0xFF);
-    write_cmos_sensor8(0x3e01, (shutter >> 4)&0xFF);
-    write_cmos_sensor8(0x3e02, (shutter<<4) & 0xF0);
-    LOG_INF(PFX, "SSSS Exit! shutter = %d, framelength = %d\n", shutter, imgsensor.frame_length);
-
-}
-*/
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
 	LOG_INF(PFX, "image_mirror = %d\n", image_mirror);
@@ -471,18 +369,15 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 			break;
 		case IMAGE_H_MIRROR:
 			write_cmos_sensor8(0x3221,0x06);
-			write_cmos_sensor8(0x3221,0x06);
 			write_cmos_sensor8(0x39c1,0x0c);
 			write_cmos_sensor8(0x5500,0x40);
 			break;
 		case IMAGE_V_MIRROR:
 			write_cmos_sensor8(0x3221,0x60);
-			write_cmos_sensor8(0x3221,0x60);
 			write_cmos_sensor8(0x39c1,0x4c);
 			write_cmos_sensor8(0x5500,0x00);
 			break;
 		case IMAGE_HV_MIRROR:
-			write_cmos_sensor8(0x3221,0x66);
 			write_cmos_sensor8(0x3221,0x66);
 			write_cmos_sensor8(0x39c1,0x4c);
 			write_cmos_sensor8(0x5500,0x00);
@@ -521,18 +416,199 @@ static void sensor_init(void)
 
 	write_cmos_sensor8(0x0103,0x01);
 	mDELAY(10);
-
-     mot_sydney_sc821cs_uw_table_write_cmos_sensor(
-         addr_data_pair_init_mot_sydney_sc821cs_uw,
-         sizeof(addr_data_pair_init_mot_sydney_sc821cs_uw) /
-         sizeof(kal_uint16));
-
-		//  if ((read_cmos_sensor(0x800D)&0xFF)==0)
-		// {
-		// write_cmos_sensor8(0x550F,0x34);
-		// }else {
-		// write_cmos_sensor8(0x550F,0xBC);
-		// }
+	write_cmos_sensor8(0x0100,0x00);
+	write_cmos_sensor8(0x36e9,0x80);
+	write_cmos_sensor8(0x37f9,0x80);
+	write_cmos_sensor8(0x37fb,0x54);
+	write_cmos_sensor8(0x37fd,0x2a);
+	write_cmos_sensor8(0x301f,0x21);
+	write_cmos_sensor8(0x320c,0x06);
+	write_cmos_sensor8(0x320d,0xcf);
+	write_cmos_sensor8(0x320e,0x09);
+	write_cmos_sensor8(0x320f,0xdc);
+	write_cmos_sensor8(0x3213,0x14);
+	write_cmos_sensor8(0x3253,0x20);
+	write_cmos_sensor8(0x3259,0x04);
+	write_cmos_sensor8(0x325f,0x40);
+	write_cmos_sensor8(0x32d1,0x30);
+	write_cmos_sensor8(0x3301,0x08);
+	write_cmos_sensor8(0x3302,0x18);
+	write_cmos_sensor8(0x3303,0x10);
+	write_cmos_sensor8(0x3304,0x60);
+	write_cmos_sensor8(0x3306,0x70);
+	write_cmos_sensor8(0x3307,0x04);
+	write_cmos_sensor8(0x3308,0x20);
+	write_cmos_sensor8(0x3309,0xa0);
+	write_cmos_sensor8(0x330a,0x00);
+	write_cmos_sensor8(0x330b,0xe0);
+	write_cmos_sensor8(0x330c,0x24);
+	write_cmos_sensor8(0x330d,0x28);
+	write_cmos_sensor8(0x330e,0x44);
+	write_cmos_sensor8(0x330f,0x01);
+	write_cmos_sensor8(0x3310,0x01);
+	write_cmos_sensor8(0x3314,0x16);
+	write_cmos_sensor8(0x331c,0x02);
+	write_cmos_sensor8(0x331e,0x39);
+	write_cmos_sensor8(0x331f,0x79);
+	write_cmos_sensor8(0x3320,0x08);
+	write_cmos_sensor8(0x3326,0x0e);
+	write_cmos_sensor8(0x3327,0x0a);
+	write_cmos_sensor8(0x3329,0x0b);
+	write_cmos_sensor8(0x3333,0x10);
+	write_cmos_sensor8(0x333e,0x20);
+	write_cmos_sensor8(0x333f,0x10);
+	write_cmos_sensor8(0x335d,0x60);
+	write_cmos_sensor8(0x3364,0x56);
+	write_cmos_sensor8(0x3366,0x01);
+	write_cmos_sensor8(0x337f,0x13);
+	write_cmos_sensor8(0x3390,0x01);
+	write_cmos_sensor8(0x3391,0x03);
+	write_cmos_sensor8(0x3392,0x0f);
+	write_cmos_sensor8(0x3393,0x14);
+	write_cmos_sensor8(0x3394,0x21);
+	write_cmos_sensor8(0x3395,0x26);
+	write_cmos_sensor8(0x33ad,0x1c);
+	write_cmos_sensor8(0x33af,0x38);
+	write_cmos_sensor8(0x33b2,0x2d);
+	write_cmos_sensor8(0x33b3,0x03);
+	write_cmos_sensor8(0x349f,0x0b);
+	write_cmos_sensor8(0x34a6,0x03);
+	write_cmos_sensor8(0x34a7,0x07);
+	write_cmos_sensor8(0x34a8,0x00);
+	write_cmos_sensor8(0x34a9,0x02);
+	write_cmos_sensor8(0x34aa,0x00);
+	write_cmos_sensor8(0x34ab,0xe0);
+	write_cmos_sensor8(0x34ac,0x00);
+	write_cmos_sensor8(0x34ad,0xe0);
+	write_cmos_sensor8(0x34f8,0x0f);
+	write_cmos_sensor8(0x34f9,0x00);
+	write_cmos_sensor8(0x3633,0x35);
+	write_cmos_sensor8(0x363b,0x55);
+	write_cmos_sensor8(0x363d,0x84);
+	write_cmos_sensor8(0x3670,0x0f);
+	write_cmos_sensor8(0x3671,0x45);
+	write_cmos_sensor8(0x3672,0x45);
+	write_cmos_sensor8(0x3673,0x45);
+	write_cmos_sensor8(0x3674,0x40);
+	write_cmos_sensor8(0x3675,0x40);
+	write_cmos_sensor8(0x3676,0x40);
+	write_cmos_sensor8(0x3677,0x03);
+	write_cmos_sensor8(0x3678,0x0f);
+	write_cmos_sensor8(0x367c,0x03);
+	write_cmos_sensor8(0x367d,0x0f);
+	write_cmos_sensor8(0x3690,0x64);
+	write_cmos_sensor8(0x3691,0x64);
+	write_cmos_sensor8(0x3692,0x64);
+	write_cmos_sensor8(0x369c,0x03);
+	write_cmos_sensor8(0x369d,0x07);
+	write_cmos_sensor8(0x36a7,0x01);
+	write_cmos_sensor8(0x36a8,0x03);
+	write_cmos_sensor8(0x36a9,0x07);
+	write_cmos_sensor8(0x36aa,0x0f);
+	write_cmos_sensor8(0x36ae,0xe0);
+	write_cmos_sensor8(0x36af,0x80);
+	write_cmos_sensor8(0x36b8,0x83);
+	write_cmos_sensor8(0x36b9,0xc6);
+	write_cmos_sensor8(0x36ba,0xcd);
+	write_cmos_sensor8(0x370f,0x01);
+	write_cmos_sensor8(0x3721,0x6c);
+	write_cmos_sensor8(0x3722,0x03);
+	write_cmos_sensor8(0x3724,0xb0);
+	write_cmos_sensor8(0x3726,0x02);
+	write_cmos_sensor8(0x3727,0x04);
+	write_cmos_sensor8(0x3728,0x03);
+	write_cmos_sensor8(0x3771,0x03);
+	write_cmos_sensor8(0x3772,0x03);
+	write_cmos_sensor8(0x3773,0x03);
+	write_cmos_sensor8(0x377a,0x03);
+	write_cmos_sensor8(0x377b,0x0f);
+	write_cmos_sensor8(0x3900,0x05);
+	write_cmos_sensor8(0x3903,0x60);
+	write_cmos_sensor8(0x3908,0x40);
+	write_cmos_sensor8(0x391a,0x1a);
+	write_cmos_sensor8(0x391b,0x10);
+	write_cmos_sensor8(0x391c,0x0a);
+	write_cmos_sensor8(0x391d,0x00);
+	write_cmos_sensor8(0x391f,0x41);
+	write_cmos_sensor8(0x3926,0xe2);
+	write_cmos_sensor8(0x3933,0x0f);
+	write_cmos_sensor8(0x3934,0x00);
+	write_cmos_sensor8(0x3937,0x74);
+	write_cmos_sensor8(0x393f,0x80);
+	write_cmos_sensor8(0x3940,0x00);
+	write_cmos_sensor8(0x3941,0x00);
+	write_cmos_sensor8(0x3942,0x00);
+	write_cmos_sensor8(0x3943,0x71);
+	write_cmos_sensor8(0x3944,0x71);
+	write_cmos_sensor8(0x3945,0x72);
+	write_cmos_sensor8(0x3946,0x73);
+	write_cmos_sensor8(0x39c1,0x0c);
+	write_cmos_sensor8(0x39c9,0x10);
+	write_cmos_sensor8(0x39dd,0x00);
+	write_cmos_sensor8(0x39de,0x10);
+	write_cmos_sensor8(0x39e7,0x04);
+	write_cmos_sensor8(0x39e8,0x04);
+	write_cmos_sensor8(0x39e9,0x80);
+	write_cmos_sensor8(0x3e08,0x00);
+	write_cmos_sensor8(0x3e09,0x20);
+	write_cmos_sensor8(0x4402,0x03);
+	write_cmos_sensor8(0x4403,0x0e);
+	write_cmos_sensor8(0x4404,0x28);
+	write_cmos_sensor8(0x4405,0x34);
+	write_cmos_sensor8(0x440c,0x42);
+	write_cmos_sensor8(0x440d,0x42);
+	write_cmos_sensor8(0x440e,0x32);
+	write_cmos_sensor8(0x440f,0x54);
+	write_cmos_sensor8(0x4412,0x01);
+	write_cmos_sensor8(0x4424,0x01);
+	write_cmos_sensor8(0x4503,0x20);
+	write_cmos_sensor8(0x4506,0x60);
+	write_cmos_sensor8(0x4509,0x22);
+	write_cmos_sensor8(0x450d,0x0d);
+	write_cmos_sensor8(0x452d,0x03);
+	write_cmos_sensor8(0x452f,0x07);
+	write_cmos_sensor8(0x4532,0x0f);
+	write_cmos_sensor8(0x4534,0x1c);
+	write_cmos_sensor8(0x4536,0x1c);
+	write_cmos_sensor8(0x4538,0x2c);
+	write_cmos_sensor8(0x453a,0x2e);
+	write_cmos_sensor8(0x5000,0x0e);
+	write_cmos_sensor8(0x5500,0x40);
+	write_cmos_sensor8(0x5501,0x08);
+	write_cmos_sensor8(0x550a,0x09);
+	write_cmos_sensor8(0x550b,0xab);
+	write_cmos_sensor8(0x550e,0x00);
+	write_cmos_sensor8(0x550f,0x98);
+	write_cmos_sensor8(0x5784,0x1e);
+	write_cmos_sensor8(0x5785,0x0f);
+	write_cmos_sensor8(0x5787,0x16);
+	write_cmos_sensor8(0x5788,0x16);
+	write_cmos_sensor8(0x5789,0x16);
+	write_cmos_sensor8(0x578a,0x16);
+	write_cmos_sensor8(0x578b,0x16);
+	write_cmos_sensor8(0x578c,0x16);
+	write_cmos_sensor8(0x5790,0x20);
+	write_cmos_sensor8(0x5791,0x20);
+	write_cmos_sensor8(0x5792,0x20);
+	write_cmos_sensor8(0x5793,0x20);
+	write_cmos_sensor8(0x5794,0x20);
+	write_cmos_sensor8(0x5795,0x20);
+	write_cmos_sensor8(0x57c4,0x1e);
+	write_cmos_sensor8(0x57c5,0x0f);
+	write_cmos_sensor8(0x57c7,0x16);
+	write_cmos_sensor8(0x57c8,0x16);
+	write_cmos_sensor8(0x57c9,0x16);
+	write_cmos_sensor8(0x57ca,0x16);
+	write_cmos_sensor8(0x57cb,0x16);
+	write_cmos_sensor8(0x57cc,0x16);
+	write_cmos_sensor8(0x57d0,0x20);
+	write_cmos_sensor8(0x57d1,0x20);
+	write_cmos_sensor8(0x57d2,0x20);
+	write_cmos_sensor8(0x57d3,0x20);
+	write_cmos_sensor8(0x57d4,0x20);
+	write_cmos_sensor8(0x57d5,0x20);
+	write_cmos_sensor8(0x36e9,0x24);
+	write_cmos_sensor8(0x37f9,0x00);
 	LOG_INF(PFX, "<< %s()\n", __func__);
 //	LOG_INF(PFX, "0X800D = 0x%x, 0X550f = 0x%x \n", read_cmos_sensor(0x800D),read_cmos_sensor(0x550F));
 }
@@ -540,42 +616,621 @@ static void sensor_init(void)
 static void preview_setting(void)
 {
 
-     mot_sydney_sc821cs_uw_table_write_cmos_sensor(
-         addr_data_pair_preview_mot_sydney_sc821cs_uw,
-         sizeof(addr_data_pair_preview_mot_sydney_sc821cs_uw)/
-         sizeof(kal_uint16));
+    write_cmos_sensor8(0x0103,0x01);
+	write_cmos_sensor8(0x0100,0x00);
+	write_cmos_sensor8(0x36e9,0x80);
+	write_cmos_sensor8(0x37f9,0x80);
+	write_cmos_sensor8(0x37fb,0x54);
+	write_cmos_sensor8(0x37fd,0x2a);
+	write_cmos_sensor8(0x301f,0x21);
+	write_cmos_sensor8(0x320c,0x06);
+	write_cmos_sensor8(0x320d,0xcf);
+	write_cmos_sensor8(0x320e,0x09);
+	write_cmos_sensor8(0x320f,0xdc);
+	write_cmos_sensor8(0x3213,0x14);
+	write_cmos_sensor8(0x3253,0x20);
+	write_cmos_sensor8(0x3259,0x04);
+	write_cmos_sensor8(0x325f,0x40);
+	write_cmos_sensor8(0x32d1,0x30);
+	write_cmos_sensor8(0x3301,0x08);
+	write_cmos_sensor8(0x3302,0x18);
+	write_cmos_sensor8(0x3303,0x10);
+	write_cmos_sensor8(0x3304,0x60);
+	write_cmos_sensor8(0x3306,0x70);
+	write_cmos_sensor8(0x3307,0x04);
+	write_cmos_sensor8(0x3308,0x20);
+	write_cmos_sensor8(0x3309,0xa0);
+	write_cmos_sensor8(0x330a,0x00);
+	write_cmos_sensor8(0x330b,0xe0);
+	write_cmos_sensor8(0x330c,0x24);
+	write_cmos_sensor8(0x330d,0x28);
+	write_cmos_sensor8(0x330e,0x44);
+	write_cmos_sensor8(0x330f,0x01);
+	write_cmos_sensor8(0x3310,0x01);
+	write_cmos_sensor8(0x3314,0x16);
+	write_cmos_sensor8(0x331c,0x02);
+	write_cmos_sensor8(0x331e,0x39);
+	write_cmos_sensor8(0x331f,0x79);
+	write_cmos_sensor8(0x3320,0x08);
+	write_cmos_sensor8(0x3326,0x0e);
+	write_cmos_sensor8(0x3327,0x0a);
+	write_cmos_sensor8(0x3329,0x0b);
+	write_cmos_sensor8(0x3333,0x10);
+	write_cmos_sensor8(0x333e,0x20);
+	write_cmos_sensor8(0x333f,0x10);
+	write_cmos_sensor8(0x335d,0x60);
+	write_cmos_sensor8(0x3364,0x56);
+	write_cmos_sensor8(0x3366,0x01);
+	write_cmos_sensor8(0x337f,0x13);
+	write_cmos_sensor8(0x3390,0x01);
+	write_cmos_sensor8(0x3391,0x03);
+	write_cmos_sensor8(0x3392,0x0f);
+	write_cmos_sensor8(0x3393,0x14);
+	write_cmos_sensor8(0x3394,0x21);
+	write_cmos_sensor8(0x3395,0x26);
+	write_cmos_sensor8(0x33ad,0x1c);
+	write_cmos_sensor8(0x33af,0x38);
+	write_cmos_sensor8(0x33b2,0x2d);
+	write_cmos_sensor8(0x33b3,0x03);
+	write_cmos_sensor8(0x349f,0x0b);
+	write_cmos_sensor8(0x34a6,0x03);
+	write_cmos_sensor8(0x34a7,0x07);
+	write_cmos_sensor8(0x34a8,0x00);
+	write_cmos_sensor8(0x34a9,0x02);
+	write_cmos_sensor8(0x34aa,0x00);
+	write_cmos_sensor8(0x34ab,0xe0);
+	write_cmos_sensor8(0x34ac,0x00);
+	write_cmos_sensor8(0x34ad,0xe0);
+	write_cmos_sensor8(0x34f8,0x0f);
+	write_cmos_sensor8(0x34f9,0x00);
+	write_cmos_sensor8(0x3633,0x35);
+	write_cmos_sensor8(0x363b,0x55);
+	write_cmos_sensor8(0x363d,0x84);
+	write_cmos_sensor8(0x3670,0x0f);
+	write_cmos_sensor8(0x3671,0x45);
+	write_cmos_sensor8(0x3672,0x45);
+	write_cmos_sensor8(0x3673,0x45);
+	write_cmos_sensor8(0x3674,0x40);
+	write_cmos_sensor8(0x3675,0x40);
+	write_cmos_sensor8(0x3676,0x40);
+	write_cmos_sensor8(0x3677,0x03);
+	write_cmos_sensor8(0x3678,0x0f);
+	write_cmos_sensor8(0x367c,0x03);
+	write_cmos_sensor8(0x367d,0x0f);
+	write_cmos_sensor8(0x3690,0x64);
+	write_cmos_sensor8(0x3691,0x64);
+	write_cmos_sensor8(0x3692,0x64);
+	write_cmos_sensor8(0x369c,0x03);
+	write_cmos_sensor8(0x369d,0x07);
+	write_cmos_sensor8(0x36a7,0x01);
+	write_cmos_sensor8(0x36a8,0x03);
+	write_cmos_sensor8(0x36a9,0x07);
+	write_cmos_sensor8(0x36aa,0x0f);
+	write_cmos_sensor8(0x36ae,0xe0);
+	write_cmos_sensor8(0x36af,0x80);
+	write_cmos_sensor8(0x36b8,0x83);
+	write_cmos_sensor8(0x36b9,0xc6);
+	write_cmos_sensor8(0x36ba,0xcd);
+	write_cmos_sensor8(0x370f,0x01);
+	write_cmos_sensor8(0x3721,0x6c);
+	write_cmos_sensor8(0x3722,0x03);
+	write_cmos_sensor8(0x3724,0xb0);
+	write_cmos_sensor8(0x3726,0x02);
+	write_cmos_sensor8(0x3727,0x04);
+	write_cmos_sensor8(0x3728,0x03);
+	write_cmos_sensor8(0x3771,0x03);
+	write_cmos_sensor8(0x3772,0x03);
+	write_cmos_sensor8(0x3773,0x03);
+	write_cmos_sensor8(0x377a,0x03);
+	write_cmos_sensor8(0x377b,0x0f);
+	write_cmos_sensor8(0x3900,0x05);
+	write_cmos_sensor8(0x3903,0x60);
+	write_cmos_sensor8(0x3908,0x40);
+	write_cmos_sensor8(0x391a,0x1a);
+	write_cmos_sensor8(0x391b,0x10);
+	write_cmos_sensor8(0x391c,0x0a);
+	write_cmos_sensor8(0x391d,0x00);
+	write_cmos_sensor8(0x391f,0x41);
+	write_cmos_sensor8(0x3926,0xe2);
+	write_cmos_sensor8(0x3933,0x0f);
+	write_cmos_sensor8(0x3934,0x00);
+	write_cmos_sensor8(0x3937,0x74);
+	write_cmos_sensor8(0x393f,0x80);
+	write_cmos_sensor8(0x3940,0x00);
+	write_cmos_sensor8(0x3941,0x00);
+	write_cmos_sensor8(0x3942,0x00);
+	write_cmos_sensor8(0x3943,0x71);
+	write_cmos_sensor8(0x3944,0x71);
+	write_cmos_sensor8(0x3945,0x72);
+	write_cmos_sensor8(0x3946,0x73);
+	write_cmos_sensor8(0x39c1,0x0c);
+	write_cmos_sensor8(0x39c9,0x10);
+	write_cmos_sensor8(0x39dd,0x00);
+	write_cmos_sensor8(0x39de,0x10);
+	write_cmos_sensor8(0x39e7,0x04);
+	write_cmos_sensor8(0x39e8,0x04);
+	write_cmos_sensor8(0x39e9,0x80);
+	write_cmos_sensor8(0x3e08,0x00);
+	write_cmos_sensor8(0x3e09,0x20);
+	write_cmos_sensor8(0x4402,0x03);
+	write_cmos_sensor8(0x4403,0x0e);
+	write_cmos_sensor8(0x4404,0x28);
+	write_cmos_sensor8(0x4405,0x34);
+	write_cmos_sensor8(0x440c,0x42);
+	write_cmos_sensor8(0x440d,0x42);
+	write_cmos_sensor8(0x440e,0x32);
+	write_cmos_sensor8(0x440f,0x54);
+	write_cmos_sensor8(0x4412,0x01);
+	write_cmos_sensor8(0x4424,0x01);
+	write_cmos_sensor8(0x4503,0x20);
+	write_cmos_sensor8(0x4506,0x60);
+	write_cmos_sensor8(0x4509,0x22);
+	write_cmos_sensor8(0x450d,0x0d);
+	write_cmos_sensor8(0x452d,0x03);
+	write_cmos_sensor8(0x452f,0x07);
+	write_cmos_sensor8(0x4532,0x0f);
+	write_cmos_sensor8(0x4534,0x1c);
+	write_cmos_sensor8(0x4536,0x1c);
+	write_cmos_sensor8(0x4538,0x2c);
+	write_cmos_sensor8(0x453a,0x2e);
+	write_cmos_sensor8(0x5000,0x0e);
+	write_cmos_sensor8(0x5500,0x40);
+	write_cmos_sensor8(0x5501,0x08);
+	write_cmos_sensor8(0x550a,0x09);
+	write_cmos_sensor8(0x550b,0xab);
+	write_cmos_sensor8(0x550e,0x00);
+	write_cmos_sensor8(0x550f,0x98);
+	write_cmos_sensor8(0x5784,0x1e);
+	write_cmos_sensor8(0x5785,0x0f);
+	write_cmos_sensor8(0x5787,0x16);
+	write_cmos_sensor8(0x5788,0x16);
+	write_cmos_sensor8(0x5789,0x16);
+	write_cmos_sensor8(0x578a,0x16);
+	write_cmos_sensor8(0x578b,0x16);
+	write_cmos_sensor8(0x578c,0x16);
+	write_cmos_sensor8(0x5790,0x20);
+	write_cmos_sensor8(0x5791,0x20);
+	write_cmos_sensor8(0x5792,0x20);
+	write_cmos_sensor8(0x5793,0x20);
+	write_cmos_sensor8(0x5794,0x20);
+	write_cmos_sensor8(0x5795,0x20);
+	write_cmos_sensor8(0x57c4,0x1e);
+	write_cmos_sensor8(0x57c5,0x0f);
+	write_cmos_sensor8(0x57c7,0x16);
+	write_cmos_sensor8(0x57c8,0x16);
+	write_cmos_sensor8(0x57c9,0x16);
+	write_cmos_sensor8(0x57ca,0x16);
+	write_cmos_sensor8(0x57cb,0x16);
+	write_cmos_sensor8(0x57cc,0x16);
+	write_cmos_sensor8(0x57d0,0x20);
+	write_cmos_sensor8(0x57d1,0x20);
+	write_cmos_sensor8(0x57d2,0x20);
+	write_cmos_sensor8(0x57d3,0x20);
+	write_cmos_sensor8(0x57d4,0x20);
+	write_cmos_sensor8(0x57d5,0x20);
+	write_cmos_sensor8(0x36e9,0x24);
+	write_cmos_sensor8(0x37f9,0x00);
 }
 
 static void capture_setting(kal_uint16 currefps)
 {
-     mot_sydney_sc821cs_uw_table_write_cmos_sensor(
-         addr_data_pair_capture_fps_mot_sydney_sc821cs_uw,
-         sizeof(addr_data_pair_capture_fps_mot_sydney_sc821cs_uw) /
-         sizeof(kal_uint16));
+	write_cmos_sensor8(0x0103,0x01);
+	write_cmos_sensor8(0x0100,0x00);
+	write_cmos_sensor8(0x36e9,0x80);
+	write_cmos_sensor8(0x37f9,0x80);
+	write_cmos_sensor8(0x37fb,0x54);
+	write_cmos_sensor8(0x37fd,0x2a);
+	write_cmos_sensor8(0x301f,0x21);
+	write_cmos_sensor8(0x320c,0x06);
+	write_cmos_sensor8(0x320d,0xcf);
+	write_cmos_sensor8(0x320e,0x09);
+	write_cmos_sensor8(0x320f,0xdc);
+	write_cmos_sensor8(0x3213,0x14);
+	write_cmos_sensor8(0x3253,0x20);
+	write_cmos_sensor8(0x3259,0x04);
+	write_cmos_sensor8(0x325f,0x40);
+	write_cmos_sensor8(0x32d1,0x30);
+	write_cmos_sensor8(0x3301,0x08);
+	write_cmos_sensor8(0x3302,0x18);
+	write_cmos_sensor8(0x3303,0x10);
+	write_cmos_sensor8(0x3304,0x60);
+	write_cmos_sensor8(0x3306,0x70);
+	write_cmos_sensor8(0x3307,0x04);
+	write_cmos_sensor8(0x3308,0x20);
+	write_cmos_sensor8(0x3309,0xa0);
+	write_cmos_sensor8(0x330a,0x00);
+	write_cmos_sensor8(0x330b,0xe0);
+	write_cmos_sensor8(0x330c,0x24);
+	write_cmos_sensor8(0x330d,0x28);
+	write_cmos_sensor8(0x330e,0x44);
+	write_cmos_sensor8(0x330f,0x01);
+	write_cmos_sensor8(0x3310,0x01);
+	write_cmos_sensor8(0x3314,0x16);
+	write_cmos_sensor8(0x331c,0x02);
+	write_cmos_sensor8(0x331e,0x39);
+	write_cmos_sensor8(0x331f,0x79);
+	write_cmos_sensor8(0x3320,0x08);
+	write_cmos_sensor8(0x3326,0x0e);
+	write_cmos_sensor8(0x3327,0x0a);
+	write_cmos_sensor8(0x3329,0x0b);
+	write_cmos_sensor8(0x3333,0x10);
+	write_cmos_sensor8(0x333e,0x20);
+	write_cmos_sensor8(0x333f,0x10);
+	write_cmos_sensor8(0x335d,0x60);
+	write_cmos_sensor8(0x3364,0x56);
+	write_cmos_sensor8(0x3366,0x01);
+	write_cmos_sensor8(0x337f,0x13);
+	write_cmos_sensor8(0x3390,0x01);
+	write_cmos_sensor8(0x3391,0x03);
+	write_cmos_sensor8(0x3392,0x0f);
+	write_cmos_sensor8(0x3393,0x14);
+	write_cmos_sensor8(0x3394,0x21);
+	write_cmos_sensor8(0x3395,0x26);
+	write_cmos_sensor8(0x33ad,0x1c);
+	write_cmos_sensor8(0x33af,0x38);
+	write_cmos_sensor8(0x33b2,0x2d);
+	write_cmos_sensor8(0x33b3,0x03);
+	write_cmos_sensor8(0x349f,0x0b);
+	write_cmos_sensor8(0x34a6,0x03);
+	write_cmos_sensor8(0x34a7,0x07);
+	write_cmos_sensor8(0x34a8,0x00);
+	write_cmos_sensor8(0x34a9,0x02);
+	write_cmos_sensor8(0x34aa,0x00);
+	write_cmos_sensor8(0x34ab,0xe0);
+	write_cmos_sensor8(0x34ac,0x00);
+	write_cmos_sensor8(0x34ad,0xe0);
+	write_cmos_sensor8(0x34f8,0x0f);
+	write_cmos_sensor8(0x34f9,0x00);
+	write_cmos_sensor8(0x3633,0x35);
+	write_cmos_sensor8(0x363b,0x55);
+	write_cmos_sensor8(0x363d,0x84);
+	write_cmos_sensor8(0x3670,0x0f);
+	write_cmos_sensor8(0x3671,0x45);
+	write_cmos_sensor8(0x3672,0x45);
+	write_cmos_sensor8(0x3673,0x45);
+	write_cmos_sensor8(0x3674,0x40);
+	write_cmos_sensor8(0x3675,0x40);
+	write_cmos_sensor8(0x3676,0x40);
+	write_cmos_sensor8(0x3677,0x03);
+	write_cmos_sensor8(0x3678,0x0f);
+	write_cmos_sensor8(0x367c,0x03);
+	write_cmos_sensor8(0x367d,0x0f);
+	write_cmos_sensor8(0x3690,0x64);
+	write_cmos_sensor8(0x3691,0x64);
+	write_cmos_sensor8(0x3692,0x64);
+	write_cmos_sensor8(0x369c,0x03);
+	write_cmos_sensor8(0x369d,0x07);
+	write_cmos_sensor8(0x36a7,0x01);
+	write_cmos_sensor8(0x36a8,0x03);
+	write_cmos_sensor8(0x36a9,0x07);
+	write_cmos_sensor8(0x36aa,0x0f);
+	write_cmos_sensor8(0x36ae,0xe0);
+	write_cmos_sensor8(0x36af,0x80);
+	write_cmos_sensor8(0x36b8,0x83);
+	write_cmos_sensor8(0x36b9,0xc6);
+	write_cmos_sensor8(0x36ba,0xcd);
+	write_cmos_sensor8(0x370f,0x01);
+	write_cmos_sensor8(0x3721,0x6c);
+	write_cmos_sensor8(0x3722,0x03);
+	write_cmos_sensor8(0x3724,0xb0);
+	write_cmos_sensor8(0x3726,0x02);
+	write_cmos_sensor8(0x3727,0x04);
+	write_cmos_sensor8(0x3728,0x03);
+	write_cmos_sensor8(0x3771,0x03);
+	write_cmos_sensor8(0x3772,0x03);
+	write_cmos_sensor8(0x3773,0x03);
+	write_cmos_sensor8(0x377a,0x03);
+	write_cmos_sensor8(0x377b,0x0f);
+	write_cmos_sensor8(0x3900,0x05);
+	write_cmos_sensor8(0x3903,0x60);
+	write_cmos_sensor8(0x3908,0x40);
+	write_cmos_sensor8(0x391a,0x1a);
+	write_cmos_sensor8(0x391b,0x10);
+	write_cmos_sensor8(0x391c,0x0a);
+	write_cmos_sensor8(0x391d,0x00);
+	write_cmos_sensor8(0x391f,0x41);
+	write_cmos_sensor8(0x3926,0xe2);
+	write_cmos_sensor8(0x3933,0x0f);
+	write_cmos_sensor8(0x3934,0x00);
+	write_cmos_sensor8(0x3937,0x74);
+	write_cmos_sensor8(0x393f,0x80);
+	write_cmos_sensor8(0x3940,0x00);
+	write_cmos_sensor8(0x3941,0x00);
+	write_cmos_sensor8(0x3942,0x00);
+	write_cmos_sensor8(0x3943,0x71);
+	write_cmos_sensor8(0x3944,0x71);
+	write_cmos_sensor8(0x3945,0x72);
+	write_cmos_sensor8(0x3946,0x73);
+	write_cmos_sensor8(0x39c1,0x0c);
+	write_cmos_sensor8(0x39c9,0x10);
+	write_cmos_sensor8(0x39dd,0x00);
+	write_cmos_sensor8(0x39de,0x10);
+	write_cmos_sensor8(0x39e7,0x04);
+	write_cmos_sensor8(0x39e8,0x04);
+	write_cmos_sensor8(0x39e9,0x80);
+	write_cmos_sensor8(0x3e08,0x00);
+	write_cmos_sensor8(0x3e09,0x20);
+	write_cmos_sensor8(0x4402,0x03);
+	write_cmos_sensor8(0x4403,0x0e);
+	write_cmos_sensor8(0x4404,0x28);
+	write_cmos_sensor8(0x4405,0x34);
+	write_cmos_sensor8(0x440c,0x42);
+	write_cmos_sensor8(0x440d,0x42);
+	write_cmos_sensor8(0x440e,0x32);
+	write_cmos_sensor8(0x440f,0x54);
+	write_cmos_sensor8(0x4412,0x01);
+	write_cmos_sensor8(0x4424,0x01);
+	write_cmos_sensor8(0x4503,0x20);
+	write_cmos_sensor8(0x4506,0x60);
+	write_cmos_sensor8(0x4509,0x22);
+	write_cmos_sensor8(0x450d,0x0d);
+	write_cmos_sensor8(0x452d,0x03);
+	write_cmos_sensor8(0x452f,0x07);
+	write_cmos_sensor8(0x4532,0x0f);
+	write_cmos_sensor8(0x4534,0x1c);
+	write_cmos_sensor8(0x4536,0x1c);
+	write_cmos_sensor8(0x4538,0x2c);
+	write_cmos_sensor8(0x453a,0x2e);
+	write_cmos_sensor8(0x5000,0x0e);
+	write_cmos_sensor8(0x5500,0x40);
+	write_cmos_sensor8(0x5501,0x08);
+	write_cmos_sensor8(0x550a,0x09);
+	write_cmos_sensor8(0x550b,0xab);
+	write_cmos_sensor8(0x550e,0x00);
+	write_cmos_sensor8(0x550f,0x98);
+	write_cmos_sensor8(0x5784,0x1e);
+	write_cmos_sensor8(0x5785,0x0f);
+	write_cmos_sensor8(0x5787,0x16);
+	write_cmos_sensor8(0x5788,0x16);
+	write_cmos_sensor8(0x5789,0x16);
+	write_cmos_sensor8(0x578a,0x16);
+	write_cmos_sensor8(0x578b,0x16);
+	write_cmos_sensor8(0x578c,0x16);
+	write_cmos_sensor8(0x5790,0x20);
+	write_cmos_sensor8(0x5791,0x20);
+	write_cmos_sensor8(0x5792,0x20);
+	write_cmos_sensor8(0x5793,0x20);
+	write_cmos_sensor8(0x5794,0x20);
+	write_cmos_sensor8(0x5795,0x20);
+	write_cmos_sensor8(0x57c4,0x1e);
+	write_cmos_sensor8(0x57c5,0x0f);
+	write_cmos_sensor8(0x57c7,0x16);
+	write_cmos_sensor8(0x57c8,0x16);
+	write_cmos_sensor8(0x57c9,0x16);
+	write_cmos_sensor8(0x57ca,0x16);
+	write_cmos_sensor8(0x57cb,0x16);
+	write_cmos_sensor8(0x57cc,0x16);
+	write_cmos_sensor8(0x57d0,0x20);
+	write_cmos_sensor8(0x57d1,0x20);
+	write_cmos_sensor8(0x57d2,0x20);
+	write_cmos_sensor8(0x57d3,0x20);
+	write_cmos_sensor8(0x57d4,0x20);
+	write_cmos_sensor8(0x57d5,0x20);
+	write_cmos_sensor8(0x36e9,0x24);
+	write_cmos_sensor8(0x37f9,0x00);
 }
 
 static void normal_video_setting(void)
 {
-     mot_sydney_sc821cs_uw_table_write_cmos_sensor(
-         addr_data_pair_normal_video_mot_sydney_sc821cs_uw,
-         sizeof(addr_data_pair_normal_video_mot_sydney_sc821cs_uw) /
-         sizeof(kal_uint16));
+    write_cmos_sensor8(0x0103,0x01);
+	write_cmos_sensor8(0x0100,0x00);
+	write_cmos_sensor8(0x36e9,0x80);
+	write_cmos_sensor8(0x37f9,0x80);
+	write_cmos_sensor8(0x37fb,0x54);
+	write_cmos_sensor8(0x37fd,0x2a);
+	write_cmos_sensor8(0x301f,0x22);
+	write_cmos_sensor8(0x3200,0x00);
+	write_cmos_sensor8(0x3201,0x00);
+	write_cmos_sensor8(0x3202,0x01);
+	write_cmos_sensor8(0x3203,0x32);
+	write_cmos_sensor8(0x3204,0x0c);
+	write_cmos_sensor8(0x3205,0xcf);
+	write_cmos_sensor8(0x3206,0x08);
+	write_cmos_sensor8(0x3207,0x6d);
+	write_cmos_sensor8(0x3208,0x0c);
+	write_cmos_sensor8(0x3209,0xc0);
+	write_cmos_sensor8(0x320a,0x07);
+	write_cmos_sensor8(0x320b,0x2c);
+	write_cmos_sensor8(0x320c,0x07);
+	write_cmos_sensor8(0x320d,0x6c);
+	write_cmos_sensor8(0x320e,0x09);
+	write_cmos_sensor8(0x320f,0x0c);
+	write_cmos_sensor8(0x3210,0x00);
+	write_cmos_sensor8(0x3211,0x08);
+	write_cmos_sensor8(0x3212,0x00);
+	write_cmos_sensor8(0x3213,0x14);
+	write_cmos_sensor8(0x3253,0x20);
+	write_cmos_sensor8(0x3259,0x04);
+	write_cmos_sensor8(0x325f,0x40);
+	write_cmos_sensor8(0x32d1,0x30);
+	write_cmos_sensor8(0x3301,0x08);
+	write_cmos_sensor8(0x3302,0x18);
+	write_cmos_sensor8(0x3303,0x10);
+	write_cmos_sensor8(0x3304,0x60);
+	write_cmos_sensor8(0x3306,0x70);
+	write_cmos_sensor8(0x3307,0x04);
+	write_cmos_sensor8(0x3308,0x20);
+	write_cmos_sensor8(0x3309,0xa0);
+	write_cmos_sensor8(0x330a,0x00);
+	write_cmos_sensor8(0x330b,0xe0);
+	write_cmos_sensor8(0x330c,0x24);
+	write_cmos_sensor8(0x330d,0x28);
+	write_cmos_sensor8(0x330e,0x44);
+	write_cmos_sensor8(0x330f,0x01);
+	write_cmos_sensor8(0x3310,0x01);
+	write_cmos_sensor8(0x3314,0x16);
+	write_cmos_sensor8(0x331c,0x02);
+	write_cmos_sensor8(0x331e,0x39);
+	write_cmos_sensor8(0x331f,0x79);
+	write_cmos_sensor8(0x3320,0x08);
+	write_cmos_sensor8(0x3326,0x0e);
+	write_cmos_sensor8(0x3327,0x0a);
+	write_cmos_sensor8(0x3329,0x0b);
+	write_cmos_sensor8(0x3333,0x10);
+	write_cmos_sensor8(0x333e,0x20);
+	write_cmos_sensor8(0x333f,0x10);
+	write_cmos_sensor8(0x335d,0x60);
+	write_cmos_sensor8(0x3364,0x56);
+	write_cmos_sensor8(0x3366,0x01);
+	write_cmos_sensor8(0x337f,0x13);
+	write_cmos_sensor8(0x3390,0x01);
+	write_cmos_sensor8(0x3391,0x03);
+	write_cmos_sensor8(0x3392,0x0f);
+	write_cmos_sensor8(0x3393,0x14);
+	write_cmos_sensor8(0x3394,0x21);
+	write_cmos_sensor8(0x3395,0x26);
+	write_cmos_sensor8(0x33ad,0x1c);
+	write_cmos_sensor8(0x33af,0x38);
+	write_cmos_sensor8(0x33b2,0x2d);
+	write_cmos_sensor8(0x33b3,0x03);
+	write_cmos_sensor8(0x349f,0x0b);
+	write_cmos_sensor8(0x34a6,0x03);
+	write_cmos_sensor8(0x34a7,0x07);
+	write_cmos_sensor8(0x34a8,0x00);
+	write_cmos_sensor8(0x34a9,0x02);
+	write_cmos_sensor8(0x34aa,0x00);
+	write_cmos_sensor8(0x34ab,0xe0);
+	write_cmos_sensor8(0x34ac,0x00);
+	write_cmos_sensor8(0x34ad,0xe0);
+	write_cmos_sensor8(0x34f8,0x0f);
+	write_cmos_sensor8(0x34f9,0x00);
+	write_cmos_sensor8(0x3633,0x35);
+	write_cmos_sensor8(0x363b,0x55);
+	write_cmos_sensor8(0x363d,0x84);
+	write_cmos_sensor8(0x3670,0x0f);
+	write_cmos_sensor8(0x3671,0x45);
+	write_cmos_sensor8(0x3672,0x45);
+	write_cmos_sensor8(0x3673,0x45);
+	write_cmos_sensor8(0x3674,0x40);
+	write_cmos_sensor8(0x3675,0x40);
+	write_cmos_sensor8(0x3676,0x40);
+	write_cmos_sensor8(0x3677,0x03);
+	write_cmos_sensor8(0x3678,0x0f);
+	write_cmos_sensor8(0x367c,0x03);
+	write_cmos_sensor8(0x367d,0x0f);
+	write_cmos_sensor8(0x3690,0x64);
+	write_cmos_sensor8(0x3691,0x64);
+	write_cmos_sensor8(0x3692,0x64);
+	write_cmos_sensor8(0x369c,0x03);
+	write_cmos_sensor8(0x369d,0x07);
+	write_cmos_sensor8(0x36a7,0x01);
+	write_cmos_sensor8(0x36a8,0x03);
+	write_cmos_sensor8(0x36a9,0x07);
+	write_cmos_sensor8(0x36aa,0x0f);
+	write_cmos_sensor8(0x36ae,0xe0);
+	write_cmos_sensor8(0x36af,0x80);
+	write_cmos_sensor8(0x36b8,0x83);
+	write_cmos_sensor8(0x36b9,0xc6);
+	write_cmos_sensor8(0x36ba,0xcd);
+	write_cmos_sensor8(0x370f,0x01);
+	write_cmos_sensor8(0x3721,0x6c);
+	write_cmos_sensor8(0x3722,0x03);
+	write_cmos_sensor8(0x3724,0xb0);
+	write_cmos_sensor8(0x3726,0x02);
+	write_cmos_sensor8(0x3727,0x04);
+	write_cmos_sensor8(0x3728,0x03);
+	write_cmos_sensor8(0x3771,0x03);
+	write_cmos_sensor8(0x3772,0x03);
+	write_cmos_sensor8(0x3773,0x03);
+	write_cmos_sensor8(0x377a,0x03);
+	write_cmos_sensor8(0x377b,0x0f);
+	write_cmos_sensor8(0x3900,0x05);
+	write_cmos_sensor8(0x3903,0x60);
+	write_cmos_sensor8(0x3908,0x40);
+	write_cmos_sensor8(0x391a,0x1a);
+	write_cmos_sensor8(0x391b,0x10);
+	write_cmos_sensor8(0x391c,0x0a);
+	write_cmos_sensor8(0x391d,0x00);
+	write_cmos_sensor8(0x391f,0x41);
+	write_cmos_sensor8(0x3926,0xe2);
+	write_cmos_sensor8(0x3933,0x0f);
+	write_cmos_sensor8(0x3934,0x00);
+	write_cmos_sensor8(0x3937,0x74);
+	write_cmos_sensor8(0x393f,0x80);
+	write_cmos_sensor8(0x3940,0x00);
+	write_cmos_sensor8(0x3941,0x00);
+	write_cmos_sensor8(0x3942,0x00);
+	write_cmos_sensor8(0x3943,0x71);
+	write_cmos_sensor8(0x3944,0x71);
+	write_cmos_sensor8(0x3945,0x72);
+	write_cmos_sensor8(0x3946,0x73);
+	write_cmos_sensor8(0x39c1,0x0c);
+	write_cmos_sensor8(0x39c9,0x10);
+	write_cmos_sensor8(0x39dd,0x00);
+	write_cmos_sensor8(0x39de,0x10);
+	write_cmos_sensor8(0x39e7,0x04);
+	write_cmos_sensor8(0x39e8,0x04);
+	write_cmos_sensor8(0x39e9,0x80);
+	write_cmos_sensor8(0x3e08,0x00);
+	write_cmos_sensor8(0x3e09,0x20);
+	write_cmos_sensor8(0x4402,0x03);
+	write_cmos_sensor8(0x4403,0x0e);
+	write_cmos_sensor8(0x4404,0x28);
+	write_cmos_sensor8(0x4405,0x34);
+	write_cmos_sensor8(0x440c,0x42);
+	write_cmos_sensor8(0x440d,0x42);
+	write_cmos_sensor8(0x440e,0x32);
+	write_cmos_sensor8(0x440f,0x54);
+	write_cmos_sensor8(0x4412,0x01);
+	write_cmos_sensor8(0x4424,0x01);
+	write_cmos_sensor8(0x4503,0x20);
+	write_cmos_sensor8(0x4506,0x60);
+	write_cmos_sensor8(0x4509,0x22);
+	write_cmos_sensor8(0x450d,0x0d);
+	write_cmos_sensor8(0x452d,0x03);
+	write_cmos_sensor8(0x452f,0x07);
+	write_cmos_sensor8(0x4532,0x0f);
+	write_cmos_sensor8(0x4534,0x1c);
+	write_cmos_sensor8(0x4536,0x1c);
+	write_cmos_sensor8(0x4538,0x2c);
+	write_cmos_sensor8(0x453a,0x2e);
+	write_cmos_sensor8(0x5000,0x0e);
+	write_cmos_sensor8(0x5500,0x40);
+	write_cmos_sensor8(0x5501,0x08);
+	write_cmos_sensor8(0x550a,0x09);
+	write_cmos_sensor8(0x550b,0xab);
+	write_cmos_sensor8(0x550e,0x00);
+	write_cmos_sensor8(0x550f,0x98);
+	write_cmos_sensor8(0x5784,0x1e);
+	write_cmos_sensor8(0x5785,0x0f);
+	write_cmos_sensor8(0x5787,0x16);
+	write_cmos_sensor8(0x5788,0x16);
+	write_cmos_sensor8(0x5789,0x16);
+	write_cmos_sensor8(0x578a,0x16);
+	write_cmos_sensor8(0x578b,0x16);
+	write_cmos_sensor8(0x578c,0x16);
+	write_cmos_sensor8(0x5790,0x20);
+	write_cmos_sensor8(0x5791,0x20);
+	write_cmos_sensor8(0x5792,0x20);
+	write_cmos_sensor8(0x5793,0x20);
+	write_cmos_sensor8(0x5794,0x20);
+	write_cmos_sensor8(0x5795,0x20);
+	write_cmos_sensor8(0x57c4,0x1e);
+	write_cmos_sensor8(0x57c5,0x0f);
+	write_cmos_sensor8(0x57c7,0x16);
+	write_cmos_sensor8(0x57c8,0x16);
+	write_cmos_sensor8(0x57c9,0x16);
+	write_cmos_sensor8(0x57ca,0x16);
+	write_cmos_sensor8(0x57cb,0x16);
+	write_cmos_sensor8(0x57cc,0x16);
+	write_cmos_sensor8(0x57d0,0x20);
+	write_cmos_sensor8(0x57d1,0x20);
+	write_cmos_sensor8(0x57d2,0x20);
+	write_cmos_sensor8(0x57d3,0x20);
+	write_cmos_sensor8(0x57d4,0x20);
+	write_cmos_sensor8(0x57d5,0x20);
+	write_cmos_sensor8(0x36e9,0x24);
+	write_cmos_sensor8(0x37f9,0x00);
 }
 
 static void hs_video_setting(void)
 {
-     mot_sydney_sc821cs_uw_table_write_cmos_sensor(
-         addr_data_pair_hs_video_mot_sydney_sc821cs_uw,
-         sizeof(addr_data_pair_hs_video_mot_sydney_sc821cs_uw) /
-         sizeof(kal_uint16));
+
 }
 
 static void slim_video_setting(void)
 {
-     mot_sydney_sc821cs_uw_table_write_cmos_sensor(
-         addr_data_pair_slim_video_mot_sydney_sc821cs_uw,
-         sizeof(addr_data_pair_slim_video_mot_sydney_sc821cs_uw) /
-         sizeof(kal_uint16));
+
 }
 
 
@@ -583,15 +1238,15 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	LOG_INF(PFX, "enable: %d\n", enable);
 	if (enable) {
-		write_cmos_sensor8(0x3902, 0x80);
+		write_cmos_sensor8(0x3902, 0xa0);
 		write_cmos_sensor8(0x3909, 0xff);
 		write_cmos_sensor8(0x390a, 0xff);
-		write_cmos_sensor8(0x391f, 0xc8);
+		write_cmos_sensor8(0x391f, 0x00);
 	} else {
-		write_cmos_sensor8(0x3902, 0xc0);
+		write_cmos_sensor8(0x3902, 0xe0);
 		write_cmos_sensor8(0x3909, 0x00);
 		write_cmos_sensor8(0x390a, 0x00);
-		write_cmos_sensor8(0x391f, 0xc9);
+		write_cmos_sensor8(0x391f, 0x41);
 		mDELAY(10);
 		//write_cmos_sensor8(0x302d, 0x00);
 	}
