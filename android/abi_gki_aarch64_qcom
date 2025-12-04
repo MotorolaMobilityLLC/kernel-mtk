@@ -485,6 +485,7 @@
   devm_usb_get_phy_by_node
   _dev_notice
   dev_pm_domain_attach
+  dev_pm_domain_attach_by_id
   dev_pm_domain_attach_by_name
   dev_pm_domain_detach
   dev_pm_genpd_add_notifier
@@ -760,13 +761,22 @@
   freq_qos_update_request
   fsync_bdev
   ftrace_dump
+  fw_devlink_purge_absent_suppliers
+  fwnode_device_is_available
   fwnode_find_reference
   fwnode_get_next_child_node
+  fwnode_graph_get_next_endpoint
+  fwnode_graph_get_port_parent
+  fwnode_graph_get_remote_endpoint
+  fwnode_graph_get_remote_port_parent
+  fwnode_graph_parse_endpoint
   fwnode_handle_get
   fwnode_handle_put
+  fwnode_property_get_reference_args
   fwnode_property_present
   fwnode_property_read_string
   fwnode_property_read_u32_array
+  fwnode_property_read_u64_array
   fw_devlink_purge_absent_suppliers
   generic_device_group
   generic_file_llseek
@@ -1277,6 +1287,8 @@
   mdio_device_create
   mdio_device_free
   mdio_device_reset
+  media_pipeline_start
+  media_pipeline_stop
   memblock_end_of_DRAM
   memblock_free
   __memcat_p
@@ -2679,14 +2691,20 @@
   usleep_range_state
   uuid_parse
   v4l2_compat_ioctl32
+  v4l2_ctrl_cluster
   v4l2_ctrl_find
+  v4l2_ctrl_g_ctrl_int64
   v4l2_ctrl_get_name
   __v4l2_ctrl_modify_range
+  v4l2_ctrl_new_int_menu
+  v4l2_ctrl_new_std_menu_items
   __v4l2_ctrl_s_ctrl
+  v4l2_ctrl_subdev_subscribe_event
   __v4l2_device_register_subdev_nodes
   __v4l2_ctrl_handler_setup
   v4l2_event_dequeue
   v4l2_event_pending
+  v4l2_event_subdev_unsubscribe
   v4l2_fh_release
   v4l2_get_link_freq
   v4l2_pipeline_pm_get
@@ -2694,8 +2712,13 @@
   v4l2_s_ctrl
   v4l2_subdev_call_wrappers
   v4l2_i2c_subdev_set_name
+  v4l2_pipeline_link_notify
+  v4l2_s_ctrl
+  v4l2_subdev_call_wrappers
+  v4l2_subdev_link_validate
   vabits_actual
   vb2_create_bufs
+  vb2_ioctl_prepare_buf
   vb2_prepare_buf
   vb2_video_unregister_device
   vchan_dma_desc_free_list
