@@ -121,6 +121,7 @@ void sipa_regmap_defaults(struct regmap *regmap,
 bool sipa_regmap_set_chip_on(sipa_dev_t *si_pa);
 bool sipa_regmap_set_chip_off(sipa_dev_t *si_pa);
 bool sipa_regmap_get_chip_en(sipa_dev_t *si_pa);
+bool sipa_regmap_get_pvdd_en(sipa_dev_t *si_pa);
 
 void sipa_regmap_set_pvdd_limit(
 	struct regmap *regmap, uint32_t chip_type, uint32_t ch, unsigned int vol);

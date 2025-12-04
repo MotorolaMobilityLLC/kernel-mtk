@@ -789,6 +789,40 @@ bool sipa_regmap_get_chip_en(
 	return false;
 }
 
+bool sipa_regmap_get_pvdd_en(
+	sipa_dev_t *si_pa)
+{
+	SIPA_CHIP_CFG chip_cfg;
+	uint8_t *data;
+
+	if (NULL == si_pa) {
+		pr_err("[  err][%s] %s: si_pa is null \r\n",
+				LOG_FLAG, __func__);
+		return false;
+	}
+
+	if (verify_chip_type(si_pa->channel_num, si_pa->chip_type) != 0) {
+		pr_err("[  err][%s] %s: chip_type(%u) is err \r\n",
+			   LOG_FLAG, __func__, si_pa->chip_type);
+		return false;
+	}
+
+	data = sipa_param_read_chip_cfg(si_pa->channel_num, si_pa->chip_type, &chip_cfg);
+
+	if (data == NULL) {
+		pr_err("[  err][%s] %s: fw unloaded \r\n",
+			   LOG_FLAG, __func__);
+		return false;
+	}
+
+	si_pa->en_dyn_ud_time_s = chip_cfg.en_dyn_ud_time_s;
+	si_pa->en_dyn_ud_pvdd = chip_cfg.en_dyn_ud_pvdd;
+	pr_debug("[debug][%s] %s: channel = %d, time %d , en %d\r\n",
+			 LOG_FLAG, __func__, si_pa->channel_num, si_pa->en_dyn_ud_time_s, si_pa->en_dyn_ud_pvdd);
+	return true;
+
+}
+
 void sipa_regmap_set_pvdd_limit(
 	struct regmap *regmap, uint32_t chip_type, uint32_t ch, unsigned int vol)
 {

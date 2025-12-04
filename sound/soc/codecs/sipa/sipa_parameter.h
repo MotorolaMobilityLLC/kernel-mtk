@@ -137,7 +137,7 @@ typedef struct __sipa_chip_cfg {
 	SIPA_SRAM sram_ops;
 
 	/* move from dts */
-	uint32_t en_dyn_ud_vdd;
+	uint32_t en_dyn_ud_time_s;
 	uint32_t en_dyn_ud_pvdd;
 } __packed SIPA_CHIP_CFG;
 

@@ -56,6 +56,7 @@
 #include "sipa_tuning_if.h"
 #include "sipa_91xx.h"
 #include "sipa_parameter.h"
+#include "sipa_vdd.h"
 #ifdef CONFIG_SND_SOC_SYDNEY_SYDNYL_MULTI_AUDIO_PA
 #include "../../mediatek/common/mtk-sp-spk-amp.h"
 #endif
@@ -812,7 +813,7 @@ static int sipa_resume(
 
 		sipa_regmap_check_trimming(si_pa);
 	}
-
+	sipa_vol_get(si_pa);
 	return 0;
 }
 
@@ -863,7 +864,7 @@ static int sipa_suspend(
 		}
 		sipa_get_rst_value(si_pa);
 	}
-
+	sipa_vol_get_release(si_pa);
 	return 0;
 }
 

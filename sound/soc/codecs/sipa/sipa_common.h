@@ -36,7 +36,7 @@
 #include <linux/version.h>
 
 
-#define SIPA_DRIVER_VERSION					("3.1.25")
+#define SIPA_DRIVER_VERSION					("3.1.25a-251127")
 #define SIPA_MAX_CHANNEL_SUPPORT			(8)
 
 #define SIPA_FW_BIN							("sipa.bin")
@@ -98,6 +98,8 @@ typedef struct sipa_dev_s {
 	struct workqueue_struct *sipa_wq;
 	struct delayed_work interrupt_work;
 	struct delayed_work fw_load_work;
+	struct delayed_work vol_get_work;
+	struct timer_list vol_get_timer;
 	int disable_pin;
 	int rst_pin;
 	int owi_pin;
@@ -118,8 +120,8 @@ typedef struct sipa_dev_s {
 	uint32_t en_compatible_type;
 	uint32_t dyn_ud_vdd_port;
 	uint32_t en_dyn_id;
-	// uint32_t en_dyn_ud_vdd;
-	// uint32_t en_dyn_ud_pvdd;
+	uint32_t en_dyn_ud_time_s;
+	uint32_t en_dyn_ud_pvdd;
 	// uint32_t en_spk_cal_dl;
 	// uint32_t spk_model_flag;
 	uint8_t  pa_status;
