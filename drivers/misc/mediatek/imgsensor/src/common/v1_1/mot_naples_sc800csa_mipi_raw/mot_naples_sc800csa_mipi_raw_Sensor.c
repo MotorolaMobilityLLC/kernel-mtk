@@ -339,16 +339,16 @@ static void set_shutter(kal_uint16 shutter)
     pr_debug(PFX, "Exit! shutter = %d, framelength = %d\n", shutter, imgsensor.frame_length);
 }
 
-static kal_uint16 gain2reg(const kal_uint16 gain)
+static kal_uint32 gain2reg(const kal_uint16 gain)
 {
-	kal_uint16 reg_gain = gain << 4;
+	kal_uint32 reg_gain = gain << 3;
 
 	if (reg_gain < MOT_NAPLES_SC800CSA_SENSOR_BASE_GAIN)
 		reg_gain = MOT_NAPLES_SC800CSA_SENSOR_BASE_GAIN;
 	else if (reg_gain > MOT_NAPLES_SC800CSA_SENSOR_MAX_GAIN)
 		reg_gain = MOT_NAPLES_SC800CSA_SENSOR_MAX_GAIN;
 
-	return (kal_uint16)reg_gain;
+	return (kal_uint32)reg_gain;
 }
 /*************************************************************************
 * FUNCTION
@@ -366,9 +366,9 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-static kal_uint16 set_gain(kal_uint16 gain)
+static kal_uint32 set_gain(kal_uint16 gain)
 {
-	kal_uint16 reg_gain;
+	kal_uint32 reg_gain;
 	kal_uint32 temp_gain;
 	kal_int16 gain_index;
 	kal_uint16 MOT_NAPLES_SC800CSA_AGC_Param[MOT_NAPLES_SC800CSA_SENSOR_GAIN_MAP_SIZE][2] = {
