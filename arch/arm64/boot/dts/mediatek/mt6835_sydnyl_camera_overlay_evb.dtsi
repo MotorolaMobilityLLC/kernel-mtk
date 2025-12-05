@@ -72,6 +72,20 @@
 			output-high;
 		};
 	};
+	camera_pins_cam0_af_0: vcamaf0@10 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam0_af_1: vcamaf1@11 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 	camera_pins_cam0_mclk_off: camera_pins_cam0_mclk_off {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO91__FUNC_GPIO91>;
@@ -262,7 +276,7 @@
 	cam0_pin_vcama = "regulator";
 	cam0_pin_vcamio = "regulator";
 	cam0_pin_vcamd = "regulator";
-	cam0_pin_vcamaf = "regulator";
+	cam0_pin_vcamaf = "gpio";
 	cam1_pin_mclk = "mclk";
 	cam1_pin_rst = "gpio";
 	cam1_pin_vcama = "regulator";
@@ -341,6 +355,12 @@
 		reg = <0x72>;
 		status = "okay";
 	};
+};
+&camera_af_hw_node {
+	pinctrl-names = "camaf_m1_gpio_on",	"camaf_m1_gpio_off";
+	pinctrl-0 = <&camera_pins_cam0_af_1>;
+	pinctrl-1 = <&camera_pins_cam0_af_0>;
+	status = "okay";
 };
 /* CAMERA AF end */
 
