@@ -430,9 +430,6 @@ static struct mtk_panel_params ext_params_mode_60 = {
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
-
 };
 
 static struct mtk_panel_params ext_params_mode_90 = {
@@ -474,8 +471,6 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
 };
 
 static struct mtk_panel_params ext_params_mode_120 = {
@@ -517,8 +512,6 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
 };
 
 static int tm_ili79505a_setbacklight_cmdq(void *dsi, dcs_write_gce cb,

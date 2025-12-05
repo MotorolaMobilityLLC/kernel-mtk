@@ -485,8 +485,6 @@ static struct mtk_panel_params ext_params_mode_30 = {
 		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_30_FPS,
 
 };
 
@@ -562,8 +560,6 @@ static struct mtk_panel_params ext_params_mode_60 = {
 		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
 
 };
 
@@ -638,8 +634,6 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
 };
 
 static struct mtk_panel_params ext_params_mode_120 = {
@@ -713,8 +707,6 @@ static struct mtk_panel_params ext_params_mode_120 = {
 		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
-	.lfr_enable = LFR_EN,
-	.lfr_minimum_fps = MODE_60_FPS,
 
 };
 
