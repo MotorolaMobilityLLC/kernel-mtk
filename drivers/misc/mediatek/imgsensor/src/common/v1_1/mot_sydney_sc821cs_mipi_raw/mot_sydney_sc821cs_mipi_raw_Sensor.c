@@ -83,8 +83,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 	.normal_video = {
 		.pclk = 132000000,
-		.linelength = 2048,
-		.framelength = 2144,
+		.linelength = 1900,
+		.framelength = 2316,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 3264,
