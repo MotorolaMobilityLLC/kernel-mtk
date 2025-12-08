@@ -13,6 +13,52 @@
 #include "kd_camera_typedef.h"
 
 #include <linux/i2c.h>
+#define SC821CS_OTP_RET_FAIL -1
+#define SC821CS_OTP_PAGE1 1
+#define OTP_I2C_ADDR 0x20
+#define SC821CS_OTP_RET_SUCCESS 0
+#define SC821CS_OTP_MODULE_FLAGADDR 0x829C
+#define SC821CS_GROUP1_FLAG 0x01
+#define SC821CS_GROUP2_FLAG 0x03
+#define SC821CS_GROUP3_FLAG 0x07
+#define SC821CS_INVALID_FLAG 0x0
+#define SC821CS_DD_UW_OTP_MODULE_LENS (0x82A4 - 0x829D + 1)    //module offset 8bit
+#define SC821CS_OTP_MODULE_GROUP1_STARTADDR 0x829D
+#define SC821CS_OTP_MODULE_GROUP2_STARTADDR 0x8AEE - 0x400 * 2
+#define SC821CS_OTP_MODULE_GROUP3_STARTADDR 0x933F - 0x400 * 4
+#define SC821CS_OTP_AWB_GROUP1_FLAGADDR 0x82A5
+#define SC821CS_OTP_AWB_GROUP2_FLAGADDR 0x8AF6 - 0x400 * 2
+#define SC821CS_OTP_AWB_GROUP3_FLAGADDR 0x9347 - 0x400 * 4
+#define SC821CS_OTP_AWB_GROUP1_STARTADDR 0x82A6
+#define SC821CS_OTP_AWB_GROUP2_STARTADDR 0x8AF7
+#define SC821CS_OTP_AWB_GROUP3_STARTADDR 0x9348
+#define SC821CS_DD_UW_OTP_AWB_LENS (0x82B6 - 0x82A6 + 1) //AWB offset 12bit
+#define SC821CS_OTP_SN_GROUP1_STARTADDR 0x8ADE - 0x400 * 2
+#define SC821CS_OTP_SN_GROUP2_STARTADDR 0x932F - 0x400 * 4
+#define SC821CS_OTP_SN_GROUP3_STARTADDR 0x9B80 - 0x400 * 6
+#define SC821CS_LSC_END_PAGE 7
+#define SC821CS_OTP_LSC_GROUP1_CHECKSUMADDR 0x8ADC - 0x400 * 2
+#define SC821CS_OTP_LSC_GROUP2_CHECKSUMADDR 0x932D - 0x400 * 4
+#define SC821CS_OTP_LSC_GROUP3_CHECKSUMADDR 0x9B7E - 0x400 * 6
+#define SC821CS_OTP_LSC_GROUP1_FLAGADDR 0x82B7
+#define SC821CS_OTP_LSC_GROUP2_FLAGADDR 0x8B08 - 0x400 * 2
+#define SC821CS_OTP_LSC_GROUP3_FLAGADDR 0x9359 - 0x400 * 4
+#define SC821CS_UW_OTP_LSC_LENS 1870
+#define SC821CS_DD_UW_OTP_LSC_LENS 1869
+#define SC821CS_LSC_GROUP1_DATA_START 0x82B8 - 0x400
+#define SC821CS_LSC_GROUP2_DATA_START 0x8B09 - 0x400 * 2
+#define SC821CS_LSC_GROUP3_DATA_START 0x935A - 0x400 * 4
+#define SC821CS_LSC_GROUP1_START_PAGE 2
+#define SC821CS_LSC_GROUP2_START_PAGE 4
+#define SC821CS_LSC_GROUP3_START_PAGE 6
+#define SC821CS_OTP_SN_GROUP1_FLAGADDR 0x8ADD - 0x400 * 2
+#define SC821CS_OTP_SN_GROUP2_FLAGADDR 0x932E - 0x400 * 4
+#define SC821CS_OTP_SN_GROUP3_FLAGADDR 0x9B7F - 0x400 * 6
+#define SC821CS_DD_UW_OTP_SN_LENS (0x8AED - 0x8ADE + 1)
+
+
+
+
 /*MODULE*/
 #define OTP_MODULE_FLAG 0x827A
 #define MODULE_GROUP_INFO_PAGE 2
@@ -96,7 +142,7 @@
 #define TOTAL_GROUP2_CHECKSUM 0x95EA
 
 #define ALL_DATA_SIZE 1928
-extern struct mot_sydney_sc821cs_uw_otp_t mot_sydney_sc821cs_uw_otp_info;
+extern struct sc821cs_dd_uw_otp_struct sc821cs_dd_uw_otp;
 
 typedef enum {
 	NO_ERRORS,
@@ -108,16 +154,15 @@ struct SYDNEY_SC821CS_UW_eeprom_t{
 	uint8_t lens_id;
 };
 
-struct mot_sydney_sc821cs_uw_otp_t {
-	kal_uint8  module_param[37];
-	kal_uint8  moduleChksum[2];
-	kal_uint8  awb_flag;
-	kal_uint8  awb_param[16];
-	kal_uint8  awbChksum;
-	kal_uint8  lsc_flag;
-	kal_uint8  lsc_param[1868];
-	kal_uint8  lscChksum;
-	kal_uint8  allDataChksum;
+struct sc821cs_dd_uw_otp_struct {
+	UINT8 ModuleFlag;
+	UINT8 SNFlag;
+	UINT8 WBFlag;
+	UINT8 LscFlag;
+	UINT8 module_info[SC821CS_DD_UW_OTP_MODULE_LENS];
+	UINT8 sn_data[SC821CS_DD_UW_OTP_SN_LENS];
+	UINT8 wb_data[SC821CS_DD_UW_OTP_AWB_LENS];
+	UINT8 lsc_data[SC821CS_DD_UW_OTP_LSC_LENS];
 };
 
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
