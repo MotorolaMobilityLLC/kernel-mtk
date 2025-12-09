@@ -34,6 +34,9 @@ struct imgsensor_mode_struct {
  /*     following for GetDefaultFramerateByScenario()    */
 	kal_uint16 max_framerate;
 	kal_uint32 mipi_pixel_rate;
+	kal_uint32 min_shutter;
+	kal_uint32 exp_step;
+
 };
 
 /* SENSOR PRIVATE STRUCT FOR VARIABLES*/
@@ -49,6 +52,8 @@ struct imgsensor_struct {
 
 	kal_uint32 frame_length; /* current framelength */
 	kal_uint32 line_length; /* current linelength */
+	kal_uint32 min_shutter;
+	kal_uint32 exp_step;
 
 	kal_uint32 min_frame_length;
 	kal_uint16 dummy_pixel; /* current dummypixel */
