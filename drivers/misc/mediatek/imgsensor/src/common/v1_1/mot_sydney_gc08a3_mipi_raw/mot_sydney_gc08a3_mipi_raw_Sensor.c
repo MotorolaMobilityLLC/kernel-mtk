@@ -55,7 +55,9 @@
 #include "mot_sydney_gc08a3_mipi_raw_Sensor.h"
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-
+extern bool check_mot_sydney_gc08a3_otp(void);
+extern mot_calibration_status_t *SYDNEY_GC08A3_otp_get_calibration_status(void);
+extern mot_calibration_mnf_t *SYDNEY_GC08A3_otp_get_mnf_info(void);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_SYDNEY_GC08A3_SENSOR_ID,
@@ -1582,6 +1584,11 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("[mot_sydney_gc08a3_camera_sensor]get_imgsensor_id:i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
+				if(check_mot_sydney_gc08a3_otp()) {
+					pr_debug("mot_sydney_gc08a3,check OTP pass\n");
+				} else {
+					pr_debug("mot_sydney_gc08a3,check OTP fail\n");
+				}
 				return ERROR_NONE;
 			}
 			pr_debug("[mot_sydney_gc08a3_camera_sensor]get_imgsensor_id:Read sensor id fail, write id: 0x%x, id: 0x%x\n",
@@ -1896,6 +1903,9 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SlimVideoDelayFrame =
 		imgsensor_info.slim_video_delay_frame;
 
+		/*Apply manufacture info*/
+	memcpy(&sensor_info->mnf_calibration, SYDNEY_GC08A3_otp_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, SYDNEY_GC08A3_otp_get_calibration_status(), sizeof(mot_calibration_status_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;

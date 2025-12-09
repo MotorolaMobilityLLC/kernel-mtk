@@ -31,6 +31,12 @@ extern unsigned int ov08f_2nd_read_region(struct i2c_client *client, unsigned in
 extern unsigned int sc800csa_read_region(struct i2c_client *client, unsigned int addr,
 				unsigned char *data, unsigned int size);
 #endif
+#if defined(CONFIG_MOT_SYDNEY_CAMERA_PROJECT)
+extern unsigned int GC08A3_read_region(struct i2c_client *client, unsigned int addr,
+				unsigned char *data, unsigned int size);
+extern unsigned int GC08A3_uw_read_region(struct i2c_client *client, unsigned int addr,
+				unsigned char *data, unsigned int size);
+#endif
 #if defined(CONFIG_MOT_SBUYA_CAMERA_PROJECT)
 extern unsigned int ov08f_read_region(struct i2c_client *client, unsigned int addr,
 				unsigned char *data, unsigned int size);
@@ -56,11 +62,19 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{MOT_ORLANDO_OV50D_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_ORLANDO_S5KKDS_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_ORLANDO_OV08D_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+#elif defined(CONFIG_MOT_SYDNYL_CAMERA_PROJECT)
+	{MOT_SYDNEY_IMX882_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_SYDNEY_GC32E1_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_SYDNEY_GC50F6A_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_SYDNEY_GC50F6A_2ND_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_SYDNEY_GC08A3_SENSOR_ID, 0x62, GC08A3_read_region},
 #elif defined(CONFIG_MOT_SYDNEY_CAMERA_PROJECT)
 	{MOT_SYDNEY_IMX882_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_SYDNEY_GC32E1_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_SYDNEY_GC50F6A_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_SYDNEY_GC50F6A_2ND_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_SYDNEY_GC08A3_SENSOR_ID, 0x62, GC08A3_read_region},
+	{MOT_SYDNEY_GC08A3_UW_SENSOR_ID, 0x62, GC08A3_uw_read_region},
 #elif defined(CONFIG_MOT_NAPLES_CAMERA_PROJECT)
 	{MOT_NAPLES_S5KHM9_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_NAPLES_IMX882_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},

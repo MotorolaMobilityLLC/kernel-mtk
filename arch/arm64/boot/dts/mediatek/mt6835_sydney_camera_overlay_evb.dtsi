@@ -319,6 +319,12 @@
 &i2c4 {
 	status = "okay";
 	clock-frequency = <400000>;
+
+	mtk_camera_eeprom2:camera_eeprom2@50 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x52>;
+		status = "okay";
+	};
 	camera_main_two_mtk:camera_main_two@47 {
 		compatible = "mediatek,camera_main_two";
 		#thermal-sensor-cells = <0>;

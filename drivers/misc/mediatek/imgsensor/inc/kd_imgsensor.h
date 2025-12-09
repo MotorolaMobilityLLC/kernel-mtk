@@ -421,7 +421,7 @@
 #define SENSOR_DRVNAME_MOT_SYDNEY_IMX882_MIPI_RAW        "mot_sydney_imx882_mipi_raw"
 #define MOT_SYDNEY_GC32E1_SENSOR_ID                      0x32E1
 #define SENSOR_DRVNAME_MOT_SYDNEY_GC32E1_MIPI_RAW        "mot_sydney_gc32e1_mipi_raw"
-#define MOT_SYDNEY_SC821CS_UW_SENSOR_ID                  0xD18A
+#define MOT_SYDNEY_SC821CS_UW_SENSOR_ID                  0xD18B // 0xD18A + 1
 #define SENSOR_DRVNAME_MOT_SYDNEY_SC821CS_UW_MIPI_RAW    "mot_sydney_sc821cs_uw_mipi_raw"
 #define MOT_SYDNEY_GC50F6A_SENSOR_ID                     0x50F6
 #define SENSOR_DRVNAME_MOT_SYDNEY_GC50F6A_MIPI_RAW       "mot_sydney_gc50f6a_mipi_raw"
@@ -433,9 +433,9 @@
 #define SENSOR_DRVNAME_MOT_SYDNEY_SC201ACS_MIPI_RAW      "mot_sydney_sc201acs_mipi_raw"
 #define MOT_SYDNEY_GC08A3_SENSOR_ID                      0x08A3
 #define SENSOR_DRVNAME_MOT_SYDNEY_GC08A3_MIPI_RAW        "mot_sydney_gc08a3_mipi_raw"
-#define MOT_SYDNEY_GC08A3_UW_SENSOR_ID                   0x08A3
+#define MOT_SYDNEY_GC08A3_UW_SENSOR_ID                   0x08A4 // 0x08A3 + 1
 #define SENSOR_DRVNAME_MOT_SYDNEY_GC08A3_UW_MIPI_RAW     "mot_sydney_gc08a3_uw_mipi_raw"
-#define MOT_SYDNEY_GC50F6A_2ND_SENSOR_ID                 0x50F7 //0x50F6 + 1
+#define MOT_SYDNEY_GC50F6A_2ND_SENSOR_ID                 0x50F7 // 0x50F6 + 1
 #define SENSOR_DRVNAME_MOT_SYDNEY_GC50F6A_2ND_MIPI_RAW   "mot_sydney_gc50f6a_2nd_mipi_raw"
 #define MOT_SYDNEY_GC02M1_SENSOR_ID                      0x02E0
 #define SENSOR_DRVNAME_MOT_SYDNEY_GC02M1_MIPI_RAW        "mot_sydney_gc02m1_mipi_raw"
