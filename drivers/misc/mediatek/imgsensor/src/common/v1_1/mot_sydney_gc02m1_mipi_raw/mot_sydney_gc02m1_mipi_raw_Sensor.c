@@ -36,7 +36,7 @@
 #include "kd_imgsensor_errcode.h"
 
 #include "mot_sydney_gc02m1_mipi_raw_Sensor.h"
-
+extern void gc02m1_read_otp_data(void);
 #define MULTI_WRITE 0
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 
@@ -972,6 +972,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("MOT_SYDNEY_GC02M1(YH&YJ&YK&YC) i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+				gc02m1_read_otp_data();
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
@@ -1019,6 +1020,8 @@ static kal_uint32 open(void)
 
 	/* initail sequence write in */
 	sensor_init();
+
+	gc02m1_read_otp_data();
 
 	spin_lock(&imgsensor_drv_lock);
 
