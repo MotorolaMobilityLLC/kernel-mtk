@@ -36,6 +36,8 @@ extern unsigned int GC08A3_read_region(struct i2c_client *client, unsigned int a
 				unsigned char *data, unsigned int size);
 extern unsigned int GC08A3_uw_read_region(struct i2c_client *client, unsigned int addr,
 				unsigned char *data, unsigned int size);
+extern unsigned int sc201acs_read_region(struct i2c_client *client, unsigned int addr,
+				unsigned char *data, unsigned int size);
 #endif
 #if defined(CONFIG_MOT_SBUYA_CAMERA_PROJECT)
 extern unsigned int ov08f_read_region(struct i2c_client *client, unsigned int addr,
@@ -75,6 +77,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{MOT_SYDNEY_GC50F6A_2ND_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_SYDNEY_GC08A3_SENSOR_ID, 0x62, GC08A3_read_region},
 	{MOT_SYDNEY_GC08A3_UW_SENSOR_ID, 0x62, GC08A3_uw_read_region},
+	{MOT_SYDNEY_SC201ACS_SENSOR_ID, 0x6C, sc201acs_read_region},
 #elif defined(CONFIG_MOT_NAPLES_CAMERA_PROJECT)
 	{MOT_NAPLES_S5KHM9_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_NAPLES_IMX882_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},

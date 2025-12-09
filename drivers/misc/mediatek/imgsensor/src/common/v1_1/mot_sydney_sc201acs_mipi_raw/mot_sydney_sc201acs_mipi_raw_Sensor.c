@@ -37,6 +37,8 @@
 
 #include "mot_sydney_sc201acs_mipi_raw_Sensor.h"
 
+extern void sc201acs_read_otp_data(void);
+
 #define MULTI_WRITE 0
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 
@@ -959,6 +961,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("ly_debug00 MOT_SYDNEY_SC201ACS(YH&YJ&YK&YC) i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+				sc201acs_read_otp_data();
 				return ERROR_NONE;
 			}
 			LOG_INF("ly_debug00 Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
