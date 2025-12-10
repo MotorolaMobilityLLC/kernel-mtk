@@ -1270,6 +1270,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				LOG_INF("sensor id: 0x%x\n",*sensor_id);
 				if (*sensor_id == imgsensor_info.sensor_id) {
 					LOG_INF( "i2c write id  : 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+					read_mot_sydney_sc821cs_otp_data();
+					SYDNEY_SC821CS_eeprom_format_calibration_data(&imgsensor);
 					return ERROR_NONE;
 				}
 				LOG_INF("get_imgsensor_id Read sensor id fail, i2c write id: 0x%x,sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);

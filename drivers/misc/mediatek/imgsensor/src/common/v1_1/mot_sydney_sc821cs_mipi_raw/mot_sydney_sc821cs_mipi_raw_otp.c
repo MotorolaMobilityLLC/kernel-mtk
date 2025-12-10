@@ -33,8 +33,8 @@
 #include <linux/fs.h>
 #include <linux/compat.h>
 #endif
-#include "mot_sydney_sc821cs_uw_mipi_raw_Sensor.h"
-#include "mot_sydney_sc821cs_uw_mipi_raw_otp.h"
+#include "mot_sydney_sc821cs_mipi_raw_Sensor.h"
+#include "mot_sydney_sc821cs_mipi_raw_otp.h"
 #define LOG_INF(format, args...)		pr_err(PFX "[%s] " format, __func__, ##args)
 #define SC821CS_OTP_DEBUG_ON 1
 
@@ -43,15 +43,15 @@ static  struct imgsensor_struct *imgsensor;
 static mot_calibration_status_t calibration_status = {NO_ERRORS};
 static mot_calibration_mnf_t mnf_info = {0};
 
-struct sc821cs_dd_uw_otp_struct sc821cs_dd_uw_otp = {0};
+struct sc821cs_dd_otp_struct sc821cs_dd_otp = {0};
 
-static void SYDNEY_SC821CS_UW_eeprom_get_mnf_data(void *data,
+static void SYDNEY_SC821CS_eeprom_get_mnf_data(void *data,
 		mot_calibration_mnf_t *mnf)
 {
 	int ret;
 	uint8_t* module_info = data;
     	// lens_id
-	struct SYDNEY_SC821CS_UW_eeprom_t eeprom = {
+	struct SYDNEY_SC821CS_eeprom_t eeprom = {
         	.lens_id = module_info[10],
     	};
 
@@ -70,20 +70,20 @@ static void SYDNEY_SC821CS_UW_eeprom_get_mnf_data(void *data,
 }
 
 
-mot_calibration_status_t *SYDNEY_SC821CS_UW_eeprom_get_calibration_status(void)
+mot_calibration_status_t *SYDNEY_SC821CS_eeprom_get_calibration_status(void)
 {
 	return &calibration_status;
 }
 
-mot_calibration_mnf_t *SYDNEY_SC821CS_UW_eeprom_get_mnf_info(void)
+mot_calibration_mnf_t *SYDNEY_SC821CS_eeprom_get_mnf_info(void)
 {
 	return &mnf_info;
 }
 
-void SYDNEY_SC821CS_UW_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
+void SYDNEY_SC821CS_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
 {
 	imgsensor = pImgsensor;
-	SYDNEY_SC821CS_UW_eeprom_get_mnf_data((void *)sc821cs_dd_uw_otp.module_info, &mnf_info);
+	SYDNEY_SC821CS_eeprom_get_mnf_data((void *)sc821cs_dd_otp.module_info, &mnf_info);
 }
 
 static void SC821CS_Otp_Write_I2C_CAM_CAL_U8(u16 addr, u8 para)
@@ -182,17 +182,17 @@ static int sc821cs_sensor_otp_read_data(unsigned int ui4_offset,
 	case SC821CS_OTP_MODULE_GROUP1_STARTADDR:
 	case SC821CS_OTP_MODULE_GROUP2_STARTADDR:
 	case SC821CS_OTP_MODULE_GROUP3_STARTADDR:
-		pinputdata[0] = sc821cs_dd_uw_otp.ModuleFlag;
+		pinputdata[0] = sc821cs_dd_otp.ModuleFlag;
 		break;
 	case SC821CS_OTP_SN_GROUP1_STARTADDR:
 	case SC821CS_OTP_SN_GROUP2_STARTADDR:
 	case SC821CS_OTP_SN_GROUP3_STARTADDR:
-		pinputdata[0] = sc821cs_dd_uw_otp.SNFlag;
+		pinputdata[0] = sc821cs_dd_otp.SNFlag;
 		break;
 	case SC821CS_OTP_AWB_GROUP1_STARTADDR:
 	case SC821CS_OTP_AWB_GROUP2_STARTADDR:
 	case SC821CS_OTP_AWB_GROUP3_STARTADDR:
-		pinputdata[0] = sc821cs_dd_uw_otp.WBFlag;
+		pinputdata[0] = sc821cs_dd_otp.WBFlag;
 		break;
 	default:
 		break;
@@ -225,32 +225,32 @@ static int sc821cs_sensor_otp_read_module_info(unsigned char *pinputdata)
 {
 	int ret = SC821CS_OTP_RET_FAIL;
 
-	sc821cs_dd_uw_otp.ModuleFlag =
+	sc821cs_dd_otp.ModuleFlag =
 		SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_MODULE_FLAGADDR);
 	pr_err("Read ModuleFlag addr :0x%x, data:0x%x\n",
 			SC821CS_OTP_MODULE_FLAGADDR,
-			sc821cs_dd_uw_otp.ModuleFlag);
+			sc821cs_dd_otp.ModuleFlag);
 
-	if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP1_FLAG) {
+	if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP1_FLAG) {
 		ret = sc821cs_sensor_otp_read_data(
 			SC821CS_OTP_MODULE_GROUP1_STARTADDR,
-			SC821CS_DD_UW_OTP_MODULE_LENS, pinputdata);
+			SC821CS_DD_OTP_MODULE_LENS, pinputdata);
 		pr_err("group1 ret = %d!\n", ret);
-	} else if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP2_FLAG) {
-		sc821cs_set_page_and_load_data(3);
+	} else if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP2_FLAG) {
+		//sc821cs_set_page_and_load_data(3);
 		ret = sc821cs_sensor_otp_read_data(
 			SC821CS_OTP_MODULE_GROUP2_STARTADDR,
-			SC821CS_DD_UW_OTP_MODULE_LENS, pinputdata);
+			SC821CS_DD_OTP_MODULE_LENS, pinputdata);
 		pr_err("group2 ret = %d!\n", ret);
-	} else if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP3_FLAG) {
-		sc821cs_set_page_and_load_data(5);
+	} else if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP3_FLAG) {
+		//sc821cs_set_page_and_load_data(5);
 		ret = sc821cs_sensor_otp_read_data(
 			SC821CS_OTP_MODULE_GROUP3_STARTADDR,
-			SC821CS_DD_UW_OTP_MODULE_LENS, pinputdata);
+			SC821CS_DD_OTP_MODULE_LENS, pinputdata);
 		pr_err("group3 ret = %d!\n", ret);
 	} else {
 		pr_err("invalid flag :0x%x\n",
-				sc821cs_dd_uw_otp.ModuleFlag);
+				sc821cs_dd_otp.ModuleFlag);
 	}
 
 	return ret;
@@ -260,49 +260,49 @@ static int sc821cs_sensor_otp_read_awb_info(unsigned char *pinputdata)
 {
 	int ret = SC821CS_OTP_RET_FAIL;
 
-	if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP1_FLAG) {
-		sc821cs_dd_uw_otp.WBFlag =
+	if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP1_FLAG) {
+		sc821cs_dd_otp.WBFlag =
 		SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_AWB_GROUP1_FLAGADDR);
 		pr_err("Read WBFlag addr :0x%x, data:0x%x\n",
-		SC821CS_OTP_AWB_GROUP1_FLAGADDR, sc821cs_dd_uw_otp.WBFlag);
-		if(sc821cs_dd_uw_otp.WBFlag != 0x01){
-			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_uw_otp.WBFlag);
+		SC821CS_OTP_AWB_GROUP1_FLAGADDR, sc821cs_dd_otp.WBFlag);
+		if(sc821cs_dd_otp.WBFlag != 0x01){
+			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_otp.WBFlag);
 			return ret;
 		}
 		ret = sc821cs_sensor_otp_read_data(
 			SC821CS_OTP_AWB_GROUP1_STARTADDR,
-			SC821CS_DD_UW_OTP_AWB_LENS, pinputdata);
+			SC821CS_DD_OTP_AWB_LENS, pinputdata);
 		pr_err("group1 ret = %d!\n", ret);
-	} else if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP2_FLAG) {
-		sc821cs_set_page_and_load_data(3);
-		sc821cs_dd_uw_otp.WBFlag =
+	} else if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP2_FLAG) {
+		// sc821cs_set_page_and_load_data(3);
+		sc821cs_dd_otp.WBFlag =
 		SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_AWB_GROUP2_FLAGADDR);
 		pr_err("Read WBFlag addr :0x%x, data:0x%x\n",
-		SC821CS_OTP_AWB_GROUP2_FLAGADDR, sc821cs_dd_uw_otp.WBFlag);
-		if(sc821cs_dd_uw_otp.WBFlag != 0x01){
-			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_uw_otp.WBFlag);
+		SC821CS_OTP_AWB_GROUP2_FLAGADDR, sc821cs_dd_otp.WBFlag);
+		if(sc821cs_dd_otp.WBFlag != 0x01){
+			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_otp.WBFlag);
 			return ret;
 		}
 		ret = sc821cs_sensor_otp_read_data(
 			SC821CS_OTP_AWB_GROUP2_STARTADDR,
-			SC821CS_DD_UW_OTP_AWB_LENS, pinputdata);
+			SC821CS_DD_OTP_AWB_LENS, pinputdata);
 		pr_err("group2 ret = %d!\n", ret);
-	} else if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP3_FLAG) {
-		sc821cs_set_page_and_load_data(5);
-		sc821cs_dd_uw_otp.WBFlag =
+	} else if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP3_FLAG) {
+		// sc821cs_set_page_and_load_data(5);
+		sc821cs_dd_otp.WBFlag =
 		SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_AWB_GROUP3_FLAGADDR);
 		pr_err("Read WBFlag addr :0x%x, data:0x%x\n",
-		SC821CS_OTP_AWB_GROUP3_FLAGADDR, sc821cs_dd_uw_otp.WBFlag);
-		if(sc821cs_dd_uw_otp.WBFlag != 0x01){
-			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_uw_otp.WBFlag);
+		SC821CS_OTP_AWB_GROUP3_FLAGADDR, sc821cs_dd_otp.WBFlag);
+		if(sc821cs_dd_otp.WBFlag != 0x01){
+			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_otp.WBFlag);
 			return ret;
 		}
 		ret = sc821cs_sensor_otp_read_data(
 			SC821CS_OTP_AWB_GROUP3_STARTADDR,
-			SC821CS_DD_UW_OTP_AWB_LENS, pinputdata);
+			SC821CS_DD_OTP_AWB_LENS, pinputdata);
 		pr_err("group3 ret = %d!\n", ret);
 	} else
-		pr_err("invalid flag = 0x%x!\n", sc821cs_dd_uw_otp.WBFlag);
+		pr_err("invalid flag = 0x%x!\n", sc821cs_dd_otp.WBFlag);
 
 	return ret;
 }
@@ -345,82 +345,83 @@ static int sc821cs_sensor_otp_read_lsc_info(unsigned char *pinputdata)
     unsigned int lscpage1_offset = 0, lscpage2_offset = 0, lscpage3_offset = 0;
 	unsigned int page_lensize1 = 0, page_lensize2 = 0, page_lensize3 = 0;
 
-    if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP1_FLAG) {
-        start_page1 = 1;
-        start_page2 = 2;
-		start_page3 = 3;
+    if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP1_FLAG) {
+        start_page1 = 2;
+        start_page2 = 3;
+		start_page3 = 8;
 
-		page_lensize1 = 0x83FB - 0x82B8 + 1;
-		page_lensize2 = 0x87FB - 0x8468 + 1;
-		page_lensize3 = 0x8ADB - 0x8868 + 1;
+		page_lensize1 = 0x87FB - 0x8469 + 1;
+		page_lensize2 = 0x8BFB - 0x8868 + 1;
+		page_lensize3 = 0x9C8C - 0x9C68 + 1;
 
-        lscpage1_offset = 0x82B8;
-		lscpage2_offset = 0x8468;
-		lscpage3_offset = 0x8868;
+        lscpage1_offset = 0x8469;
+		lscpage2_offset = 0x8868;
+		lscpage3_offset = 0x9C68;
 
-		sc821cs_dd_uw_otp.LscFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_LSC_GROUP1_FLAGADDR);
-		pinputdata[0] = sc821cs_dd_uw_otp.LscFlag;
+		sc821cs_set_page_and_load_data(start_page1);
+		sc821cs_dd_otp.LscFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_LSC_GROUP1_FLAGADDR);
+		pinputdata[0] = sc821cs_dd_otp.LscFlag;
 		pr_err("Read LscFlag addr :0x%x, data:0x%x\n",
-	            SC821CS_OTP_LSC_GROUP1_FLAGADDR, sc821cs_dd_uw_otp.LscFlag);
-		if (sc821cs_dd_uw_otp.LscFlag != 0x01) {
-			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_uw_otp.LscFlag);
+	            SC821CS_OTP_LSC_GROUP1_FLAGADDR, sc821cs_dd_otp.LscFlag);
+		if (sc821cs_dd_otp.LscFlag != 0x01) {
+			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_otp.LscFlag);
 			return ret;
 		}
 
         checksum_addr = SC821CS_OTP_LSC_GROUP1_CHECKSUMADDR;
         group_name = "group1";
-    } else if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP2_FLAG) {
-        start_page1 = 3;
-        start_page2 = 4;
-		start_page3 = 5;
+    } else if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP2_FLAG) {
+        start_page1 = 4;
+        start_page2 = 5;
+		start_page3 = 8;
 
-		page_lensize1 = 0x8BFB - 0x8B09 + 1;
-		page_lensize2 = 0x8FFB - 0x8C68 + 1;
-		page_lensize3 = 0x932C - 0x9068 + 1;
+		page_lensize1 = 0x8FFB - 0x8C69 + 1;
+		page_lensize2 = 0x93FB - 0x9068 + 1;
+		page_lensize3 = 0x9CC6 - 0x9CA2 + 1;
 
-		lscpage1_offset = 0x8B09;
-		lscpage2_offset = 0x8C68;
-		lscpage3_offset = 0x9068;
+		lscpage1_offset = 0x8C69;
+		lscpage2_offset = 0x9068;
+		lscpage3_offset = 0x9CA2;
 
 		sc821cs_set_page_and_load_data(start_page1);
-		sc821cs_dd_uw_otp.LscFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_LSC_GROUP2_FLAGADDR);
-		pinputdata[0] = sc821cs_dd_uw_otp.LscFlag;
+		sc821cs_dd_otp.LscFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_LSC_GROUP2_FLAGADDR);
+		pinputdata[0] = sc821cs_dd_otp.LscFlag;
 		pr_err("Read LscFlag addr :0x%x, data:0x%x\n",
-	            SC821CS_OTP_LSC_GROUP2_FLAGADDR, sc821cs_dd_uw_otp.LscFlag);
-		if (sc821cs_dd_uw_otp.LscFlag != 0x01) {
-			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_uw_otp.LscFlag);
+	            SC821CS_OTP_LSC_GROUP2_FLAGADDR, sc821cs_dd_otp.LscFlag);
+		if (sc821cs_dd_otp.LscFlag != 0x01) {
+			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_otp.LscFlag);
 			return ret;
 		}
 
         checksum_addr = SC821CS_OTP_LSC_GROUP2_CHECKSUMADDR;
         group_name = "group2";
-    } else if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP3_FLAG) {
-        start_page1 = 5;
-        start_page2 = 6;
-		start_page3 = 7;
+    } else if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP3_FLAG) {
+        start_page1 = 6;
+        start_page2 = 7;
+		start_page3 = 8;
 
-		page_lensize1 = 0x93FB - 0x935A + 1;
-		page_lensize2 = 0x97FB - 0x9468 + 1;
-		page_lensize3 = 0x9B7D - 0x9868 + 1;
+		page_lensize1 = 0x97FB - 0x9469 + 1;
+		page_lensize2 = 0x9BFB - 0x9868 + 1;
+		page_lensize3 = 0x9D00 - 0x9CDC + 1;
 
-        lscpage1_offset = 0x935A;
-		lscpage2_offset = 0x9468;
-		lscpage3_offset = 0x9868;
+        lscpage1_offset = 0x9469;
+		lscpage2_offset = 0x9868;
+		lscpage3_offset = 0x9CDC;
 
 		sc821cs_set_page_and_load_data(start_page1);
-		sc821cs_dd_uw_otp.LscFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_LSC_GROUP3_FLAGADDR);
-		pinputdata[0] = sc821cs_dd_uw_otp.LscFlag;
+		sc821cs_dd_otp.LscFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_LSC_GROUP3_FLAGADDR);
+		pinputdata[0] = sc821cs_dd_otp.LscFlag;
 		pr_err("Read LscFlag addr :0x%x, data:0x%x\n",
-	            SC821CS_OTP_LSC_GROUP3_FLAGADDR, sc821cs_dd_uw_otp.LscFlag);
-		if (sc821cs_dd_uw_otp.LscFlag != 0x01) {
-			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_uw_otp.LscFlag);
+	            SC821CS_OTP_LSC_GROUP3_FLAGADDR, sc821cs_dd_otp.LscFlag);
+		if (sc821cs_dd_otp.LscFlag != 0x01) {
+			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_otp.LscFlag);
 			return ret;
 		}
 
         checksum_addr = SC821CS_OTP_LSC_GROUP3_CHECKSUMADDR;
         group_name = "group3";
     } else {
-        pr_err("lsc_info invalid flag 0x%x!\n", sc821cs_dd_uw_otp.LscFlag);
+        pr_err("lsc_info invalid flag 0x%x!\n", sc821cs_dd_otp.LscFlag);
         return ret;
     }
 
@@ -438,7 +439,7 @@ static int sc821cs_sensor_otp_read_lsc_info(unsigned char *pinputdata)
         pinputdata + 1 + page_lensize1 + page_lensize2);
     checksum_cal = checksum_cal % 255 + 1;
     checksum = SC821CS_Otp_Read_I2C_CAM_CAL(checksum_addr);
-	pinputdata[SC821CS_DD_UW_OTP_LSC_LENS - 1] = checksum;
+	pinputdata[SC821CS_DD_OTP_LSC_LENS - 1] = checksum;
 
     if (checksum_cal == checksum) {
         pr_err("%s checksum pass! checksum_cal = 0x%x, checksum = 0x%x, addr: 0x%x\n",
@@ -457,49 +458,49 @@ static int sc821cs_sensor_otp_read_sn_info(unsigned char *pinputdata)
 {
 	int ret = SC821CS_OTP_RET_FAIL;
 
-	if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP1_FLAG) {
-		sc821cs_set_page_and_load_data(3);
-		sc821cs_dd_uw_otp.SNFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_SN_GROUP1_FLAGADDR);
-		pr_err("Read SNFlag addr :0x%x, data:0x%x\n",SC821CS_OTP_SN_GROUP1_FLAGADDR, sc821cs_dd_uw_otp.SNFlag);
-		if(sc821cs_dd_uw_otp.SNFlag != 0x01){
-			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_uw_otp.SNFlag);
+	if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP1_FLAG) {
+		sc821cs_set_page_and_load_data(8);
+		sc821cs_dd_otp.SNFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_SN_GROUP1_FLAGADDR);
+		pr_err("Read SNFlag addr :0x%x, data:0x%x\n",SC821CS_OTP_SN_GROUP1_FLAGADDR, sc821cs_dd_otp.SNFlag);
+		if(sc821cs_dd_otp.SNFlag != 0x01){
+			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_otp.SNFlag);
 			return ret;
 		}
 		ret = sc821cs_sensor_otp_read_data(
 			SC821CS_OTP_SN_GROUP1_STARTADDR,
-			SC821CS_DD_UW_OTP_SN_LENS, pinputdata);
+			SC821CS_DD_OTP_SN_LENS, pinputdata);
 		pr_err("group1 ret = %d!\n", ret);
-	} else if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP2_FLAG) {
-		sc821cs_set_page_and_load_data(5);
-		sc821cs_dd_uw_otp.SNFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_SN_GROUP2_FLAGADDR);
-		pr_err("Read SNFlag addr :0x%x, data:0x%x\n",SC821CS_OTP_SN_GROUP2_FLAGADDR, sc821cs_dd_uw_otp.SNFlag);
-		if(sc821cs_dd_uw_otp.SNFlag != 0x01){
-			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_uw_otp.SNFlag);
+	} else if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP2_FLAG) {
+		sc821cs_set_page_and_load_data(8);
+		sc821cs_dd_otp.SNFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_SN_GROUP2_FLAGADDR);
+		pr_err("Read SNFlag addr :0x%x, data:0x%x\n",SC821CS_OTP_SN_GROUP2_FLAGADDR, sc821cs_dd_otp.SNFlag);
+		if(sc821cs_dd_otp.SNFlag != 0x01){
+			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_otp.SNFlag);
 			return ret;
 		}
 		ret = sc821cs_sensor_otp_read_data(
 			SC821CS_OTP_SN_GROUP2_STARTADDR,
-			SC821CS_DD_UW_OTP_SN_LENS, pinputdata);
+			SC821CS_DD_OTP_SN_LENS, pinputdata);
 		pr_err("group2 ret = %d!\n", ret);
-	} else if (sc821cs_dd_uw_otp.ModuleFlag == SC821CS_GROUP3_FLAG) {
-		sc821cs_set_page_and_load_data(7);
-		sc821cs_dd_uw_otp.SNFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_SN_GROUP3_FLAGADDR);
-		pr_err("Read SNFlag addr :0x%x, data:0x%x\n",SC821CS_OTP_SN_GROUP3_FLAGADDR, sc821cs_dd_uw_otp.SNFlag);
-		if(sc821cs_dd_uw_otp.SNFlag != 0x01){
-			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_uw_otp.SNFlag);
+	} else if (sc821cs_dd_otp.ModuleFlag == SC821CS_GROUP3_FLAG) {
+		sc821cs_set_page_and_load_data(8);
+		sc821cs_dd_otp.SNFlag = SC821CS_Otp_Read_I2C_CAM_CAL(SC821CS_OTP_SN_GROUP3_FLAGADDR);
+		pr_err("Read SNFlag addr :0x%x, data:0x%x\n",SC821CS_OTP_SN_GROUP3_FLAGADDR, sc821cs_dd_otp.SNFlag);
+		if(sc821cs_dd_otp.SNFlag != 0x01){
+			pr_err("invalid flag = 0x%x!\n", sc821cs_dd_otp.SNFlag);
 			return ret;
 		}
 		ret = sc821cs_sensor_otp_read_data(
 			SC821CS_OTP_SN_GROUP3_STARTADDR,
-			SC821CS_DD_UW_OTP_SN_LENS, pinputdata);
+			SC821CS_DD_OTP_SN_LENS, pinputdata);
 		pr_err("group3 ret = %d!\n", ret);
 	} else
-		pr_err("sn_info invalid flag 0x%x!\n", sc821cs_dd_uw_otp.SNFlag);
+		pr_err("sn_info invalid flag 0x%x!\n", sc821cs_dd_otp.SNFlag);
 
 	return ret;
 }
 
-void read_mot_sydney_sc821cs_uw_otp_data(void)
+void read_mot_sydney_sc821cs_otp_data(void)
 {
     int threshold = 0;
 	int ret = SC821CS_OTP_RET_FAIL;
@@ -510,33 +511,33 @@ void read_mot_sydney_sc821cs_uw_otp_data(void)
 		sc821cs_set_threshold(threshold);
 		sc821cs_set_page_and_load_data(SC821CS_OTP_PAGE1);
 		ret = sc821cs_sensor_otp_read_module_info(
-			sc821cs_dd_uw_otp.module_info);
+			sc821cs_dd_otp.module_info);
 		if (ret == SC821CS_OTP_RET_FAIL) {
-			sc821cs_dd_uw_otp.ModuleFlag = SC821CS_INVALID_FLAG;
+			sc821cs_dd_otp.ModuleFlag = SC821CS_INVALID_FLAG;
 			pr_err("read module info in threshold R%d fail\n", threshold);
 			//continue;
 		}
 
         ret = sc821cs_sensor_otp_read_awb_info(
-			sc821cs_dd_uw_otp.wb_data);
+			sc821cs_dd_otp.wb_data);
 		if (ret == SC821CS_OTP_RET_FAIL) {
-			sc821cs_dd_uw_otp.WBFlag = SC821CS_INVALID_FLAG;
+			sc821cs_dd_otp.WBFlag = SC821CS_INVALID_FLAG;
 			pr_err("read awb info  in threshold R%d fail\n", threshold);
 			continue;
 		}
 
         ret = sc821cs_sensor_otp_read_lsc_info(
-			sc821cs_dd_uw_otp.lsc_data);
+			sc821cs_dd_otp.lsc_data);
 		if (ret == SC821CS_OTP_RET_FAIL) {
-			sc821cs_dd_uw_otp.LscFlag = SC821CS_INVALID_FLAG;
+			sc821cs_dd_otp.LscFlag = SC821CS_INVALID_FLAG;
 			pr_err("read lsc info  in threshold R%d fail\n", threshold);
 			continue;
 		}
 
 		ret = sc821cs_sensor_otp_read_sn_info(
-			sc821cs_dd_uw_otp.sn_data);
+			sc821cs_dd_otp.sn_data);
 		if (ret == SC821CS_OTP_RET_FAIL) {
-			sc821cs_dd_uw_otp.SNFlag = SC821CS_INVALID_FLAG;
+			sc821cs_dd_otp.SNFlag = SC821CS_INVALID_FLAG;
 			pr_err("read sn_data in threshold R%d fail\n", threshold);
 			continue;
 		}
@@ -549,7 +550,7 @@ void read_mot_sydney_sc821cs_uw_otp_data(void)
 	}
 }
 
-unsigned int sc821cs_uw_read_region(struct i2c_client *client, unsigned int addr,
+unsigned int sc821cs_read_region(struct i2c_client *client, unsigned int addr,
                                 unsigned char *data, unsigned int size)
 {
     unsigned char *dataTmp = data;
@@ -558,40 +559,40 @@ unsigned int sc821cs_uw_read_region(struct i2c_client *client, unsigned int addr
     if (addr == 0x1 && size == 1) {//0xff
         *(u8 *)data = 0x00000006;
     } else {
-        unsigned int totalSize = sizeof(sc821cs_dd_uw_otp.ModuleFlag) +
-                                 sizeof(sc821cs_dd_uw_otp.SNFlag) +
-                                 sizeof(sc821cs_dd_uw_otp.WBFlag) +
-                                 sizeof(sc821cs_dd_uw_otp.LscFlag) +
-                                 sizeof(sc821cs_dd_uw_otp.module_info) +
-                                 sizeof(sc821cs_dd_uw_otp.sn_data) +
-                                 sizeof(sc821cs_dd_uw_otp.wb_data) +
-                                 sizeof(sc821cs_dd_uw_otp.lsc_data);
+        unsigned int totalSize = sizeof(sc821cs_dd_otp.ModuleFlag) +
+                                 sizeof(sc821cs_dd_otp.SNFlag) +
+                                 sizeof(sc821cs_dd_otp.WBFlag) +
+                                 sizeof(sc821cs_dd_otp.LscFlag) +
+                                 sizeof(sc821cs_dd_otp.module_info) +
+                                 sizeof(sc821cs_dd_otp.sn_data) +
+                                 sizeof(sc821cs_dd_otp.wb_data) +
+                                 sizeof(sc821cs_dd_otp.lsc_data);
         pr_err("mot_sydney_sc821cs_uw otp region addr = 0x%x, size = %d  totalSize=%d \n", addr, size, totalSize);
         if (1/*size == totalSize*/) {
 
-            data[0] = sc821cs_dd_uw_otp.ModuleFlag;
-			dataTmp += sizeof(sc821cs_dd_uw_otp.ModuleFlag);
+            data[0] = sc821cs_dd_otp.ModuleFlag;
+			dataTmp += sizeof(sc821cs_dd_otp.ModuleFlag);
 
-            memcpy(dataTmp, sc821cs_dd_uw_otp.module_info, sizeof(sc821cs_dd_uw_otp.module_info));
-            dataTmp += sizeof(sc821cs_dd_uw_otp.module_info);
+            memcpy(dataTmp, sc821cs_dd_otp.module_info, sizeof(sc821cs_dd_otp.module_info));
+            dataTmp += sizeof(sc821cs_dd_otp.module_info);
 
-            data[9] = sc821cs_dd_uw_otp.WBFlag;
-            dataTmp += sizeof(sc821cs_dd_uw_otp.WBFlag);
+			data[19] = sc821cs_dd_otp.WBFlag;
+            dataTmp += sizeof(sc821cs_dd_otp.WBFlag);
 
-            memcpy(dataTmp, sc821cs_dd_uw_otp.wb_data, sizeof(sc821cs_dd_uw_otp.wb_data));
-            dataTmp += sizeof(sc821cs_dd_uw_otp.wb_data);
+            memcpy(dataTmp, sc821cs_dd_otp.wb_data, sizeof(sc821cs_dd_otp.wb_data));
+            dataTmp += sizeof(sc821cs_dd_otp.wb_data);
 
-            data[27] = sc821cs_dd_uw_otp.LscFlag; // contain LSC FLAG
-            // dataTmp += sizeof(sc821cs_dd_uw_otp.LscFlag);
+			data[37] = sc821cs_dd_otp.LscFlag; // contain LSC FLAG
+            // dataTmp += sizeof(sc821cs_dd_otp.LscFlag);
 
-            memcpy(dataTmp, sc821cs_dd_uw_otp.lsc_data, sizeof(sc821cs_dd_uw_otp.lsc_data));
-            dataTmp += sizeof(sc821cs_dd_uw_otp.lsc_data);
+            memcpy(dataTmp, sc821cs_dd_otp.lsc_data, sizeof(sc821cs_dd_otp.lsc_data));
+            dataTmp += sizeof(sc821cs_dd_otp.lsc_data);
 
-            data[1897] = sc821cs_dd_uw_otp.SNFlag;
-            dataTmp += sizeof(sc821cs_dd_uw_otp.SNFlag);
+            data[1907] = sc821cs_dd_otp.SNFlag;
+            dataTmp += sizeof(sc821cs_dd_otp.SNFlag);
 
-            memcpy(dataTmp, sc821cs_dd_uw_otp.sn_data, sizeof(sc821cs_dd_uw_otp.sn_data));
-            dataTmp += sizeof(sc821cs_dd_uw_otp.sn_data);
+            memcpy(dataTmp, sc821cs_dd_otp.sn_data, sizeof(sc821cs_dd_otp.sn_data));
+            dataTmp += sizeof(sc821cs_dd_otp.sn_data);
 
 
         } else {
@@ -601,4 +602,4 @@ unsigned int sc821cs_uw_read_region(struct i2c_client *client, unsigned int addr
     }
     return size;
 }
-EXPORT_SYMBOL(sc821cs_uw_read_region);
+EXPORT_SYMBOL(sc821cs_read_region);

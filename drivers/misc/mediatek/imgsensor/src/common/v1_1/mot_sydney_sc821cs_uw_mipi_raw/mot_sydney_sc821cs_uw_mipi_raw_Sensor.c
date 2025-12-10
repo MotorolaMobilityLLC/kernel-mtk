@@ -208,7 +208,7 @@ static void set_dummy(void)
 
 static kal_uint32 return_sensor_id(void)
 {
-	return ((read_cmos_sensor(0x3107) << 8) | read_cmos_sensor(0x3108)); //0xd18a
+	return ((read_cmos_sensor(0x3107) << 8) | read_cmos_sensor(0x3108)) +1; //0xd18b
 }
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
