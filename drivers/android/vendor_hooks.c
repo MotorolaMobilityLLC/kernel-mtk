@@ -77,6 +77,7 @@
 #include <trace/hooks/sound.h>
 #include <trace/hooks/fuse.h>
 #include <trace/events/android_vendor_lmk.h>
+#include <trace/hooks/rcu.h>
 
 /*
  * Export tracepoints that act as a bare tracehook (ie: have no trace event
@@ -481,6 +482,10 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_filemap_add_folio);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_fuse_request_send_ext);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_fuse_request_end_ext);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_fuse_request_fetch);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_sync_rcu_wait_start);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_sync_rcu_wait_end);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_rcu_boost_start);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_rcu_boost_end);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_do_async_mmap_readahead);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_do_sync_mmap_readahead);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_mm_free_page);
