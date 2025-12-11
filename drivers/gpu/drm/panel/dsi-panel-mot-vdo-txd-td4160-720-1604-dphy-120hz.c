@@ -210,6 +210,14 @@ static void txd_td4160_panel_init(struct txd_td4160 *ctx)
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
 
+	//Adjust GIP timing, STV3/v relative position
+	txd_td4160_dcs_write_seq_static(ctx, 0xB0, 0x84);
+	txd_td4160_dcs_write_seq_static(ctx, 0xD6, 0x00);
+	txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xC1, 0x01, 0x31);
+	//BIST mode 120HZ settings(C2H,DEH)
+	txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xC2, 0x0F, 0x10);
+	txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xDE, 0x0F, 0x3C);
+
 	txd_td4160_dcs_write_seq_static(ctx, 0x51, 0x07,0xFF);
 	txd_td4160_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	txd_td4160_dcs_write_seq_static(ctx, 0x55, 0x00);
@@ -286,7 +294,8 @@ static int txd_td4160_unprepare(struct drm_panel *panel)
 	txd_td4160_dcs_write_seq_static(ctx, 0x28);
 	udelay(10 * 1000);
 	txd_td4160_dcs_write_seq_static(ctx, 0x10);
-	msleep(120);
+	// Increase delay to 150ms to meet panel vendor spec for clean power-down
+	msleep(150);
 
 	if(tp_gesture_flag)
 		panel_gesture_notifier_call_chain(0x01,NULL);
