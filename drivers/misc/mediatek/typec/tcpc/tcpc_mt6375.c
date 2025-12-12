@@ -22,7 +22,7 @@
 #include "inc/std_tcpci_v10.h"
 
 #define MT6375_INFO_EN	1
-#define MT6375_DBGINFO_EN	0
+#define MT6375_DBGINFO_EN	1
 #define MT6375_WD1_EN	1
 #define MT6375_WD2_EN	1
 
@@ -279,6 +279,7 @@ struct mt6375_tcpc_data {
 
 	struct alarm hidet_debtimer;
 	struct delayed_work hidet_dwork;
+	u8 wd_prot;
 };
 
 enum mt6375_vend_int {
@@ -393,12 +394,8 @@ static const u8 mt6375_wd_polling_path[MT6375_WD_CHAN_NUM] = {
 };
 
 static const u8 mt6375_wd_protection_path[MT6375_WD_CHAN_NUM] = {
-	MT6375_MSK_WDSBU1_EN | MT6375_MSK_WDSBU2_EN |
-	MT6375_MSK_WDCC1_EN | MT6375_MSK_WDCC2_EN |
-	MT6375_MSK_WDDP_EN | MT6375_MSK_WDDM_EN,
-	MT6375_MSK_WDSBU1_EN | MT6375_MSK_WDSBU2_EN |
-	MT6375_MSK_WDCC1_EN | MT6375_MSK_WDCC2_EN |
-	MT6375_MSK_WDDP_EN | MT6375_MSK_WDDM_EN,
+	MT6375_MSK_WDSBU1_EN | MT6375_MSK_WDSBU2_EN,
+	MT6375_MSK_WDSBU1_EN | MT6375_MSK_WDSBU2_EN,
 };
 
 static const u8 mt6375_wd_miscctrl_reg[MT6375_WD_CHAN_NUM] = {
@@ -885,8 +882,8 @@ static int mt6375_init_wd(struct mt6375_tcpc_data *ddata)
 	 */
 	mt6375_write8(ddata, MT6375_REG_WDSET, 0x50);
 
-	/* WD_EXIT_CNT = 4times */
-	mt6375_set_bits(ddata, MT6375_REG_WDSET1, 0x02);
+	/* WD_EXIT_CNT = 2times */
+	mt6375_set_bits(ddata, MT6375_REG_WDSET1, 0x01);
 
 	/* WD1_RPULL_EN = 1, WD1_DISCHG_EN = 1 */
 	mt6375_write8(ddata, MT6375_REG_WD1MISCCTRL, 0x06);
@@ -1235,6 +1232,7 @@ static int mt6375_enable_wd_protection(struct mt6375_tcpc_data *ddata, bool en)
 	int i, ret;
 
 	MT6375_DBGINFO("%s: en = %d\n", __func__, en);
+	ddata->wd_prot = en;
 	if (en) {
 		ret = mt6375_update_bits_rt2(ddata,
 					     MT6375_REG_WDSET3,
@@ -1724,8 +1722,10 @@ static int mt6375_set_cc(struct tcpc_device *tcpc, int pull)
 		ret = mt6375_set_cc_toggling(ddata, rp_lvl);
 	} else {
 		if (tcpc->tcpc_flags & TCPC_FLAGS_WD_POLLING_ONLY) {
+			if(!ddata->wd_prot){
 			cancel_delayed_work_sync(&ddata->wd_poll_dwork);
 			mt6375_enable_wd_polling(ddata, false);
+			}
 		}
 
 		pull2 = pull1 = pull;
