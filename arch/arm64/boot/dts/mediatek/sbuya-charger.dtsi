@@ -227,6 +227,9 @@
 };
 
 &mtk_gauge {
+	//fnct qns battery type
+	battery_type0 = "LWNR071SWD";
+	battery_type1 = "ATLR072NVT";
 	io-channels = <&pmic_adc AUXADC_BAT_TEMP>,
 			<&pmic_adc AUXADC_BATADC>,
 			<&pmic_adc AUXADC_VBIF>,
@@ -239,7 +242,6 @@
 			"pmic_ptim_voltage",
 			"pmic_ptim_r",
 			"batteryID-channel";
-
 	/* bat_id vmin_vmax_id */
 	battery_v_id = <100 500 0
 	1300 1700 1>;

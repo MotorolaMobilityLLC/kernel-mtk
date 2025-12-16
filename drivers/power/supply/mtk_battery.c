@@ -239,8 +239,39 @@ struct battery_v_range {
 	u32 max_mv;
 	u32 id;
 };
+
+static const char *battery_read_dts_serialnum(void)
+{
+	static char buf[32];
+	const char *sn;
+	char prop[16];
+	int battery_id;
+	battery_id = fgauge_get_profile_id();
+	snprintf(prop, sizeof(prop), "battery_type%d", battery_id);
+	if (of_property_read_string(of_find_node_by_name(NULL, "mtk_gauge"),prop, &sn))
+	{
+		sn = "error";
+	}
+	snprintf(buf, sizeof(buf), "%s", sn);
+	return buf;
+}
+
 #if IS_ENABLED(CONFIG_PHYSICAL_BATT_ID_FEATURE)
 static int batteryid_num = 0;
+static const char *battery_read_dts_serial(int battery_id)
+{
+	static char buf[32];
+	const char *sn;
+	char prop[16];
+
+	snprintf(prop, sizeof(prop), "serialnum_%d", battery_id);
+	if (of_property_read_string(of_find_node_by_name(NULL, "mtk_gauge"),prop, &sn))
+	{
+		sn = "error";
+	}
+	snprintf(buf, sizeof(buf), "%s", sn);
+	return buf;
+}
 int fgauge_get_bat_id_adc(struct platform_device *pdev){
 	struct iio_channel *channel;
 	int auxadc_voltage;
@@ -775,6 +806,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
+	POWER_SUPPLY_PROP_MODEL_NAME,
 };
 
 static int battery_psy_get_property(struct power_supply *psy,
@@ -965,8 +997,9 @@ static int battery_psy_get_property(struct power_supply *psy,
 				bm_err("get CV property fail\n");
 		}
 		break;
-
-
+	case POWER_SUPPLY_PROP_MODEL_NAME:
+		val->strval =  battery_read_dts_serialnum();
+		break;
 	default:
 		ret = -EINVAL;
 		break;
@@ -3459,45 +3492,10 @@ int battery_set_property(enum battery_property bp,
 }
 #if IS_ENABLED(CONFIG_PHYSICAL_BATT_ID_FEATURE)
 static ssize_t batteryid_show(struct device *dev,
-                struct device_attribute *attr, char *buf)
+			      struct device_attribute *attr, char *buf)
 {
-	struct device_node  *batt_node;
-	const char *sn_buf;
-	int rc;
-	char string[16];
-	struct mtk_battery *gm;
-	struct power_supply *psy;
-
-	sn_buf = NULL;
-	batt_node = NULL;
-
-	psy = power_supply_get_by_name("mtk-gauge");
-	if (psy == NULL)
-		return -ENODEV;
-
-	gm = (struct mtk_battery *)power_supply_get_drvdata(psy);
-	if (!gm) {
-        pr_err("Invalid driver data\n");
-        return -EINVAL;
-	}
-
-	batt_node = of_find_node_by_name(NULL, "mtk_gauge");
-	if (!batt_node) {
-		pr_err("Batterydata not available\n");
-		return 0;
-	}
-	pr_info("batteryid_num:%d\n", batteryid_num);
-	snprintf(string, sizeof(string), "serialnum_%d", batteryid_num);
-	rc = of_property_read_string(batt_node, string,
-						&sn_buf);
-	if (rc)
-		pr_warn("No Serial Number defined\n");
-	else if (sn_buf)
-		pr_info("Serial Number %s\n", sn_buf);
-	if (!sn_buf)
-		sn_buf = "error";
-
-	return scnprintf(buf, 32, "%s\n", sn_buf);
+	return scnprintf(buf, 32, "%s\n",
+			 battery_read_dts_serial(batteryid_num));
 }
 
 static DEVICE_ATTR(cur_batt_id,0664,batteryid_show,NULL);
