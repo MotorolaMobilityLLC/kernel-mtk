@@ -29,6 +29,10 @@
 #include "include/dsi-panel-mot-vdo-txd-td4160-720-1604-dphy-120hz.h"
 #endif
 
+#define PANEL_EVT 1
+#define PANEL_DVT1 2
+#define PANEL_DVT2 3
+#define PANEL_PVT 4
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
@@ -55,6 +59,7 @@ struct txd_td4160 {
 //	unsigned int hbm_mode;
 	unsigned int cabc_mode;
 	s64 screen_on_timestamp;
+	int version;
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
@@ -183,6 +188,39 @@ int panel_gesture_notifier_call_chain(unsigned long val, void *v)
 }
 EXPORT_SYMBOL(panel_gesture_notifier_call_chain);
 
+static void lcm_parse_panel_version(struct txd_td4160 *ctx)
+{
+	int rc;
+	struct device_node *chosen = of_find_node_by_name(NULL, "chosen");
+
+	ctx->version = PANEL_PVT;
+	if(chosen) {
+		u32 tmp = 0;
+
+		rc = of_property_read_u32(chosen, "mmi,panel_ver", &tmp);
+		if (!rc) {
+			if (PANEL_EVT == tmp) {
+				ctx->version = PANEL_EVT;
+			} else if(PANEL_DVT1 == tmp) {
+				ctx->version = PANEL_DVT1;
+			} else if(PANEL_DVT2 == tmp) {
+				ctx->version = PANEL_DVT2;
+			} else if(PANEL_PVT == tmp) {
+				ctx->version = PANEL_PVT;
+			} else {
+				ctx->version = PANEL_PVT;
+			}
+			pr_info("get panel_ver:%d\n", ctx->version);
+		}
+		else
+			pr_info("mmi,panel_ver not get\n");
+	}
+	else
+		pr_info("parse_panel chosen node null\n");
+
+	return;
+}
+
 static void txd_td4160_panel_init(struct txd_td4160 *ctx)
 {
 	ktime_t now;
@@ -214,9 +252,11 @@ static void txd_td4160_panel_init(struct txd_td4160 *ctx)
 	txd_td4160_dcs_write_seq_static(ctx, 0xB0, 0x84);
 	txd_td4160_dcs_write_seq_static(ctx, 0xD6, 0x00);
 	txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xC1, 0x01, 0x31);
-	//BIST mode 120HZ settings(C2H,DEH)
-	txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xC2, 0x0F, 0x10);
-	txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xDE, 0x0F, 0x3C);
+	if(ctx->version == PANEL_EVT) {
+		//BIST mode 120HZ settings(C2H,DEH)
+		txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xC2, 0x0F, 0x10);
+		txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xDE, 0x0F, 0x3C);
+	}
 
 	txd_td4160_dcs_write_seq_static(ctx, 0x51, 0x07,0xFF);
 	txd_td4160_dcs_write_seq_static(ctx, 0x53, 0x2C);
@@ -806,6 +846,9 @@ static int txd_td4160_probe(struct mipi_dsi_device *dsi)
 	drm_panel_init(&ctx->panel, dev, &txd_td4160_drm_funcs, DRM_MODE_CONNECTOR_DSI);
 
 	drm_panel_add(&ctx->panel);
+
+	//parse panel version for evt/dvt/pvt
+	lcm_parse_panel_version(ctx);
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
