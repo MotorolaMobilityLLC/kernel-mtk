@@ -161,6 +161,8 @@
          mmi,vfloat-comp-uv = <0>;
          mmi,min-cp-therm-current-ua = <1000000>;
          mmi,power-max-design-mw = <30000>;
+		 /*CONFIG_MOTO_1200_CYCLE*/
+		 mmi,mmi-cycle-cv-steps =<100 20>;
 };
 
 &pdc {
