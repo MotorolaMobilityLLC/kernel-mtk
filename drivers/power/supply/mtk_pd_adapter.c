@@ -187,7 +187,6 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 		chg1_dev = get_charger_by_name("primary_chg");
 		if (chg1_dev == NULL || IS_ERR(chg1_dev)) {
 			pr_err("%s Couldn't get chg1_dev\n", __func__);
-			ret = -1;
 		} else {
 			pr_err("%s Found chg1_dev!!!\n", __func__);
 		}
@@ -196,7 +195,6 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 		primary_dvchg = get_charger_by_name("primary_dvchg");
 		if (primary_dvchg == NULL || IS_ERR(primary_dvchg)) {
 			pr_err("%s Couldn't get primary_dvchg\n", __func__);
-			ret = -1;
 	  	} else {
 			pr_err("%s Found primary_dvchg!!!\n", __func__);
 	  	}
@@ -330,7 +328,6 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 			chg_psy = power_supply_get_by_name("primary_chg");
 			if (chg_psy == NULL || IS_ERR(chg_psy)) {
 				pr_err("%s Couldn't get chg_psy\n", __func__);
-				ret = -1;
 			} else {
 				prop.intval = true;
 				ret = power_supply_set_property(chg_psy, POWER_SUPPLY_PROP_VOLTAGE_MIN, &prop);
