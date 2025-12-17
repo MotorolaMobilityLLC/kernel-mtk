@@ -234,7 +234,7 @@ static void gc08a3_format_mnf_data(mot_calibration_mnf_t *mnf)
 	}
 
 	if (mot_sydney_gc08a3_otp_info.module_param[12] == 0x01){
-		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "S08101A");
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "TR0848A");
 	} else {
 		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
 		LOG_INF("unknown lens_id");
