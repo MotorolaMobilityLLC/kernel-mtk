@@ -554,6 +554,14 @@ static int do_algorithm(struct mtk_charger *info)
 				chr_err("%s: alg:%s due to high or low temp limit:%d\n", __func__,
 					dev_name(&alg->dev), info->battery_temp);
 				continue;
+			} else if ((info->water_detected == true)
+				&& ((alg->alg_id & PE5_ID) || (alg->alg_id & PEHV_ID)
+				|| (alg->alg_id & PDC_ID))) {
+				charger_dev_enable(info->chg1_dev, true);
+				chg_alg_stop_algo(alg);
+				chr_err("%s: alg:%s due to water detect\n", __func__,
+					dev_name(&alg->dev));
+				continue;
 			}
 
 			if (info->alg_new_arbitration && info->alg_unchangeable &&
