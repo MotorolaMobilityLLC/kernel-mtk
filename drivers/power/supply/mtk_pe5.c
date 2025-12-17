@@ -63,6 +63,10 @@ int pe50_get_log_level(void)
 #define PE50_VSYS_UPPER_BOUND_GAP        40      /* mV */
 #define MMI_IBAT_GAP_MA 50 	/* mA */
 
+#define PE50_WATT_TO_UWATT               1000000
+#define PE50_LMT_BY_VTAMV                11000
+#define PE50_PDP_POWER_REDUCE_THRESHOLD  30
+
 #define PE50_HWERR_NOTIFY \
 	(BIT(EVT_VBUSOVP) | BIT(EVT_IBUSOCP) | BIT(EVT_VBATOVP) | \
 	 BIT(EVT_IBATOCP) | BIT(EVT_VOUTOVP) | BIT(EVT_VDROVP) | \
@@ -358,7 +362,11 @@ static u32 pe50_get_ita_pwr_lmt_by_vta(struct pe50_algo_info *info, u32 vta)
 	if (!auth_data->pwr_lmt)
 		return data->ita_lmt;
 
-	ita_pwr_lmt = precise_div(auth_data->pdp * 1000000, vta);
+	if (auth_data->pdp < PE50_PDP_POWER_REDUCE_THRESHOLD)
+		ita_pwr_lmt = precise_div(auth_data->pdp * PE50_WATT_TO_UWATT, PE50_LMT_BY_VTAMV);
+	else
+		ita_pwr_lmt = precise_div(auth_data->pdp * PE50_WATT_TO_UWATT, vta);
+	PE50_INFO("%s (%d,%d,%d)\n", __func__, auth_data->pdp, vta, ita_pwr_lmt);
 	/* Round to nearest level */
 	if (auth_data->support_cc) {
 		ita_pwr_lmt /= auth_data->ita_step;

@@ -1432,6 +1432,20 @@ int tcpm_dpm_pd_get_source_cap_ext(struct tcpc_device *tcpc,
 		.event_id = TCP_DPM_EVT_GET_SOURCE_CAP_EXT,
 	};
 
+#if IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	int ret;
+
+	if (aw_tcpm_ops != NULL) {
+		ret = aw_tcpm_ops->get_source_cap_ext(tcpc, src_cap_ext);
+		if (ret >= 0) {
+			if (ret == 0)
+				return TCP_DPM_RET_SUCCESS;
+			else
+				return TCPM_ERROR_UNKNOWN;
+		}
+	}
+#endif
+
 	return tcpm_put_tcp_dpm_event_cbk2(
 		tcpc, &tcp_event, cb_data, TCPM_BK_PD_CMD_TOUT,
 		(uint8_t *) src_cap_ext, PD_SCEDB_SIZE);
