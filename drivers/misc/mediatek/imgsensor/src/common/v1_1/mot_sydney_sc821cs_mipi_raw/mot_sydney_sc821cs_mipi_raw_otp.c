@@ -52,12 +52,12 @@ static void SYDNEY_SC821CS_eeprom_get_mnf_data(void *data,
 	uint8_t* module_info = data;
     	// lens_id
 	struct SYDNEY_SC821CS_eeprom_t eeprom = {
-        	.lens_id = module_info[10],
+        	.lens_id = module_info[12],
     	};
 
 	LOG_INF("eeprom.lens_id:0x%x", eeprom.lens_id);
 	if (eeprom.lens_id == 0x01){
-		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "HX-M0846A");
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "S0892A");
 	} else {
 		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
 		LOG_INF("unknown lens_id");
