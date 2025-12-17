@@ -56,7 +56,9 @@
 static kal_uint8  ratio = 1;
 #define CT_DEBUG            1
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-
+extern void SYDNEY_GC50F6A_2ND_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+extern mot_calibration_status_t *SYDNEY_GC50F6A_2ND_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *SYDNEY_GC50F6A_2ND_eeprom_get_mnf_info(void);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_SYDNEY_GC50F6A_2ND_SENSOR_ID,
@@ -3833,6 +3835,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("[mot_sydney_gc50f6a_2nd_camera_sensor]get_imgsensor_id:i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
+				SYDNEY_GC50F6A_2ND_eeprom_format_calibration_data(&imgsensor);
 				mot_sydney_gc50f6a_2nd_read_crosstalk_data();//jesse added
 				return ERROR_NONE;
 			}
@@ -3988,6 +3991,7 @@ static kal_uint32 open(void)
 	/* initail sequence write in  */
 	sensor_init();
 
+	SYDNEY_GC50F6A_2ND_eeprom_format_calibration_data(&imgsensor);
 	mot_sydney_gc50f6a_2nd_write_crosstalk_data();
 
 	spin_lock(&imgsensor_drv_lock);
@@ -4234,6 +4238,8 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SlimVideoDelayFrame =
 		imgsensor_info.slim_video_delay_frame;
 
+	memcpy(&sensor_info->mnf_calibration, SYDNEY_GC50F6A_2ND_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, SYDNEY_GC50F6A_2ND_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;

@@ -56,7 +56,9 @@
 static kal_uint8  ratio = 1;
 #define CT_DEBUG            1
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-
+extern void SYDNEY_GC50F6A_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+extern mot_calibration_status_t *SYDNEY_GC50F6A_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *SYDNEY_GC50F6A_eeprom_get_mnf_info(void);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_SYDNEY_GC50F6A_SENSOR_ID,
@@ -256,7 +258,6 @@ static kal_uint16 read_cmos_sensor_8(kal_uint32 addr)
 	};
 
 	iReadRegI2C(pu_send_cmd, 2, (u8 *)&get_byte, 1, imgsensor.i2c_write_id);
-
 	return get_byte;
 }
 
@@ -313,8 +314,9 @@ static void table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 static kal_uint32 return_sensor_id(void)
 {
 	kal_uint32 sensor_id = 0;
-
+	pr_err("test read sensor_id");
 	sensor_id = (read_cmos_sensor_8(0x03f0) << 8) | read_cmos_sensor_8(0x03f1);
+	pr_err("test sensor_id = 0x%x", sensor_id);
 	return sensor_id;
 }
 
@@ -3828,6 +3830,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("[mot_sydney_gc50f6a_camera_sensor]get_imgsensor_id:i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
+				SYDNEY_GC50F6A_eeprom_format_calibration_data(&imgsensor);
 				mot_sydney_gc50f6a_read_crosstalk_data();//jesse added
 				return ERROR_NONE;
 			}
@@ -3980,6 +3983,7 @@ static kal_uint32 open(void)
 	/* initail sequence write in  */
 	sensor_init();
 
+	SYDNEY_GC50F6A_eeprom_format_calibration_data(&imgsensor);
 	mot_sydney_gc50f6a_write_crosstalk_data();
 
 	spin_lock(&imgsensor_drv_lock);
@@ -4226,6 +4230,8 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SlimVideoDelayFrame =
 		imgsensor_info.slim_video_delay_frame;
 
+	memcpy(&sensor_info->mnf_calibration, SYDNEY_GC50F6A_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->calibration_status, SYDNEY_GC50F6A_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;

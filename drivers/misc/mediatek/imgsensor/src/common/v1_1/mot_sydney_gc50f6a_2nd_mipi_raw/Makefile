@@ -14,3 +14,4 @@
 # Copyright (C) 2020 MediaTek Inc.
 imgsensor_isp6s-objs += \
 	$(subdrv-rpath)/mot_sydney_gc50f6a_2ndmipiraw_Sensor.o \
+	$(subdrv-rpath)/mot_gc50f6a_2nd_eeprom.o

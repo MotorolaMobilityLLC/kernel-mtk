@@ -1,0 +1,212 @@
+#include <linux/videodev2.h>
+#include <linux/i2c.h>
+#include <linux/platform_device.h>
+#include <linux/delay.h>
+#include <linux/cdev.h>
+#include <linux/uaccess.h>
+#include <linux/fs.h>
+#include <linux/atomic.h>
+#include <linux/types.h>
+
+#include "kd_camera_typedef.h"
+#include "kd_imgsensor.h"
+#include "kd_imgsensor_define.h"
+#include "kd_imgsensor_errcode.h"
+#include "imgsensor_ca.h"
+#include "mot_sydney_gc50f6a_2nd_eeprom.h"
+
+#include "mot_sydney_gc50f6a_2ndmipiraw_Sensor.h"
+
+static int mot_sensor_debug = 1;
+
+typedef struct {
+	MUINT16 addr;
+	MUINT16 data;
+} kansas_xtc_cal_addr_data_t;
+
+#define PFX "MOT_SYDNEY_GC50F6A_2ND"
+#define LOG_INF(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
+#define LOG_ERR(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
+#define LOG_INF_N(format, args...)   pr_warn(PFX "[%s] " format, __func__, ##args)
+#define LOG_ERROR(format, args...)   pr_err(PFX "[%s] " format, __func__, ##args)
+
+static DEFINE_SPINLOCK(imgsensor_lock);
+static  struct imgsensor_struct *imgsensor;
+
+#define SYDNEY_GC50F6A_2ND_EEPROM_SLAVE_ADDR 0xA0
+#define SYDNEY_GC50F6A_2ND_SENSOR_IIC_SLAVE_ADDR 0x94
+#define SYDNEY_GC50F6A_2ND_EEPROM_SIZE  0x1715
+#define SYDNEY_GC50F6A_2ND_EEPROM_CRC_MANUFACTURING_SIZE 0X0029
+
+static uint8_t SYDNEY_GC50F6A_2ND_eeprom[SYDNEY_GC50F6A_2ND_EEPROM_SIZE] = {0};
+static mot_calibration_status_t calibration_status = {STATUS_CRC_FAIL};
+static mot_calibration_mnf_t mnf_info = {0};
+
+static uint32_t convert_crc(uint8_t *crc_ptr)
+{
+	return (crc_ptr[0] << 8) | (crc_ptr[1]);
+}
+
+static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
+{
+    uint32_t crc = 0;
+	int32_t crc_match = 0;
+	int i = 0;
+    for(i=0; i < size; ++i){
+        crc += data[i];
+    }
+    crc %= 0xffff;
+	if(crc == ref_crc){
+		crc_match = 1;
+	}
+	pr_err("test crc=0x%x, ref_crc=0x%x",crc,ref_crc);
+    return crc_match;
+}
+
+static kal_uint16 SYDNEY_GC50F6A_2ND_read_cmos_sensor(kal_uint16 addr)
+{
+	kal_uint16 get_byte = 0;
+	char pu_send_cmd[2] = {
+		(char)((addr >> 8) & 0xff),
+		(char)(addr & 0xff)
+	};
+
+	iReadRegI2C(pu_send_cmd, 2, (u8 *)&get_byte, 1, 0xA0);
+
+	return get_byte;
+}
+
+static void SYDNEY_GC50F6A_2ND_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size)
+{
+	int i = 0;
+	spin_lock(&imgsensor_lock);
+	imgsensor->i2c_write_id = slave;
+	spin_unlock(&imgsensor_lock);
+
+	for (i = 0; i < size; i ++) {
+		SYDNEY_GC50F6A_2ND_eeprom[i] = SYDNEY_GC50F6A_2ND_read_cmos_sensor(start_add);
+		start_add ++;
+	}
+	spin_lock(&imgsensor_lock);
+	imgsensor->i2c_write_id = SYDNEY_GC50F6A_2ND_SENSOR_IIC_SLAVE_ADDR;
+	spin_unlock(&imgsensor_lock);
+}
+
+
+static void SYDNEY_GC50F6A_2ND_check_manufacturing_data(void *data)
+{
+	struct SYDNEY_GC50F6A_2ND_eeprom_t *eeprom = (struct SYDNEY_GC50F6A_2ND_eeprom_t*)data;
+	LOG_INF("Manufacturing eeprom->mpn = %.8s !",eeprom->mpn);
+	if (!eeprom_util_check_crc16(eeprom->eeprom_table_version, SYDNEY_GC50F6A_2ND_EEPROM_CRC_MANUFACTURING_SIZE,
+		convert_crc(eeprom->manufacture_crc16))) {
+		LOG_ERROR("Manufacturing CRC Fails!");
+		calibration_status.mnf = STATUS_CRC_FAIL;
+		return;
+	}
+	LOG_INF("Manufacturing CRC Pass");
+	calibration_status.mnf = STATUS_OK;
+}
+
+static void SYDNEY_GC50F6A_2ND_eeprom_get_mnf_data(void *data,
+		mot_calibration_mnf_t *mnf)
+{
+	int ret;
+	struct SYDNEY_GC50F6A_2ND_eeprom_t *eeprom = (struct SYDNEY_GC50F6A_2ND_eeprom_t*)data;
+	ret = snprintf(mnf->table_revision, MAX_CALIBRATION_STRING, "0x%x",
+		eeprom->eeprom_table_version[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->table_revision failed");
+		mnf->table_revision[0] = 0;
+	}
+
+	ret = snprintf(mnf->mot_part_number, MAX_CALIBRATION_STRING, "%c%c%c%c%c%c%c%c",
+		eeprom->mpn[0], eeprom->mpn[1], eeprom->mpn[2], eeprom->mpn[3],
+		eeprom->mpn[4], eeprom->mpn[5], eeprom->mpn[6], eeprom->mpn[7]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->mot_part_number failed");
+		mnf->mot_part_number[0] = 0;
+	}
+
+	ret = snprintf(mnf->actuator_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->actuator_id[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->actuator_id failed");
+		mnf->actuator_id[0] = 0;
+	}
+
+	if (eeprom->lens_id[0] == 0xA3){
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "39939-400");
+	} else {
+		ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "Unknown");
+		LOG_INF("unknown lens_id");
+	}
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->lens_id failed");
+		mnf->lens_id[0] = 0;
+	}
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->integrator failed");
+		mnf->integrator[0] = 0;
+	}
+
+	ret = snprintf(mnf->factory_id, MAX_CALIBRATION_STRING, "%c%c",
+		eeprom->factory_id[0], eeprom->factory_id[1]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->factory_id failed");
+		mnf->factory_id[0] = 0;
+	}
+
+	ret = snprintf(mnf->manufacture_line, MAX_CALIBRATION_STRING, "%u",
+		eeprom->manufacture_line[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->manufacture_line failed");
+		mnf->manufacture_line[0] = 0;
+	}
+
+	ret = snprintf(mnf->manufacture_date, MAX_CALIBRATION_STRING, "20%u/%u/%u",
+		eeprom->manufacture_date[0], eeprom->manufacture_date[1], eeprom->manufacture_date[2]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->manufacture_date failed");
+		mnf->manufacture_date[0] = 0;
+	}
+
+	ret = snprintf(mnf->serial_number, MAX_CALIBRATION_STRING, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+		eeprom->serial_number[0], eeprom->serial_number[1],
+		eeprom->serial_number[2], eeprom->serial_number[3],
+		eeprom->serial_number[4], eeprom->serial_number[5],
+		eeprom->serial_number[6], eeprom->serial_number[7],
+		eeprom->serial_number[8], eeprom->serial_number[9],
+		eeprom->serial_number[10], eeprom->serial_number[11],
+		eeprom->serial_number[12], eeprom->serial_number[13],
+		eeprom->serial_number[14], eeprom->serial_number[15]);
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_ERROR("snprintf of mnf->serial_number failed");
+		mnf->serial_number[0] = 0;
+	}
+}
+
+void SYDNEY_GC50F6A_2ND_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor)
+{
+	imgsensor = pImgsensor;
+	LOG_ERR("test enter SYDNEY_GC50F6A_2ND_eeprom_format_calibration_data");
+	SYDNEY_GC50F6A_2ND_read_data_from_eeprom(SYDNEY_GC50F6A_2ND_EEPROM_SLAVE_ADDR, 0x00, SYDNEY_GC50F6A_2ND_EEPROM_SIZE);
+	SYDNEY_GC50F6A_2ND_check_manufacturing_data(SYDNEY_GC50F6A_2ND_eeprom);
+	SYDNEY_GC50F6A_2ND_eeprom_get_mnf_data((void *)SYDNEY_GC50F6A_2ND_eeprom, &mnf_info);
+}
+
+mot_calibration_status_t *SYDNEY_GC50F6A_2ND_eeprom_get_calibration_status(void)
+{
+	return &calibration_status;
+}
+
+mot_calibration_mnf_t *SYDNEY_GC50F6A_2ND_eeprom_get_mnf_info(void)
+{
+	return &mnf_info;
+}
