@@ -234,7 +234,8 @@
 			"cam2_mclk_6mA", "cam2_mclk_8mA",
 			"cam2_ldo_vcama_0",  "cam2_ldo_vcama_1",
 			"cam2_ldo_vcamd_0",  "cam2_ldo_vcamd_1",
-			"cam0_ldo_vcamafvdd_0",  "cam0_ldo_vcamafvdd_1";
+			/* temporarily supply power to af*/
+			"cam0_avdd1_gpio_0",  "cam0_avdd1_gpio_1";
 
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst_0>;
@@ -269,6 +270,7 @@
 	cam0_vcamio-supply = <&mt6377_vaud18>;
 	cam0_vcama-supply = <&cam_avdd_main0>;
 	cam0_vcamd-supply = <&cam_dvdd_main0>;
+	cam0_vcamaf-supply = <&mt6377_vtp>;
 	cam1_vcamio-supply = <&mt6377_vaud18>;
 	cam1_vcama-supply = <&cam_avdd_front1>;
 	cam1_vcamd-supply = <&cam_dvdd_front1>;
@@ -279,7 +281,8 @@
 	cam0_pin_vcama = "regulator";
 	cam0_pin_vcamio = "regulator";
 	cam0_pin_vcamd = "regulator";
-	cam0_pin_vcamaf = "gpio";
+	cam0_pin_vcamaf = "regulator";
+	cam0_pin_vcama1_gpio = "gpio";
 	cam1_pin_mclk = "mclk";
 	cam1_pin_rst = "gpio";
 	cam1_pin_vcama = "regulator";
@@ -366,6 +369,12 @@
 	};
 };
 &camera_af_hw_node {
+	/*
+	pinctrl-names = "camaf_m1_gpio_on",	"camaf_m1_gpio_off";
+	pinctrl-0 = <&camera_pins_cam0_af_1>;
+	pinctrl-1 = <&camera_pins_cam0_af_0>;
+	*/
+	camaf_m1_pmic-supply = <&mt6377_vtp>;
 	status = "okay";
 };
 /* CAMERA AF end */
