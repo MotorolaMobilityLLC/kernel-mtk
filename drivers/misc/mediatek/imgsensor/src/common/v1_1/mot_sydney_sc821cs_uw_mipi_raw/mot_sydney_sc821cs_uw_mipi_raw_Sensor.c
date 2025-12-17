@@ -1541,8 +1541,8 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->FrameTimeDelayFrame = imgsensor_info.frame_time_delay_frame;
 
     /*Apply manufacture info*/
-    //memcpy(&sensor_info->mnf_calibration, SYDNEY_SC821CS_UW_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
-    //memcpy(&sensor_info->calibration_status, SYDNEY_SC821CS_UW_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
+    memcpy(&sensor_info->mnf_calibration, SYDNEY_SC821CS_UW_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
+    memcpy(&sensor_info->calibration_status, SYDNEY_SC821CS_UW_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
 
     sensor_info->SensorMasterClockSwitch = 0; /* not use */
     sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
