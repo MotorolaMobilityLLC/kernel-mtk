@@ -1010,6 +1010,7 @@ void folios_put_refs(struct folio_batch *folios, unsigned int *refs)
 			continue;
 		}
 
+		folio_unqueue_deferred_split(folio);
 		if (folio_test_lru(folio)) {
 			lruvec = folio_lruvec_relock_irqsave(folio, lruvec,
 									&flags);

@@ -2886,10 +2886,12 @@ void vma_adjust_trans_huge(struct vm_area_struct *vma,
 
 static void unmap_folio(struct folio *folio)
 {
-	enum ttu_flags ttu_flags = TTU_RMAP_LOCKED | TTU_SPLIT_HUGE_PMD |
-		TTU_SYNC;
+	enum ttu_flags ttu_flags = TTU_RMAP_LOCKED | TTU_SYNC;
 
 	VM_BUG_ON_FOLIO(!folio_test_large(folio), folio);
+
+	if (folio_test_pmd_mappable(folio))
+		ttu_flags |= TTU_SPLIT_HUGE_PMD;
 
 	/*
 	 * Anon pages need migration entries to preserve them, but file
@@ -2977,7 +2979,7 @@ bool unmap_huge_pmd_locked(struct vm_area_struct *vma, unsigned long addr,
 	return __discard_anon_folio_pmd_locked(vma, addr, pmdp, folio);
 }
 
-static void remap_page(struct folio *folio, unsigned long nr, int flags)
+static void remap_page(struct folio *folio, unsigned long nr)
 {
 	int i = 0;
 
@@ -2985,7 +2987,7 @@ static void remap_page(struct folio *folio, unsigned long nr, int flags)
 	if (!folio_test_anon(folio))
 		return;
 	for (;;) {
-		remove_migration_ptes(folio, folio, RMP_LOCKED | flags);
+		remove_migration_ptes(folio, folio, true);
 		i += folio_nr_pages(folio);
 		if (i >= nr)
 			break;
@@ -3119,6 +3121,12 @@ static void reset_src_folio(struct folio *src)
 
 static bool lru_add_dst(struct lruvec *lruvec, struct folio *src, struct folio *dst)
 {
+	bool added = false;
+
+	trace_android_vh_mm_customize_lru_add_dst(lruvec, src, dst, &added);
+	if (added)
+		return true;
+
 	if (folio_can_split(src))
 		return false;
 
@@ -3338,7 +3346,7 @@ static void __split_huge_page(struct page *page, struct list_head *list,
 
 	if (nr_dropped)
 		shmem_uncharge(head->mapping->host, nr_dropped);
-	remap_page(folio, nr, PageAnon(head) ? RMP_USE_SHARED_ZEROPAGE : 0);
+	remap_page(folio, nr);
 
 	for (i = 0; i < nr; i++) {
 		struct page *subpage = folio_dst_page(folio, i);
@@ -3555,7 +3563,7 @@ unfreeze:
 		folio_ref_unfreeze(folio, 1 + extra_pins);
 remap:
 		free_dst_pages(folio);
-		remap_page(folio, folio_nr_pages(folio), 0);
+		remap_page(folio, folio_nr_pages(folio));
 	}
 
 out_unlock:
