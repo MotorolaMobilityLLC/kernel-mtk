@@ -228,8 +228,10 @@
 #define MT6375_MSK_WDLDO_SEL	GENMASK(7, 6)
 #define MT6375_SFT_WDLDO_SEL	(6)
 /* RT2 MT6375_REG_WDSET3: 0x21 */
-#define MT6375_MASK_WD_TDET	GENMASK(2, 0)
-#define MT6375_SHFT_WD_TDET	(0)
+#define MT6375_MSK_WD_TSLEEP	GENMASK(5, 4)
+#define MT6375_SFT_WD_TSLEEP	(4)
+#define MT6375_MSK_WD_TDET	GENMASK(2, 0)
+#define MT6375_SFT_WD_TDET	(0)
 /* RT2 MT6375_REG_WD1MISCSET: 0x22 */
 #define MT6375_MSK_WDIPULL_SEL	GENMASK(6, 4)
 #define MT6375_SFT_WDIPULL_SEL	(4)
@@ -249,6 +251,9 @@
 #define MT6375_SFT_WD0_TSLEEP	(4)
 #define MT6375_MSK_WD0_TDET	GENMASK(2, 0)
 #define MT6375_SFT_WD0_TDET	(0)
+
+#define MT6375_WD_SETTING2(TDET, TSLEEP) \
+	((TDET << MT6375_SFT_WD_TDET) | (TSLEEP << MT6375_SFT_WD_TSLEEP))
 
 struct mt6375_tcpc_data {
 	struct device *dev;
@@ -364,6 +369,13 @@ enum mt6375_wd_tdet {
 	MT6375_WD_TDET_400MS,
 };
 
+enum mt6375_wd_tsleep {
+	MT6375_WD_TSLEEP_16X = 0,
+	MT6375_WD_TSLEEP_128X,
+	MT6375_WD_TSLEEP_512X,
+	MT6375_WD_TSLEEP_1024X,
+};
+
 static const u8 mt6375_vend_alert_clearall[MT6375_VEND_INT_NUM] = {
 	0x3F, 0xFD, 0xF0, 0xE3, 0xFF, 0xF8, 0x3F,
 };
@@ -446,6 +458,12 @@ struct tcpc_desc def_tcpc_desc = {
 	.wd_sbu_ph_ubound1_c2c = CONFIG_WD_SBU_PH_UBOUND1_C2C,
 	.wd_sbu_ph_ubound2_c2c = CONFIG_WD_SBU_PH_UBOUND2_C2C,
 	.wd_sbu_aud_ubound = CONFIG_WD_SBU_AUD_UBOUND,
+	.mmi_wd_volcmpl = MT6375_WD_VOLCMPL_1440MV,
+	.mmi_wd_rpull = MT6375_WD_RPULL_75K,
+	.mmi_wd_tdet_polling_cycle = MT6375_WD_TDET_100MS,
+	.mmi_wd_tsleep_polling_cycle = MT6375_WD_TSLEEP_128X,
+	.mmi_wd_tdet_protection_cycle = MT6375_WD_TDET_100MS,
+	.mmi_wd_tsleep_protection_cycle = MT6375_WD_TSLEEP_128X,
 };
 
 static inline int mt6375_write8(struct mt6375_tcpc_data *ddata, u32 reg,
@@ -958,11 +976,11 @@ static int mt6375_set_wd_polling_parameter(struct mt6375_tcpc_data *ddata,
 					   enum mt6375_wd_chan chan)
 {
 	int ret;
-
-	ret = mt6375_set_wd_rpull(ddata, chan, MT6375_WD_RPULL_75K);
+	struct tcpc_desc *desc = ddata->desc;
+	ret = mt6375_set_wd_rpull(ddata, chan, desc->mmi_wd_rpull);
 	if (ret < 0)
 		return ret;
-	ret = mt6375_set_wd_volcmpl(ddata, chan, MT6375_WD_VOLCMPL_1440MV);
+	ret = mt6375_set_wd_volcmpl(ddata, chan, desc->mmi_wd_volcmpl);
 	if (ret < 0)
 		return ret;
 	ret = mt6375_write8(ddata, mt6375_wd_miscctrl_reg[chan],
@@ -976,11 +994,11 @@ static int mt6375_set_wd_protection_parameter(struct mt6375_tcpc_data *ddata,
 					      enum mt6375_wd_chan chan)
 {
 	int ret;
-
-	ret = mt6375_set_wd_rpull(ddata, chan, MT6375_WD_RPULL_75K);
+	struct tcpc_desc *desc = ddata->desc;
+	ret = mt6375_set_wd_rpull(ddata, chan, desc->mmi_wd_rpull);
 	if (ret < 0)
 		return ret;
-	ret = mt6375_set_wd_volcmpl(ddata, chan, MT6375_WD_VOLCMPL_1440MV);
+	ret = mt6375_set_wd_volcmpl(ddata, chan, desc->mmi_wd_volcmpl);
 	if (ret < 0)
 		return ret;
 	ret = mt6375_write8(ddata, mt6375_wd_miscctrl_reg[chan],
@@ -1206,13 +1224,13 @@ out:
 static int mt6375_enable_wd_polling(struct mt6375_tcpc_data *ddata, bool en)
 {
 	int ret, i;
-
+	struct tcpc_desc *desc = ddata->desc;
+	MT6375_DBGINFO("%s: line = %d en = %d \n", __func__, __LINE__,en);
 	if (en) {
-		ret = mt6375_update_bits_rt2(ddata,
-					     MT6375_REG_WDSET3,
-					     MT6375_MASK_WD_TDET,
-					     MT6375_WD_TDET_10MS <<
-						MT6375_SHFT_WD_TDET);
+		ret = mt6375_update_bits_rt2(ddata,MT6375_REG_WDSET3,
+							(MT6375_MSK_WD_TDET | MT6375_MSK_WD_TSLEEP),
+							MT6375_WD_SETTING2(desc->mmi_wd_tdet_polling_cycle,
+						  desc->mmi_wd_tsleep_polling_cycle));
 		if (ret < 0)
 			return ret;
 		for (i = 0; i < MT6375_WD_CHAN_NUM; i++) {
@@ -1230,15 +1248,14 @@ static int mt6375_enable_wd_polling(struct mt6375_tcpc_data *ddata, bool en)
 static int mt6375_enable_wd_protection(struct mt6375_tcpc_data *ddata, bool en)
 {
 	int i, ret;
-
+	struct tcpc_desc *desc = ddata->desc;
 	MT6375_DBGINFO("%s: en = %d\n", __func__, en);
 	ddata->wd_prot = en;
 	if (en) {
-		ret = mt6375_update_bits_rt2(ddata,
-					     MT6375_REG_WDSET3,
-					     MT6375_MASK_WD_TDET,
-					     MT6375_WD_TDET_1MS <<
-						MT6375_SHFT_WD_TDET);
+		ret = mt6375_update_bits_rt2(ddata, MT6375_REG_WDSET3,
+							(MT6375_MSK_WD_TDET | MT6375_MSK_WD_TSLEEP),
+							MT6375_WD_SETTING2(desc->mmi_wd_tdet_protection_cycle,
+					desc->mmi_wd_tsleep_protection_cycle));
 		if (ret < 0)
 			return ret;
 		for (i = 0; i < MT6375_WD_CHAN_NUM; i++) {
@@ -2498,6 +2515,12 @@ static int mt6375_parse_dt(struct mt6375_tcpc_data *ddata)
 		{ "wd,sbu_ph_ubound1_c2c", &desc->wd_sbu_ph_ubound1_c2c },
 		{ "wd,sbu_ph_ubound2_c2c", &desc->wd_sbu_ph_ubound2_c2c },
 		{ "wd,sbu_aud_ubound", &desc->wd_sbu_aud_ubound },
+		{ "mmi,wd-volcmpl", &desc->mmi_wd_volcmpl },
+		{ "mmi,wd-rpull", &desc->mmi_wd_rpull },
+		{ "mmi,wd-tdet-polling-cycle", &desc->mmi_wd_tdet_polling_cycle },
+		{ "mmi,wd-tsleep-polling-cycle", &desc->mmi_wd_tsleep_polling_cycle },
+		{ "mmi,wd-tdet-protection-cycle", &desc->mmi_wd_tdet_protection_cycle },
+		{ "mmi,wd-tsleep-protection-cycle", &desc->mmi_wd_tsleep_protection_cycle },
 	};
 
 	memcpy(desc, &def_tcpc_desc, sizeof(*desc));
@@ -2537,8 +2560,8 @@ static int mt6375_parse_dt(struct mt6375_tcpc_data *ddata)
 	for (i = 0; i < ARRAY_SIZE(tcpc_props_u32); i++) {
 		if (device_property_read_u32(dev, tcpc_props_u32[i].name,
 					     tcpc_props_u32[i].val_ptr))
-			dev_notice(dev, "failed to parse props[%s]\n",
-				tcpc_props_u32[i].name);
+			dev_err(dev, "failed to parse props[%s] using default value = %d\n",
+				   tcpc_props_u32[i].name, *tcpc_props_u32[i].val_ptr);
 		else
 			dev_info(dev, "props[%s] = %d\n",
 				 tcpc_props_u32[i].name,

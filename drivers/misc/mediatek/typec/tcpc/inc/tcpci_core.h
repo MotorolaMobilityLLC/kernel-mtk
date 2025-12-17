@@ -107,6 +107,12 @@ struct tcpc_desc {
 	u32 wd_sbu_ph_ubound1_c2c;
 	u32 wd_sbu_ph_ubound2_c2c;
 	u32 wd_sbu_aud_ubound;
+	u32 mmi_wd_volcmpl;
+	u32 mmi_wd_rpull;
+	u32 mmi_wd_tdet_polling_cycle;
+	u32 mmi_wd_tsleep_polling_cycle;
+	u32 mmi_wd_tdet_protection_cycle;
+	u32 mmi_wd_tsleep_protection_cycle;
 };
 
 /*---------------------------------------------------------------------------*/

@@ -52,8 +52,25 @@
         disable-calc-dlpt-imix-r= <1>;
 };
 
-
 &mt6375_typec {
+        tcpc,en_wd;
+
+        /*fcnt lpd configure*/
+        wd,sbu_ph_lbound = <947>;	/*sbu to gnd 1250K*/
+
+        /*SBU pin isr trigger voltage: lpd enter isr if < mmi-volcmpl. lpd isr eixt isr if > mmi-volcmpl */
+        mmi,wd-volcmpl = <11>;		/* 1540mv */
+
+        /*lpd polling periods: wd-tdet-polling-cycle * mmi,wd-tsleep-polling-cycle lpd */
+        mmi,wd-tdet-polling-cycle = <4>;	/* 10ms*/
+        mmi,wd-tsleep-polling-cycle = <3>;	/* 1024x*/
+
+        /*lpd protection periods:  mmi,wd-tdet-polling-cycle*  mmi,wd-tsleep-protection-cycle lpd */
+        mmi,wd-tdet-protection-cycle = <6>;	/* 100ms*/
+        mmi,wd-tsleep-protection-cycle = <3>;	/* 1024x*/
+
+        /*mmi,wd-rpull volcmpl pull up r */
+        mmi,wd-rpull = <2>;	/* 75K */
         mmi,en-moto-typec-otp;
         pd-data {
                 pd,sink-cap-ext = /bits/ 8 <0xcf 0x29 0x75 0x63
