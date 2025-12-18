@@ -233,7 +233,8 @@
 			"cam2_mclk_2mA", "cam2_mclk_4mA",
 			"cam2_mclk_6mA", "cam2_mclk_8mA",
 			"cam2_ldo_vcama_0",  "cam2_ldo_vcama_1",
-			"cam2_ldo_vcamd_0",  "cam2_ldo_vcamd_1";
+			"cam2_ldo_vcamd_0",  "cam2_ldo_vcamd_1",
+			"cam0_ldo_vcamafvdd_0",  "cam0_ldo_vcamafvdd_1";
 
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst_0>;
@@ -261,6 +262,8 @@
 	pinctrl-23 = <&camera_pins_cam2_avdd_gpio_1>;
 	pinctrl-24 = <&camera_pins_cam2_dvdd_gpio_0>;
 	pinctrl-25 = <&camera_pins_cam2_dvdd_gpio_1>;
+	pinctrl-26 = <&camera_pins_cam0_af_0>;
+	pinctrl-27 = <&camera_pins_cam0_af_1>;
 
 	/* main (wide)*/
 	cam0_vcamio-supply = <&mt6377_vaud18>;
@@ -320,6 +323,12 @@
 	status = "okay";
 	clock-frequency = <400000>;
 
+	mtk_camera_eeprom2:camera_eeprom2@50 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x52>;
+		status = "okay";
+	};
+
 	camera_main_two_mtk:camera_main_two@47 {
 		compatible = "mediatek,camera_main_two";
 		#thermal-sensor-cells = <0>;
@@ -357,9 +366,6 @@
 	};
 };
 &camera_af_hw_node {
-	pinctrl-names = "camaf_m1_gpio_on",	"camaf_m1_gpio_off";
-	pinctrl-0 = <&camera_pins_cam0_af_1>;
-	pinctrl-1 = <&camera_pins_cam0_af_0>;
 	status = "okay";
 };
 /* CAMERA AF end */
