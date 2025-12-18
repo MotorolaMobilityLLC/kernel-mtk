@@ -29,6 +29,10 @@
 #include "include/dsi-panel-mot-vdo-csot-td4376b-1080-2400-dphy-120hz.h"
 #endif
 
+#define PANEL_EVT 1
+#define PANEL_DVT1 2
+#define PANEL_DVT2 3
+#define PANEL_PVT 4
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
@@ -55,6 +59,7 @@ struct csot_td4376b {
 //	unsigned int hbm_mode;
 	unsigned int cabc_mode;
 	s64 screen_on_timestamp;
+	int version;
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
@@ -197,6 +202,41 @@ int panel_gesture_notifier_call_chain(unsigned long val, void *v)
 }
 EXPORT_SYMBOL(panel_gesture_notifier_call_chain);
 
+static void lcm_parse_panel_version(struct csot_td4376b *ctx)
+{
+	int rc;
+	struct device_node *chosen = of_find_node_by_name(NULL, "chosen");
+
+	ctx->version = PANEL_PVT;
+	if(chosen) {
+		u32 tmp = 0;
+
+		rc = of_property_read_u32(chosen, "mmi,panel_ver", &tmp);
+		if (!rc) {
+			switch (tmp) {
+				case PANEL_EVT:
+					ctx->version = PANEL_EVT;
+					break;
+				case PANEL_DVT1:
+					ctx->version = PANEL_DVT1;
+					break;
+				case PANEL_DVT2:
+					ctx->version = PANEL_DVT2;
+					break;
+				case PANEL_PVT:
+				default:
+					ctx->version = PANEL_PVT;
+					break;
+			}
+			pr_info("get panel_ver:%d\n", ctx->version);
+		}
+		else
+			pr_info("mmi,panel_ver not get\n");
+	}
+	else
+		pr_info("parse_panel chosen node null\n");
+}
+
 static void csot_td4376b_panel_init(struct csot_td4376b *ctx)
 {
 	ktime_t now;
@@ -310,7 +350,8 @@ static int csot_td4376b_unprepare(struct drm_panel *panel)
 	csot_td4376b_dcs_write_seq_static(ctx, 0x28);
 	udelay(10 * 1000);
 	csot_td4376b_dcs_write_seq_static(ctx, 0x10);
-	msleep(120);
+	// Increase delay to 150ms to meet panel vendor spec for clean power-down
+	msleep(150);
 
 	if(tp_gesture_flag)
 		panel_gesture_notifier_call_chain(0x01,NULL);
@@ -1068,6 +1109,9 @@ static int csot_td4376b_probe(struct mipi_dsi_device *dsi)
 	drm_panel_init(&ctx->panel, dev, &csot_td4376b_drm_funcs, DRM_MODE_CONNECTOR_DSI);
 
 	drm_panel_add(&ctx->panel);
+
+	//parse panel version for evt/dvt/pvt
+	lcm_parse_panel_version(ctx);
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
