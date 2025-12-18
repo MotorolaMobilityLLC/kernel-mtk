@@ -695,6 +695,7 @@ static int __maybe_unused pd_authentication(struct adapter_device *dev,
 			}
 		} else {
 			data->pdp = src_cap_ext.source_pdp;
+			data->pwr_lmt = false;
 			if (data->pdp > 0 && !data->pwr_lmt)
 				data->pwr_lmt = true;
 		}
