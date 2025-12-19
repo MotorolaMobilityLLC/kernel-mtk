@@ -44,7 +44,7 @@ static mot_calibration_mnf_t mnf_info = {0};
 
 static uint32_t convert_crc(uint8_t *crc_ptr)
 {
-	return (crc_ptr[0] << 8) | (crc_ptr[1]);
+	return (crc_ptr[0]) | (crc_ptr[1] << 8);
 }
 
 static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
@@ -177,7 +177,7 @@ static void SYDNEY_GC50F6A_2ND_eeprom_get_mnf_data(void *data,
 		mnf->manufacture_date[0] = 0;
 	}
 
-	ret = snprintf(mnf->serial_number, MAX_CALIBRATION_STRING, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+	ret = snprintf(mnf->serial_number, MAX_CALIBRATION_STRING, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
 		eeprom->serial_number[0], eeprom->serial_number[1],
 		eeprom->serial_number[2], eeprom->serial_number[3],
 		eeprom->serial_number[4], eeprom->serial_number[5],
@@ -185,7 +185,7 @@ static void SYDNEY_GC50F6A_2ND_eeprom_get_mnf_data(void *data,
 		eeprom->serial_number[8], eeprom->serial_number[9],
 		eeprom->serial_number[10], eeprom->serial_number[11],
 		eeprom->serial_number[12], eeprom->serial_number[13],
-		eeprom->serial_number[14], eeprom->serial_number[15]);
+		eeprom->serial_number[14]);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
 		LOG_ERROR("snprintf of mnf->serial_number failed");
 		mnf->serial_number[0] = 0;
