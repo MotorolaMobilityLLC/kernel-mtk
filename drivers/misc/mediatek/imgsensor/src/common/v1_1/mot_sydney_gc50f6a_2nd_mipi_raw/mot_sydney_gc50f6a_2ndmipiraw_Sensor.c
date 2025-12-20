@@ -55,6 +55,8 @@
 #define PDAFSUPPORT  1 /* for pdaf switch */
 static kal_uint8  ratio = 1;
 #define CT_DEBUG            1
+#define TO_LE(x) ((((UINT16)(x)&0xff00) >>8)|(((UINT16)(x)&0x00ff)<<8))
+#define TO_UINT16(x) ((((x)[0] ) << 8) | ((x)[1]))
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 extern void SYDNEY_GC50F6A_2ND_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 extern mot_calibration_status_t *SYDNEY_GC50F6A_2ND_eeprom_get_calibration_status(void);
@@ -188,8 +190,8 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[6] = {
 	//0x03, 0x2b, 0x0200, 0x05f8, 0x03, 0x00, 0x0000, 0x0000},
 	/* Video mode setting*/
 	{0x02, 0x0A,   0x00,   0x08, 0x40, 0x00,
-	0x00, 0x2B, 0x1000, 0x0A00, 0x01, 0x00, 0x0000, 0x0000,
-	0x03, 0x2b, 0x0200, 0x0500, 0x03, 0x00, 0x0000, 0x0000},
+	0x00, 0x2B, 0x1000, 0x0900, 0x01, 0x00, 0x0000, 0x0000,
+	0x03, 0x2b, 0x0200, 0x0480, 0x03, 0x00, 0x0000, 0x0000},
 	/* HS Video mode setting*/
 	{0x02, 0x0A,   0x00,   0x08, 0x40, 0x00,
 	0x00, 0x2B, 0x0780, 0x0438, 0x01, 0x00, 0x0000, 0x0000},
@@ -238,8 +240,8 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4PairNum = 2,
 	.i4SubBlkW = 8,
 	.i4SubBlkH = 4,
-	.i4PosR = {{2, 9},{6, 13} },
-	.i4PosL = {{3, 9},{7, 13} },
+	.i4PosR = {{0, 10},{4, 14} },
+	.i4PosL = {{1, 10},{5, 14} },
 	.i4BlockNumX = 512,
 	.i4BlockNumY = 382,
 	.iMirrorFlip = 0,
@@ -248,21 +250,21 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 			{0, 0}, {0, 0}, {0, 0} },
 };
 
-static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info_4096x2560 = {
+static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info_4096x2304 = {
 	.i4OffsetX = 0,
-	.i4OffsetY = 8,
+	.i4OffsetY = 0,
 	.i4PitchX  = 8,
 	.i4PitchY  = 8,
 	.i4PairNum = 2,
 	.i4SubBlkW = 8,
 	.i4SubBlkH = 4,
-	.i4PosR = {{2, 9},{6, 13} },
-	.i4PosL = {{3, 9},{7, 13} },
+	.i4PosR = {{0, 2},{4, 6} },
+	.i4PosL = {{1, 2},{5, 6} },
 	.i4BlockNumX = 512,
-	.i4BlockNumY = 320,
+	.i4BlockNumY = 288,
 	.iMirrorFlip = 0,
 
-	.i4Crop = { {0, 0}, {0, 0}, {0, 256}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
+	.i4Crop = { {0, 0}, {0, 0}, {0, 384}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
 			{0, 0}, {0, 0}, {0, 0} },
 };
 #endif
@@ -270,9 +272,9 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info_4096x2560 = {
 static kal_uint16 read_cmos_sensor_8(kal_uint32 addr)
 {
 	kal_uint16 get_byte = 0;
-	char pu_send_cmd[2] = { 
-		(char)((addr >> 8) & 0xff), 
-		(char)(addr & 0xff) 
+	char pu_send_cmd[2] = {
+		(char)((addr >> 8) & 0xff),
+		(char)(addr & 0xff)
 	};
 
 	iReadRegI2C(pu_send_cmd, 2, (u8 *)&get_byte, 1, imgsensor.i2c_write_id);
@@ -4699,7 +4701,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				pr_debug("[mot_sydney_gc50f6a_2nd_camera_sensor]get_imgsensor_id:i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				SYDNEY_GC50F6A_2ND_eeprom_format_calibration_data(&imgsensor);
-				mot_sydney_gc50f6a_2nd_read_crosstalk_data();//jesse added
+				mot_sydney_gc50f6a_2nd_read_crosstalk_data();
 				return ERROR_NONE;
 			}
 			pr_debug("[mot_sydney_gc50f6a_2nd_camera_sensor]get_imgsensor_id:Read sensor id fail, write id: 0x%x, id: 0x%x\n",
@@ -4723,9 +4725,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 static kal_uint16 read_eeprom(kal_uint16 addr)
 {
 	kal_uint16 get_byte = 0;
-	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xff) };
+	char pu_send_cmd[2] = {
+		(char)((addr >> 8) & 0xff),
+		(char)(addr & 0xff)
+	};
 
-	iReadRegI2C(pu_send_cmd, 2, (u8 *) &get_byte, 1, EEPROM_WRITE_ID);
+	iReadRegI2C(pu_send_cmd, 2, (u8 *)&get_byte, 1, EEPROM_WRITE_ID);
+
 	return get_byte;
 }
 
@@ -4736,28 +4742,32 @@ void mot_sydney_gc50f6a_2nd_read_crosstalk_data(void)
 	kal_uint16 i = 0;
 	kal_uint16 ct_flag = 0;
 	kal_uint32 checksum = 0;
+	kal_uint16 checksum_expect = 0;
     pr_debug("start read crosstalk");
 	memset(&ct_read_data, 0, CROSSTALK_BUF_SIZE * sizeof(kal_uint8));
 
-	ct_flag = read_eeprom(CROSSTALK_FLAG_OFFSET);
-	pr_debug("ct_flag = %d\n", ct_flag);
-//	ct_flag = 1;
+	// ct_flag = read_eeprom(CROSSTALK_FLAG_OFFSET); eeprom no PDXTC flag
+	// pr_debug("ct_flag = %d\n", ct_flag);
+	pr_debug("CAIHF check success addr  = %x\n",CROSSTALK_START_ADDR);
+	ct_flag = 1;
 	if (ct_flag == OTP_FLAG_VALID) {
 		for (i = 0; i < CROSSTALK_BUF_SIZE; i++)
+		{
 			ct_read_data[i] = read_eeprom(CROSSTALK_START_ADDR + i);
+			pr_debug("addr=%x ct_data[%d] = %x\n", CROSSTALK_START_ADDR + i, i, ct_read_data[i]);
+		}
 
-		for (i = 0; i < (CROSSTALK_BUF_SIZE - 1); i++)
+		for (i = 0; i < (CROSSTALK_BUF_SIZE - CROSSTALK_CHECKSUM_SIZE); i++)
 			checksum += ct_read_data[i];
 
-		//checksum++;
-
-		if (((checksum % 255)+1) == ct_read_data[CROSSTALK_BUF_SIZE - 1])
-			pr_debug("check success! calc_checksum = %d, read_checksum = %d\n",
-			(checksum % 255)+1, ct_read_data[CROSSTALK_BUF_SIZE - 1]);
+		checksum_expect = TO_LE(TO_UINT16(&ct_read_data[CROSSTALK_BUF_SIZE - CROSSTALK_CHECKSUM_SIZE]));
+		if ((checksum % 0xFFFF) == checksum_expect)
+			pr_debug("check success! calc_checksum = %x, read_checksum = %x\n",
+			(checksum % 0xFFFF), checksum_expect);
 		else {
 			memset(ct_read_data, 0, CROSSTALK_BUF_SIZE);
-			pr_debug("check error! calc_checksum = %d, read_checksum = %d\n",
-			((checksum % 255)+1), ct_read_data[CROSSTALK_BUF_SIZE - 1]);
+			pr_debug("check error! calc_checksum = %x, read_checksum = %x\n",
+			(checksum % 0xFFFF), checksum_expect);
 		}
 #if CT_DEBUG
 		for (i = 0; i < CROSSTALK_BUF_SIZE; i++)
@@ -5688,7 +5698,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info, sizeof(struct SET_PD_BLOCK_INFO_T));
 			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info_4096x2560, sizeof(struct SET_PD_BLOCK_INFO_T));
+			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info_4096x2304, sizeof(struct SET_PD_BLOCK_INFO_T));
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
