@@ -53,11 +53,12 @@
 #define MIRROR	    0x00
 #endif
 
-#define EEPROM_WRITE_ID           0xa0
-#define CROSSTALK_BUF_SIZE        491 /*6*8*10+10*+1*/
-#define CROSSTALK_START_ADDR      0x0004
-#define CROSSTALK_FLAG_OFFSET     0x0000
-#define OTP_FLAG_VALID            0x01
+#define EEPROM_WRITE_ID         0xa0
+#define CROSSTALK_BUF_SIZE      492 // 294+196+2
+#define CROSSTALK_START_ADDR    0x1529
+#define CROSSTALK_CHECKSUM_SIZE 2
+#define CROSSTALK_FLAG_OFFSET   0x0000
+#define OTP_FLAG_VALID          0x01
 
 enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_INIT,
