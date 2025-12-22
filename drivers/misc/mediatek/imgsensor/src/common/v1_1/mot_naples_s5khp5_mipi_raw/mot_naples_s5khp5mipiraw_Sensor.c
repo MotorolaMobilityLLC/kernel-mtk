@@ -186,7 +186,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.custom3_delay_frame = 2,	/* enter custom3 delay frame num */
 	.custom4_delay_frame = 2,	/* enter custom4 delay frame num */
 	.frame_time_delay_frame = 2,
-	.isp_driving_current = ISP_DRIVING_4MA,
+	.isp_driving_current = ISP_DRIVING_8MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_CPHY, /* 0,MIPI_OPHY_NCSI2; 1,MIPI_OPHY_CSI2 */
 	.mipi_settle_delay_mode = 0,
@@ -220,7 +220,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {
 	{16384, 12288, 0,1536, 16384, 9216,   4096, 2304, 0, 0,  4096, 2304,  0,  0,  4096, 2304}, // video
 	{16384, 12288, 0,1536, 16384, 9216,   2048, 1152, 0, 0,  2048, 1152,  0,  0,  2048, 1152}, /* hs_video */
 	{16384, 12288, 0,   0, 16384, 12288,  4096, 3072, 0, 0,  4096, 3072,  0,  0,  4096, 3072}, /* slim video */
-	{16384, 12288, 4096,   3072, 8192, 6144,  4096, 3072, 0, 0,  4096, 3072,  0,  0,  4096, 3072}, /* custom1 */
+	{16384, 12288, 0,   0, 16384, 12288,  8192, 6144, 2048, 1536,  4096, 3072,  0,  0,  4096, 3072}, /* custom1 */
 	{16384, 12288, 0,   0, 16384, 12288,  8192, 6144, 0, 0,  8192, 6144,  0,  0,  8192, 6144}, /* custom2 */
 	{16384, 12288, 0,1536, 16384, 9216,   2048, 1152, 0, 0,  2048, 1152,  0,  0,  2048, 1152}, /* custom3 */
 	{16384, 12288, 0,   0, 16384, 12288,   2048, 1536, 0, 0,  2048, 1536,  0,  0,  2048, 1536}, /* custom4 */
