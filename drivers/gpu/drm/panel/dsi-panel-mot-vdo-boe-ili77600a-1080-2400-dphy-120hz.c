@@ -51,12 +51,13 @@ extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u3
 
 #define BOE_ILI_PANEL_VENDOR_ID    0x91070501
 //#define BOE_ILI_PANEL_V0_VENDOR_ID  	(BOE_ILI_PANEL_VENDOR_ID | (0xF << 24))
-#if 0
 enum panel_version {
-        PANEL_V1,  //DVT, PVT
-        PANEL_V0,  //EVT
+    PANEL_EVT = 1,
+    PANEL_DVT1 = 2,
+    PANEL_DVT2 = 3,
+    PANEL_PVT = 4,
 };
-#endif
+
 static int tp_gesture_flag = 0;
 
 struct boe_ili77600a {
@@ -73,7 +74,7 @@ struct boe_ili77600a {
 	int error;
 	//unsigned int hbm_mode;
 	unsigned int cabc_mode;
-	//enum panel_version version;
+	enum panel_version version;
 };
 
 static struct mtk_panel_para_table panel_cabc_ui[] = {
@@ -174,6 +175,39 @@ static void boe_ili77600a_dcs_write(struct boe_ili77600a *ctx, const void *data,
 	}
 }
 
+static void lcm_parse_panel_version(struct boe_ili77600a *ctx)
+{
+	int rc;
+	struct device_node *chosen = of_find_node_by_name(NULL, "chosen");
+
+	ctx->version = PANEL_PVT;
+	if(chosen) {
+		u32 tmp = 0;
+
+		rc = of_property_read_u32(chosen, "mmi,panel_ver", &tmp);
+		if (!rc) {
+			switch (tmp) {
+				case PANEL_EVT:
+					ctx->version = PANEL_EVT;
+					break;
+				case PANEL_DVT1:
+					ctx->version = PANEL_DVT1;
+					break;
+				case PANEL_DVT2:
+					ctx->version = PANEL_DVT2;
+					break;
+				default:
+					ctx->version = PANEL_PVT;
+					break;
+			}
+			pr_info("get panel_ver:%d\n", ctx->version);
+		}
+		else
+			dev_warn(ctx->dev, "Failed to read 'mmi,panel_ver' property; using default\n");
+	}
+	else
+		dev_warn(ctx->dev, "Failed to find '/chosen' node\n");
+}
 
 static void boe_ili77600a_panel_init(struct boe_ili77600a *ctx)
 {
@@ -1032,6 +1066,9 @@ static int boe_ili77600a_probe(struct mipi_dsi_device *dsi)
 	drm_panel_init(&ctx->panel, dev, &boe_ili77600a_drm_funcs, DRM_MODE_CONNECTOR_DSI);
 
 	drm_panel_add(&ctx->panel);
+
+	// Parse panel version for different hardware stages (EVT/DVT/PVT)
+	lcm_parse_panel_version(ctx);
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
