@@ -1,0 +1,37 @@
+/* Copyright (c) 2025, Motorola Mobility Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+/plugin/;
+
+/* NOTE: copied from mt6835-naples-evb-overlay.dts */
+
+#include "mediatek/mt6835-sydney-common-overlay.dtsi"
+#include "mediatek/mt6835_sydney_camera_overlay_evb.dtsi"
+#include "mediatek/sydney-sensor.dtsi"
+
+#define SYDNEY_RADIO 7
+
+/* Board match root node */
+/ {
+	fragment@model {
+		target-path = "/";
+		__overlay__ {
+			mot,model = "sydney";
+			mot,board-id = <(SYDNEY_RADIO << 8 | 0x41) 0xB100>;
+		};
+	};
+};
+
+#include <sydney_dvt/cust.dtsi>
+#include "mediatek/sydney-charger-7000mah-30w.dtsi"
+/*End of this file, DO NOT ADD ANYTHING HERE*/
