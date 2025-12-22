@@ -202,10 +202,17 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 	}
 
 	if (info->water_detected) {
-		pdata->input_current_limit = info->data.ac_charger_input_current;
-		pdata->charging_current_limit = info->data.ac_charger_current;
-		is_basic = true;
-		goto done;
+		if (info->wd_discharge){
+			pdata->input_current_limit = 0;
+			pdata->charging_current_limit = 0;
+			is_basic = true;
+			goto done;
+		} else {
+			pdata->input_current_limit = info->data.ac_charger_input_current;
+			pdata->charging_current_limit = info->data.ac_charger_current;
+			is_basic = true;
+			goto done;
+		}
 	}
 
 	if (((info->bootmode == 1) ||

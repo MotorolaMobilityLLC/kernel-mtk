@@ -97,6 +97,8 @@
 
 &charger {
          mmi,typecotp-charger;
+         /* wd discharge */
+         mmi,wd_discharge;
          /* mos gpio */
          mmi,mos_gpio = <&pio 188 0>;
          charger = <&mt6375_chg>;

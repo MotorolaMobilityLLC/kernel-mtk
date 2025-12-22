@@ -628,6 +628,8 @@ struct mtk_charger {
 	/* charge otp ctrl gpio for mos */
 	int charge_tcpc_opt_mos_gpio;
 	bool direct_schedule_chg;
+	/* water protection  discharge */
+	bool wd_discharge;
 };
 
 static inline int mtk_chg_alg_notify_call(struct mtk_charger *info,

@@ -190,6 +190,9 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 		chr_err("%s: info->charge_tcpc_opt_mos_gpio  not specified\n", __func__);
 	}
 
+	info->wd_discharge = of_property_read_bool(np, "mmi,wd_discharge");
+	chr_info("%s: info->wd_discharge %d\n", __func__,info->wd_discharge);
+
 	/* request gpio */
 	if (gpio_is_valid(info->charge_tcpc_opt_mos_gpio))
 	{
