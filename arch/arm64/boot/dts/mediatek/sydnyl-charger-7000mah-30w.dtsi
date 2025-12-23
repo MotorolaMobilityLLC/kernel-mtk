@@ -82,9 +82,9 @@
                 status = "okay";
                 awinic,int_n = <&pio 8 1>;
                 aw35615,port_id = <0>;
-                aw35615,snk_pdo_size = <1>; /* set sink pdo num*/
-                aw35615,snk_pdo_vol = <5000>; /* set sink pdo voltage mV*/
-                aw35615,snk_pdo_cur = <2000>; /* set sink pdo current mA*/
+                aw35615,snk_pdo_size = <2>; /* set sink pdo num*/
+                aw35615,snk_pdo_vol = <5000 9000>; /* set sink pdo voltage mV*/
+                aw35615,snk_pdo_cur = <2000 2000>; /* set sink pdo current mA*/
                 aw35615,snk_pps_size = <0>; /* set sink pps num*/
                 aw35615,snk_pps_vol = <0>; /* set sink pps voltage mV*/
                 aw35615,snk_pps_cur = <0>; /* set sink pps current mA*/
@@ -293,9 +293,9 @@
 			 * PPS 3V~5.9V, 3A <0xC0761E3C>
 			 */
 			pd,source-pdo-size = <1>;
-			pd,source-pdo-data = <0x00019032>;
-			pd,sink-pdo-size = <1>;
-			pd,sink-pdo-data = <0x000190c8>;
+			pd,source-pdo-data = <0x00019096>;
+			pd,sink-pdo-size = <2>;
+			pd,sink-pdo-data = <0x000190c8 0x0002d0c8>;
 
 			/*
 			 * No DP, host + device

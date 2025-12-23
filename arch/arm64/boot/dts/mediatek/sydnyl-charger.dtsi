@@ -83,9 +83,9 @@
                 status = "okay";
                 awinic,int_n = <&pio 8 1>;
                 aw35615,port_id = <0>;
-                aw35615,snk_pdo_size = <1>; /* set sink pdo num*/
-                aw35615,snk_pdo_vol = <5000>; /* set sink pdo voltage mV*/
-                aw35615,snk_pdo_cur = <2000>; /* set sink pdo current mA*/
+                aw35615,snk_pdo_size = <2>; /* set sink pdo num*/
+                aw35615,snk_pdo_vol = <5000 9000>; /* set sink pdo voltage mV*/
+                aw35615,snk_pdo_cur = <2000 2000>; /* set sink pdo current mA*/
                 aw35615,snk_pps_size = <0>; /* set sink pps num*/
                 aw35615,snk_pps_vol = <0>; /* set sink pps voltage mV*/
                 aw35615,snk_pps_cur = <0>; /* set sink pps current mA*/
@@ -294,9 +294,9 @@
 			 * PPS 3V~5.9V, 3A <0xC0761E3C>
 			 */
 			pd,source-pdo-size = <1>;
-			pd,source-pdo-data = <0x00019032>;
-			pd,sink-pdo-size = <1>;
-			pd,sink-pdo-data = <0x000190c8>;
+			pd,source-pdo-data = <0x00019096>;
+			pd,sink-pdo-size = <2>;
+			pd,sink-pdo-data = <0x000190c8 0x0002d0c8>;
 
 			/*
 			 * No DP, host + device
@@ -545,8 +545,8 @@
          //enable_pe_plus;
          //enable_sw_jeita;
 
-         /*pe5 && pdc*/
-         fast_charging_indicator = <0x14>;
+         /*pdc*/
+         fast_charging_indicator = <0x4>;
 
          /* charging current */
          usb_charger_current_suspend = <0>;
@@ -570,26 +570,27 @@
          mmi,iterm-ma = <255>;
          mmi,mmi-temp-zones =
                         <0 4200 1020  0>,
-                        <10 4250 2550 1530>,
+                        <10 4250 2550 2550>,
+                        <10 4530 1530 1530>,
                         <15 4530 2550 2550>,
-                        <45 4320 5800 5200>,
-                        <45 4450 5200 4000>,
+                        <35 4320 4000 4000>,
+                        <45 4450 4000 4000>,
                         <60 4200 2550 0>;
 
 	mmi,mmi-ffc-zones = <0 4200 255>,
+			<10 4250 1530>,
 			<10 4530 255>,
 			<15 4530 255>,
-			<25 4560 864>,
-			<35 4560 991>,
-			<45 4560 1419>,
+			<35 4320 255>,
+			<45 4450 510>,
 			<60 4200 255>;
 
 	mmi,mmi-normal-zones = <0 4200 255>,
+			<10 4250 1530>,
 			<10 4530 255>,
 			<15 4530 255>,
-			<25 4530 255>,
-			<35 4530 255>,
-			<45 4530 510>,
+			<35 4320 255>,
+			<45 4450 510>,
 			<60 4200 255>;
 
          mmi,enable-charging-limit;
@@ -663,6 +664,7 @@
 	tdvchg_curlmt = <(-1) (-1) (-1) 0 0 0 0 0 (-1)>;
 	tbat_curlmt = <0 0 0 0 0 0 0 0 0>;
 	tta_curlmt = <0 0 0 0 0 0 0 0 0>;
+	status = "disabled";
 };
 
 &pe45 {
