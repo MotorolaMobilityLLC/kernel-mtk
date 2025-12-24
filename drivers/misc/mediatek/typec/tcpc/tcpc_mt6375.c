@@ -255,6 +255,8 @@
 #define MT6375_WD_SETTING2(TDET, TSLEEP) \
 	((TDET << MT6375_SFT_WD_TDET) | (TSLEEP << MT6375_SFT_WD_TSLEEP))
 
+#define MT6375_SBU_PH_LBOUND_FACTORY	600
+
 struct mt6375_tcpc_data {
 	struct device *dev;
 	struct regmap *rmap;
@@ -1124,7 +1126,7 @@ not_auddev:
 	mt6375_enable_wd_pullup(ddata, chan, MT6375_WD_RPULL_500K, true);
 	return false;
 }
-
+#define OV_CALBE_SBU_RES_V 180  //mv-->56k
 static int __mt6375_is_water_detected(struct mt6375_tcpc_data *ddata,
 				      enum mt6375_wd_chan chan, bool *wd)
 {
@@ -1134,6 +1136,12 @@ static int __mt6375_is_water_detected(struct mt6375_tcpc_data *ddata,
 	u32 ub = desc->wd_sbu_calib_init * 110 / 100;
 	enum tcpc_cable_type cable_type;
 	u8 ctd_evt;
+
+#ifdef CONFIG_MOTO_FACTORY_LPD
+#ifdef CONFIG_TARGET_BUILD_FACTORY
+	lb = MT6375_SBU_PH_LBOUND_FACTORY;
+#endif
+#endif
 
 	pm_stay_awake(ddata->dev);
 	/* Check WD1/2 pulled low */
@@ -1186,7 +1194,12 @@ static int __mt6375_is_water_detected(struct mt6375_tcpc_data *ddata,
 		}
 		msleep(20);
 	}
-
+	//ov cable with sbu 46k, add 10k tolerance to 56k
+	if(wd_adc < OV_CALBE_SBU_RES_V) {
+		MT6375_DBGINFO("OV cable detected, ignore lpd\n");
+		*wd = false;
+		goto out;
+	}
 #if CONFIG_CABLE_TYPE_DETECTION
 	if (ddata->tcpc->tcpc_flags & TCPC_FLAGS_CABLE_TYPE_DETECTION) {
 		cable_type = ddata->tcpc->typec_cable_type;

@@ -11,6 +11,18 @@ config MTK_USB_TYPEC
 	  by callback func.
 	  If unsure, say N.
 
+config TARGET_BUILD_FACTORY
+	bool "Identify if it's a factory build"
+	default n
+	help
+		Say Y here if it's a factory build for driver.
+
+config MOTO_FACTORY_LPD
+	bool "factory lpd support"
+	default n
+	help
+		This is to enable MOTO supports of factory lpd feature.
+
 source "drivers/misc/mediatek/typec/tcpc/Kconfig"
 
 source "drivers/misc/mediatek/typec/mux/Kconfig"
