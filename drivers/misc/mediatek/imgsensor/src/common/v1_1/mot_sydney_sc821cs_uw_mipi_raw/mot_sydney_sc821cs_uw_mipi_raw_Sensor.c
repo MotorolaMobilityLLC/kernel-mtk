@@ -35,7 +35,7 @@
 #define MOT_SYDNEY_SC821CS_UW_SENSOR_GAIN_MAX_VALID_INDEX  4
 #define MOT_SYDNEY_SC821CS_UW_SENSOR_GAIN_MAP_SIZE         4
 #define MOT_SYDNEY_SC821CS_UW_SENSOR_BASE_GAIN             0x400
-#define MOT_SYDNEY_SC821CS_UW_SENSOR_MAX_GAIN              (32 * MOT_SYDNEY_SC821CS_UW_SENSOR_BASE_GAIN )
+#define MOT_SYDNEY_SC821CS_UW_SENSOR_MAX_GAIN              (15.75 * MOT_SYDNEY_SC821CS_UW_SENSOR_BASE_GAIN )
 extern void read_mot_sydney_sc821cs_uw_otp_data(void);
 extern void SYDNEY_SC821CS_UW_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 extern mot_calibration_status_t *SYDNEY_SC821CS_UW_eeprom_get_calibration_status(void);
@@ -123,7 +123,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.min_shutter = 2,
 	.max_frame_length = 0x3fff00,
 	.min_gain = 64,
-	.max_gain = 2048,
+	.max_gain = 1008,
 	.min_gain_iso = 100,
 	.gain_step = 4,
 	.gain_type = 3,
@@ -301,7 +301,7 @@ static void set_shutter(kal_uint16 shutter)
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
-	kal_uint16 reg_gain = gain << 4;
+	kal_uint16 reg_gain = gain << 3;
 
 	if (reg_gain < MOT_SYDNEY_SC821CS_UW_SENSOR_BASE_GAIN)
 		reg_gain = MOT_SYDNEY_SC821CS_UW_SENSOR_BASE_GAIN;
