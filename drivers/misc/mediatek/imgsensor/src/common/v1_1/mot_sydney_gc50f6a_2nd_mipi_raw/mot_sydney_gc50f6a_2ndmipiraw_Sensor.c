@@ -142,7 +142,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.margin = 16,
 	.min_shutter = 1,
 	.min_gain = 64,/* 1x */
-	.max_gain = 1024,/* 16x */
+	.max_gain = 2048,/* 32x */
 	.min_gain_iso = 100,
 	.exp_step = 1,
 	.gain_step = 1,
@@ -565,7 +565,7 @@ static kal_uint32 gain2reg(const kal_uint16 gain)
 {
 	 kal_uint32 reg_gain = 0x0;
 
-	reg_gain = gain << 4;
+	reg_gain = gain << 3;
 	return (kal_uint32) reg_gain;
 }
 
@@ -589,13 +589,13 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint32 reg_gain = 0;
 	kal_uint16 a = 0 ,  b = 0;
-	if (gain < imgsensor_info.min_gain || gain > imgsensor_info.max_gain) {
+	if (gain < (imgsensor_info.min_gain * 2) || gain > (imgsensor_info.max_gain * 2)) {
 		pr_debug("Error max gain setting: %d\n", gain);
 
-		if (gain < imgsensor_info.min_gain)
-			gain = imgsensor_info.min_gain;
-		else if (gain > imgsensor_info.max_gain)
-			gain = imgsensor_info.max_gain;
+		if (gain < imgsensor_info.min_gain * 2)
+			gain = imgsensor_info.min_gain * 2;
+		else if (gain > imgsensor_info.max_gain * 2)
+			gain = imgsensor_info.max_gain * 2;
 	}
 
 	reg_gain = gain2reg(gain);
