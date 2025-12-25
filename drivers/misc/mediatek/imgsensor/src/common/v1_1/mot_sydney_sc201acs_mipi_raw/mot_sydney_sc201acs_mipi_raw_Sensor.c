@@ -412,7 +412,7 @@ static void set_shutter_frame_length(kal_uint32 shutter,
 	/* Update Shutter */
 	write_cmos_sensor(0x3e00, (shutter >> 12) & 0x0F);
 	write_cmos_sensor(0x3e01, (shutter >> 4)&0xFF);
-	write_cmos_sensor(0x3e02, (shutter<<4) & 0xF0);	
+	write_cmos_sensor(0x3e02, (shutter<<4) & 0xF0);
 	pr_debug(
 		"Exit! shutter =%d, framelength =%d/%d, dummy_line=%d,\n",
 		shutter, imgsensor.frame_length, frame_length,
@@ -422,7 +422,7 @@ static void set_shutter_frame_length(kal_uint32 shutter,
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
-	kal_uint16 reg_gain = gain << 4;
+	kal_uint16 reg_gain = gain << 3;
 
 	if (reg_gain < MOT_SYDNEY_SC201ACS_SENSOR_GAIN_BASE)
 		reg_gain = MOT_SYDNEY_SC201ACS_SENSOR_GAIN_BASE;
