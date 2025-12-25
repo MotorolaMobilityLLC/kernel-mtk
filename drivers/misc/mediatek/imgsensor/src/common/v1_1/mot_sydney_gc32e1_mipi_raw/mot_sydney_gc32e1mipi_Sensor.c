@@ -362,7 +362,7 @@ static void set_shutter(kal_uint32 shutter)
 
 static kal_uint16 gain2reg(kal_uint16 gain)
 {
-	kal_uint16 reg_gain = gain << 4;
+	kal_uint16 reg_gain = gain << 3;
 
 	reg_gain = (reg_gain < SENSOR_BASE_GAIN) ? SENSOR_BASE_GAIN : reg_gain;
 	reg_gain = (reg_gain > 32 * SENSOR_BASE_GAIN) ? (32 * SENSOR_BASE_GAIN) : reg_gain;
