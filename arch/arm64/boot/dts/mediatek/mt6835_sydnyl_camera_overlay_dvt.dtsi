@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2020 MediaTek Inc. */
+/* Copyright (c) 2025 MediaTek Inc. */
 /* CAMERA GPIO standardization */
 &pio {
 	camera_pins_cam0_rst_0: cam0@0 {
@@ -218,18 +218,6 @@
 	};
 };
 
-&odm {
-	gpio35_regulator:gpio-35 {
-			compatible = "regulator-fixed";
-			regulator-name = "gpio35_regulator";
-			regulator-min-microvolt = <2800000>;
-			regulator-max-microvolt = <2800000>;
-			gpio = <&pio 35 0x0>;
-			enable-active-high;
-			status = "okay";
-	};
-};
-
 &kd_camera_hw1 {
 	pinctrl-names = "default",
 			"cam0_rst0", "cam0_rst1",
@@ -278,7 +266,7 @@
 	cam0_vcamio-supply = <&mt6377_vaud18>;
 	cam0_vcama-supply = <&cam_avdd_main0>;
 	cam0_vcamd-supply = <&cam_dvdd_main0>;
-	cam0_vcamaf-supply = <&gpio35_regulator>;
+	cam0_vcamaf-supply = <&mt6377_vtp>;
 	cam1_vcamio-supply = <&mt6377_vaud18>;
 	cam1_vcama-supply = <&cam_avdd_front1>;
 	cam1_vcamd-supply = <&cam_dvdd_front1>;
@@ -301,9 +289,9 @@
 	cam2_pin_vcama = "gpio";
 	cam2_pin_vcamd = "gpio";
 
-	cam0_enable_sensor = "mot_sydney_imx882_mipi_raw mot_sydney_gc50f6a_mipi_raw mot_sydney_gc50f6a_2nd_mipi_raw";
-	cam1_enable_sensor = "mot_sydney_gc32e1_mipi_raw mot_sydney_sc821cs_mipi_raw mot_sydney_gc08a3_mipi_raw";
-	cam2_enable_sensor = "mot_sydney_sc821cs_uw_mipi_raw mot_sydney_sc201acs_mipi_raw mot_sydney_gc08a3_uw_mipi_raw mot_sydney_gc02m1_mipi_raw";
+	cam0_enable_sensor = "mot_sydney_s5khm9_mipi_raw mot_sydney_gc50f6a_mipi_raw mot_sydney_gc50f6a_2nd_mipi_raw";
+	cam1_enable_sensor = "mot_sydney_sc821cs_mipi_raw mot_sydney_gc08a3_mipi_raw";
+	cam2_enable_sensor = "mot_sydney_sc821cs_uw_mipi_raw mot_sydney_sc201acs_mipi_raw mot_sydney_gc02m1_mipi_raw";
 	status = "okay";
 };
 /* CAMERA GPIO end */
@@ -338,6 +326,7 @@
 		reg = <0x52>;
 		status = "okay";
 	};
+
 	camera_main_two_mtk:camera_main_two@47 {
 		compatible = "mediatek,camera_main_two";
 		#thermal-sensor-cells = <0>;
@@ -375,7 +364,7 @@
 	};
 };
 &camera_af_hw_node {
-	camaf_m1_pmic-supply = <&gpio35_regulator>;
+	camaf_m1_pmic-supply = <&mt6377_vtp>;
 	status = "okay";
 };
 /* CAMERA AF end */
@@ -395,7 +384,7 @@
 };
 /* CAMERA TZ config end */
 &kd_camera_hw1 {
-       cust-sensor = "mot_sydney_imx882_mipi_raw mot_sydney_gc32e1_mipi_raw mot_sydney_sc821cs_uw_mipi_raw mot_sydney_gc50f6a_mipi_raw mot_sydney_sc821cs_mipi_raw mot_sydney_sc201acs_mipi_raw mot_sydney_gc08a3_mipi_raw mot_sydney_gc08a3_uw_mipi_raw mot_sydney_gc50f6a_2nd_mipi_raw mot_sydney_gc02m1_mipi_raw";
+		cust-sensor = "mot_sydney_s5khm9_mipi_raw mot_sydney_sc821cs_uw_mipi_raw mot_sydney_gc50f6a_mipi_raw mot_sydney_sc821cs_mipi_raw mot_sydney_sc201acs_mipi_raw mot_sydney_gc08a3_mipi_raw mot_sydney_gc50f6a_2nd_mipi_raw mot_sydney_gc02m1_mipi_raw";
 };
 
 /* CAMERA Flashlight */

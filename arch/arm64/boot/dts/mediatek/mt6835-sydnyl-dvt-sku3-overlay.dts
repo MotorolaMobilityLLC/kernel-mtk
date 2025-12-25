@@ -16,7 +16,7 @@
 /* NOTE: copied from mt6835-naples-evb-overlay.dts */
 
 #include "mediatek/mt6835-sydnyl-common-overlay.dtsi"
-#include "mediatek/mt6835_sydnyl_camera_overlay_evb.dtsi"
+#include "mediatek/mt6835_sydnyl_camera_overlay_dvt.dtsi"
 #include "mediatek/sydnyl-sensor.dtsi"
 
 #define SYDNYL_RADIO 3
