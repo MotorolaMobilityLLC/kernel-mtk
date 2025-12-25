@@ -16,7 +16,7 @@
 #undef VENDOR_EDIT
 #define PFX "MOTNAPLESS5KHP5_camera_sensor"
 #define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __func__, ##args)
-#define FPT_SEAMLESS_SUPPORT 0
+#define FPT_SEAMLESS_SUPPORT 1
 #define S5KHP5_PDAF_SWITCH 1
 
 #define S5KHP5_BASEGAIN 128
@@ -1547,14 +1547,14 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	LOG_INF("enable: %d\n", enable);
 	if (enable){
-		// write_cmos_sensor(0x0600, 0x0001); /*solid color*/
-		// write_cmos_sensor(0x0602, 0x0000);
-		// write_cmos_sensor(0x0604, 0x0000);
-		// write_cmos_sensor(0x0606, 0x0000);
-		// write_cmos_sensor(0x0608, 0x0000);
+		write_cmos_sensor(0x0600, 0x0001); /*solid color*/
+		write_cmos_sensor(0x0602, 0x0000);
+		write_cmos_sensor(0x0604, 0x0000);
+		write_cmos_sensor(0x0606, 0x0000);
+		write_cmos_sensor(0x0608, 0x0000);
 	}
 	else{
-		// write_cmos_sensor(0x0600, 0x0000); /*No pattern*/
+		write_cmos_sensor(0x0600, 0x0000); /*No pattern*/
 	}
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;
