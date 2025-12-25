@@ -51,7 +51,7 @@
 #include "mot_sydney_gc50f6a_2ndmipiraw_Sensor.h"
 
 #define MULTI_WRITE 1
-#define LONG_EXP         0
+#define LONG_EXP         1
 #define PDAFSUPPORT  1 /* for pdaf switch */
 static kal_uint8  ratio = 1;
 #define CT_DEBUG            1
