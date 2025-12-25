@@ -425,9 +425,9 @@ static void set_shutter_frame_length(kal_uint32 shutter,
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
-	 kal_uint16 reg_gain = 0x0;
+	kal_uint16 reg_gain = 0x0;
 
-	reg_gain = gain << 4;
+	reg_gain = gain << 3;
 	return (kal_uint16) reg_gain;
 }
 
@@ -449,13 +449,13 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
  *************************************************************************/
 static kal_uint16 set_gain(kal_uint16 gain)
 {
-	kal_uint16 reg_gain, max_gain = imgsensor_info.max_gain;
+	kal_uint16 reg_gain, max_gain = imgsensor_info.max_gain * 2;
 
-	if (gain < imgsensor_info.min_gain || gain > max_gain) {
+	if (gain < (imgsensor_info.min_gain * 2) || gain > max_gain) {
 		pr_debug("Error max gain setting: %d\n", max_gain);
 
-		if (gain < imgsensor_info.min_gain)
-			gain = imgsensor_info.min_gain;
+		if (gain < (imgsensor_info.min_gain * 2))
+			gain = (imgsensor_info.min_gain * 2);
 		else if (gain > max_gain)
 			gain = max_gain;
 	}
