@@ -371,7 +371,7 @@ static void set_shutter_frame_length(kal_uint32 shutter,
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
-	kal_uint16 reg_gain = gain << 4;
+	kal_uint16 reg_gain = gain << 3;
 
 	if (reg_gain < MOT_SYDNEY_GC02M1_SENSOR_GAIN_BASE)
 		reg_gain = MOT_SYDNEY_GC02M1_SENSOR_GAIN_BASE;
