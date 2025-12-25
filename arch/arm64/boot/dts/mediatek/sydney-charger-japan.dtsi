@@ -75,7 +75,7 @@
 		mmi,hvdcp-support;
 		mmi,only_buck_qc_support;
 	};
-	/* sydnyl uses aw35615fcr*/
+	/* sydney uses aw35615fcr*/
         aw35615@24 {
                 compatible = "awinic,aw35615fcr";
                 reg = <0x24>;
@@ -250,7 +250,6 @@
 			};
 		};
 	};
-
 	upm7610_pd:upm7610@60 {
 		compatible = "up,upm7610";
 		reg = <0x60>;
@@ -501,7 +500,7 @@
 
                 mmi,batid_v_ref = <1800000>;
                 mmi,batid_r_pull = <100000>;
-                mmi,batt-ids-map = "1", "LWNSS70SWD", "2", "FMTSS70VEK";
+                mmi,batt-ids-map = "1", "LWNSS52SWD", "2", "ATLSS52NVT", "3", "VEKSS52VEK";
 
                 mmi,adc-channel-cpu = <0>;
                 mmi,adc-channel-charger = <2>;
@@ -530,10 +529,10 @@
 	bc12 = <&sc8989x_chg>;
 };
 &charger {
-         //mmi,typecotp-charger;
+         mmi,typecotp-charger;
          charger = <&sc8989x_chg>;
+         mmi,mos_gpio = <&pio 30 0>;
          charger_configuration= <0>;
-         //mmi,mos_gpio = <&pio 30 0>;
          /* common */
          battery_cv = <4530000>;
          max_charger_voltage = <15000000>;
@@ -767,9 +766,10 @@
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
 	CAR_TUNE_VALUE = <(101)>;
 
-	df-serialnum = "LWNSS70SWD";
-	#include "bat_setting/mt6835_battery_sy70_swd_7000mah.dtsi"
-	#include "bat_setting/mt6835_battery_sy70_vek_7000mah.dtsi"
+	df-serialnum = "LWNSS52SWD";
+	#include "bat_setting/mt6835_battery_sy52_swd_5200mah.dtsi"
+	#include "bat_setting/mt6835_battery_sy52_atl_5200mah.dtsi"
+	#include "bat_setting/mt6835_battery_sy52_vek_5200mah.dtsi"
 
 };
 

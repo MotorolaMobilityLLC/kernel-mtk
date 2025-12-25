@@ -33,5 +33,5 @@
 };
 
 #include <sydney_evb/cust.dtsi>
-#include "mediatek/sydney-charger.dtsi"
+#include "mediatek/sydney-charger-japan.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
