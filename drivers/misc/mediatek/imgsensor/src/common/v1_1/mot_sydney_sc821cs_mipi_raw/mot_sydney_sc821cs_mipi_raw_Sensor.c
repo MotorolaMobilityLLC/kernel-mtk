@@ -248,7 +248,7 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
-static void set_shutter(kal_uint16 shutter)
+static void set_shutter(kal_uint32 shutter)
 {
     kal_uint16 realtime_fps = 0;
     //kal_uint32 frame_length = 0;
