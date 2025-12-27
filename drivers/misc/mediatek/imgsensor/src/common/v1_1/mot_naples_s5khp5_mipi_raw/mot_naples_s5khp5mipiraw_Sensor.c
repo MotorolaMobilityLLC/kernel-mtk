@@ -225,7 +225,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {
 	{16384, 12288, 0,1536, 16384, 9216,   2048, 1152, 0, 0,  2048, 1152,  0,  0,  2048, 1152}, /* custom3 */
 	{16384, 12288, 0,   0, 16384, 12288,   2048, 1536, 0, 0,  2048, 1536,  0,  0,  2048, 1536}, /* custom4 */
 };
-static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[5] = {
+static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[7] = {
 	{
 		0x02, 0x0a, 0x00, 0x08, 0x40, 0x00,//preview
 		{
@@ -263,10 +263,28 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[5] = {
 		1
 	},
 	{
-		0x02, 0x0a, 0x00, 0x08, 0x40, 0x00,//cust1
+		0x02, 0x0a, 0x00, 0x08, 0x40, 0x00,//custom1 4096x3072@30fps crop isz
+		{
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0xa00, 0x0180},
+			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
+		},
+		1
+	},
+	{
+		0x02, 0x0a, 0x00, 0x08, 0x40, 0x00,//custom3   2048x1152@60fps
 		{
 			{VC_STAGGER_NE, 0x00, 0x2b, 0x800, 0x480},
-			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0x1400, 0x0300},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0xa00, 0x0120},
+			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
+		},
+		1
+	},
+	{
+		0x02, 0x0a, 0x00, 0x08, 0x40, 0x00,//custom4   2048x1536@30fps
+		{
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x800, 0x600},
+			{VC_PDAF_STATS_NE_PIX_1, 0x00, 0x30, 0xa00, 0x0180},
 			//{VC_PDAF_STATS_PIX_2, 0x00, 0x31, 0x500, 0x180},
 		},
 		1
@@ -290,6 +308,12 @@ static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 sc
 		case MSDK_SCENARIO_ID_CUSTOM1:
 			memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[4],sizeof(struct SENSOR_VC_INFO2_STRUCT));
 			break;
+		case MSDK_SCENARIO_ID_CUSTOM3:
+			memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[5],sizeof(struct SENSOR_VC_INFO2_STRUCT));
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM4:
+			memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[6],sizeof(struct SENSOR_VC_INFO2_STRUCT));
+			break;
 		default:
 			memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[0],sizeof(struct SENSOR_VC_INFO2_STRUCT));
 			break;
@@ -308,8 +332,9 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.iMirrorFlip = IMAGE_HV_MIRROR,
 	.i4BlockNumX = 0,
 	.i4BlockNumY = 0,
-	.i4Crop = { {0, 0}, {0, 0}, {0, 768}, {0, 0}, {0, 0},
-		{0, 768}, {0, 0}, {2048, 1536}, {0, 0}, {0, 0} },
+	.i4Crop = {
+		{0, 0}, {0, 0}, {0, 384}, {0, 0}, {0, 0},
+		{0, 0}, {0, 0}, {1024, 960}, {0, 0}, {0, 0} },
 };
 
 static struct IMGSENSOR_I2C_CFG *get_i2c_cfg(void)
@@ -1885,7 +1910,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			case MSDK_SCENARIO_ID_SLIM_VIDEO:
 				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info, sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
-			case MSDK_SCENARIO_ID_CUSTOM2:
+			case MSDK_SCENARIO_ID_CUSTOM1:
 				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info, sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
 			case MSDK_SCENARIO_ID_CUSTOM3:
