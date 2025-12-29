@@ -54,6 +54,8 @@
 
 #include "mot_sydney_gc08a3_mipi_raw_Sensor.h"
 
+#define LONG_EXP 1
+
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 extern bool check_mot_sydney_gc08a3_otp(void);
 extern mot_calibration_status_t *SYDNEY_GC08A3_otp_get_calibration_status(void);
@@ -310,6 +312,15 @@ static void write_shutter(kal_uint32 shutter)
 {
 	kal_uint16 realtime_fps = 0;
 
+#if (LONG_EXP == 1)
+	/* add for long shutter */
+	static bool bNeedSetNormalMode = KAL_FALSE;
+	kal_uint32 cal_shutter = 0;
+	kal_uint16 long_exp_h = 0;
+	kal_uint16 long_exp_m = 0;
+	kal_uint16 long_exp_l = 0;
+#endif
+
 	spin_lock(&imgsensor_drv_lock);
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
@@ -320,7 +331,7 @@ static void write_shutter(kal_uint32 shutter)
 	spin_unlock(&imgsensor_drv_lock);
 	if (shutter < imgsensor_info.min_shutter)
 		shutter = imgsensor_info.min_shutter;
-
+#if (LONG_EXP == 0)
 	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ?
 		(imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
 	realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
@@ -334,7 +345,54 @@ static void write_shutter(kal_uint32 shutter)
 	} else
 			write_cmos_sensor(0x0340, imgsensor.frame_length & 0xfffe);
 	write_cmos_sensor(0x0202, shutter & 0xffff);
+#else
+	if (shutter >= 0xFFEE) {
+		bNeedSetNormalMode = KAL_TRUE;
+		pr_debug("enter long shutter\n");
+		cal_shutter = (shutter - 0xa00) / 4 - 1;
+		long_exp_h = (cal_shutter >> 16) & 0x3F;
+		long_exp_m = (cal_shutter >> 8) & 0xFF;
+		long_exp_l = cal_shutter & 0xFF;
 
+		write_cmos_sensor_8bit(0x0202, 0x0a);
+		write_cmos_sensor_8bit(0x0203, 0x00);
+		write_cmos_sensor_8bit(0x0340, 0x0a);
+		write_cmos_sensor_8bit(0x0341, 0x10);
+		write_cmos_sensor_8bit(0x0230, 0x30);
+		write_cmos_sensor_8bit(0x022f, long_exp_l);
+		write_cmos_sensor_8bit(0x022e, long_exp_m);
+		write_cmos_sensor_8bit(0x022d, (0x30 | long_exp_h));
+
+	} else {
+		if (bNeedSetNormalMode) {
+			pr_debug("exit long shutter\n");
+
+			write_cmos_sensor_8bit(0x0202, 0x0a);
+			write_cmos_sensor_8bit(0x0203, 0x00);
+			write_cmos_sensor_8bit(0x0340, 0x0a);
+			write_cmos_sensor_8bit(0x0341, 0x10);
+			write_cmos_sensor_8bit(0x022d, 0x20);
+			write_cmos_sensor_8bit(0x022e, 0x00);
+			write_cmos_sensor_8bit(0x022f, 0x00);
+			bNeedSetNormalMode = KAL_FALSE;
+	}
+	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ?
+		(imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+	realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+
+	if (imgsensor.autoflicker_en) {
+		if (realtime_fps >= 297 && realtime_fps <= 305)
+			set_max_framerate(296, 0);
+		else if (realtime_fps >= 147 && realtime_fps <= 150)
+			set_max_framerate(146, 0);
+		else
+			write_cmos_sensor(0x0340, imgsensor.frame_length & 0xffff);
+	} else
+			write_cmos_sensor(0x0340, imgsensor.frame_length & 0xffff);
+	/* Update Shutter */
+	write_cmos_sensor(0x0202, shutter & 0xffff);
+	}
+#endif
 	pr_debug("shutter =%d, framelength =%d\n",
 		shutter, imgsensor.frame_length);
 }	/*	write_shutter  */
