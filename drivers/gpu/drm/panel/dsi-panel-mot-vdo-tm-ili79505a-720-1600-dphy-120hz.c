@@ -223,7 +223,8 @@ static void tm_ili79505a_panel_init(struct tm_ili79505a *ctx)
 	tm_ili79505a_dcs_write_seq_static(ctx,0xB7, 0x01);
 	tm_ili79505a_dcs_write_seq_static(ctx,0xB8, 0x74);
 	tm_ili79505a_dcs_write_seq_static(ctx,0xFF, 0x5A,0xA5,0x00);
-	tm_ili79505a_dcs_write_seq_static(ctx,0x51, 0x07,0xFF);
+	// setting brightness (DCS 0x51) to 0x0000 is intended to prevent a screen flash during boot-up.
+	tm_ili79505a_dcs_write_seq_static(ctx,0x51, 0x00,0x00);
 	tm_ili79505a_dcs_write_seq_static(ctx,0x53, 0x2C);
 	tm_ili79505a_dcs_write_seq_static(ctx,0x55, 0x03);
 	tm_ili79505a_dcs_write_seq_static(ctx,0x35, 0x00);

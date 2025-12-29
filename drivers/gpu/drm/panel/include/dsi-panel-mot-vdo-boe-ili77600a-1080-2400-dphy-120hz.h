@@ -20,7 +20,8 @@
 #define PHYSICAL_WIDTH              70081
 #define PHYSICAL_HEIGHT             155736
 
-#define DATA_RATE                   850
+// a recommendation from the panel vendor to improve timing margins
+#define DATA_RATE                   858
 #define HSA                         4
 #define HBP                         20
 #define VSA                         4
@@ -31,28 +32,28 @@
 #define MODE_120_VFP                44
 #define MODE_120_HFP                24
 
-#define MODE_120_DATA_RATE          850
+#define MODE_120_DATA_RATE          858
 /*Parameter setting for mode 3 End*/
 
 #define MODE_30_FPS                 30
 #define MODE_30_VFP                 7500
 #define MODE_30_HFP                 24
 
-#define MODE_30_DATA_RATE            850
+#define MODE_30_DATA_RATE            858
 
 //Parameter setting for mode 0 Start
 #define MODE_60_FPS                 60
 #define MODE_60_VFP                 2520
 #define MODE_60_HFP                 24
 
-#define MODE_0_DATA_RATE            850
+#define MODE_60_DATA_RATE            858
 //Parameter setting for mode 0 End
 //Parameter setting for mode 2 Start
 #define MODE_90_FPS                 90
 #define MODE_90_VFP                 870
 #define MODE_90_HFP                 24
 
-#define MODE_90_DATA_RATE           850
+#define MODE_90_DATA_RATE           858
 //Parameter setting for mode 2 End
 
 #define LFR_EN                      1

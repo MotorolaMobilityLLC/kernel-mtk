@@ -257,8 +257,8 @@ static void txd_td4160_panel_init(struct txd_td4160 *ctx)
 		txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xC2, 0x0F, 0x10);
 		txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xDE, 0x0F, 0x3C);
 	}
-
-	txd_td4160_dcs_write_seq_static(ctx, 0x51, 0x07,0xFF);
+	// setting brightness (DCS 0x51) to 0x0000 is intended to prevent a screen flash during boot-up.
+	txd_td4160_dcs_write_seq_static(ctx, 0x51, 0x00,0x00);
 	txd_td4160_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	txd_td4160_dcs_write_seq_static(ctx, 0x55, 0x00);
 	txd_td4160_dcs_write_seq_static(ctx, 0x35, 0x00);

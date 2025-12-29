@@ -270,7 +270,8 @@ static void txd_ili77600a_panel_init(struct txd_ili77600a *ctx)
 	txd_ili77600a_dcs_write_seq_static(ctx,0xB7, 0x01);
 	txd_ili77600a_dcs_write_seq_static(ctx,0xB8, 0x74);
 	txd_ili77600a_dcs_write_seq_static(ctx,0xFF, 0x5A,0xA5,0x00);
-	txd_ili77600a_dcs_write_seq_static(ctx,0x51, 0x07,0xFF);
+	// setting brightness (DCS 0x51) to 0x0000 is intended to prevent a screen flash during boot-up.
+	txd_ili77600a_dcs_write_seq_static(ctx,0x51, 0x00,0x00);
 	txd_ili77600a_dcs_write_seq_static(ctx,0x53, 0x2C);
 	txd_ili77600a_dcs_write_seq_static(ctx,0x55, 0x02);
 	txd_ili77600a_dcs_write_seq_static(ctx,0x35, 0x00);
