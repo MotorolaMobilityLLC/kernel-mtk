@@ -69,6 +69,7 @@
 		sc,sc8989x,vclamp = <0>; /*val *32*/
 		sc,sc8989x,votg = <12>; /*3900 + val * 100*/
 		sc,cx25890HQ,votg = <9>;  /*4550 + val * 64*/
+		sc,upm6920A,votg = <9>;  /*4550 + val * 64*/
 		sc,sc8989x,iboost = <7>; /*0:0.5A 3:1.4A 5:1.875A 7:2.45A*/
 		sc,sc8989x,force_vindpm = <0>;
 		sc,sc8989x,vindpm = <18>; /*2600 + val * 100*/
