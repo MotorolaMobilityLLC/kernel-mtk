@@ -51,7 +51,7 @@
 #define SGM3785S_LEVEL_NUM                26
 #define SGM3785S_LEVEL_TORCH              7
 
-#define SGM3785S_TIMEOUT 500 /* ms */
+#define SGM3785S_TIMEOUT 300 /* ms */
 
 enum sgm3785s_flash_opcode {
     SGM3785S_FLASH_OP_NULL,
