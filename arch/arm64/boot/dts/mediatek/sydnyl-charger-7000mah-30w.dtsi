@@ -96,9 +96,9 @@
                 aw35615,src_pps_cur = <0>; /* set source pps current mA*/
                 aw35615,snk_tog_time = <0x36>; /* set toggle sink time */
                 aw35615,src_tog_time = <0x36>; /* set toggle source time */
-                aw35615,cc1_ov_th = <0x1>; /* set cc1 ov threshold. 0x1: ov threshold is 5.5V. */
-                aw35615,cc2_ov_th = <0x1>; /* set cc2 ov threshold. 0x1: ov threshold is 5.5V. */
-                aw35615,lpd_tim_set = <0xf>; /* set the LPD sensitivity. The larger the value, the more sensitive it is. */
+                aw35615,cc1_ov_th = <0x5>; /* set cc1 ov threshold. 0x5: ov threshold is 2.6V. */
+                aw35615,cc2_ov_th = <0x5>; /* set cc2 ov threshold. 0x5: ov threshold is 2.6V. */
+                aw35615,lpd_tim_set = <0x8>; /* set the LPD sensitivity. The larger the value, the more sensitive it is. */
                 aw35615,sink_bist_reg = <0x54>; /* set MDAC reg 0x50*/
         };
 	cps8851_pd: cps8851@4e {
