@@ -194,6 +194,13 @@ static inline int setAFMacro(unsigned long a_u4Position)
 	return 0;
 }
 
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+void MOT_SYDNEY_PD9402VAF_VIB_ResetPos(unsigned long a_u4Position)
+{
+	moveAF(a_u4Position);
+}
+#endif
+
 /* ////////////////////////////////////////////////////////////// */
 long MOT_SYDNEY_PD9402VAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 		      unsigned long a_u4Param)

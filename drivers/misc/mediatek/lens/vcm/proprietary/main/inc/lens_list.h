@@ -492,6 +492,11 @@ extern int MOT_SYDNEY_GT9764VAF_GetFileName(unsigned char *pFileName);
 //End
 
 //Begin: Add lens driver interface for SYDNEY
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+#define MOT_SYDNEY_PD9402V_VIB_ResetPos MOT_SYDNEY_PD9402VAF_VIB_ResetPos
+extern void MOT_SYDNEY_PD9402VAF_VIB_ResetPos(unsigned long a_u4Position);
+#endif
+
 #define MOT_SYDNEY_PD9402V_SetI2CClient MOT_SYDNEY_PD9402VAF_SetI2Cclient
 #define MOT_SYDNEY_PD9402V_Ioctl MOT_SYDNEY_PD9402VAF_Ioctl
 #define MOT_SYDNEY_PD9402V_Release MOT_SYDNEY_PD9402VAF_Release
@@ -508,6 +513,11 @@ extern int MOT_SYDNEY_PD9402VAF_GetFileName(unsigned char *pFileName);
 //End
 
 //Begin: Add lens driver interface for SYDNEY
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+#define MOT_SYDNEY_GT9778W_VIB_ResetPos MOT_SYDNEY_GT9778WAF_VIB_ResetPos
+extern void MOT_SYDNEY_GT9778WAF_VIB_ResetPos(unsigned long a_u4Position);
+#endif
+
 #define MOT_SYDNEY_GT9778W_SetI2CClient MOT_SYDNEY_GT9778WAF_SetI2Cclient
 #define MOT_SYDNEY_GT9778W_Ioctl MOT_SYDNEY_GT9778WAF_Ioctl
 #define MOT_SYDNEY_GT9778W_Release MOT_SYDNEY_GT9778WAF_Release

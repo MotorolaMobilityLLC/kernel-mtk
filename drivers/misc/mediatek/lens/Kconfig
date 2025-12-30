@@ -294,3 +294,9 @@ config MOT_DRV_AK7377_HALL_TEST
           This config is used to enable AK7377 hall test
           config for the factory camera test
           Set as y if the driver is used in this project
+
+config AF_NOISE_ELIMINATION
+	bool "For elimination AF resonance noise"
+	default n
+	help
+	  Enable it only for product that suffering AF resonance noise
