@@ -5836,6 +5836,9 @@ void scheduler_tick(void)
 	curr = rq->curr;
 	psi_account_irqtime(rq, curr, NULL);
 
+	curr = rq->curr;
+	psi_account_irqtime(rq, curr, NULL);
+
 	update_rq_clock(rq);
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 	if (mtk_irq_log_store)
