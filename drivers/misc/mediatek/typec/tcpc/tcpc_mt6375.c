@@ -466,6 +466,7 @@ struct tcpc_desc def_tcpc_desc = {
 	.mmi_wd_tsleep_polling_cycle = MT6375_WD_TSLEEP_128X,
 	.mmi_wd_tdet_protection_cycle = MT6375_WD_TDET_100MS,
 	.mmi_wd_tsleep_protection_cycle = MT6375_WD_TSLEEP_128X,
+	.mmi_wd_sbu_ph_retry = CONFIG_WD_SBU_PH_RETRY,
 };
 
 static inline int mt6375_write8(struct mt6375_tcpc_data *ddata, u32 reg,
@@ -1180,7 +1181,7 @@ static int __mt6375_is_water_detected(struct mt6375_tcpc_data *ddata,
 		goto out;
 	}
 
-	for (i = 0; i < CONFIG_WD_SBU_PH_RETRY; i++) {
+	for (i = 0; i < desc->mmi_wd_sbu_ph_retry; i++) {
 		ret = mt6375_get_wd_adc(ddata, chan, &wd_adc);
 		if (ret < 0) {
 			MT6375_DBGINFO("get chan%d adc fail(%d)\n", chan, ret);
@@ -2534,6 +2535,7 @@ static int mt6375_parse_dt(struct mt6375_tcpc_data *ddata)
 		{ "mmi,wd-tsleep-polling-cycle", &desc->mmi_wd_tsleep_polling_cycle },
 		{ "mmi,wd-tdet-protection-cycle", &desc->mmi_wd_tdet_protection_cycle },
 		{ "mmi,wd-tsleep-protection-cycle", &desc->mmi_wd_tsleep_protection_cycle },
+		{ "mmi,wd-sbu-ph-retry", &desc->mmi_wd_sbu_ph_retry}
 	};
 
 	memcpy(desc, &def_tcpc_desc, sizeof(*desc));

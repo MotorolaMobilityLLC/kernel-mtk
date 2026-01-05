@@ -55,6 +55,8 @@
 &mt6375_typec {
         tcpc,en_wd;
 
+        mmi,wd-sbu-ph-retry = <1>;	/* 1 time */
+
         /*fcnt lpd configure*/
         wd,sbu_ph_lbound = <947>;	/*sbu to gnd 1250K*/
 
