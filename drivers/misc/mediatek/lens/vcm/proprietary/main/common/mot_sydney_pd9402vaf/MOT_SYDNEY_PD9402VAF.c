@@ -143,10 +143,12 @@ static int initAF(void)
 		mdelay(6);
 		s4AF_ReadReg(0x00, &Temp);  //ic info
 		LOG_INF("Check HW version: 0x00 is %x\n", Temp);
-		ret = s4AF_WriteReg(0, 0x02, 0x02); //CONTROL
-		s4AF_WriteReg(0, 0x06, 0x40);
-		s4AF_WriteReg(0, 0x07, 0x02);
-		s4AF_WriteReg(0, 0x0B, 0x00);
+		ret = s4AF_WriteReg(0, 0x02, 0x01); //Power down mode
+		s4AF_WriteReg(0, 0x02, 0x00); //Normal operation mode
+		mdelay(1);
+		s4AF_WriteReg(0, 0x02, 0x02); //enable SDC mode
+		s4AF_WriteReg(0, 0x06, 0x80);
+		s4AF_WriteReg(0, 0x07, 0x66); //setting SDC_C mode Tvib=10.13ms
 
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
