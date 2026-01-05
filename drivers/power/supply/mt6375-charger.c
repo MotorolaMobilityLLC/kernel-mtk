@@ -24,6 +24,7 @@
 
 #include "charger_class.h"
 #include "mtk_charger.h"
+#include "adapter_class.h"
 
 static bool dbg_log_en;
 static bool wait_done;
@@ -1059,6 +1060,31 @@ out:
 		power_supply_changed(ddata->psy);
 }
 
+static bool is_pd_rdy(void)
+{
+	int type = 0;
+	static struct adapter_device *pd_adapter = NULL;
+
+	if (IS_ERR_OR_NULL(pd_adapter)) {
+		pd_adapter = get_adapter_by_name("pd_adapter");
+		if (IS_ERR_OR_NULL(pd_adapter)) {
+			pr_err("%s: No pd adapter found\n", __func__);
+			return false;
+		}
+	}
+
+	type = adapter_dev_get_property(pd_adapter, PD_TYPE);
+
+	pr_info("%s pd_type:%d\n", __func__, type);
+
+	if (type == MTK_PD_CONNECT_PE_READY_SNK_APDO ||
+		type == MTK_PD_CONNECT_PE_READY_SNK ||
+		type == MTK_PD_CONNECT_PE_READY_SNK_PD30)
+		return true;
+	else
+		return false;
+}
+
 static enum power_supply_usb_type mt6375_chg_psy_usb_types[] = {
 	POWER_SUPPLY_USB_TYPE_UNKNOWN,
 	POWER_SUPPLY_USB_TYPE_SDP,
@@ -1158,13 +1184,27 @@ static int mt6375_chg_get_property(struct power_supply *psy,
 		mutex_unlock(&ddata->attach_lock);
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
-		if (ddata->psy_desc.type == POWER_SUPPLY_TYPE_USB)
-			val->intval = NORMAL_CHARGING_CURR_UA;
-		else if (ddata->psy_desc.type == POWER_SUPPLY_TYPE_USB_DCP)
-			val->intval = FAST_CHARGING_CURR_UA;
+		if (is_pd_rdy()) {
+			val->intval = 3225000;
+		} else if (ddata->psy_usb_type == POWER_SUPPLY_USB_TYPE_SDP)
+			val->intval = 500000;
+		else if (ddata->psy_usb_type == POWER_SUPPLY_USB_TYPE_DCP)
+			val->intval = 1500000;
+		else if (ddata->psy_usb_type == POWER_SUPPLY_USB_TYPE_CDP)
+			val->intval = 1500000;
+		else
+			val->intval = 500000;
+		dev_info(ddata->dev, "POWER_SUPPLY_PROP_CURRENT_MAX:%d uA\n", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
-		if (ddata->psy_desc.type == POWER_SUPPLY_TYPE_USB)
+		if (is_pd_rdy()) {
+			val->intval = 22000000;
+			break;
+		}
+
+		if (ddata->psy_usb_type == POWER_SUPPLY_USB_TYPE_DCP)
+			val->intval = 22000000;
+		else
 			val->intval = 5000000;
 		break;
 	case POWER_SUPPLY_PROP_TYPE:
