@@ -28,6 +28,12 @@
 	};
 };
 
+&mt6377keys {
+	home {
+		linux,keycodes = <114>;
+	};
+};
+
 #include <sbuya_dvt2/cust.dtsi>
 #include "mediatek/sbuya-charger.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
