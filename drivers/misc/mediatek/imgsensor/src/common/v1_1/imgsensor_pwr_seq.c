@@ -133,17 +133,17 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
     },
 #endif
 #if defined(MOT_SYDNEY_SC821CS_UW_MIPI_RAW)
-	{
-		SENSOR_DRVNAME_MOT_SYDNEY_SC821CS_UW_MIPI_RAW,
-		{
-			{RST, Vol_Low, 1},
-			{SensorMCLK, Vol_High, 1},
-			{DOVDD, Vol_1800, 3},
-			{DVDD, Vol_1200, 1},
-			{AVDD, Vol_2800, 4},
-			{RST, Vol_High, 7}
-		},
-	},
+    {
+    SENSOR_DRVNAME_MOT_SYDNEY_SC821CS_UW_MIPI_RAW,
+        {
+            {RST, Vol_Low, 1},
+            {SensorMCLK, Vol_High, 1},
+            {DOVDD, Vol_1800, 6},
+            {DVDD, Vol_1200, 4},
+            {AVDD, Vol_2800, 4},
+            {RST, Vol_High, 7}
+        },
+    },
 #endif
 #if defined(MOT_SYDNEY_GC50F6A_SENSOR_ID)
     {
@@ -155,7 +155,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
             {DVDD, Vol_1100, 3},
             {AVDD, Vol_2800, 6},
             {AFVDD, Vol_2800, 1},
-            {RST, Vol_High, 5},
+            {RST, Vol_High, 6},
         },
     },
 #endif
@@ -165,10 +165,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         {
             {SensorMCLK, Vol_High, 3},
             {RST, Vol_Low, 1},
-            {DOVDD, Vol_1800, 3},
-            {DVDD, Vol_1200, 3},
+            {DOVDD, Vol_1800, 6},
+            {DVDD, Vol_1200, 6},
             {AVDD, Vol_2800, 6},
-            {RST, Vol_High, 5},
+            {RST, Vol_High, 7},
         },
     },
 #endif
@@ -192,9 +192,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         {
             {SensorMCLK, Vol_High, 3},
             {RST, Vol_Low, 1},
-            {DOVDD, Vol_1800, 3},
+            {DOVDD, Vol_1800, 6},
             {AVDD, Vol_2800, 6},
-            {RST, Vol_High, 5},
+            {RST, Vol_High, 7},
         },
     },
 #endif
@@ -204,25 +204,25 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         {
             {SensorMCLK, Vol_High, 3},
             {RST, Vol_Low, 1},
-            {DOVDD, Vol_1800, 3},
-            {DVDD, Vol_1200, 3},
+            {DOVDD, Vol_1800, 6},
+            {DVDD, Vol_1200, 6},
             {AVDD, Vol_2800, 6},
             {RST, Vol_High, 5},
         },
     },
 #endif
 #if defined(MOT_SYDNEY_GC08A3_UW_MIPI_RAW)
-	{
-		SENSOR_DRVNAME_MOT_SYDNEY_GC08A3_UW_MIPI_RAW,
-		{
-			{SensorMCLK, Vol_High, 1},
-			{RST, Vol_Low, 1},
-			{DOVDD, Vol_1800, 3},
-			{DVDD, Vol_1200, 1},
-			{AVDD, Vol_2800, 4},
-			{RST, Vol_High, 7}
-		},
-	},
+    {
+        SENSOR_DRVNAME_MOT_SYDNEY_GC08A3_UW_MIPI_RAW,
+        {
+            {SensorMCLK, Vol_High, 1},
+            {RST, Vol_Low, 1},
+            {DOVDD, Vol_1800, 6},
+            {DVDD, Vol_1200, 6},
+            {AVDD, Vol_2800, 6},
+            {RST, Vol_High, 7}
+        },
+    },
 #endif
 #if defined(MOT_SYDNEY_GC50F6A_2ND_SENSOR_ID)
     {
@@ -234,7 +234,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
             {DVDD, Vol_1100, 3},
             {AVDD, Vol_2800, 6},
             {AFVDD, Vol_2800, 1},
-            {RST, Vol_High, 5},
+            {RST, Vol_High, 6},
         },
     },
 #endif
@@ -244,7 +244,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         {
             {SensorMCLK, Vol_High, 3},
             {RST, Vol_Low, 1},
-            {DOVDD, Vol_1800, 3},
+            {DOVDD, Vol_1800, 6},
             {AVDD, Vol_2800, 6},
             {RST, Vol_High, 5},
         },
