@@ -501,7 +501,7 @@
 
                 mmi,batid_v_ref = <1800000>;
                 mmi,batid_r_pull = <100000>;
-                mmi,batt-ids-map = "1", "LWNSS70SWD", "2", "FMTSS70VEK";
+                mmi,batt-ids-map = "1", "LWNSS70SWD", "2", "VEKSS70FMT";
 
                 mmi,adc-channel-cpu = <0>;
                 mmi,adc-channel-charger = <2>;

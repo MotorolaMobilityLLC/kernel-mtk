@@ -11,7 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-serialnum_1 = "FMTSS70VEK";
+serialnum_1 = "VEKSS70FMT";
 
 battery1_profile_t0_num = <100>;
 battery1_profile_t0_col =<3>;
