@@ -310989,6 +310989,12 @@ function {
   parameter_id: 0x285cedbe
 }
 function {
+  id: 0x586cc0f6
+  return_type_id: 0x2560a232
+  parameter_id: 0x18e64f74
+  parameter_id: 0x4585663f
+}
+function {
   id: 0x58c67df5
   return_type_id: 0x18bd6530
   parameter_id: 0x391289e8
@@ -380273,6 +380279,15 @@ elf_symbol {
   full_name: "gpiochip_find"
 }
 elf_symbol {
+  id: 0xbd781989
+  name: "gpiochip_free_own_desc"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xdb0b3939
+  type_id: 0x19c0791f
+  full_name: "gpiochip_free_own_desc"
+}
+elf_symbol {
   id: 0x221b14f2
   name: "gpiochip_generic_config"
   is_defined: true
@@ -380307,6 +380322,15 @@ elf_symbol {
   crc: 0x2ddbb38c
   type_id: 0x50af222c
   full_name: "gpiochip_get_data"
+}
+elf_symbol {
+  id: 0xad88506b
+  name: "gpiochip_get_desc"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xfa545ce9
+  type_id: 0x586cc0f6
+  full_name: "gpiochip_get_desc"
 }
 elf_symbol {
   id: 0xf7c116d2
@@ -425608,10 +425632,12 @@ interface {
   symbol_id: 0x5be9fa34
   symbol_id: 0x05b09788
   symbol_id: 0xb4fb8840
+  symbol_id: 0xbd781989
   symbol_id: 0x221b14f2
   symbol_id: 0x4b6fcf32
   symbol_id: 0x803663ec
   symbol_id: 0x04d3cd28
+  symbol_id: 0xad88506b
   symbol_id: 0xf7c116d2
   symbol_id: 0x6b47e2c7
   symbol_id: 0x6e6c9891
