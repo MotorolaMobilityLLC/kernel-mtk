@@ -57,6 +57,8 @@
 		sc,sc8989x,vbatmin-sel = <0>; /*0:2.9V 1:2.5V*/
 		sc,sc8989x,itrick = <3>; /*60 + val *60*/
 		sc,sc8989x,iterm = <3>; /*30 + val * 60*/
+		sc,upm6920,iterm = <2>; /*64 + val * 64*/
+		sc,cx25890HQ,iterm = <2>; /*64 + val * 64*/
 		sc,sc8989x,vbat-cv = <38>; /*3840 + val * 16*/
 		sc,sc8989x,vbat-low = <1>; /*0:2.8V 1:3V*/
 		sc,sc8989x,vrechg = <0>; /*0:100mV 1:200mV*/
