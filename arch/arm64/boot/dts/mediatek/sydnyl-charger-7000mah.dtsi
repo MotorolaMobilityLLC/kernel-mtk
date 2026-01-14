@@ -257,7 +257,7 @@
 		reg = <0x60>;
 		status = "okay";
 		rt-tcpc,name = "type_c_port0"; /* tcpc_device's name */
-		rt-tcpc,role_def = <5>; /* 0: Unknown, 1: SNK, 2: SRC */
+		rt-tcpc,role_def = <3>; /* 0: Unknown, 1: SNK, 2: SRC */
 					/* 3: DRP, 4: Try.SRC, 5: Try.SNK */
 		rt-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
 		rt-tcpc,vconn_supply  = <1>;  /* 0: Never, 1: Always, */
