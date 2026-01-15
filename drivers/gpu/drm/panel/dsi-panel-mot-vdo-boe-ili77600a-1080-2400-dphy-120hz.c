@@ -220,7 +220,7 @@ static void boe_ili77600a_panel_init(struct boe_ili77600a *ctx)
 		//return;
 	}
 	else {
-		gpiod_set_value(ctx->reset_gpio, 0);
+		// According to FAE request, modify LCD_RSET to high-low-high to match standard LCD_RSET time sequence
 		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
 		usleep_range(10 * 1000, 12 * 1000);
@@ -237,6 +237,11 @@ static void boe_ili77600a_panel_init(struct boe_ili77600a *ctx)
 	boe_ili77600a_dcs_write_seq_static(ctx,0x3E, 0x62);
 	boe_ili77600a_dcs_write_seq_static(ctx,0x79, 0x00);
 	boe_ili77600a_dcs_write_seq_static(ctx,0xC6, 0x40);
+	//Grayscale flicker improve, DVT2 and PVT panels have integrated this in OTP
+	if (ctx->version == PANEL_EVT || ctx->version == PANEL_DVT1) {
+		boe_ili77600a_dcs_write_seq_static(ctx,0xFF, 0x5A,0xA5,0x02);
+		boe_ili77600a_dcs_write_seq_static(ctx,0x5B, 0x00);
+	}
 	boe_ili77600a_dcs_write_seq_static(ctx,0xFF, 0x5A,0xA5,0x03);
 	boe_ili77600a_dcs_write_seq_static(ctx,0x85, 0x30);
 	boe_ili77600a_dcs_write_seq_static(ctx,0x88, 0xE6);
