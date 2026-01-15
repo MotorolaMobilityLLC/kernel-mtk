@@ -68,7 +68,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 288000000,
+		.mipi_pixel_rate = 289920000,
     },
     .cap = {
 		.pclk = 36000000,    /*record different mode's pclk*/
@@ -80,7 +80,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 288000000,
+		.mipi_pixel_rate = 289920000,
     },
     .normal_video = {
 		.pclk = 36000000,    /*record different mode's pclk*/
@@ -92,7 +92,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1836,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 288000000,
+		.mipi_pixel_rate = 289920000,
     },
     .hs_video = {
 		.pclk = 36000000,    /*record different mode's pclk*/
@@ -104,7 +104,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 288000000,
+		.mipi_pixel_rate = 289920000,
     },
     .slim_video = {
 		.pclk = 36000000,    /*record different mode's pclk*/
@@ -116,7 +116,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 288000000,
+		.mipi_pixel_rate = 289920000,
     },
 
     .margin = 20,      /*sensor framelength & shutter margin*/
@@ -525,6 +525,8 @@ static void common_settings(void)
 	write_cmos_sensor(0x14, 0x20);
 	write_cmos_sensor(0x1e, 0x13);
 	write_cmos_sensor(0x19, 0x40);
+	write_cmos_sensor(0x1a, 0x03);
+	write_cmos_sensor(0x1b, 0x97);
 	write_cmos_sensor(0x21, 0x00);
 	mdelay(3);
 }

@@ -1,0 +1,203 @@
+@@OV08F_MIPI_3264x2448_2lane_1449.6M_30fps_eco2_V2.2
+				  
+;;Sensor revision: OV08F10
+;Input clock frequency: 24MHz
+;Pixel data format: RAW10
+;Frame timing and frame rate: VTS(read only P1:0x34&35&36)=0x9ed=2541,  HTS(read only P1:0x37&38)=0x1d8=472
+;;row_clk=36M
+;frame rate = row_clk /HTS/VTS= 36000000/2541/472=30.016
+;Output interface and data rate: Mipi 2Lane, Mipi clk = 1449.6Mbps@2lane	
+
+100 99 3264 2448
+100 98 1 0
+102 84	1
+
+;110 80 08
+110 1d0 0 ;8bit
+110 c0 2400
+
+
+20 fd 00
+20 c2 32
+20 21 0f 
+20 fd 00
+20 c2 30
+20 21 0e 
+20 21 00
+20 fd 00
+20 20 0e
+sl 3 3 	
+20 20 0b
+20 fd 00
+20 10 08
+20 11 5e
+20 12 01
+20 13 15
+20 14 20
+20 1e 13
+20 19 40
+20 1a 03; add
+20 1b 97; add
+20 21 00
+sl 3 3 	
+20 ae 64
+20 fd 01
+20 12 00 ;bit0=1 colorbar en
+20 03 05
+20 04 08
+20 06 50
+20 07 05
+20 24 20
+20 32 03 ; mirror on flip on
+20 33 03
+20 01 03
+20 19 40
+20 c0 00
+20 42 5d
+20 44 81
+20 46 3f
+20 47 0f
+20 48 0c ;bit3 vb exp&frame_length psv en
+20 4c 38
+20 b2 1e ;icomp1 5.64u
+20 b3 1b ;bitline bias 3.7u
+20 c3 2c ;sa bias
+20 d2 fc
+20 fd 01 ;timing
+20 50 1c
+20 53 1c
+20 54 04
+20 55 04
+20 57 87
+20 5e 10
+20 67 05
+20 7a 02
+20 7c 07
+20 90 3a ;rst d0
+20 91 12 ;rst d1
+20 92 16 ;col en1
+20 94 12 ;sig d1
+20 95 40 ;col en2
+20 97 03
+20 98 48
+20 9a 02
+20 9c 0c
+20 9e 2d
+20 a5 01
+20 a7 00
+20 ca 0d ;1x~1.5x
+20 cb 12 ;2x~3.88x
+20 cc 0f ;10;1.525x~1.9375x
+20 cd 16 ;15;4x~15.5x
+20 ce 0d ;1x~1.5x
+20 cf 10 ;2x~3.88x
+20 d0 0b ;1.525x~1.9375x
+20 d1 14 ;13;4x~15.5x
+20 fd 07 ;blc tuning
+20 2c 02 ;blc trigger en 
+20 2d 00 ;blc on
+20 00 f8
+20 01 2b
+20 05 40
+20 08 06 ;black row start
+20 09 11 ;black row end
+20 28 6f
+20 2a 20
+20 2b 05
+20 5e 10
+20 52 00
+20 53 78
+20 54 00
+20 55 78
+20 56 00
+20 57 78
+20 58 00
+20 59 78
+20 5c 3f
+20 fd 0f
+20 00 27 ;psnc debug
+20 01 34
+20 02 88
+20 1a 21
+20 1b 4b
+20 1c d5
+20 1d db
+20 1f 31
+20 20 cc ;for 2x linearity
+20 fd 0f 
+20 03 07 ;bg_trim
+20 05 0a ;adc range
+20 12 00 ;rcnt_num low 8bit
+20 13 00 ;scnt_num low 8bit
+20 14 13 ;[5:4] rcnt_num high 2bit, [2:0] scnt_num high 3bit
+20 08 28 ;dac d0 1280
+20 16 0c ;rst_num1_1x
+20 17 0c
+20 18 0c
+20 19 0c
+20 fd 02
+20 9a 30 ;bit 5 otp dpc on,bit 4 dynamic dpc on
+20 fd 04
+20 12 01 ;;for 1x WP
+20 0a 10
+20 0b 11
+20 0c 12
+20 0d fd ;0f ;dpc_list[0]
+20 fd 03 ;OTP DPC
+20 9d 0f
+20 9f 20 ;//otp load enable
+20 fd 05 ;OTPDPC end address
+20 00 00 ; start address
+20 01 1c
+20 02 01 ; end address
+20 03 ff
+20 1a 20
+20 fd 02
+20 a0 00
+20 a1 08
+20 a2 09 ;dem_v_size_4msb
+20 a3 90 ;dem_v_size_8lsb
+20 a5 08
+20 a6 0c ;dem_h_size_4msb
+20 a7 c0 ;dem_h_size_8lsb
+20 fd 00 
+20 24 01 ;mipi clk inv en
+20 c0 1f
+20 c1 08
+20 c2 38
+20 8e 0c ;mipi hsize msb
+20 8f c0 ;mipi hsize lsb,  3264
+20 90 09 ;mipi vsize msb
+20 91 90 ;mipi vsize lsb,2448
+20 b7 02 
+
+
+;fast standby stream on
+@@stream on
+20 fd 00
+20 19 40
+20 21 06
+20 21 04
+20 21 00
+20 fd 00
+20 c2 38
+sl 5 5 ;;;delay 5ms must have
+;;can also set new shutter/gain
+20 fd 01
+20 33 03
+20 01 03
+20 fd 00
+20 a0 01
+20 e7 03
+20 e7 00
+20 20 0f
+
+;fast standby stream off
+@@ stream off
+20 fd 00
+20 a0 00
+20 fd 00
+20 20 0b
+20 c2 3a
+20 fd 00
+20 21 07
