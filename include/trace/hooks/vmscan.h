@@ -43,6 +43,12 @@ DECLARE_HOOK(android_vh_should_continue_reclaim,
 DECLARE_HOOK(android_vh_file_is_tiny_bypass,
 	TP_PROTO(bool file_is_tiny, bool *bypass),
 	TP_ARGS(file_is_tiny, bypass));
+DECLARE_HOOK(android_vh_remove_mapping,
+	TP_PROTO(struct address_space *mapping, struct folio *folio, bool reclaimed),
+	TP_ARGS(mapping, folio, reclaimed));
+DECLARE_HOOK(android_vh_remove_mapping_failed,
+	TP_PROTO(struct address_space *mapping, struct folio *folio, bool reclaimed),
+	TP_ARGS(mapping, folio, reclaimed));
 DECLARE_HOOK(android_vh_check_folio_look_around_ref,
 	TP_PROTO(struct folio *folio, int *skip),
 	TP_ARGS(folio, skip));

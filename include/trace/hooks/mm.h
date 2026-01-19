@@ -342,6 +342,9 @@ DECLARE_HOOK(android_vh_pageset_update,
 DECLARE_HOOK(android_vh_mempool_alloc_skip_wait,
 	TP_PROTO(gfp_t *gfp_flags, bool *skip_wait),
 	TP_ARGS(gfp_flags, skip_wait));
+DECLARE_HOOK(android_vh_filemap_get_folio_end,
+	TP_PROTO(struct address_space *mapping, struct folio *folio),
+	TP_ARGS(mapping, folio));
 DECLARE_HOOK(android_vh_nr_pcp_alloc,
 	TP_PROTO(struct per_cpu_pages *pcp, struct zone *zone,
 		unsigned long __percpu **pad, unsigned int order, int *batch),
