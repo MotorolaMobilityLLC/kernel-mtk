@@ -70,3 +70,11 @@ config MOTO_SWTP_CUST
 	  it is disabled.
 	  The option default disabled.
 
+ config MOTO_DISABLE_SWTP_FACTORY
+ 	bool "ECCCI swtp customization"
+ 	depends on MTK_ECCCI_DRIVER
+ 	help
+ 	  This option enables swtp customization, if yes,
+ 	  then it is supported, if no,
+ 	  it is disabled.
+ 	  The option default disabled.
