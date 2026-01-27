@@ -88,9 +88,9 @@
                 aw35615,snk_pdo_size = <2>; /* set sink pdo num*/
                 aw35615,snk_pdo_vol = <5000 9000>; /* set sink pdo voltage mV*/
                 aw35615,snk_pdo_cur = <2000 2000>; /* set sink pdo current mA*/
-                aw35615,snk_pps_size = <0>; /* set sink pps num*/
-                aw35615,snk_pps_vol = <0>; /* set sink pps voltage mV*/
-                aw35615,snk_pps_cur = <0>; /* set sink pps current mA*/
+                aw35615,snk_pps_size = <1>; /* set sink pps num*/
+                aw35615,snk_pps_vol = <5000 11000>; /* set sink pps voltage mV*/
+                aw35615,snk_pps_cur = <3000>; /* set sink pps current mA*/
                 aw35615,src_pdo_size = <1>; /* set source pdo num*/
                 aw35615,src_pdo_vol = <5000>; /* set source pdo voltage mV*/
                 aw35615,src_pdo_cur = <2000>; /* set source pdo current mA*/
@@ -102,7 +102,7 @@
                 aw35615,cc1_ov_th = <0x5>; /* set cc1 ov threshold. 0x5: ov threshold is 2.6V. */
                 aw35615,cc2_ov_th = <0x5>; /* set cc2 ov threshold. 0x5: ov threshold is 2.6V. */
                 aw35615,lpd_tim_set = <0x8>; /* set the LPD sensitivity. The larger the value, the more sensitive it is. */
-                aw35615,sink_bist_reg = <0x54>; /* set MDAC reg 0x50*/
+                aw35615,sink_bist_reg = <0x60>; /* set MDAC reg 0x60*/
         };
 	cps8851_pd: cps8851@4e {
 		compatible = "cps,cps8851";
