@@ -40,6 +40,12 @@ static unsigned long g_u4CurrPosition;
 #define Min_Pos 0
 #define Max_Pos 1023
 
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+#define Initial_DAC  512
+#define StepWise 50
+#define DelayMs 7
+#endif
+
 static int s4AF_ReadReg(u8 a_uAddr, u8 *a_uData)
 {
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR) >> 1;
@@ -160,6 +166,65 @@ static int initAF(void)
 	return 0;
 }
 
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+static int moveAF_VIB(unsigned long a_u4Position) {
+	// Initial value
+	unsigned long current_dac = Initial_DAC;
+	int ret = 0;
+
+	LOG_INF("initial DAC Code: %lu, Dist DAC Code: %lu, StepWise: %d, Delay: %dms\n",
+		   current_dac, a_u4Position, StepWise, DelayMs);
+
+	// Validate target range
+	if (a_u4Position > Max_Pos) {
+		a_u4Position = Max_Pos;
+	}
+
+	// Determine direction and move step by step
+	if (a_u4Position > current_dac) {
+		// Move upward
+		while (current_dac < a_u4Position) {
+			current_dac += StepWise;
+			// Prevent overshoot
+			if (current_dac > a_u4Position) {
+				current_dac = a_u4Position;
+			}
+			ret = setPosition(current_dac);
+			if (ret < 0) {
+				return ret;
+			} else {
+				g_u4CurrPosition = current_dac;
+			}
+			// Delay 7ms
+			mdelay(DelayMs);
+		}
+	} else if (a_u4Position < current_dac) {
+		// Move downward
+		while (current_dac > a_u4Position) {
+			if (current_dac > StepWise) {
+				// Prevent undershoot
+				current_dac -= StepWise;
+			} else {
+				current_dac = a_u4Position;
+			}
+			if (current_dac < a_u4Position) {
+				current_dac = a_u4Position;
+			}
+			ret = setPosition(current_dac);
+			if (ret < 0) {
+				return ret;
+			} else {
+				g_u4CurrPosition = current_dac;
+			}
+			// Delay 7ms
+			mdelay(DelayMs);
+		}
+	}
+
+	return ret;
+}
+#endif
+
 /* moveAF only use to control moving the motor */
 static inline int moveAF(unsigned long a_u4Position)
 {
@@ -224,6 +289,12 @@ long MOT_SYDNEY_PD9402VAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command
 	case AFIOC_T_SETMACROPOS:
 		i4RetValue = setAFMacro(a_u4Param);
 		break;
+
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+	case AFIOC_T_MOVETO_VIB:
+		i4RetValue = moveAF_VIB(a_u4Param);
+		break;
+#endif
 
 	default:
 		LOG_INF("No CMD\n");
