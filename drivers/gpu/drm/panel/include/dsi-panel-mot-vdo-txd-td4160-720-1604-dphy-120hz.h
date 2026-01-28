@@ -59,6 +59,20 @@
 
 #define DSC_ENABLE                  0
 
+typedef struct {
+    uint16_t start;
+    uint16_t end;
+    uint16_t hal_start;
+    uint16_t hal_end;
+    uint32_t hal_range;
+    uint32_t dbv_range;
+} DbvHalMap;
+
+#define CALC_RANGES(start, end, hal_start, hal_end) \
+    (hal_end - hal_start), (end - start)
+
+#define MAP_SIZE (sizeof(dbv_hal_map) / sizeof(DbvHalMap))
+
 int panel_esd_register_client(const char *source, struct notifier_block *nb);
 int panel_esd_unregister_client(struct notifier_block *nb);
 int panel_esd_notifier_call_chain(unsigned long val, void *v);

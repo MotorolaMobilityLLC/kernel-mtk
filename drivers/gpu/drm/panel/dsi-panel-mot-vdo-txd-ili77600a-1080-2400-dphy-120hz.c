@@ -94,6 +94,28 @@ static struct mtk_panel_para_table panel_cabc_disable[] = {
 	{2, {0x55, 0x00}},
 };
 
+static const DbvHalMap dbv_hal_map[] = {
+    {0, 57, 0, 5, CALC_RANGES(0, 57, 0, 5)},
+    {58, 81, 6, 9, CALC_RANGES(58, 81, 6, 9)},
+    {82, 128, 10, 18, CALC_RANGES(82, 128, 10, 18)},
+    {129, 297, 19, 67, CALC_RANGES(129, 297, 19, 67)},
+    {298, 378, 68, 96, CALC_RANGES(298, 378, 68, 96)},
+    {379, 517, 97, 155, CALC_RANGES(379, 517, 97, 155)},
+    {518, 639, 156, 213, CALC_RANGES(518, 639, 156, 213)},
+    {640, 678, 214, 233, CALC_RANGES(640, 678, 214, 233)},
+    {679, 715, 234, 252, CALC_RANGES(679, 715, 234, 252)},
+    {716, 786, 253, 291, CALC_RANGES(716, 786, 253, 291)},
+    {787, 1015, 292, 428, CALC_RANGES(787, 1015, 292, 428)},
+    {1016, 1249, 429, 584, CALC_RANGES(1016, 1249, 429, 584)},
+    {1250, 1304, 585, 623, CALC_RANGES(1250, 1304, 585, 623)},
+    {1305, 1384, 624, 681, CALC_RANGES(1305, 1384, 624, 681)},
+    {1385, 1637, 682, 876, CALC_RANGES(1385, 1637, 682, 876)},
+    {1638, 1756, 877, 974, CALC_RANGES(1638, 1756, 877, 974)},
+    {1757, 1862, 975, 1364, CALC_RANGES(1757, 1862, 975, 1364)},
+    {1863, 1915, 1365, 1559, CALC_RANGES(1863, 1915, 1365, 1559)},
+    {1916, 2047, 1560, 2047, CALC_RANGES(1916, 2047, 1560, 2047)}
+};
+
 #if 0
 static struct mtk_panel_para_table panel_hbm_on[] = {
 	{4, {0xFF, 0x5A, 0xA5, 0x00}},
@@ -753,15 +775,75 @@ static struct mtk_panel_params ext_params_mode_120 = {
 
 };
 
+/**
+* @brief
+*
+* @param dbv
+* @param hal_value
+* @return bool
+*/
+bool dbv_to_hal(uint16_t dbv, uint16_t *hal_value) {
+    int left = 0;
+    int right = MAP_SIZE - 1;
+    int mid;
+
+    if (hal_value == NULL) {
+        return false;
+    }
+
+    if (dbv > 2047) {
+        *hal_value = 0;
+        return false;
+    }
+
+    while (left <= right) {
+        mid = (left + right) / 2;
+
+        if (dbv >= dbv_hal_map[mid].start && dbv <= dbv_hal_map[mid].end) {
+            uint32_t dbv_offset = dbv - dbv_hal_map[mid].start;
+
+            uint32_t scaled_offset = (dbv_offset * dbv_hal_map[mid].hal_range) << 12;
+
+            uint32_t hal_offset = (scaled_offset / dbv_hal_map[mid].dbv_range) >> 12;
+
+            *hal_value = dbv_hal_map[mid].hal_start + hal_offset;
+
+            if (*hal_value < dbv_hal_map[mid].hal_start) {
+                *hal_value = dbv_hal_map[mid].hal_start;
+            } else if (*hal_value > dbv_hal_map[mid].hal_end) {
+                *hal_value = dbv_hal_map[mid].hal_end;
+            }
+            *hal_value = *hal_value * 1961 / 2047;
+
+            return true;
+        }
+        else if (dbv < dbv_hal_map[mid].start) {
+            right = mid - 1;
+        }
+        else {
+            left = mid + 1;
+        }
+    }
+
+    *hal_value = 0;
+    return false;
+}
+
 static int txd_ili77600a_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
 	static char bl_tb0[] = { 0x51, 0x7f, 0xff };
+	uint16_t hal_value;
 
-	pr_info("%s backlight = %d\n", __func__, level);
+	if (dbv_to_hal(level, &hal_value)) {
+		pr_info("%s backlight (dbv) = %d, hal = %d\n", __func__, level, hal_value);
+	} else {
+		pr_err("%s dbv_to_hal failed for level %d\n", __func__, level);
+		return -1;
+	}
 
-	bl_tb0[1] = (level >> 8) & 0x7;
-	bl_tb0[2] = level & 0xFF;
+	bl_tb0[1] = (hal_value >> 8) & 0x7;
+	bl_tb0[2] = hal_value & 0xFF;
 
 	if (!cb)
 		return -1;
