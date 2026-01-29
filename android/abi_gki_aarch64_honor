@@ -44,6 +44,8 @@
   __traceiter_android_vh_do_read_fault
   __traceiter_android_vh_filemap_read
   __traceiter_android_vh_filemap_map_pages
+  __traceiter_android_vh_mem_cgroup_charge
+  __traceiter_android_vh_filemap_add_to_page_cache
   __tracepoint_android_rvh_dma_buf_stats_teardown
   __tracepoint_android_vh_alter_mutex_list_add
   __tracepoint_android_vh_alter_rwsem_list_add
@@ -62,6 +64,8 @@
   __tracepoint_android_vh_do_read_fault
   __tracepoint_android_vh_filemap_read
   __tracepoint_android_vh_filemap_map_pages
+  __tracepoint_android_vh_mem_cgroup_charge
+  __tracepoint_android_vh_filemap_add_to_page_cache
   __tracepoint_android_vh_slab_alloc_node
   __traceiter_android_vh_slab_alloc_node
   __tracepoint_android_vh_slab_free
@@ -78,5 +82,7 @@
   __tracepoint_rpm_resume
   __traceiter_rpm_return_int
   __tracepoint_rpm_return_int
+  __traceiter_android_vh_count_workingset_refault
+  __tracepoint_android_vh_count_workingset_refault
   udp4_lib_lookup
   udp6_lib_lookup

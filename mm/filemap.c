@@ -49,6 +49,11 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/filemap.h>
 
+#undef CREATE_TRACE_POINTS
+#ifndef __GENKSYMS__
+#include <trace/hooks/mm.h>
+#endif
+
 /*
  * FIXME: remove all knowledge of the buffer layer from the core VM
  */
@@ -892,6 +897,7 @@ noinline int __add_to_page_cache_locked(struct page *page,
 	page->mapping = mapping;
 	page->index = offset;
 
+	trace_android_vh_filemap_add_to_page_cache(mapping, page, offset);
 	if (!huge) {
 		error = mem_cgroup_charge(page, NULL, gfp);
 		if (error)
@@ -1903,6 +1909,9 @@ repeat:
 			return page;
 		page = NULL;
 	}
+
+	trace_android_vh_pagecache_get_page(mapping, index, fgp_flags,
+					gfp_mask, page);
 	if (!page)
 		goto no_page;
 
@@ -3404,6 +3413,7 @@ vm_fault_t filemap_map_pages(struct vm_fault *vmf,
 		addr += (xas.xa_index - last_pgoff) << PAGE_SHIFT;
 		vmf->pte += xas.xa_index - last_pgoff;
 		last_pgoff = xas.xa_index;
+		trace_android_vh_filemap_pages(page);
 
 		if (!pte_none(*vmf->pte))
 			goto unlock;
