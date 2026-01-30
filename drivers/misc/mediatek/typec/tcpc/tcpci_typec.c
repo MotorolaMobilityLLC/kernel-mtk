@@ -2858,6 +2858,7 @@ int tcpc_typec_change_role(
 	else
 		return 0;
 }
+EXPORT_SYMBOL(tcpc_typec_change_role);
 
 #if CONFIG_TYPEC_CAP_POWER_OFF_CHARGE
 static int typec_init_power_off_charge(struct tcpc_device *tcpc)
