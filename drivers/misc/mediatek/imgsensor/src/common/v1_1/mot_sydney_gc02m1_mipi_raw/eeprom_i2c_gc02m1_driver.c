@@ -129,10 +129,15 @@ int gc02m1_iReadData(unsigned int ui4_offset,
 		pr_debug("read group2");
 		i4RetValue = GC02M1_otp_read_group(addrs2, pinputdata, ui4_length);
 	}
-	else if((flagData&0xc0)>>6)
+	else if(((flagData&0xc0)>>6) == 1)
 	{
 		pr_debug("read group1");
 		i4RetValue = GC02M1_otp_read_group(addrs1, pinputdata, ui4_length);
+	}
+	else {
+		pr_debug("group invalid");
+		gc02m1_sensor_otp_close();
+		return -1;
 	}
 
 	gc02m1_sensor_otp_close();
