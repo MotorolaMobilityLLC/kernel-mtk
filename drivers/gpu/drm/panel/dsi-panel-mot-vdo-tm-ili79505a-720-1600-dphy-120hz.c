@@ -209,7 +209,7 @@ static void tm_ili79505a_panel_init(struct tm_ili79505a *ctx)
 		gpiod_set_value(ctx->reset_gpio, 0);
 		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(10 * 1000, 12 * 1000);
+		usleep_range(5 * 1000, 7 * 1000);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -251,7 +251,7 @@ static void tm_ili79505a_panel_init(struct tm_ili79505a *ctx)
 	tm_ili79505a_dcs_write_seq_static(ctx,0x55, 0x03);
 	tm_ili79505a_dcs_write_seq_static(ctx,0x35, 0x00);
 	tm_ili79505a_dcs_write_seq_static(ctx,0x11, 0x00);
-	msleep(120);
+	msleep(60);
 	tm_ili79505a_dcs_write_seq_static(ctx,0x29, 0x00);
 	msleep(20);
 

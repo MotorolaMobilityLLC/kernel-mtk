@@ -247,11 +247,11 @@ static void txd_ili77600a_panel_init(struct txd_ili77600a *ctx)
 	else {
 		//based on another project like il99506
 		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(10 * 1000, 12 * 1000);
+		usleep_range(5 * 1000, 7 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 0);
 		usleep_range(10 * 1000, 12 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(20000, 22000);
+		usleep_range(5000, 7000);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -304,7 +304,7 @@ static void txd_ili77600a_panel_init(struct txd_ili77600a *ctx)
 	txd_ili77600a_dcs_write_seq_static(ctx,0x55, 0x02);
 	txd_ili77600a_dcs_write_seq_static(ctx,0x35, 0x00);
 	txd_ili77600a_dcs_write_seq_static(ctx,0x11, 0x00);
-	msleep(120);
+	msleep(60);
 	txd_ili77600a_dcs_write_seq_static(ctx,0x29, 0x00);
 	msleep(20);
 

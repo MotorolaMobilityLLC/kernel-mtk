@@ -245,11 +245,11 @@ static void boe_ili77600a_panel_init(struct boe_ili77600a *ctx)
 		// According to FAE request, modify LCD_RSET to high-low-high to match standard LCD_RSET time sequence
 		usleep_range(1 * 1000, 2 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(10 * 1000, 12 * 1000);
+		usleep_range(5 * 1000, 7 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 0);
 		usleep_range(10 * 1000, 12 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(20000, 22000);
+		usleep_range(5000, 7000);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
@@ -301,7 +301,7 @@ static void boe_ili77600a_panel_init(struct boe_ili77600a *ctx)
 	boe_ili77600a_dcs_write_seq_static(ctx,0x55, 0x02);
 	boe_ili77600a_dcs_write_seq_static(ctx,0x35, 0x00);
 	boe_ili77600a_dcs_write_seq_static(ctx,0x11, 0x00);
-	msleep(120);
+	msleep(60);
 	boe_ili77600a_dcs_write_seq_static(ctx,0x29, 0x00);
 	msleep(20);
 
