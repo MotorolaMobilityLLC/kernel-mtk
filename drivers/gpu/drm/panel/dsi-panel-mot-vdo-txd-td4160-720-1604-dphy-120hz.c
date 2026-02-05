@@ -36,8 +36,12 @@
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
+#define BIAS_OCP2138
+#ifdef BIAS_OCP2138
 extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
+#endif
+
 extern int mtkfb_esd_get_recovery_flag(void);
 static BLOCKING_NOTIFIER_HEAD(panel_gesture_notifier_list);
 
@@ -247,9 +251,9 @@ static void txd_td4160_panel_init(struct txd_td4160 *ctx)
 {
 	ktime_t now;
 	pr_info("disp: %s+\n", __func__);
-
-	ocp2138_BiasPower_enable(20,20,5);
-
+#ifdef BIAS_OCP2138
+		ocp2138_BiasPower_enable(20,20,5);
+#endif
 	txd_panel_tp_reset(ctx);
 
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
@@ -376,7 +380,9 @@ static int txd_td4160_unprepare(struct drm_panel *panel)
 	}
 	pr_info("%s:disp: tp_gesture_flag:%d, esd_recovery_flg=%d \n",__func__, tp_gesture_flag, mtkfb_esd_get_recovery_flag());
 	if(!tp_gesture_flag || mtkfb_esd_get_recovery_flag()) {
+#ifdef BIAS_OCP2138
 		ocp2138_BiasPower_disable(5);
+#endif
 	}
 	if(!tp_gesture_flag){
 		msleep(5);
@@ -970,31 +976,10 @@ static void lcm_shutdown(struct mipi_dsi_device *dsi)
 	struct txd_td4160 *ctx = mipi_dsi_get_drvdata(dsi);
 
 	pr_info("%s\n", __func__);
-	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->reset_gpio)) {
-	    dev_err(ctx->dev, "%s:txd_td4160: cannot get reset_gpio %ld\n",
-	    __func__, PTR_ERR(ctx->reset_gpio));
-	} else {
-	    gpiod_set_value(ctx->reset_gpio, 0);
-	    devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	    pr_info("%s:txd_td4160: reset_gpio 0\n", __func__);
-	    usleep_range(5000,5001);
-	}
-
-	pr_info("%s: ocp2138_BiasPower_disable\n", __func__);
-	ocp2138_BiasPower_disable(5);
-	//add TP reset low when device shutdown.
-	msleep(5);
-	ctx->tp_reset_gpio = devm_gpiod_get(ctx->dev, "tp_reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->tp_reset_gpio)) {
-			dev_err(ctx->dev, "%s:txd_td4160: cannot get tp_reset_gpio %ld\n",
-				__func__, PTR_ERR(ctx->tp_reset_gpio));
-	} else {
-			gpiod_set_value(ctx->tp_reset_gpio, 0);
-			devm_gpiod_put(ctx->dev, ctx->tp_reset_gpio);
-			usleep_range(5000,5001);
-			pr_info("%s:txd_td4160: tp_reset_gpio 0\n", __func__);
-	}
+#ifdef BIAS_OCP2138
+		pr_info("%s: ocp2138_BiasPower_disable\n", __func__);
+		ocp2138_BiasPower_disable(5);
+#endif
 }
 
 static const struct of_device_id txd_td4160_of_match[] = {

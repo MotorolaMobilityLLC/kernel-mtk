@@ -36,8 +36,12 @@
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
+#define BIAS_OCP2138
+#ifdef BIAS_OCP2138
 extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
+#endif
+
 extern int mtkfb_esd_get_recovery_flag(void);
 static BLOCKING_NOTIFIER_HEAD(panel_gesture_notifier_list);
 
@@ -263,9 +267,9 @@ static void csot_td4376b_panel_init(struct csot_td4376b *ctx)
 {
 	ktime_t now;
 	pr_info("disp: %s+\n", __func__);
-
-	ocp2138_BiasPower_enable(15,15,5);
-
+#ifdef BIAS_OCP2138
+		ocp2138_BiasPower_enable(15,15,5);
+#endif
 	csot_panel_tp_reset(ctx);
 
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
@@ -393,7 +397,9 @@ static int csot_td4376b_unprepare(struct drm_panel *panel)
 	// Disable bias power before resetting GPIOs per new power-off sequence
 	pr_info("%s:disp: tp_gesture_flag:%d, esd_recovery_flg=%d \n",__func__, tp_gesture_flag, mtkfb_esd_get_recovery_flag());
 	if(!tp_gesture_flag || mtkfb_esd_get_recovery_flag()) {
+#ifdef BIAS_OCP2138
 		ocp2138_BiasPower_disable(5);
+#endif
 	}
 	if(!tp_gesture_flag){
 		msleep(5);
