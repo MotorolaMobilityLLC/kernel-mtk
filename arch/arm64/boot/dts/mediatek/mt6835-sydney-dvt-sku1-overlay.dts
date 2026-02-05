@@ -16,7 +16,7 @@
 /* NOTE: copied from mt6835-naples-evb-overlay.dts */
 
 #include "mediatek/mt6835-sydney-common-overlay.dtsi"
-#include "mediatek/mt6835_sydney_camera_overlay_dvt.dtsi"
+#include "mediatek/mt6835_sydney_camera_overlay_dvt_sku1.dtsi"
 #include "mediatek/sydney-sensor.dtsi"
 
 #define SYDNEY_RADIO 1

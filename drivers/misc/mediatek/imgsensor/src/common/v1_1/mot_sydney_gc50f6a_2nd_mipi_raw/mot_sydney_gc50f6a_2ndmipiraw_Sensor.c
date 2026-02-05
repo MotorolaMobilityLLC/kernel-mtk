@@ -173,7 +173,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	/* record sensor support all write id addr,
 	 * only supprt 4 must end with 0xff
 	 */
-	.i2c_speed = 400,
+	.i2c_speed = 1000,
 };
 
 #if PDAFSUPPORT
