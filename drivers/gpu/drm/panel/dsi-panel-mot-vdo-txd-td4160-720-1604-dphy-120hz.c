@@ -973,8 +973,6 @@ static int txd_td4160_remove(struct mipi_dsi_device *dsi)
 
 static void lcm_shutdown(struct mipi_dsi_device *dsi)
 {
-	struct txd_td4160 *ctx = mipi_dsi_get_drvdata(dsi);
-
 	pr_info("%s\n", __func__);
 #ifdef BIAS_OCP2138
 		pr_info("%s: ocp2138_BiasPower_disable\n", __func__);
