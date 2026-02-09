@@ -309,19 +309,7 @@ bool check_mot_sydney_gc08a3_otp(void)
 	LOG_INF("mot_sydney_gc08a3_otp_info.module_flag, = 0x%x", groupflag);
 
 	//for module info otp read
-	if ((groupflag) == 0x25) {
-		LOG_INF("group3_module, size %d", SYDNEY_MODULE_LENGTH);
-		mot_sydney_gc08a3_iReadData(SYDNEY_GROUP3_MODULE_INFO, SYDNEY_ALL_DATA_SIZE, &tempData[0]);
-		memcpy(groupAllData, tempData,sizeof(tempData));
-		mot_sydney_gc08a3_iReadData(SYDNEY_GROUP3_MODULE_INFO, SYDNEY_MODULE_LENGTH, &mot_sydney_gc08a3_otp_info.module_param[0]);
-		mot_sydney_gc08a3_otp_info.moduleChksum = mot_sydney_gc08a3_otp_read_byte(SYDNEY_GROUP3_MODULE_CRC);
-		mot_sydney_gc08a3_otp_info.awb_flag = mot_sydney_gc08a3_otp_read_byte(SYDNEY_GROUP3_AWB_FLAG);
-		mot_sydney_gc08a3_iReadData(SYDNEY_GROUP3_AWB_INFO, SYDNEY_AWB_LENGTH, &mot_sydney_gc08a3_otp_info.awb_param[0]);
-		mot_sydney_gc08a3_iReadData(SYDNEY_GROUP3_AWB_INFO + SYDNEY_AWB_LENGTH * 8, 1, &mot_sydney_gc08a3_otp_info.awbChksum);
-		mot_sydney_gc08a3_otp_info.lsc_flag = mot_sydney_gc08a3_otp_read_byte(SYDNEY_GROUP3_LSC_FLAG);
-		mot_sydney_gc08a3_iReadData(SYDNEY_GROUP3_LSC_INFO, SYDNEY_LSC_LENGTH, &mot_sydney_gc08a3_otp_info.lsc_param[0]);
-		mot_sydney_gc08a3_iReadData(SYDNEY_GROUP3_LSC_INFO + SYDNEY_LSC_LENGTH * 8, 1, &mot_sydney_gc08a3_otp_info.lscChksum);
-	} else if ((groupflag) == 0x0D) {
+        if ((groupflag) == 0x0D) {
 		LOG_INF("group2_module, size %d", SYDNEY_MODULE_LENGTH);
 		mot_sydney_gc08a3_iReadData(SYDNEY_GROUP2_MODULE_INFO, SYDNEY_ALL_DATA_SIZE, &tempData[0]);
 		memcpy(groupAllData, tempData,sizeof(tempData));
