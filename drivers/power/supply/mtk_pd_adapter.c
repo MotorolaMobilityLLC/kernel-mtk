@@ -700,7 +700,7 @@ static int __maybe_unused pd_authentication(struct adapter_device *dev,
 				data->pwr_lmt = true;
 		}
 		/* Check whether TA supports getting pps status */
-		ret = pd_set_cap(dev, MTK_PD_APDO_START, 5000, min(3000, data->ita_max));
+		ret = pd_set_cap(dev, MTK_PD_APDO_START, max(5000, data->vta_min), min(3000, data->ita_max));
 		if (ret != (int)MTK_ADAPTER_OK)
 			goto out;
 		ret = pd_get_output(dev, &vta_meas, &ita_meas);
