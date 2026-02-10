@@ -263,8 +263,10 @@ static void txd_ili77600a_panel_init(struct txd_ili77600a *ctx)
 	txd_ili77600a_dcs_write_seq_static(ctx,0x79, 0x00);
 	txd_ili77600a_dcs_write_seq_static(ctx,0xC6, 0x40);
 	//optimize low-frequency jitter effects according to OP document requirements.
-	txd_ili77600a_dcs_write_seq_static(ctx,0xFF, 0x5A,0xA5,0x02);
-	txd_ili77600a_dcs_write_seq_static(ctx,0x5B, 0x00);
+	if (ctx->version < PANEL_PVT) {
+		txd_ili77600a_dcs_write_seq_static(ctx,0xFF, 0x5A,0xA5,0x02);
+		txd_ili77600a_dcs_write_seq_static(ctx,0x5B, 0x00);
+	}
 	//DVT2 & PVT ABC input OTP, do not here write
 	if (ctx->version <= PANEL_DVT1) {
 		txd_ili77600a_dcs_write_seq_static(ctx,0xFF, 0x5A,0xA5,0x03);
