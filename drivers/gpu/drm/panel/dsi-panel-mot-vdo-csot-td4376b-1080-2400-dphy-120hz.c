@@ -33,6 +33,8 @@
 #define PANEL_DVT1 2
 #define PANEL_DVT2 3
 #define PANEL_PVT 4
+#define MIN_BRIGHTNESS_HAL_VALUE 6
+
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
@@ -837,6 +839,9 @@ bool dbv_to_hal(uint16_t dbv, uint16_t *hal_value) {
             }
             *hal_value = *hal_value * 1961 / 2047;
 
+            if (*hal_value > 0) {
+                *hal_value = max_t(uint16_t, *hal_value, MIN_BRIGHTNESS_HAL_VALUE);
+            }
             return true;
         }
         else if (dbv < dbv_hal_map[mid].start) {
