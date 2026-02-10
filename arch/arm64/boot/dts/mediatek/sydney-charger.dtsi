@@ -75,8 +75,6 @@
 		sc,sc8989x,iboost = <7>; /*0:0.5A 3:1.4A 5:1.875A 7:2.45A*/
 		sc,sc8989x,force_vindpm = <0>;
 		sc,sc8989x,vindpm = <18>; /*2600 + val * 100*/
-		mmi,hvdcp-support;
-		mmi,only_buck_qc_support;
 	};
 	/* sydney uses aw35615fcr*/
         aw35615@24 {
@@ -400,7 +398,7 @@
 
 &i2c5 {
 	wt6670f@35 {
-		status = "okay";
+		status = "disabled";
                 compatible = "mediatek,wt6670f_qc3p";
                 reg = <0x35>;
                 wt6670f-reset-gpio = <&pio 10 0x0>;
