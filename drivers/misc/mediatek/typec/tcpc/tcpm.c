@@ -647,6 +647,11 @@ int tcpm_typec_change_role_postpone(
 {
 	int ret = 0;
 
+#if IS_ENABLED(CONFIG_TCPC_AW35615FCR)
+	if (aw_tcpm_ops != NULL)
+		return ret;
+#endif
+
 	tcpci_lock_typec(tcpc);
 	ret = tcpc_typec_change_role(tcpc, typec_role, postpone);
 	tcpci_unlock_typec(tcpc);
