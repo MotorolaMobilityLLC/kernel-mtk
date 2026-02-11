@@ -250,7 +250,7 @@ static void boe_ili77600a_panel_init(struct boe_ili77600a *ctx)
 		gpiod_set_value(ctx->reset_gpio, 0);
 		usleep_range(10 * 1000, 12 * 1000);
 		gpiod_set_value(ctx->reset_gpio, 1);
-		usleep_range(5000, 7000);
+		usleep_range(10000, 12000);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
