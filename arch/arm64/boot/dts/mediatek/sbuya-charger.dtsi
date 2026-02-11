@@ -371,6 +371,7 @@
 		vbus_ovp = <12000000>;
 		bat_ucp_alm = <9200000>;
 		ibat_sns_res = <2>;
+		vbus_option = <0x40>;
 		watchdog_dis;
 	};
 };
