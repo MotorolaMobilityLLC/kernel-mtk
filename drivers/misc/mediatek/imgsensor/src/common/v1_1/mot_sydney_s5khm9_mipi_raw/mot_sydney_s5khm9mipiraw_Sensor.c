@@ -1791,7 +1791,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	uint32_t *pAeCtrls;
 	uint32_t *pScenarios;
 #endif
-	LOG_INF("feature_control feature_id = %d\n", feature_id);
+	// LOG_INF("feature_control feature_id = %d\n", feature_id);
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_AWB_REQ_BY_SCENARIO:
 		switch (*feature_data) {

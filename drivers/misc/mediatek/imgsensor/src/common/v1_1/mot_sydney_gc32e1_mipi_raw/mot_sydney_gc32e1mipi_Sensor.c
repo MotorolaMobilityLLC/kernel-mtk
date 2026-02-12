@@ -997,7 +997,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data = (MSDK_SENSOR_REG_INFO_STRUCT *)feature_para;
 
-	LOG_INF("feature_id = %d\n", feature_id);
+	// LOG_INF("feature_id = %d\n", feature_id);
 	switch (feature_id) {
 		case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 			*(feature_data + 1) = imgsensor_info.min_gain;
