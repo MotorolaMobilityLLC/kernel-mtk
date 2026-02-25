@@ -276,10 +276,12 @@ static void txd_td4160_panel_init(struct txd_td4160 *ctx)
 		pr_info("disp: %s reset_gpio\n", __func__);
 	}
 
-	//Adjust GIP timing, STV3/v relative position
-	txd_td4160_dcs_write_seq_static(ctx, 0xB0, 0x84);
-	txd_td4160_dcs_write_seq_static(ctx, 0xD6, 0x00);
-	txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xC1, 0x01, 0x31);
+	if (ctx->version <= PANEL_DVT1) {
+		//Adjust GIP timing, STV3/v relative position
+		txd_td4160_dcs_write_seq_static(ctx, 0xB0, 0x84);
+		txd_td4160_dcs_write_seq_static(ctx, 0xD6, 0x00);
+		txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xC1, 0x01, 0x31);
+	}
 	if(ctx->version == PANEL_EVT) {
 		//BIST mode 120HZ settings(C2H,DEH)
 		txd_td4160_dcs_write_seq_static(ctx, 0xF0, 0xC2, 0x0F, 0x10);
