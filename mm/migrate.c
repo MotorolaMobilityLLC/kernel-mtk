@@ -182,7 +182,6 @@ void putback_movable_pages(struct list_head *l)
 }
 EXPORT_SYMBOL_GPL(putback_movable_pages);
 
-#if (!IS_ENABLED(CONFIG_MTK_VM_DEBUG))
 static bool try_to_map_unused_to_zeropage(struct page_vma_mapped_walk *pvmw,
 					  struct folio *folio,
 					  unsigned long idx)
@@ -220,7 +219,6 @@ static bool try_to_map_unused_to_zeropage(struct page_vma_mapped_walk *pvmw,
 	dec_mm_counter(pvmw->vma->vm_mm, mm_counter(folio));
 	return true;
 }
-#endif
 
 struct rmap_walk_arg {
 	struct folio *folio;
@@ -233,12 +231,8 @@ struct rmap_walk_arg {
 static bool remove_migration_pte(struct folio *dst,
 		struct vm_area_struct *vma, unsigned long addr, void *arg)
 {
-#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
-	struct folio *src = arg;
-#else
 	struct rmap_walk_arg *rmap_walk_arg = arg;
 	struct folio *src = rmap_walk_arg->folio;
-#endif
 	DEFINE_FOLIO_VMA_WALK(pvmw, src, vma, addr, PVMW_SYNC | PVMW_MIGRATION);
 
 	while (page_vma_mapped_walk(&pvmw)) {
@@ -278,11 +272,9 @@ static bool remove_migration_pte(struct folio *dst,
 			continue;
 		}
 #endif
-#if (!IS_ENABLED(CONFIG_MTK_VM_DEBUG))
 		if (rmap_walk_arg->map_unused_to_zeropage &&
 		    try_to_map_unused_to_zeropage(&pvmw, folio, idx))
 			continue;
-#endif
 
 		folio_get(folio);
 		pte = mk_pte(page, READ_ONCE(vma->vm_page_prot));
@@ -358,20 +350,6 @@ static bool remove_migration_pte(struct folio *dst,
  * Get rid of all migration entries and replace them by
  * references to the indicated page.
  */
-#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
-void remove_migration_ptes(struct folio *src, struct folio *dst, bool locked)
-{
-	struct rmap_walk_control rwc = {
-		.rmap_one = remove_migration_pte,
-		.arg = src,
-	};
-
-	if (locked)
-		rmap_walk_locked(dst, &rwc);
-	else
-		rmap_walk(dst, &rwc);
-}
-#else
 void remove_migration_ptes(struct folio *src, struct folio *dst, int flags)
 {
 	struct rmap_walk_arg rmap_walk_arg = {
@@ -391,7 +369,6 @@ void remove_migration_ptes(struct folio *src, struct folio *dst, int flags)
 	else
 		rmap_walk(dst, &rwc);
 }
-#endif
 
 /*
  * Something used the pte of a page under migration. We need to
@@ -1011,11 +988,7 @@ static int writeout(struct address_space *mapping, struct folio *folio)
 	 * At this point we know that the migration attempt cannot
 	 * be successful.
 	 */
-#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
-	remove_migration_ptes(folio, folio, false);
-#else
 	remove_migration_ptes(folio, folio, 0);
-#endif
 
 	rc = mapping->a_ops->writepage(&folio->page, &wbc);
 
@@ -1178,11 +1151,7 @@ static void migrate_folio_undo_src(struct folio *src,
 				   struct list_head *ret)
 {
 	if (page_was_mapped)
-#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
-		remove_migration_ptes(src, src, false);
-#else
 		remove_migration_ptes(src, src, 0);
-#endif
 	/* Drop an anon_vma reference if we took one */
 	if (anon_vma)
 		put_anon_vma(anon_vma);
@@ -1421,11 +1390,7 @@ static int migrate_folio_move(free_folio_t put_new_folio, unsigned long private,
 		lru_add_drain();
 
 	if (old_page_state & PAGE_WAS_MAPPED)
-#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
-		remove_migration_ptes(src, dst, false);
-#else
 		remove_migration_ptes(src, dst, 0);
-#endif
 
 out_unlock_both:
 	folio_unlock(dst);
@@ -1563,13 +1528,8 @@ static int unmap_and_move_huge_page(new_folio_t get_new_folio,
 		rc = move_to_new_folio(dst, src, mode);
 
 	if (page_was_mapped)
-#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
-		remove_migration_ptes(src,
-			rc == MIGRATEPAGE_SUCCESS ? dst : src, false);
-#else
 		remove_migration_ptes(src,
 			rc == MIGRATEPAGE_SUCCESS ? dst : src, 0);
-#endif
 
 unlock_put_anon:
 	folio_unlock(dst);

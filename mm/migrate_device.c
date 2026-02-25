@@ -422,11 +422,7 @@ static unsigned long migrate_device_unmap(unsigned long *src_pfns,
 			continue;
 
 		folio = page_folio(page);
-#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
-		remove_migration_ptes(folio, folio, false);
-#else
 		remove_migration_ptes(folio, folio, 0);
-#endif
 
 		src_pfns[i] = 0;
 		folio_unlock(folio);
@@ -844,11 +840,7 @@ void migrate_device_finalize(unsigned long *src_pfns,
 
 		src = page_folio(page);
 		dst = page_folio(newpage);
-#if IS_ENABLED(CONFIG_MTK_VM_DEBUG)
-		remove_migration_ptes(folio, folio, false);
-#else
 		remove_migration_ptes(src, dst, 0);
-#endif
 		folio_unlock(src);
 
 		if (is_zone_device_page(page))
