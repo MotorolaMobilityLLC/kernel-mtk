@@ -5496,6 +5496,7 @@ static void shrink_many(struct pglist_data *pgdat, struct scan_control *sc)
 	bin = first_bin = get_random_u32_below(MEMCG_NR_BINS);
 restart:
 	op = 0;
+	lruvec = NULL;
 	memcg = NULL;
 	gen = get_memcg_gen(READ_ONCE(pgdat->memcg_lru.seq));
 
@@ -5537,10 +5538,12 @@ restart:
 	if (op)
 		lru_gen_rotate_memcg(lruvec, op);
 
-	mem_cgroup_put(memcg);
-
-	if (lruvec && should_abort_scan(lruvec, sc))
+	if (lruvec && should_abort_scan(lruvec, sc)) {
+		mem_cgroup_put(memcg);
 		return;
+	}
+
+	mem_cgroup_put(memcg);
 
 	/* restart if raced with lru_gen_rotate_memcg() */
 	if (gen != get_nulls_value(pos))
@@ -7069,6 +7072,7 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
 	struct zoneref *z;
 	struct zone *zone;
 	pg_data_t *pgdat = NULL;
+	bool bypass = false;
 
 	/*
 	 * Kernel threads should not be throttled as they may be indirectly
@@ -7115,6 +7119,10 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
 
 	/* If no zone was usable by the allocation flags then do not throttle */
 	if (!pgdat)
+		goto out;
+
+	trace_android_vh_throttle_direct_reclaim_bypass(&bypass);
+	if (bypass)
 		goto out;
 
 	/* Account for the throttling */
