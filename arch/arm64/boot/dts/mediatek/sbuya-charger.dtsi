@@ -108,7 +108,7 @@
          charger = <&mt6375_chg>;
          charger_configuration= <3>;
          /* common */
-         battery_cv = <4500000>;
+         battery_cv = <4485000>;
          max_charger_voltage = <15000000>;
          min_charger_voltage = <4700000>;
          max_dmivr_charger_current = <4000000>;
@@ -149,17 +149,17 @@
                         <45 4320 6000 5200>,
                         <45 4450 5200 4000>;
 
-         mmi,mmi-ffc-zones = <10 4500 255>,
-                        <15 4500 255>,
-                        <25 4530 739>,
-                        <35 4530 893>,
-                        <45 4530 1547>;
+         mmi,mmi-ffc-zones = <10 4485 255>,
+                        <15 4485 255>,
+                        <25 4515 739>,
+                        <35 4515 893>,
+                        <45 4515 1547>;
 
-         mmi,mmi-normal-zones = <10 4500 255>,
-                        <15 4500 255>,
-                        <25 4500 255>,
-                        <35 4500 255>,
-                        <45 4500 487>;
+         mmi,mmi-normal-zones = <10 4485 255>,
+                        <15 4485 255>,
+                        <25 4485 255>,
+                        <35 4485 255>,
+                        <45 4485 487>;
 
          mmi,enable-charging-limit;
          mmi,upper-limit-capacity = <65>;
@@ -167,8 +167,8 @@
          mmi,vfloat-comp-uv = <0>;
          mmi,min-cp-therm-current-ua = <1000000>;
          mmi,power-max-design-mw = <30000>;
-		 /*CONFIG_MOTO_1200_CYCLE*/
-		 mmi,mmi-cycle-cv-steps =<100 20>;
+         /*CONFIG_MOTO_1200_CYCLE*/
+         mmi,mmi-cycle-cv-steps =<100 5>;
 };
 
 &pdc {
@@ -188,7 +188,7 @@
 
 &pe5 {
 	start_soc_max = <90>;
-	vbat_cv = <4530>;
+	vbat_cv = <4515>;
 	start_vbat_max = <4500>;
 
 	/* Sbuya disable temperature current limit */
