@@ -260,7 +260,7 @@ static const u32 sgm3785s_torch_current[SGM3785S_LEVEL_NUM] = {
 static const u32 sgm3785s_flash_current[SGM3785S_LEVEL_NUM] = {
     10, 30, 50, 70, 80, 90, 100, 150, 200, 250, 300,
     350, 400, 450, 500, 550, 600, 650, 700, 750, 800,
-    850, 900, 1000, 1150, 1300};
+    850, 900, 1000, 1150, 1172};
 
 static void os_mdelay(unsigned long ms)
 {
