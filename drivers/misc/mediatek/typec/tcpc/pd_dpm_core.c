@@ -2176,8 +2176,10 @@ int pd_dpm_notify_pe_startup(struct pd_port *pd_port)
 #endif	/* CONFIG_USB_PD_UFP_FLOW_DELAY */
 
 #if CONFIG_USB_PD_SRC_TRY_PR_SWAP_IF_BAD_PW
+#if !(IS_ENABLED(CONFIG_TCPC_UPM7610))
 	reactions |= DPM_REACTION_ATTEMPT_GET_FLAG |
 		DPM_REACTION_REQUEST_PR_SWAP;
+#endif	/* CONFIG_TCPC_UPM7610 */
 #else
 	if (DPM_CAP_EXTRACT_PR_CHECK(pd_port->dpm_caps)) {
 		reactions |= DPM_REACTION_REQUEST_PR_SWAP;
