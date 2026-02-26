@@ -257,10 +257,10 @@
 		reg = <0x60>;
 		status = "okay";
 		rt-tcpc,name = "type_c_port0"; /* tcpc_device's name */
-		rt-tcpc,role_def = <3>; /* 0: Unknown, 1: SNK, 2: SRC */
+		rt-tcpc,role_def = <5>; /* 0: Unknown, 1: SNK, 2: SRC */
 					/* 3: DRP, 4: Try.SRC, 5: Try.SNK */
 		rt-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
-		rt-tcpc,vconn_supply  = <1>;  /* 0: Never, 1: Always, */
+		rt-tcpc,vconn_supply  = <0>;  /* 0: Never, 1: Always, */
 					      /* 2: EMarkOnly, 3: StartOnly */
 		rt-tcpc,notifier_supply_num = <3>;
 		upm7610pd,intr_gpio = <&pio 8 0x0>;
@@ -294,7 +294,7 @@
 			 * PPS 3V~5.9V, 3A <0xC0761E3C>
 			 */
 			pd,source-pdo-size = <1>;
-			pd,source-pdo-data = <0x00019096>;
+			pd,source-pdo-data = <0x00019064>;
 			pd,sink-pdo-size = <2>;
 			pd,sink-pdo-data = <0x000190c8 0x0002d0c8>;
 
@@ -351,12 +351,12 @@
 			//local_high_cap;
 			//local_give_back;
 			local_no_suspend;
-			local_vconn_supply;
+			//local_vconn_supply;
 
 			//attemp_discover_cable_dfp;
-			attemp_enter_dp_mode;
-			attemp_discover_cable;
-			attemp_discover_id;
+			//attemp_enter_dp_mode;
+			//attemp_discover_cable;
+			//attemp_discover_id;
 
 			/* 0: disable, 1: prefer_snk, 2: prefer_src */
 			pr_check = <0>;
