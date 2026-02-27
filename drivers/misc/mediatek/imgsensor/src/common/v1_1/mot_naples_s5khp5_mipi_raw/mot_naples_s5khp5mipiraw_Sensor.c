@@ -334,7 +334,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4BlockNumY = 0,
 	.i4Crop = {
 		{0, 0}, {0, 0}, {0, 384}, {0, 0}, {0, 0},
-		{0, 0}, {0, 0}, {1024, 960}, {0, 0}, {0, 0} },
+		{2048, 1536}, {0, 0}, {0, 192}, {0, 0}, {0, 0} },
 };
 
 static struct IMGSENSOR_I2C_CFG *get_i2c_cfg(void)
