@@ -103,8 +103,6 @@
          mmi,wd_discharge;
          /* disabled aicl */
          disable_aicl;
-         /* mos gpio */
-         mmi,mos_gpio = <&pio 188 0>;
          charger = <&mt6375_chg>;
          charger_configuration= <3>;
          /* common */
