@@ -692,6 +692,12 @@ config MOTO_SGM41606S_ENABLE_OTG
         help
           Say Y to enable support for the sgm41606s otg mos adcdrv1.
 
+config WORK_AROUND_FOR_REG_RESET
+        bool "SGM41606S reg reset workaround config"
+        default n
+        help
+          Say Y to enable support for the sgm41606s .
+
 config MOTO_SGM41606S_ENABLE_ERRLO
         bool "SGM41606S charger pump vbus error low config"
         default n
