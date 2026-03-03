@@ -1008,6 +1008,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(feature_data + 1) = imgsensor_info.gain_step;
 			*(feature_data + 2) = imgsensor_info.gain_type;
 			break;
+		case SENSOR_FEATURE_GET_OFFSET_TO_START_OF_EXPOSURE:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 1657000;
+			break;
 		case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
 			*(feature_data + 1) = imgsensor_info.min_shutter;
 			switch (*feature_data) {
