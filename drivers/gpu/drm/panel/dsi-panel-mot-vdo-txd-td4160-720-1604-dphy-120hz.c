@@ -33,7 +33,9 @@
 #define PANEL_DVT1 2
 #define PANEL_DVT2 3
 #define PANEL_PVT 4
-#define MIN_BRIGHTNESS_HAL_VALUE 6
+#define MIN_BRIGHTNESS_HAL_VALUE 5
+#define MAX_BRIGHTNESS_HW_LEVEL 2047 // Maximum hardware brightness value (11-bit)
+#define BRIGHTNESS_SAFETY_SCALER 1855 // Scaler to limit max brightness for safety
 
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
@@ -629,6 +631,7 @@ bool dbv_to_hal(uint16_t dbv, uint16_t *hal_value) {
             } else if (*hal_value > dbv_hal_map[mid].hal_end) {
                 *hal_value = dbv_hal_map[mid].hal_end;
             }
+            *hal_value = *hal_value * BRIGHTNESS_SAFETY_SCALER / MAX_BRIGHTNESS_HW_LEVEL;
             if (*hal_value > 0) {
                 *hal_value = max_t(uint16_t, *hal_value, MIN_BRIGHTNESS_HAL_VALUE);
             }
