@@ -86,7 +86,7 @@
                 aw35615,port_id = <0>;
                 aw35615,snk_pdo_size = <2>; /* set sink pdo num*/
                 aw35615,snk_pdo_vol = <5000 9000>; /* set sink pdo voltage mV*/
-                aw35615,snk_pdo_cur = <2000 2000>; /* set sink pdo current mA*/
+                aw35615,snk_pdo_cur = <2000 3000>; /* set sink pdo current mA*/
                 aw35615,snk_pps_size = <0>; /* set sink pps num*/
                 aw35615,snk_pps_vol = <0>; /* set sink pps voltage mV*/
                 aw35615,snk_pps_cur = <0>; /* set sink pps current mA*/
@@ -296,7 +296,7 @@
 			pd,source-pdo-size = <1>;
 			pd,source-pdo-data = <0x00019064>;
 			pd,sink-pdo-size = <2>;
-			pd,sink-pdo-data = <0x000190c8 0x0002d0c8>;
+			pd,sink-pdo-data = <0x000190c8 0x0002d12c>;
 
 			/*
 			 * No DP, host + device
@@ -654,7 +654,7 @@
          /* single charger */
          sc-input-current = <3000000>;
          sc-charger-current = <4000000>;
-         pd-9v-input-current-discrete-arch-mmi = <2000000>;
+         pd-9v-input-current-discrete-arch-mmi = <2300000>;
 };
 
 &pe5 {
