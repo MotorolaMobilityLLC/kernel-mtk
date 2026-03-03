@@ -69,7 +69,7 @@
 		sc,sc8989x,charge-timer = <2>; /*0:5h 1:8h 2:12h 3:20h*/
 		sc,sc8989x,bat-comp = <0>; /*val * 20*/
 		sc,sc8989x,vclamp = <0>; /*val *32*/
-		sc,sc8989x,votg = <12>; /*3900 + val * 100*/
+		sc,sc8989x,votg = <13>; /*3900 + val * 100*/
 		sc,cx25890HQ,votg = <9>;  /*4550 + val * 64*/
 		sc,upm6920A,votg = <9>;  /*4550 + val * 64*/
 		sc,sc8989x,iboost = <6>; /*0:0.5A 3:1.4A 5:1.875A 7:2.45A*/
@@ -92,7 +92,7 @@
                 aw35615,snk_pps_cur = <0>; /* set sink pps current mA*/
                 aw35615,src_pdo_size = <1>; /* set source pdo num*/
                 aw35615,src_pdo_vol = <5000>; /* set source pdo voltage mV*/
-                aw35615,src_pdo_cur = <1000>; /* set source pdo current mA*/
+                aw35615,src_pdo_cur = <2000>; /* set source pdo current mA*/
                 aw35615,src_pps_size = <0>; /* set source pps num*/
                 aw35615,src_pps_vol = <0>; /* set source pps voltage mV*/
                 aw35615,src_pps_cur = <0>; /* set source pps current mA*/
@@ -295,7 +295,7 @@
 			 * PPS 3V~5.9V, 3A <0xC0761E3C>
 			 */
 			pd,source-pdo-size = <1>;
-			pd,source-pdo-data = <0x00019064>;
+			pd,source-pdo-data = <0x000190c8>;
 			pd,sink-pdo-size = <2>;
 			pd,sink-pdo-data = <0x000190c8 0x0002d12c>;
 
