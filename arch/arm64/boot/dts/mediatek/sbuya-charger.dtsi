@@ -374,3 +374,7 @@
 	mmi,is_bypass_hiz;
 };
 
+&pd_adapter {
+		ita_min = <1000>;
+};
+
