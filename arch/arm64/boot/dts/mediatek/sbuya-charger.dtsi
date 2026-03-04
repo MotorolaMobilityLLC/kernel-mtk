@@ -370,4 +370,7 @@
 		watchdog_dis;
 	};
 };
+&pd_adapter {
+	mmi,is_bypass_hiz;
+};
 

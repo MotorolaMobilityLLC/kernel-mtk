@@ -63,6 +63,7 @@ struct mtk_pd_adapter_info {
 	u32 bootmode;
 	u32 boottype;
 	bool enable_pp;
+	bool is_bypass_hiz;
 };
 
 struct apdo_pps_range {
@@ -301,6 +302,9 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 				pd_adapter_enable_power_path(false);
 			}
 		}
+
+		if(pinfo->is_bypass_hiz)
+			break;
 		if ((sink_ma <= 100) && (sink_mv == 5000) && (noti->vbus_state.type == TCP_VBUS_CTRL_PD_REQUEST)) {
 			ret = charger_dev_enable_hz(chg1_dev, true);
 			pr_err("%s TCP_NOTIFY_SINK_VBUS hiz set!!!\n", __func__);
@@ -905,7 +909,8 @@ static int adapter_parse_dt(struct mtk_pd_adapter_info *info,
 		pr_notice("%s: no adapter name\n", __func__);
 	info->force_cv = of_property_read_bool(np, "force_cv");
 	of_property_read_u32(np, "ita_min", &info->ita_min);
-
+	info->is_bypass_hiz = of_property_read_bool(np, "mmi,is_bypass_hiz");
+	pr_notice("%s is_bypass_hiz is %d\n", __func__,info->is_bypass_hiz);
 	pr_notice("%s\n", __func__);
 
 	if (!np) {
