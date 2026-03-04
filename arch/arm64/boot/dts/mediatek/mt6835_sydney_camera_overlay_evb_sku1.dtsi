@@ -416,7 +416,7 @@
 	pinctrl-5 = <&flashlight_pwm_en>;
 	srcclk = <&pericfg_ao_clk>;
 
-	decouple = <0>;
+	decouple = <1>;
 	channel@1 {
 		status = "okay";
 		type = <0>;
