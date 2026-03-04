@@ -417,6 +417,12 @@ DECLARE_HOOK(android_vh_cma_alloc_bypass,
 	TP_PROTO(struct cma *cma, unsigned long count, unsigned int align,
 		gfp_t gfp_mask, struct page **page, bool *bypass),
 	TP_ARGS(cma, count, align, gfp_mask, page, bypass));
+DECLARE_HOOK(android_vh_alloc_pages_start,
+	TP_PROTO(u64 *stime),
+	TP_ARGS(stime));
+DECLARE_HOOK(android_vh_alloc_pages_end,
+	TP_PROTO(unsigned int order, gfp_t alloc_gfp, u64 stime),
+	TP_ARGS(order, alloc_gfp, stime));
 #endif /* _TRACE_HOOK_MM_H */
 
 /* This part must be outside protection */
