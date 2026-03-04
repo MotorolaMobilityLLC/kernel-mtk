@@ -41,7 +41,7 @@ extern void SYDNEY_SC821CS_eeprom_format_calibration_data(struct imgsensor_struc
 extern mot_calibration_status_t *SYDNEY_SC821CS_eeprom_get_calibration_status(void);
 extern mot_calibration_mnf_t *SYDNEY_SC821CS_eeprom_get_mnf_info(void);
 #define PFX "mot_sydney_sc821cs_camera_sensor"
-#define LOG_INF(format, args...)		pr_err(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)		pr_debug(PFX "[%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
