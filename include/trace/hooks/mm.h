@@ -298,6 +298,10 @@ DECLARE_HOOK(android_vh_oom_swapmem_gather_finish,
 DECLARE_HOOK(android_vh_readahead_add_folio,
 	TP_PROTO(struct folio *folio, struct address_space *mapping),
 	TP_ARGS(folio, mapping));
+DECLARE_HOOK(android_vh_filemap_adjust_folio_flags,
+	TP_PROTO(struct address_space *mapping, struct folio *folio,
+		pgoff_t index),
+	TP_ARGS(mapping, folio, index));
 DECLARE_HOOK(android_vh_filemap_add_folio,
 	TP_PROTO(struct address_space *mapping, struct folio *folio,
 		pgoff_t index),
