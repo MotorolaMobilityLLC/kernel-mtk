@@ -96,7 +96,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 	.hs_video = {
 		.pclk = 132000000,
-		.linelength = 1742,
+		.linelength = 1743,
 		.framelength = 2524,
 		.startx = 0,
 		.starty = 0,
@@ -108,7 +108,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.slim_video = {
 		.pclk = 132000000,
-		.linelength = 1742,
+		.linelength = 1743,
 		.framelength = 2524,
 		.startx = 0,
 		.starty = 0,
