@@ -378,3 +378,7 @@
 		ita_min = <1000>;
 };
 
+&mt6375_chg {
+		ircmp_r = <0>;
+		ircmp_v = <0>;
+};
