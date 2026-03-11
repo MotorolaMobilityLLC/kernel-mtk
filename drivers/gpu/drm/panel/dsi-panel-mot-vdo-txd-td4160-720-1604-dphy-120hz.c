@@ -33,7 +33,7 @@
 #define PANEL_DVT1 2
 #define PANEL_DVT2 3
 #define PANEL_PVT 4
-#define MIN_BRIGHTNESS_HAL_VALUE 5
+#define MIN_BRIGHTNESS_HAL_VALUE 4
 #define MAX_BRIGHTNESS_HW_LEVEL 2047 // Maximum hardware brightness value (11-bit)
 #define BRIGHTNESS_SAFETY_SCALER 1855 // Scaler to limit max brightness for safety
 

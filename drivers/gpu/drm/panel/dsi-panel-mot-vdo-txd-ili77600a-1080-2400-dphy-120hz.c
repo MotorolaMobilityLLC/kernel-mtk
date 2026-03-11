@@ -35,7 +35,7 @@
 #include <linux/gpio/consumer.h>
 #include <linux/regulator/consumer.h>
 #endif
-#define MIN_BRIGHTNESS_HAL_VALUE 5
+#define MIN_BRIGHTNESS_HAL_VALUE 4
 
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */

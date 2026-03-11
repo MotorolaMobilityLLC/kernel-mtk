@@ -33,7 +33,7 @@
 #define PANEL_DVT1 2
 #define PANEL_DVT2 3
 #define PANEL_PVT 4
-#define MIN_BRIGHTNESS_HAL_VALUE 5
+#define MIN_BRIGHTNESS_HAL_VALUE 4
 
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
