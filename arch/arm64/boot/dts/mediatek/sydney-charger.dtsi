@@ -571,7 +571,6 @@
          mmi,mmi-temp-zones =
                         <0 4200 1020  0>,
                         <10 4250 2550 1530>,
-                        <10 4530 1530 1530>,
                         <15 4530 2550 2550>,
                         <35 4530 4000 4000>,
                         <45 4530 4000 4000>,
@@ -599,6 +598,7 @@
          mmi,vfloat-comp-uv = <0>;
          mmi,min-cp-therm-current-ua = <1400000>;
          mmi,power-max-design-mw = <18000>;
+         mmi,mmi-cycle-cv-steps =<100 20>;
 };
 
 &mmi_pehv {
