@@ -63,6 +63,7 @@ struct mtk_pd_adapter_info {
 	u32 bootmode;
 	u32 boottype;
 	bool enable_pp;
+	bool is_in_hiz_mode;
 };
 
 struct apdo_pps_range {
@@ -303,6 +304,7 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 		}
 		if ((sink_ma <= 100) && (sink_mv == 5000) && (noti->vbus_state.type == TCP_VBUS_CTRL_PD_REQUEST)) {
 			ret = charger_dev_enable_hz(chg1_dev, true);
+			pinfo->is_in_hiz_mode = true;
 			pr_err("%s TCP_NOTIFY_SINK_VBUS hiz set!!!\n", __func__);
 			{
 				struct chg_alg_device *alg;
@@ -317,10 +319,11 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 			|| (noti->vbus_state.type == TCP_VBUS_CTRL_PD_STANDBY_UP)
 			|| (noti->vbus_state.type == TCP_VBUS_CTRL_PD_STANDBY_DOWN))) {
 			ret = charger_dev_enable_hz(chg1_dev, true);
+			pinfo->is_in_hiz_mode = true;
 			pr_err("%s TCP_NOTIFY_SINK_VBUS hiz set 02!!!\n", __func__);
 		} else if ((sink_ma == 0) && (sink_mv == 0)) {
 			break;
-		} else {
+		} else if (pinfo->is_in_hiz_mode) {
 
 			static struct power_supply *chg_psy = NULL;
 			union power_supply_propval prop;
@@ -333,6 +336,7 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 				ret = power_supply_set_property(chg_psy, POWER_SUPPLY_PROP_VOLTAGE_MIN, &prop);
 			}
 			ret = charger_dev_enable_hz(chg1_dev, false);
+			pinfo->is_in_hiz_mode = false;
 			pr_err("%s TCP_NOTIFY_SINK_VBUS hiz false sink_ma=%d\n", __func__, sink_ma);
 		}
 		break;
@@ -905,7 +909,7 @@ static int adapter_parse_dt(struct mtk_pd_adapter_info *info,
 		pr_notice("%s: no adapter name\n", __func__);
 	info->force_cv = of_property_read_bool(np, "force_cv");
 	of_property_read_u32(np, "ita_min", &info->ita_min);
-
+	info->is_in_hiz_mode = false;
 	pr_notice("%s\n", __func__);
 
 	if (!np) {
