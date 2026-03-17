@@ -364,6 +364,17 @@
   __xa_cmpxchg
   lookup_user_key
 
+# required by mi_ext_lru.ko
+  mem_cgroup_iter
+  __traceiter_android_vh_readahead_add_folio
+  __tracepoint_android_vh_readahead_add_folio
+  __traceiter_android_vh_folio_skip_activate
+  __tracepoint_android_vh_folio_skip_activate
+  __traceiter_android_vh_folio_trylock_clear_bypass
+  __tracepoint_android_vh_folio_trylock_clear_bypass
+  __traceiter_android_vh_filemap_adjust_folio_flags
+  __tracepoint_android_vh_filemap_adjust_folio_flags
+
 #required by mi_asap.ko
   __traceiter_android_vh_read_pages
   __tracepoint_android_vh_read_pages
