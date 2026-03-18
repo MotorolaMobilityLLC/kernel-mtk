@@ -697,8 +697,10 @@ void pd_dpm_snk_standby_power(struct pd_port *pd_port)
 		ma = pd_port->request_i_new;
 		type = TCP_VBUS_CTRL_STANDBY;
 	} else if (pd_port->request_v_new == pd_port->request_v) {
+#if !(IS_ENABLED(CONFIG_TCPC_UPM7610))
 		ma = standby_curr;
 		type = TCP_VBUS_CTRL_STANDBY;
+#endif	/* CONFIG_TCPC_UPM7610 */
 	}
 
 	if (ma >= 0) {
