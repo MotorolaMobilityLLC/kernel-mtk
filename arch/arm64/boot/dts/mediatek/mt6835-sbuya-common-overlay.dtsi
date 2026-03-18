@@ -187,7 +187,7 @@ eint_cp: eint_cp {
 
 	fshaptic@34 {
 		compatible="foursemi,fshaptic";
-		dts_ver="0002";
+		dts_ver="0005";
 		reg=<0x34>;
 		fs3001_i2c_addr=<0x34>;
 		reset-gpio=<&pio 190 0>;//In pio section, please set the gpio based on the platform
@@ -205,20 +205,20 @@ eint_cp: eint_cp {
 		fs3001_brk_times=< 20 >;
 		fs3001_brk_noise_gate=< 32 >;
 		fs3001_brk_1_period=< 564 >;
-		fs3001_brk_pgagain=< 5 >;
+		fs3001_brk_pgagain=< 12 >;
 		fs3001_brk_margin=< 48 >;
 		fs3001_play_ram_srate=< 0 >;
 		fs3001_play_rtp_srate=< 0 >;
 		fs3001_lk_f0_cali=< 0 >;
 		fs3001_default_vib_mode=< 3 >;
-		fs3001_vbat_mode=< 0 >;
+		fs3001_vbat_mode=< 2 >;
 		fs3001_bypass_system_gain=< 1 >;
 		fs3001_f0_cali_data_mode=< 0 >;
 		fs3001_lr_pgagain=< 5 >;
 		fs3001_gain_adjust=< 0 >;
 		fs3001_rtp_max=< 53 >;
 		fs3001_rtp_time=< 20 20 20 >;
-		fs3001_reg_inits=< 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff >;
+		fs3001_reg_inits=< 0x72503f 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff >;
 		fs3001_rtp_id_boundary=< 3 >;
 		fs3001_duration_time=< 34 67 100 >;
 		status = "okay";
