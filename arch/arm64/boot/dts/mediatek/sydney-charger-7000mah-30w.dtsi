@@ -77,6 +77,7 @@
 		sc,sc8989x,vindpm = <18>; /*2600 + val * 100*/
 		sc,qc3p_offset = <50000>; /*qc3p detect offset*/
 		mmi,hvdcp-support;
+		mmi,enable_i2c_retry;
 	};
 	/* sydney uses aw35615fcr*/
         aw35615@24 {
