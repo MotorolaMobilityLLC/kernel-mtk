@@ -799,25 +799,29 @@ int dma_buf_vmap(struct dma_buf *dmabuf, struct iosys_map *map);
 void dma_buf_vunmap(struct dma_buf *dmabuf, struct iosys_map *map);
 long dma_buf_set_name(struct dma_buf *dmabuf, const char *name);
 int dma_buf_get_flags(struct dma_buf *dmabuf, unsigned long *flags);
+struct dma_buf *dma_buf_iter_begin(void);
+struct dma_buf *dma_buf_iter_next(struct dma_buf *dmbuf);
 
 #ifdef CONFIG_DMA_SHARED_BUFFER
 
 int is_dma_buf_file(struct file *file);
-int dma_buf_account_task(struct dma_buf *dmabuf, struct task_struct *task);
-void dma_buf_unaccount_task(struct dma_buf *dmabuf, struct task_struct *task);
+int dma_buf_account_task(struct dma_buf *dmabuf, struct task_dma_buf_info *dmabuf_info);
+void dma_buf_unaccount_task(struct dma_buf *dmabuf, struct task_dma_buf_info *dmabuf_info);
 int copy_dmabuf_info(u64 clone_flags, struct task_struct *task);
-void put_dmabuf_info(struct task_struct *task);
+void put_dmabuf_info(struct task_dma_buf_info *dmabuf_info);
+int dma_buf_begin_new_exec(struct files_struct *old_files);
 
 #else /* CONFIG_DMA_SHARED_BUFFER */
 
 static inline int is_dma_buf_file(struct file *file) { return 0; }
 static inline int dma_buf_account_task(struct dma_buf *dmabuf,
-				       struct task_struct *task) { return 0; }
+				       struct task_dma_buf_info *dmabuf_info) { return 0; }
 static inline void dma_buf_unaccount_task(struct dma_buf *dmabuf,
-					  struct task_struct *task) {}
+					  struct task_dma_buf_info *dmabuf_info) {}
 static inline int copy_dmabuf_info(u64 clone_flags,
 				   struct task_struct *task) { return 0; }
-static inline void put_dmabuf_info(struct task_struct *task) {}
+static inline void put_dmabuf_info(struct task_dma_buf_info *dmabuf_info) {}
+static inline int dma_buf_begin_new_exec(struct files_struct *old_files) { return 0; }
 
 #endif /* CONFIG_DMA_SHARED_BUFFER */
 #endif /* __DMA_BUF_H__ */

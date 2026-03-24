@@ -621,7 +621,7 @@ void switch_mm_irqs_off(struct mm_struct *prev, struct mm_struct *next,
 		 * Indicate that CR3 is about to change. nmi_uaccess_okay()
 		 * and others are sensitive to the window where mm_cpumask(),
 		 * CR3 and cpu_tlbstate.loaded_mm are not all in sync.
-		 */
+ 		 */
 		this_cpu_write(cpu_tlbstate.loaded_mm, LOADED_MM_SWITCHING);
 		barrier();
 	}
