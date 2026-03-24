@@ -78,5 +78,7 @@
   __tracepoint_rpm_resume
   __traceiter_rpm_return_int
   __tracepoint_rpm_return_int
+  __traceiter_android_vh_count_workingset_refault
+  __tracepoint_android_vh_count_workingset_refault
   udp4_lib_lookup
   udp6_lib_lookup
