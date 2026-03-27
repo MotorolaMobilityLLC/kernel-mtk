@@ -658,42 +658,6 @@ int pd_hal_charger_enable_chip(struct chg_alg_device *alg,
 	return 0;
 }
 
-int pd_hal_enable_hz(struct chg_alg_device *alg,
-	enum chg_idx chgidx, bool en)
-{
-	struct pd_hal *hal;
-
-	if (alg == NULL)
-		return -EINVAL;
-
-	hal = chg_alg_dev_get_drv_hal_data(alg);
-
-	if (chgidx == CHG1)
-		charger_dev_enable_hz(hal->chg1_dev, en);
-	else if (chgidx == CHG2)
-		charger_dev_enable_hz(hal->chg2_dev, en);
-
-	return 0;
-}
-
-int pd_hal_get_chip_id(struct chg_alg_device *alg,
-	enum chg_idx chgidx, int *chip_id)
-{
-	struct pd_hal *hal;
-
-	if (alg == NULL)
-		return -EINVAL;
-
-	hal = chg_alg_dev_get_drv_hal_data(alg);
-
-	if (chgidx == CHG1)
-		charger_dev_get_chip_id(hal->chg1_dev, chip_id);
-	else if (chgidx == CHG2)
-		charger_dev_get_chip_id(hal->chg1_dev, chip_id);
-
-	return 0;
-}
-
 int pd_hal_get_uisoc(struct chg_alg_device *alg)
 {
 	union power_supply_propval prop = {0};

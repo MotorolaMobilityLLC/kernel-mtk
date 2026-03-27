@@ -35,7 +35,6 @@
 #define IBUS_ERR 14
 
 #define DISABLE_VBAT_THRESHOLD -1
-#define INVALID_SOC -1
 
 #define PD_ERROR_LEVEL	1
 #define PD_INFO_LEVEL	2
@@ -157,8 +156,6 @@ struct mtk_pd {
 	bool is_enabled;
 
 	int enable_inductor_protect;
-
-	int pd_9v_to_5v_soc_threshold;
 };
 
 extern int pd_hal_init_hardware(struct chg_alg_device *alg);
@@ -208,10 +205,6 @@ extern int pd_hal_enable_charger(struct chg_alg_device *alg,
 	enum chg_idx chgidx, bool en);
 extern int pd_hal_charger_enable_chip(struct chg_alg_device *alg,
 	enum chg_idx chgidx, bool enable);
-extern int pd_hal_enable_hz(struct chg_alg_device *alg,
-	enum chg_idx chgidx, bool en);
-extern int pd_hal_get_chip_id(struct chg_alg_device *alg,
-	enum chg_idx chgidx, int *chip_id);
 extern int pd_hal_get_uisoc(struct chg_alg_device *alg);
 extern int pd_hal_get_log_level(struct chg_alg_device *alg);
 #endif /* __MTK_PD_H */

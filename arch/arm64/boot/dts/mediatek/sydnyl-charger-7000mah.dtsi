@@ -656,8 +656,6 @@
          sc-input-current = <3000000>;
          sc-charger-current = <4000000>;
          pd-9v-input-current-discrete-arch-mmi = <2200000>;
-
-         pd-9v-to-5v-soc-threshold = <95>;
 };
 
 &pe5 {

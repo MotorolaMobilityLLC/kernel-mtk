@@ -600,8 +600,6 @@
          mmi,min-cp-therm-current-ua = <1400000>;
          mmi,power-max-design-mw = <18000>;
          mmi,mmi-cycle-cv-steps =<100 20>;
-         mmi,low-limit-temperature = <15>;
-         mmi,high-limit-temperature = <45>;
 };
 
 &mmi_pehv {
@@ -643,7 +641,6 @@
 	mmi_therm_vol_thres = <80>;
 	mmi_therm_step = <3>;
 	mmi_max_ibat = <6000>;
-	ta-init-vol = <5200>;
 };
 
 &pdc {
@@ -659,8 +656,6 @@
          sc-input-current = <3000000>;
          sc-charger-current = <4000000>;
          pd-9v-input-current-discrete-arch-mmi = <2000000>;
-
-         pd-9v-to-5v-soc-threshold = <95>;
 };
 
 &pe5 {

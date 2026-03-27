@@ -69,8 +69,6 @@ static int pd_dbg_level = PD_DEBUG_LEVEL;
 
 #define MIVR_VBUS_DIFF_THR 2000000
 
-#define CX25890HQ_CHIP_ID           3
-
 static bool algo_waiver_test;
 module_param(algo_waiver_test, bool, 0644);
 
@@ -386,8 +384,6 @@ int __mtk_pdc_setup(struct chg_alg_device *alg, int idx)
 	int chg_cnt, is_chip_enabled, i;
 	bool chg1_mivr = false;
 	int vbus = 0;
-	int chip_id = 0;
-	int uisoc = 0;
 
 	struct mtk_pd *pd = dev_get_drvdata(&alg->dev);
 
@@ -477,18 +473,6 @@ int __mtk_pdc_setup(struct chg_alg_device *alg, int idx)
 					PD_VBUS_IR_DROP_THRESHOLD;
 
 			pd_hal_set_mivr(alg, CHG1, mivr * 1000);
-
-			if (pd->pd_9v_to_5v_soc_threshold != INVALID_SOC) {
-				uisoc = pd_hal_get_uisoc(alg);
-				pd_hal_get_chip_id(alg, CHG1, &chip_id);
-				if (pd->pd_idx == pd->pd_boost_idx && idx == pd->pd_buck_idx &&
-					chip_id == CX25890HQ_CHIP_ID && uisoc >= pd->pd_9v_to_5v_soc_threshold) {
-					pd_err("[%s] 9v -> 5v, enable hiz.\n", __func__);
-					pd_hal_enable_hz(alg, CHG1, true);
-					msleep(300);
-					pd_hal_enable_hz(alg, CHG1, false);
-				}
-			}
 		} else {
 #ifdef FIXME
 			if (info->data.parallel_vbus &&
@@ -571,8 +555,6 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 	bool chg1_mivr = false;
 	bool chg2_mivr = false;
 	int chg_cnt, i, is_chip_enabled;
-	int uisoc = 0;
-	int chip_id = 0;
 
 	__mtk_pdc_init_table(alg);
 	__mtk_pdc_get_reset_idx(alg);
@@ -708,26 +690,9 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 		buck = false;
 	}
 #else
-	if (pd->pd_9v_to_5v_soc_threshold != INVALID_SOC) {
-		uisoc = pd_hal_get_uisoc(alg);
-		pd_hal_get_chip_id(alg, CHG1, &chip_id);
-		if (chip_id == CX25890HQ_CHIP_ID &&
-			pd->pd_idx == pd->pd_boost_idx &&
-			uisoc >= pd->pd_9v_to_5v_soc_threshold) {
-			pd_err("[%s] uisoc exceed %d, request the first pdo.\n", __func__);
-			*newidx = pd->pd_buck_idx;
-			buck = true;
-		} else {
-			*newidx = selected_idx;
-			boost = false;
-			buck = false;
-		}
-	} else {
-			*newidx = selected_idx;
-			boost = false;
-			buck = false;
-	}
-
+	*newidx = selected_idx;
+	boost = false;
+	buck = false;
 #endif
 	*newvbus = cap->max_mv[*newidx];
 	*newcur = cap->ma[*newidx];
@@ -1410,13 +1375,6 @@ static void mtk_pd_parse_dt(struct mtk_pd *pd,
 		pr_notice("turn off vbat_threshold checking:%d\n",
 			DISABLE_VBAT_THRESHOLD);
 		pd->vbat_threshold = DISABLE_VBAT_THRESHOLD;
-	}
-
-	if (of_property_read_u32(np, "pd-9v-to-5v-soc-threshold", &val) >= 0) {
-		pd->pd_9v_to_5v_soc_threshold = val;
-	} else {
-		pr_notice("pd_9v_to_5v_soc_threshold use default:%d.\n", INVALID_SOC);
-		pd->pd_9v_to_5v_soc_threshold = INVALID_SOC;
 	}
 
 	pd->enable_inductor_protect = false;
