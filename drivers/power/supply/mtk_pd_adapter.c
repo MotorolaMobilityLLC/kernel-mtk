@@ -145,6 +145,7 @@ static inline int check_typec_attached_snk(struct tcpc_device *tcpc)
 	return 0;
 }
 
+#ifdef MTK_BASE
 static int usb_dpdm_pulldown(struct adapter_device *adapter,
 						bool dpdm_pulldown)
 {
@@ -167,7 +168,7 @@ static int usb_dpdm_pulldown(struct adapter_device *adapter,
 
 		return 0;
 }
-
+#endif
 
 static int pd_tcp_notifier_call(struct notifier_block *pnb,
 				unsigned long event, void *data)
@@ -275,13 +276,16 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 	case TCP_NOTIFY_WD_STATUS:
 		ret = srcu_notifier_call_chain(&adapter->evt_nh,
 			MTK_TYPEC_WD_STATUS, &noti->wd_status.water_detected);
-
 		if (noti->wd_status.water_detected) {
+#ifdef MTK_BASE
 			usb_dpdm_pulldown(adapter, false);
+#endif
 			if (pinfo->bootmode == 8)
 				pd_adapter_high_voltage_enable(0);
 		} else {
+#ifdef MTK_BASE
 			usb_dpdm_pulldown(adapter, true);
+#endif
 			if (pinfo->bootmode == 8)
 				pd_adapter_high_voltage_enable(1);
 		}
