@@ -66,7 +66,7 @@
 		sc,sc8989x,stat-dis = <0>;
 		sc,sc8989x,wd-time = <0>; /*0:Dis 1:40s 2:80s 3:160s*/
 		sc,sc8989x,en-timer = <1>;
-		sc,sc8989x,charge-timer = <2>; /*0:5h 1:8h 2:12h 3:20h*/
+		sc,sc8989x,charge-timer = <3>; /*0:5h 1:8h 2:12h 3:20h*/
 		sc,sc8989x,bat-comp = <0>; /*val * 20*/
 		sc,sc8989x,vclamp = <0>; /*val *32*/
 		sc,sc8989x,votg = <12>; /*3900 + val * 100*/
