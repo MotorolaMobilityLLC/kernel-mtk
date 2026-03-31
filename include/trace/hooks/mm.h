@@ -15,6 +15,7 @@ struct shmem_inode_info;
 struct folio;
 struct page_vma_mapped_walk;
 struct compact_control;
+struct cma;
 
 DECLARE_RESTRICTED_HOOK(android_rvh_shmem_get_folio,
 			TP_PROTO(struct shmem_inode_info *info, struct folio **folio),
@@ -164,6 +165,9 @@ DECLARE_HOOK(android_vh_madvise_cold_pageout_skip,
 DECLARE_HOOK(android_vh_mm_compaction_begin,
 	TP_PROTO(struct compact_control *cc, long *vendor_ret),
 	TP_ARGS(cc, vendor_ret));
+DECLARE_HOOK(android_vh_compact_bypass,
+	TP_PROTO(struct compact_control *cc, bool *bypass),
+	TP_ARGS(cc, bypass));
 DECLARE_HOOK(android_vh_mm_compaction_end,
 	TP_PROTO(struct compact_control *cc, long vendor_ret),
 	TP_ARGS(cc, vendor_ret));
@@ -350,6 +354,14 @@ DECLARE_HOOK(android_vh_alloc_flags_cma_adjust,
 DECLARE_HOOK(android_vh_rmqueue_cma_fallback,
 	TP_PROTO(struct zone *zone, unsigned int order, struct page **page),
 	TP_ARGS(zone, order, page));
+DECLARE_HOOK(android_vh_cma_release_bypass,
+	TP_PROTO(struct cma *cma, const struct page *pages, unsigned long count,
+		bool *bypass),
+	TP_ARGS(cma, pages, count, bypass));
+DECLARE_HOOK(android_vh_cma_alloc_end,
+	TP_PROTO(struct cma *cma, unsigned long pfn, const struct page *pages,
+		unsigned long count, unsigned int align, int ret),
+	TP_ARGS(cma, pfn, pages, count, align, ret));
 DECLARE_HOOK(android_vh_filemap_map_pages_range,
 	TP_PROTO(struct file *file, pgoff_t orig_start_pgoff,
 		pgoff_t last_pgoff, vm_fault_t ret),
