@@ -210,7 +210,7 @@ static void *guest_s2_zalloc_pages_exact(size_t size)
 {
 	void *addr = hyp_alloc_pages(&current_vm->pool, get_order(size));
 
-	WARN_ON(size != (PAGE_SIZE << get_order(size)));
+	WARN_ON(!addr || size != (PAGE_SIZE << get_order(size)));
 	hyp_split_page(hyp_virt_to_page(addr));
 
 	return addr;
@@ -1015,6 +1015,10 @@ static int __host_check_page_state_range(u64 addr, u64 size,
 		.desired	= state,
 		.get_page_state	= host_get_page_state,
 	};
+	u64 end;
+
+	if (check_add_overflow(addr, size, &end))
+		return -EINVAL;
 
 	hyp_assert_lock_held(&host_mmu.lock);
 	return check_page_state_range(&host_mmu.pgt, addr, size, &d);
@@ -1305,6 +1309,10 @@ static int __guest_check_page_state_range(struct pkvm_hyp_vcpu *vcpu, u64 addr,
 		.desired	= state,
 		.get_page_state	= guest_get_page_state,
 	};
+	u64 end;
+
+	if (check_add_overflow(addr, size, &end))
+		return -EINVAL;
 
 	hyp_assert_lock_held(&vm->lock);
 	return check_page_state_range(&vm->pgt, addr, size, &d);
