@@ -48,7 +48,7 @@
         ac_charger_input_current = <2000000>;
         non_std_ac_charger_current = <1000000>;
         charging_host_charger_current = <1500000>;
-        boot_battery_voltage = <3560000>;
+        boot_battery_voltage = <3510000>;
         disable-calc-dlpt-imix-r= <1>;
 };
 
