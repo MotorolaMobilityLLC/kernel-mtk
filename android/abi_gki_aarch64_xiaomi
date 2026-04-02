@@ -533,6 +533,9 @@ __tracepoint_android_vh_remove_mapping_failed
 __tracepoint_android_vh_filemap_get_folio_end
 __tracepoint_android_vh_do_new_mount_fc
 __tracepoint_android_vh_put_super
+LZ4_compress_default
+LZ4_decompress_safe
+find_inode_nowait
 
 #required by mi_iod_debug.ko
 page_swap_info

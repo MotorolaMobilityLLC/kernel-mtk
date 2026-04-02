@@ -15604,6 +15604,11 @@ pointer_reference {
   pointee_type_id: 0x9ba95149
 }
 pointer_reference {
+  id: 0x2c7aa6d4
+  kind: POINTER
+  pointee_type_id: 0x9baa7dce
+}
+pointer_reference {
   id: 0x2c7b6f3a
   kind: POINTER
   pointee_type_id: 0x9bad5a77
@@ -297749,6 +297754,14 @@ function {
   parameter_id: 0x18bd6530
 }
 function {
+  id: 0x12101ef3
+  return_type_id: 0x1b8590a8
+  parameter_id: 0x26ee682a
+  parameter_id: 0x33756485
+  parameter_id: 0x2c7aa6d4
+  parameter_id: 0x18bd6530
+}
+function {
   id: 0x1210c1fa
   return_type_id: 0x1b8590a8
   parameter_id: 0x26ee682a
@@ -317474,6 +317487,23 @@ function {
   parameter_id: 0x3e360385
 }
 function {
+  id: 0x920e936a
+  return_type_id: 0x6720d32f
+  parameter_id: 0x3e10b518
+  parameter_id: 0x0483e6f8
+  parameter_id: 0x6720d32f
+  parameter_id: 0x6720d32f
+  parameter_id: 0x18bd6530
+}
+function {
+  id: 0x920e9545
+  return_type_id: 0x6720d32f
+  parameter_id: 0x3e10b518
+  parameter_id: 0x0483e6f8
+  parameter_id: 0x6720d32f
+  parameter_id: 0x6720d32f
+}
+function {
   id: 0x92117c1d
   return_type_id: 0x6720d32f
   parameter_id: 0x3fca7642
@@ -330127,6 +330157,13 @@ function {
   parameter_id: 0x18bd6530
   parameter_id: 0x00abf683
   parameter_id: 0x1d5bae2a
+}
+function {
+  id: 0x9baa7dce
+  return_type_id: 0x6720d32f
+  parameter_id: 0x1b8590a8
+  parameter_id: 0x33756485
+  parameter_id: 0x18bd6530
 }
 function {
   id: 0x9baa8508
@@ -344045,6 +344082,24 @@ elf_symbol {
   crc: 0x0c8597fa
   type_id: 0x2dfa71ba
   full_name: "I_BDEV"
+}
+elf_symbol {
+  id: 0x6ea63025
+  name: "LZ4_compress_default"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x4f4d78c5
+  type_id: 0x920e936a
+  full_name: "LZ4_compress_default"
+}
+elf_symbol {
+  id: 0x31a154b4
+  name: "LZ4_decompress_safe"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0xc7c1107a
+  type_id: 0x920e9545
+  full_name: "LZ4_decompress_safe"
 }
 elf_symbol {
   id: 0xf56ca4c7
@@ -377750,6 +377805,15 @@ elf_symbol {
   crc: 0xa1aafdfe
   type_id: 0x3a251008
   full_name: "find_get_pid"
+}
+elf_symbol {
+  id: 0xf5a1bc09
+  name: "find_inode_nowait"
+  is_defined: true
+  symbol_type: FUNCTION
+  crc: 0x298f53b0
+  type_id: 0x12101ef3
+  full_name: "find_inode_nowait"
 }
 elf_symbol {
   id: 0x90d375c5
@@ -421962,6 +422026,8 @@ interface {
   symbol_id: 0xd5cb4002
   symbol_id: 0x17a6dc14
   symbol_id: 0x2dddbe52
+  symbol_id: 0x6ea63025
+  symbol_id: 0x31a154b4
   symbol_id: 0xf56ca4c7
   symbol_id: 0x59348d38
   symbol_id: 0x5b94e7ac
@@ -425707,6 +425773,7 @@ interface {
   symbol_id: 0xeaf15c9b
   symbol_id: 0xddb3e7a5
   symbol_id: 0x02b1ce77
+  symbol_id: 0xf5a1bc09
   symbol_id: 0x90d375c5
   symbol_id: 0xdc16d76a
   symbol_id: 0x5b7736f5
