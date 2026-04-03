@@ -35,7 +35,7 @@
 #include <linux/regulator/consumer.h>
 #endif
 
-#define MIN_BRIGHTNESS_HAL_VALUE 4
+#define MIN_BRIGHTNESS_HAL_VALUE 1
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
@@ -94,10 +94,10 @@ static struct mtk_panel_para_table panel_cabc_disable[] = {
 };
 
 static const DbvHalMap dbv_hal_map[] = {
-    {0, 57, 0, 5, CALC_RANGES(0, 57, 0, 5)},
-    {58, 81, 6, 9, CALC_RANGES(58, 81, 6, 9)},
-    {82, 128, 10, 18, CALC_RANGES(82, 128, 10, 18)},
-    {129, 297, 19, 67, CALC_RANGES(129, 297, 19, 67)},
+    {0, 57, 0, 2, CALC_RANGES(0, 57, 0, 2)},
+    {58, 81, 2, 3, CALC_RANGES(58, 81, 2, 3)},
+    {82, 128, 4, 17, CALC_RANGES(82, 128, 4, 17)},
+    {129, 297, 18, 67, CALC_RANGES(129, 297, 18, 67)},
     {298, 378, 68, 96, CALC_RANGES(298, 378, 68, 96)},
     {379, 517, 97, 155, CALC_RANGES(379, 517, 97, 155)},
     {518, 639, 156, 213, CALC_RANGES(518, 639, 156, 213)},
@@ -807,7 +807,9 @@ bool dbv_to_hal(uint16_t dbv, uint16_t *hal_value) {
             } else if (*hal_value > dbv_hal_map[mid].hal_end) {
                 *hal_value = dbv_hal_map[mid].hal_end;
             }
-            *hal_value = *hal_value * 29 / 31;
+            if (*hal_value > 1) {
+                *hal_value = *hal_value * 29 / 31;
+            }
             if (*hal_value > 0) {
                 *hal_value = max_t(uint16_t, *hal_value, MIN_BRIGHTNESS_HAL_VALUE);
             }
