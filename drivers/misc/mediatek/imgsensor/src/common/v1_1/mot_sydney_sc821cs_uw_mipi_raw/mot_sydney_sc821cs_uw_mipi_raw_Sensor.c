@@ -1187,8 +1187,8 @@ static void normal_video_setting(void)
 	write_cmos_sensor8(0x5000,0x0e);
 	write_cmos_sensor8(0x5500,0x40);
 	write_cmos_sensor8(0x5501,0x08);
-	write_cmos_sensor8(0x550a,0x09);
-	write_cmos_sensor8(0x550b,0xab);
+	write_cmos_sensor8(0x550a,0x08);
+	write_cmos_sensor8(0x550b,0x79);
 	write_cmos_sensor8(0x550e,0x00);
 	write_cmos_sensor8(0x550f,0x98);
 	write_cmos_sensor8(0x5784,0x1e);
