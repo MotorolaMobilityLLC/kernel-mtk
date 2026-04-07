@@ -157,3 +157,11 @@ config MTK_TYPEC_WATER_DETECT_BY_PCB
 	  need to be enabled.
 	  Say Yes to let PCB decides enabling water detection or not.
 	  If unsure, say N.
+
+config TYPEC_WATER_DETECTED_CC_OPEN
+	bool "Open CC line when water detected"
+	default n
+	help
+	  When water is detected in Type-C port, open/disconnect the CC
+	  line to prevent damage.
+	  If unsure, say N.

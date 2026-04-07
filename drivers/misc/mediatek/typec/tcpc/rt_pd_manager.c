@@ -335,7 +335,9 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 
 		if (noti->wd_status.water_detected) {
 			usb_dpdm_pulldown(false);
+#ifndef TYPEC_WATER_DETECTED_CC_OPEN
 			tcpm_typec_change_role_postpone(rpmd->tcpc, TYPEC_ROLE_SNK, true);
+#endif
 			if (!rpmd->tcpc_kpoc)
 				break;
 			dev_info(rpmd->dev, "%s Water is detected in KPOC\n",
@@ -348,7 +350,9 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #endif /* CONFIG_MTK_CHARGER */
 		} else {
 			usb_dpdm_pulldown(true);
+#ifndef TYPEC_WATER_DETECTED_CC_OPEN
 			tcpm_typec_change_role_postpone(rpmd->tcpc, rpmd->role_def, true);
+#endif
 			if (!rpmd->tcpc_kpoc)
 				break;
 			dev_info(rpmd->dev, "%s Water is removed in KPOC\n",
