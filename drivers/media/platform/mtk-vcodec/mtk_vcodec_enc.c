@@ -943,12 +943,15 @@ static int vidioc_try_fmt(struct v4l2_format *f, struct mtk_video_fmt *fmt,
 		}
 
 		mtk_v4l2_debug(1,
-			       "pix_fmt_mp->pixelformat %d bs fmt %d min_w %d min_h %d max_w %d max_h %d\n",
+			       "pix_fmt_mp->pixelformat %d bs fmt %d w %d h %d min_w %d min_h %d max_w %d max_h %d step_w %d step_h %d\n",
 			       pix_fmt_mp->pixelformat, bs_fourcc,
+				   pix_fmt_mp->width, pix_fmt_mp->height,
 			       spec_size_info->stepwise.min_width,
 			       spec_size_info->stepwise.min_height,
 			       spec_size_info->stepwise.max_width,
-			       spec_size_info->stepwise.max_height);
+			       spec_size_info->stepwise.max_height,
+				   spec_size_info->stepwise.step_width,
+				   spec_size_info->stepwise.step_height);
 
 		if ((spec_size_info->stepwise.step_width &
 		     (spec_size_info->stepwise.step_width - 1)) != 0)
@@ -1031,75 +1034,32 @@ static int vidioc_try_fmt(struct v4l2_format *f, struct mtk_video_fmt *fmt,
 			saligned = 4;
 		}
 
-		/* find next closer width stride align 16, height align 16,
-		 * size align 64 rectangle without MBAFF encoder
-		 * (with MBAFF height align should be 32)
-		 * width height swappable
+		/* pix_fmt_mp->width and pix_fmt_mp->height is buffer size or align size, here just
+		 * calculate new size with request alignment, and only make sure new size don't bigger
+		 * than width_max, so that some special case could encode normal, such as real size is
+		 * under spec but buffer size is over spec.
+		 * overspec check will be handled in vb2ops_venc_start_streaming with real size.
 		 */
+		org_w = pix_fmt_mp->width;
+		org_h = pix_fmt_mp->height;
+		v4l_bound_align_image(&pix_fmt_mp->width,
+			spec_size_info->stepwise.min_width,
+			spec_size_info->stepwise.max_width,
+			log2_enc(step_width_in_pixel),
+			&pix_fmt_mp->height,
+			spec_size_info->stepwise.min_height,
+			spec_size_info->stepwise.max_width,
+			log2_enc(step_height_in_pixel),
+			saligned);
+		if (pix_fmt_mp->width < org_w &&
+			(pix_fmt_mp->width + step_width_in_pixel) <=
+			spec_size_info->stepwise.max_width)
+			pix_fmt_mp->width += step_width_in_pixel;
+		if (pix_fmt_mp->height < org_h &&
+			(pix_fmt_mp->height + step_height_in_pixel) <=
+			spec_size_info->stepwise.max_width)
+			pix_fmt_mp->height += step_height_in_pixel;
 
-		if (pix_fmt_mp->height > pix_fmt_mp->width) {
-			pix_fmt_mp->height = clamp(pix_fmt_mp->height,
-				(spec_size_info->stepwise.min_height),
-				(spec_size_info->stepwise.max_width));
-			pix_fmt_mp->width = clamp(pix_fmt_mp->width,
-				(spec_size_info->stepwise.min_width),
-				(spec_size_info->stepwise.max_height));
-			org_w = pix_fmt_mp->width;
-			org_h = pix_fmt_mp->height;
-			v4l_bound_align_image(&pix_fmt_mp->width,
-				spec_size_info->stepwise.min_width,
-				spec_size_info->stepwise.max_height,
-				log2_enc(step_width_in_pixel),
-				&pix_fmt_mp->height,
-				spec_size_info->stepwise.min_height,
-				spec_size_info->stepwise.max_width,
-				log2_enc(step_height_in_pixel),
-				saligned);
-
-			if (pix_fmt_mp->width < org_w &&
-			    (pix_fmt_mp->width +
-			     step_width_in_pixel) <=
-			    spec_size_info->stepwise.max_height)
-				pix_fmt_mp->width +=
-					step_width_in_pixel;
-			if (pix_fmt_mp->height < org_h &&
-			    (pix_fmt_mp->height +
-			     step_height_in_pixel) <=
-			    spec_size_info->stepwise.max_width)
-				pix_fmt_mp->height +=
-					step_height_in_pixel;
-		} else {
-			pix_fmt_mp->height = clamp(pix_fmt_mp->height,
-				(spec_size_info->stepwise.min_height),
-				(spec_size_info->stepwise.max_height));
-			pix_fmt_mp->width = clamp(pix_fmt_mp->width,
-				(spec_size_info->stepwise.min_width),
-				(spec_size_info->stepwise.max_width));
-			org_w = pix_fmt_mp->width;
-			org_h = pix_fmt_mp->height;
-			v4l_bound_align_image(&pix_fmt_mp->width,
-				spec_size_info->stepwise.min_width,
-				spec_size_info->stepwise.max_width,
-				log2_enc(step_width_in_pixel),
-				&pix_fmt_mp->height,
-				spec_size_info->stepwise.min_height,
-				spec_size_info->stepwise.max_height,
-				log2_enc(step_height_in_pixel),
-				saligned);
-
-			if (pix_fmt_mp->width < org_w &&
-			    (pix_fmt_mp->width +
-			     step_width_in_pixel) <=
-			    spec_size_info->stepwise.max_width)
-				pix_fmt_mp->width +=
-					step_width_in_pixel;
-			if (pix_fmt_mp->height < org_h &&
-			    (pix_fmt_mp->height +
-			     step_height_in_pixel) <=
-			    spec_size_info->stepwise.max_height)
-				pix_fmt_mp->height +=
-					step_height_in_pixel;
-		}
 
 		pix_fmt_mp->num_planes = fmt->num_planes;
 		imagePixels = pix_fmt_mp->width * pix_fmt_mp->height;
@@ -2313,6 +2273,54 @@ static void vb2ops_venc_buf_queue(struct vb2_buffer *vb)
 	v4l2_m2m_buf_queue_check(ctx->m2m_ctx, to_vb2_v4l2_buffer(vb));
 }
 
+/* chech whether encode width and height is overspec or not, must use real size(crop size)
+ * to avoid some special case check fail, for example if max spec is 2560x1440, encode
+ * with 1440x2560, if some format width stride is 64 alignment, buffer size will be 1472x2560,
+ * check buffer size will be overspec but google case will test with this kind of resolution
+ * real size(crop size) meet below rule means under spec:
+ *   -- width_min <= width <= width_max
+ *   -- height_min <= height <= width_max
+ *   -- width_min * height_min <=width * height <= width_max * height_max
+ */
+static int mtk_venc_overspec_check(struct mtk_vcodec_ctx *ctx)
+{
+	__u32 bs_fourcc;
+	int width, height, i;
+	int max_resolution, min_resolution, resolution;
+	struct mtk_codec_framesizes *spec_size_info = NULL;
+
+	if (ctx->q_data[MTK_Q_DATA_DST].fmt != NULL)
+		bs_fourcc = ctx->q_data[MTK_Q_DATA_DST].fmt->fourcc;
+	else
+		bs_fourcc = mtk_venc_formats[default_cap_fmt_idx].fourcc;
+
+	for (i = 0; i < MTK_MAX_ENC_CODECS_SUPPORT; i++) {
+		if (mtk_venc_framesizes[i].fourcc == bs_fourcc)
+			spec_size_info = &mtk_venc_framesizes[i];
+	}
+	if (!spec_size_info) {
+		mtk_v4l2_err("fail to get spec_size_info");
+		return -EINVAL;
+	}
+	width = ctx->q_data[MTK_Q_DATA_SRC].visible_width;
+	height = ctx->q_data[MTK_Q_DATA_SRC].visible_height;
+	max_resolution = spec_size_info->stepwise.max_width * spec_size_info->stepwise.max_height;
+	min_resolution = spec_size_info->stepwise.min_width * spec_size_info->stepwise.min_height;
+	resolution = width * height;
+	if (width < spec_size_info->stepwise.min_width
+		|| width > spec_size_info->stepwise.max_width
+		|| height < spec_size_info->stepwise.min_height
+		|| height > spec_size_info->stepwise.max_width
+		|| resolution > max_resolution
+		|| resolution < min_resolution) {
+		mtk_v4l2_err("%dx%d over spec %dx%d", width, height,
+			spec_size_info->stepwise.max_width,
+			spec_size_info->stepwise.max_height);
+		return -EINVAL;
+	}
+	return 0;
+}
+
 static int vb2ops_venc_start_streaming(struct vb2_queue *q, unsigned int count)
 {
 	struct mtk_vcodec_ctx *ctx = vb2_get_drv_priv(q);
@@ -2336,6 +2344,11 @@ static int vb2ops_venc_start_streaming(struct vb2_queue *q, unsigned int count)
 	} else {
 		if (!vb2_start_streaming_called(&ctx->m2m_ctx->out_q_ctx.q))
 			return 0;
+	}
+
+	if (mtk_venc_overspec_check(ctx)) {
+		mtk_venc_queue_error_event(ctx);
+		goto err_set_param;
 	}
 
 	memset(&param, 0, sizeof(param));
