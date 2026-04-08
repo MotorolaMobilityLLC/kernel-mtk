@@ -42,8 +42,9 @@ static unsigned long g_u4CurrPosition;
 
 #ifdef CONFIG_AF_NOISE_ELIMINATION
 #define Initial_DAC  512
-#define StepWise 50
-#define DelayMs 7
+// Slower movement to avoid vibrator resonance noise. Values from GC50F6A.
+#define StepWise 15
+#define DelayMs 15
 #endif
 
 static int s4AF_ReadReg(u8 a_uAddr, u8 *a_uData)
