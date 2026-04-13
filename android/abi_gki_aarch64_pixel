@@ -926,6 +926,7 @@
   frame_vector_to_pages
   free_iova_fast
   free_irq
+  freelist_task
   free_netdev
   __free_pages
   free_pages
