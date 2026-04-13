@@ -29,3 +29,15 @@ type 'enum gunyah_rm_vm_status' changed
   'struct tracepoint __tracepoint_f2fs_write_checkpoint'
   'struct tracepoint __tracepoint_ufshcd_command'
 
+type 'struct inet_connection_sock' changed
+  member changed from 'struct { __u8 pending; __u8 quick; __u8 pingpong; __u8 retry; __u32 ato:8; __u32 lrcv_flowlabel:20; __u32 unused:4; unsigned long timeout; __u32 lrcvtime; __u16 last_seg_size; __u16 rcv_mss; } icsk_ack' to 'struct { __u8 pending; __u8 quick; __u8 pingpong; __u8 retry; __u32 ato:8; __u32 lrcv_flowlabel:20; __u32 dst_quick_ack:1; __u32 unused:3; unsigned long timeout; __u32 lrcvtime; __u16 last_seg_size; __u16 rcv_mss; } icsk_ack'
+    type changed from 'struct { __u8 pending; __u8 quick; __u8 pingpong; __u8 retry; __u32 ato:8; __u32 lrcv_flowlabel:20; __u32 unused:4; unsigned long timeout; __u32 lrcvtime; __u16 last_seg_size; __u16 rcv_mss; }' to 'struct { __u8 pending; __u8 quick; __u8 pingpong; __u8 retry; __u32 ato:8; __u32 lrcv_flowlabel:20; __u32 dst_quick_ack:1; __u32 unused:3; unsigned long timeout; __u32 lrcvtime; __u16 last_seg_size; __u16 rcv_mss; }'
+      member '__u32 dst_quick_ack:1' was added
+      member changed from '__u32 unused:4' to '__u32 unused:3'
+        offset changed from 60 to 61
+        bit-field size changed from 4 to 3
+
+variable symbol changed from 'u64 vendor_data_pad[64]' to 'u64 vendor_data_pad[128]'
+  type changed from 'u64[64]' to 'u64[128]'
+    number of elements changed from 64 to 128
+

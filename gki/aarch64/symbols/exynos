@@ -1870,6 +1870,10 @@
   __traceiter_android_rvh_gic_v3_set_affinity
   __tracepoint_android_rvh_gic_v3_set_affinity
 
+# required by irq-gic-vh.ko
+  __traceiter_android_vh_gic_set_affinity
+  __tracepoint_android_vh_gic_set_affinity
+
 # required by lealt-gov.ko
   bpf_trace_run10
 
