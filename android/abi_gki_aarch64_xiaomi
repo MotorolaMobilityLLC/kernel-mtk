@@ -374,6 +374,16 @@
   __tracepoint_android_vh_folio_trylock_clear_bypass
   __traceiter_android_vh_filemap_adjust_folio_flags
   __tracepoint_android_vh_filemap_adjust_folio_flags
+  __traceiter_android_vh_filemap_fault_folio_locked
+  __tracepoint_android_vh_filemap_fault_folio_locked
+  __traceiter_android_vh_filemap_read_end
+  __tracepoint_android_vh_filemap_read_end
+  __traceiter_android_vh_lruvec_add_folio
+  __tracepoint_android_vh_lruvec_add_folio
+  __traceiter_android_vh_lruvec_del_folio
+  __tracepoint_android_vh_lruvec_del_folio
+  __traceiter_android_vh_mm_free_page
+  __tracepoint_android_vh_mm_free_page
 
 #required by mi_asap.ko
   __traceiter_android_vh_read_pages
