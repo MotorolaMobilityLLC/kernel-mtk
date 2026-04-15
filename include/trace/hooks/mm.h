@@ -129,6 +129,12 @@ DECLARE_HOOK(android_vh_show_smap,
 	TP_PROTO(struct seq_file *m, unsigned long writeback,
 		unsigned long same, unsigned long huge),
 	TP_ARGS(m, writeback, same, huge));
+DECLARE_HOOK(android_vh_filemap_fault_folio_locked,
+	TP_PROTO(struct inode *inode, struct folio *folio, pgoff_t index),
+	TP_ARGS(inode, folio, index));
+DECLARE_HOOK(android_vh_filemap_read_end,
+	TP_PROTO(struct inode *inode, struct folio **folios, unsigned int nr),
+	TP_ARGS(inode, folios, nr));
 DECLARE_RESTRICTED_HOOK(android_rvh_try_alloc_pages_gfp,
 			TP_PROTO(struct page **page, unsigned int order,
 				gfp_t gfp, enum zone_type highest_zoneidx),
