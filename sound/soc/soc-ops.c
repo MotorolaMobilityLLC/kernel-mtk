@@ -26,6 +26,7 @@
 #include <sound/soc.h>
 #include <sound/soc-dpcm.h>
 #include <sound/initval.h>
+#include <trace/hooks/asoc.h>
 
 /**
  * snd_soc_info_enum_double - enumerated double mixer info callback
@@ -308,7 +309,7 @@ int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
 	unsigned int sign_bit = mc->sign_bit;
 	unsigned int mask = (1 << fls(max)) - 1;
 	unsigned int invert = mc->invert;
-	int err, ret;
+	int err = 0, ret;
 	bool type_2r = false;
 	unsigned int val2 = 0;
 	unsigned int val, val_mask;
@@ -317,8 +318,13 @@ int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
 		mask = BIT(sign_bit + 1) - 1;
 
 	val = ucontrol->value.integer.value[0];
-	if (mc->platform_max && val > mc->platform_max)
-		return -EINVAL;
+
+	trace_android_vh_put_volsw(mc->platform_max, min, val, &err);
+	if (!err) {
+		if (mc->platform_max && val > mc->platform_max)
+			return -EINVAL;
+	} else if (err < 0)
+			return err;
 	if (val > max - min)
 		return -EINVAL;
 	if (val < 0)
@@ -330,8 +336,12 @@ int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
 	val = val << shift;
 	if (snd_soc_volsw_is_stereo(mc)) {
 		val2 = ucontrol->value.integer.value[1];
-		if (mc->platform_max && val2 > mc->platform_max)
-			return -EINVAL;
+		trace_android_vh_put_volsw(mc->platform_max, min, val2, &err);
+		if (!err) {
+			if (mc->platform_max && val2 > mc->platform_max)
+				return -EINVAL;
+		} else if (err < 0)
+				return err;
 		if (val2 > max - min)
 			return -EINVAL;
 		if (val2 < 0)

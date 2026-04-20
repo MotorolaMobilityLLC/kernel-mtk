@@ -1,3 +1,5 @@
 [abi_symbol_list]
   __traceiter_android_vh_tune_mmap_readaround
   __tracepoint_android_vh_tune_mmap_readaround
+  __traceiter_android_vh_put_volsw
+  __tracepoint_android_vh_put_volsw
