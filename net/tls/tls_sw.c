@@ -2082,8 +2082,7 @@ int tls_sw_recvmsg(struct sock *sk,
 
 	/* process_rx_list() will set @control if it processed any records */
 	copied = err;
-	if (len <= copied || rx_more ||
-	    (control && control != TLS_RECORD_TYPE_DATA))
+	if (len <= copied || (copied && control != TLS_RECORD_TYPE_DATA) || rx_more)
 		goto end;
 
 	target = sock_rcvlowat(sk, flags & MSG_WAITALL, len);
