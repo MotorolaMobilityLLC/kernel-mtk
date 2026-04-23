@@ -597,4 +597,10 @@ __traceiter_android_vh_mmap_lock_free
 __tracepoint_android_vh_mmap_lock_free
 cpumask_any_distribute
 
+# nomap page manage
+folio_isolate_lru
+__tracepoint_android_vh_add_file_rmap
+__traceiter_android_vh_add_file_rmap
+__tracepoint_android_vh_remove_file_rmap
+__traceiter_android_vh_remove_file_rmap
 
