@@ -386,6 +386,12 @@ DECLARE_RESTRICTED_HOOK(android_rvh_read_swap_cache_async_timeout,
 DECLARE_HOOK(android_vh_folio_add_lru_folio_activate,
 	TP_PROTO(struct folio *folio, bool *bypass),
 	TP_ARGS(folio, bypass));
+DECLARE_HOOK(android_vh_add_file_rmap,
+	TP_PROTO(struct page *page, bool compound),
+	TP_ARGS(page, compound));
+DECLARE_HOOK(android_vh_remove_file_rmap,
+	TP_PROTO(struct page *page, bool compound),
+	TP_ARGS(page, compound));
 #endif /* _TRACE_HOOK_MM_H */
 
 /* This part must be outside protection */
