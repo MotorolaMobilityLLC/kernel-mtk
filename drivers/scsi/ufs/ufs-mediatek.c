@@ -405,6 +405,31 @@ static int ufs_mtk_auto_hibern8_disable(struct ufs_hba *hba);
 
 EXPORT_TRACEPOINT_SYMBOL_GPL(ufs_mtk_mcq_command);
 
+#if defined(CONFIG_UFSFEATURE)
+struct mmi_storage_info {
+        char type[16];  /* UFS or eMMC */
+        char size[16];  /* size in GB */
+        char card_manufacturer[32];
+        char product_name[32];  /* model ID */
+        char firmware_version[32];
+};
+
+struct mmi_ddr_info{
+        unsigned int mr5;
+        unsigned int mr6;
+        unsigned int mr7;
+        unsigned int mr8;
+        unsigned int type;
+        unsigned int ramsize;
+};
+
+static int get_dram_info(struct ufs_hba *hba);
+static int get_storage_info(struct ufs_hba *hba);
+
+unsigned int ram_size;
+char storage_mfrid[32];
+#endif
+
 static struct ufs_dev_fix ufs_mtk_dev_fixups[] = {
 	UFS_FIX(UFS_ANY_VENDOR, UFS_ANY_MODEL,
 		UFS_DEVICE_QUIRK_DELAY_BEFORE_LPM |
@@ -1164,7 +1189,9 @@ static void ufs_mtk_trace_vh_compl_command_vend_ss(struct ufs_hba *hba,
 	int result = 0;
 	int scsi_status;
 	int ocs;
+#if !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
+#endif
 
 	if (!cmd)
 		return;
@@ -1183,6 +1210,9 @@ static void ufs_mtk_trace_vh_compl_command_vend_ss(struct ufs_hba *hba,
 			scsi_status = be32_to_cpu(header->dword_1) &
 				MASK_SCSI_STATUS;
 			if (scsi_status == SAM_STAT_GOOD) {
+#if defined(CONFIG_UFSHID_V3)
+				ufsf_upiu_check_for_ccd(lrbp);
+#else
 				ufsf_hpb_noti_rb(ufsf, lrbp);
 				if (ufsf_upiu_check_for_ccd(lrbp)) {
 					ufsf_copy_sense_data(lrbp);
@@ -1197,16 +1227,18 @@ static void ufs_mtk_trace_vh_compl_command_vend_ss(struct ufs_hba *hba,
 					 */
 					result |= GOOD_CCD;
 				}
+#endif
 			}
 		}
 	}
-#if defined(CONFIG_UFSHID)
+#if defined(CONFIG_UFSHID) && !defined(CONFIG_UFSHID_V3)
 	/* Check if it is the last request to be completed */
 	if (!out_tasks && !out_reqs)
 		schedule_work(&ufsf->on_idle_work);
 #endif
 }
 
+#if !defined(CONFIG_UFSHID_V3)
 static void ufs_mtk_trace_vh_send_tm_command_vend_ss(void *data, struct ufs_hba *hba,
 			int tag, int str_t)
 {
@@ -1215,6 +1247,7 @@ static void ufs_mtk_trace_vh_send_tm_command_vend_ss(void *data, struct ufs_hba 
 	if (str_t == UFS_TM_COMP)
 		ufsf_reset_lu(ufsf);
 }
+#endif
 
 static void ufs_mtk_trace_vh_update_sdev_vend_ss(void *data, struct scsi_device *sdev)
 {
@@ -1225,6 +1258,7 @@ static void ufs_mtk_trace_vh_update_sdev_vend_ss(void *data, struct scsi_device 
 		ufsf_slave_configure(ufsf, sdev);
 }
 
+#if !defined(CONFIG_UFSHID_V3)
 static void ufs_mtk_trace_vh_send_command_vend_ss(void *data, struct ufs_hba *hba,
 				struct ufshcd_lrb *lrbp)
 {
@@ -1232,6 +1266,7 @@ static void ufs_mtk_trace_vh_send_command_vend_ss(void *data, struct ufs_hba *hb
 
 	ufsf_hid_acc_io_stat(ufsf, lrbp);
 }
+#endif
 #endif
 
 static void ufs_mtk_trace_vh_send_command(void *data, struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
@@ -1395,21 +1430,25 @@ static struct tracepoints_table interests[] = {
 		.func = ufs_mtk_trace_vh_prepare_command_vend_ss,
 		.vend = UFS_VEND_SAMSUNG
 	},
+#if !defined(CONFIG_UFSHID_V3)
 	{
 		.name = "android_vh_ufs_send_tm_command",
 		.func = ufs_mtk_trace_vh_send_tm_command_vend_ss,
 		.vend = UFS_VEND_SAMSUNG
 	},
+#endif
 	{
 		.name = "android_vh_ufs_update_sdev",
 		.func = ufs_mtk_trace_vh_update_sdev_vend_ss,
 		.vend = UFS_VEND_SAMSUNG
 	},
+#if !defined(CONFIG_UFSHID_V3)
 	{
 		.name = "android_vh_ufs_send_command",
 		.func = ufs_mtk_trace_vh_send_command_vend_ss,
 		.vend = UFS_VEND_SAMSUNG
 	},
+#endif
 #endif
 };
 
@@ -2327,6 +2366,18 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_mphy_power_on(hba, true);
 	ufs_mtk_setup_clocks(hba, true, POST_CHANGE);
 
+#if defined(CONFIG_UFSFEATURE)
+	get_storage_info(hba);
+	get_dram_info(hba);
+#endif
+#if defined(CONFIG_SCSI_SKHID)
+	if (IS_SKHYNIX_DEVICE(storage_mfrid)) {
+		err = pixel_init(hba);
+		if (err)
+			return err;
+		pixel_init_manual_gc(hba);
+	}
+#endif
 
 	/* Instantiate Motorola crypto capabilities for wrapped keys.
 	 * It is controlled by CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT.
@@ -3315,6 +3366,11 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op,
 	struct arm_smccc_res res;
 
 	if (status == PRE_CHANGE) {
+#if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHID_V3)
+		err = ufsf_suspend(ufs_mtk_get_ufsf(hba), pm_op == UFS_SYSTEM_PM);
+		if (err)
+			return err;
+#endif
 		err = ufs_mtk_suspend_check(hba, pm_op);
 		if (err)
 			return err;
@@ -3362,6 +3418,11 @@ static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 {
 	int err;
 	struct arm_smccc_res res;
+#if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHID_V3)
+	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
+
+	schedule_work(&ufsf->resume_work);
+#endif
 
 	if (hba->ufshcd_state != UFSHCD_STATE_OPERATIONAL)
 		ufs_mtk_dev_vreg_set_lpm(hba, false);
@@ -3552,7 +3613,11 @@ static void ufs_mtk_fixup_dev_quirks(struct ufs_hba *hba)
 #if IS_ENABLED(CONFIG_UFSFEATURE)
 	if (hba->dev_info.wmanufacturerid == UFS_VENDOR_SAMSUNG) {
 		host->ufsf.hba = hba;
+#if defined(CONFIG_UFSHID_V3)
+		ufsf_set_init_state(hba);
+#else
 		ufsf_set_init_state(ufs_mtk_get_ufsf(hba));
+#endif
 	}
 #endif
 }
@@ -3619,6 +3684,18 @@ static void ufs_mtk_event_notify(struct ufs_hba *hba,
 #endif
 	}
 #endif
+#if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHID_V3)
+	if (evt == UFS_EVT_DEV_RESET && val == 0)
+		/*
+		 * In case of device reset, it may be called repeatedly.
+		 * However, since the cost of initializing flags is small,
+		 * it is performed redundantly.
+		 */
+		ufsf_reset_lu(ufs_mtk_get_ufsf(hba));
+
+	if (evt == UFS_EVT_WL_SUSP_ERR)
+		ufsf_resume(ufs_mtk_get_ufsf(hba), true);
+#endif
 }
 
 static int ufs_mtk_auto_hibern8_disable(struct ufs_hba *hba)
@@ -3653,7 +3730,7 @@ static int ufs_mtk_auto_hibern8_disable(struct ufs_hba *hba)
 
 void ufs_mtk_setup_task_mgmt(struct ufs_hba *hba, int tag, u8 tm_function)
 {
-#if IS_ENABLED(CONFIG_UFSFEATURE)
+#if IS_ENABLED(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 
 	if (ufsf->hba && (tm_function == UFS_LOGICAL_RESET))
@@ -3935,7 +4012,7 @@ int ufs_mtk_system_suspend(struct device *dev)
 	int ret = 0;
 	struct ufs_hba *hba = dev_get_drvdata(dev);
 	struct ufs_mtk_host *host;
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 #endif
 
@@ -3943,7 +4020,7 @@ int ufs_mtk_system_suspend(struct device *dev)
 	if (down_trylock(&host->rpmb_sem))
 		return -EBUSY;
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	if (ufsf->hba)
 		ufsf_suspend(ufsf);
 #endif
@@ -3960,7 +4037,7 @@ int ufs_mtk_system_suspend(struct device *dev)
 		ufs_mtk_dev_vreg_set_lpm(hba, true);
 out:
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	/* We assume link is off */
 	if (ret && ufsf)
 		ufsf_resume(ufsf, true);
@@ -3976,7 +4053,7 @@ int ufs_mtk_system_resume(struct device *dev)
 	int ret = 0;
 	struct ufs_hba *hba = dev_get_drvdata(dev);
 	struct ufs_mtk_host *host;
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 	bool is_link_off = ufshcd_is_link_off(hba);
 #endif
@@ -3985,7 +4062,7 @@ int ufs_mtk_system_resume(struct device *dev)
 
 	ret = ufshcd_system_resume(dev);
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	if (!ret && ufsf->hba)
 		ufsf_resume(ufsf, is_link_off);
 #endif
@@ -4004,7 +4081,7 @@ int ufs_mtk_runtime_suspend(struct device *dev)
 	struct ufs_mtk_host *host = ufshcd_get_variant(hba);
 	int ret = 0;
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 
 	if (ufsf->hba)
@@ -4015,7 +4092,7 @@ int ufs_mtk_runtime_suspend(struct device *dev)
 	if (!ret)
 		ufs_mtk_dev_vreg_set_lpm(hba, true);
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	/* We assume link is off */
 	if (ret && ufsf->hba)
 		ufsf_resume(ufsf, true);
@@ -4033,7 +4110,7 @@ int ufs_mtk_runtime_resume(struct device *dev)
 	int ret = 0;
 	struct ufs_mtk_host *host = ufshcd_get_variant(hba);
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 	bool is_link_off = ufshcd_is_link_off(hba);
 #endif
@@ -4045,7 +4122,7 @@ int ufs_mtk_runtime_resume(struct device *dev)
 
 	ret = ufshcd_runtime_resume(dev);
 
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	if (!ret && ufsf->hba)
 		ufsf_resume(ufsf, is_link_off);
 #endif
@@ -4055,7 +4132,7 @@ int ufs_mtk_runtime_resume(struct device *dev)
 
 void ufs_mtk_shutdown(struct platform_device *pdev)
 {
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && !defined(CONFIG_UFSHID_V3)
 	struct device *dev = &pdev->dev;
 	struct ufs_hba *hba = dev_get_drvdata(dev);
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
@@ -4091,6 +4168,83 @@ static struct platform_driver ufs_mtk_pltform = {
 		.of_match_table = ufs_mtk_of_match,
 	},
 };
+
+#if defined(CONFIG_UFSFEATURE)
+static int get_storage_info(struct ufs_hba *hba)
+{
+    int ret = 0;
+    struct property *p;
+    struct device_node *n;
+    struct mmi_storage_info *info;
+
+    n = of_find_node_by_path("/chosen/mmi,storage");
+    if (n == NULL) {
+        ret = 1;
+        goto err;
+    }
+
+    info = kzalloc(sizeof(struct mmi_storage_info), GFP_KERNEL);
+    if (!info) {
+        dev_err(hba->dev,"%s: failed to allocate space for mmi_storage_info\n",
+           __func__);
+        ret = 1;
+		of_node_put(n);
+        goto err;
+    }
+
+    for_each_property_of_node(n, p) {
+        if (!strcmp(p->name, "type") && p->value)
+            strlcpy(info->type, (char *)p->value, sizeof(info->type));
+        if (!strcmp(p->name, "size") && p->value)
+            strlcpy(info->size, (char *)p->value, sizeof(info->size));
+        if (!strcmp(p->name, "manufacturer") && p->value)
+            strlcpy(info->card_manufacturer, (char *)p->value, sizeof(info->card_manufacturer));
+        if (!strcmp(p->name, "product") && p->value)
+            strlcpy(info->product_name, (char *)p->value, sizeof(info->product_name));
+        if (!strcmp(p->name, "firmware") && p->value)
+            strlcpy(info->firmware_version, (char *)p->value, sizeof(info->firmware_version));
+    }
+
+    of_node_put(n);
+
+    dev_info(hba->dev, "manufacturer parsed from choosen is %s\n",info->card_manufacturer);
+    strncpy(storage_mfrid, info->card_manufacturer, sizeof(info->card_manufacturer));
+	kfree(info);
+err:
+        return ret;
+}
+
+static int get_dram_info(struct ufs_hba *hba)
+{
+         int ret = -1;
+         struct device_node *n;
+         struct mmi_ddr_info *ddr_info;
+
+		ddr_info = kzalloc(sizeof(struct mmi_ddr_info), GFP_KERNEL);
+        if (!ddr_info) {
+                pr_err("%s: failed to allocate space for mmi_ddr_info\n", __func__);
+                goto err;
+        }
+
+        n = of_find_node_by_path("/chosen/mmi,ram");
+       if (n != NULL) {
+               of_property_read_u32(n, "mr5", &ddr_info->mr5);
+                of_property_read_u32(n, "mr6", &ddr_info->mr6);
+                of_property_read_u32(n, "mr7", &ddr_info->mr7);
+                of_property_read_u32(n, "mr8", &ddr_info->mr8);
+                of_property_read_u32(n, "type", &ddr_info->type);
+                of_property_read_u32(n, "ramsize", &ddr_info->ramsize);
+                of_node_put(n);
+        }
+
+        ram_size = (ddr_info->ramsize / 1024);
+        dev_info(hba->dev, "ram_size parsed from chosen is %d\n",ram_size);
+		kfree(ddr_info);
+        return ram_size;
+err:
+        return ret;
+}
+#endif
 
 MODULE_AUTHOR("Stanley Chu <stanley.chu@mediatek.com>");
 MODULE_AUTHOR("Peter Wang <peter.wang@mediatek.com>");
