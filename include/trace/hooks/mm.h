@@ -395,6 +395,9 @@ DECLARE_HOOK(android_vh_remove_file_rmap,
 DECLARE_HOOK(android_vh_folio_end_writeback,
 	TP_PROTO(struct folio *folio),
 	TP_ARGS(folio));
+DECLARE_HOOK(android_vh_folio_start_writeback,
+	TP_PROTO(struct folio *folio),
+	TP_ARGS(folio));
 #endif /* _TRACE_HOOK_MM_H */
 
 /* This part must be outside protection */
