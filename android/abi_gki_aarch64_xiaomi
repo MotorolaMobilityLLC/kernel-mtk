@@ -604,3 +604,6 @@ __traceiter_android_vh_add_file_rmap
 __tracepoint_android_vh_remove_file_rmap
 __traceiter_android_vh_remove_file_rmap
 
+# folio writeback hooks
+__tracepoint_android_vh_folio_end_writeback
+__traceiter_android_vh_folio_end_writeback
