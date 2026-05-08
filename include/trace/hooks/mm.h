@@ -237,6 +237,12 @@ DECLARE_HOOK(android_vh_look_around,
 DECLARE_HOOK(android_vh_mm_alloc_pages_direct_reclaim_enter,
 	TP_PROTO(unsigned int order),
 	TP_ARGS(order));
+DECLARE_HOOK(android_vh_mm_direct_reclaim_start,
+       TP_PROTO(u64 *stime),
+       TP_ARGS(stime));
+DECLARE_HOOK(android_vh_mm_direct_reclaim_end,
+       TP_PROTO(unsigned int order, u64 stime),
+       TP_ARGS(order, stime));
 DECLARE_HOOK(android_vh_mem_cgroup_charge,
 	TP_PROTO(struct folio *folio, struct mem_cgroup **memcg),
 	TP_ARGS(folio, memcg));

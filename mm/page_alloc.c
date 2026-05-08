@@ -5044,8 +5044,10 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
 	unsigned long pflags;
 	bool drained = false;
 	bool skip_pcp_drain = false;
+	u64 stime = 0;
 
 	trace_android_vh_mm_alloc_pages_direct_reclaim_enter(order);
+	trace_android_vh_mm_direct_reclaim_start(&stime);
 	psi_memstall_enter(&pflags);
 	*did_some_progress = __perform_reclaim(gfp_mask, order, ac);
 	if (unlikely(!(*did_some_progress)))
@@ -5072,6 +5074,7 @@ retry:
 out:
 	psi_memstall_leave(&pflags);
 	trace_android_vh_mm_alloc_pages_direct_reclaim_exit(*did_some_progress, retry_times);
+	trace_android_vh_mm_direct_reclaim_end(order, stime);
 	return page;
 }
 
