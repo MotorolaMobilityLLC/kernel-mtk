@@ -626,5 +626,6 @@ __tracepoint_android_vh_cma_alloc_end
 __traceiter_android_vh_cma_alloc_end
 __tracepoint_android_vh_cma_alloc_bypass
 __traceiter_android_vh_cma_alloc_bypass
+compact_node_async
 
 
