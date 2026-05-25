@@ -2164,6 +2164,7 @@
   pinconf_generic_parse_dt_config
   pinctrl_force_default
   pinctrl_force_sleep
+  pinctrl_register_mappings
   pin_get_name
 
 # required by pl330.ko
@@ -2564,6 +2565,7 @@
   drm_mode_is_420
   drm_mode_object_get
   drm_mode_prune_invalid
+  drm_mode_get_hv_timing
   drm_mode_set_crtcinfo
   drm_modeset_lock_all
   drm_modeset_unlock_all
@@ -3056,3 +3058,7 @@
 
 # required by pl2303.ko
   tty_termios_hw_change
+
+# required by motorcomm.ko
+  phy_basic_ports_array
+  __mdiobus_modify_changed
