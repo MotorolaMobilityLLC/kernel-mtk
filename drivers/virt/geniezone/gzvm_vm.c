@@ -360,6 +360,7 @@ static void gzvm_destroy_vm(struct gzvm *gzvm)
 	mutex_lock(&gzvm->lock);
 
 	gzvm_vm_irqfd_release(gzvm);
+	gzvm_vm_ioeventfd_release(gzvm);
 	gzvm_destroy_vcpus(gzvm);
 	gzvm_arch_destroy_vm(gzvm->vm_id, gzvm->gzvm_drv->destroy_batch_pages);
 
@@ -398,6 +399,11 @@ void gzvm_vm_put(struct gzvm *gzvm)
 	kref_put(&gzvm->kref, __gzvm_vm_put);
 }
 #endif
+
+void gzvm_vm_get(struct gzvm *gzvm)
+{
+	kref_get(&gzvm->kref);
+}
 
 static int gzvm_vm_release(struct inode *inode, struct file *filp)
 {

@@ -104,6 +104,11 @@ struct scan_control {
 	unsigned long	anon_cost;
 	unsigned long	file_cost;
 
+#ifdef CONFIG_MEMCG
+	/* Swappiness value for proactive reclaim. Always use sc_swappiness()! */
+	int *proactive_swappiness;
+#endif
+
 	/* Can active folios be deactivated as part of reclaim? */
 #define DEACTIVATE_ANON 1
 #define DEACTIVATE_FILE 2
@@ -196,7 +201,7 @@ struct scan_control {
 #endif
 
 /*
- * From 0 .. 200.  Higher means more swappy.
+ * From 0 .. MAX_SWAPPINESS.  Higher means more swappy.
  */
 int vm_swappiness = 60;
 
@@ -479,6 +484,13 @@ static bool writeback_throttling_sane(struct scan_control *sc)
 #endif
 	return false;
 }
+
+static int sc_swappiness(struct scan_control *sc, struct mem_cgroup *memcg)
+{
+	if (sc->proactive && sc->proactive_swappiness)
+		return *sc->proactive_swappiness;
+	return mem_cgroup_swappiness(memcg);
+}
 #else
 static int prealloc_memcg_shrinker(struct shrinker *shrinker)
 {
@@ -514,6 +526,11 @@ static bool root_reclaim(struct scan_control *sc)
 static bool writeback_throttling_sane(struct scan_control *sc)
 {
 	return true;
+}
+
+static int sc_swappiness(struct scan_control *sc, struct mem_cgroup *memcg)
+{
+	return READ_ONCE(vm_swappiness);
 }
 #endif
 
@@ -1412,6 +1429,7 @@ static int __remove_mapping(struct address_space *mapping, struct folio *folio,
 	BUG_ON(!folio_test_locked(folio));
 	BUG_ON(mapping != folio_mapping(folio));
 
+	trace_android_vh_remove_mapping(mapping, folio, reclaimed);
 	if (!folio_test_swapcache(folio))
 		spin_lock(&mapping->host->i_lock);
 	xa_lock_irq(&mapping->i_pages);
@@ -1504,6 +1522,7 @@ cannot_free:
 	xa_unlock_irq(&mapping->i_pages);
 	if (!folio_test_swapcache(folio))
 		spin_unlock(&mapping->host->i_lock);
+	trace_android_vh_remove_mapping_failed(mapping, folio, reclaimed);
 	return 0;
 }
 
@@ -1983,6 +2002,7 @@ retry:
 #ifdef CONFIG_TRANSPARENT_HUGEPAGE
 					if (nr_pages >= HPAGE_PMD_NR) {
 						count_vm_event(THP_SWPOUT_FALLBACK);
+						count_memcg_folio_events(folio, THP_SWPOUT_FALLBACK, 1);
 					}
 					count_mthp_stat(order, MTHP_STAT_SWPOUT_FALLBACK);
 #endif
@@ -2233,6 +2253,11 @@ activate_locked:
 			folio_free_swap(folio);
 		VM_BUG_ON_FOLIO(folio_test_active(folio), folio);
 		if (!folio_test_mlocked(folio)) {
+			bool skip = false;
+
+			trace_android_vh_folio_skip_activate(folio, &skip);
+			if (skip)
+				goto keep_locked;
 			int type = folio_is_file_lru(folio);
 			folio_set_active(folio);
 			stat->nr_activate[type] += nr_pages;
@@ -2519,6 +2544,7 @@ bool folio_isolate_lru(struct folio *folio)
 
 	return ret;
 }
+EXPORT_SYMBOL_GPL(folio_isolate_lru);
 
 /*
  * A direct reclaimer may isolate SWAP_CLUSTER_MAX pages from the LRU list and
@@ -2850,10 +2876,15 @@ static void shrink_active_list(unsigned long nr_to_scan,
 			 * so we ignore them here.
 			 */
 			if ((vm_flags & VM_EXEC) && folio_is_file_lru(folio)) {
+				bool bypass = false;
+
 				trace_android_vh_folio_trylock_clear(folio);
 				nr_rotated += folio_nr_pages(folio);
-				list_add(&folio->lru, &l_active);
-				continue;
+				trace_android_vh_folio_trylock_clear_bypass(folio, &bypass);
+				if (!bypass) {
+					list_add(&folio->lru, &l_active);
+					continue;
+				}
 			}
 		}
 		trace_android_vh_folio_trylock_clear(folio);
@@ -3163,7 +3194,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
 	struct pglist_data *pgdat = lruvec_pgdat(lruvec);
 	struct mem_cgroup *memcg = lruvec_memcg(lruvec);
 	unsigned long anon_cost, file_cost, total_cost;
-	int swappiness = mem_cgroup_swappiness(memcg);
+	int swappiness = sc_swappiness(sc, memcg);
 	u64 fraction[ANON_AND_FILE];
 	u64 denominator = 0;	/* gcc */
 	enum scan_balance scan_balance;
@@ -3246,7 +3277,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
 	ap = swappiness * (total_cost + 1);
 	ap /= anon_cost + 1;
 
-	fp = (200 - swappiness) * (total_cost + 1);
+	fp = (MAX_SWAPPINESS - swappiness) * (total_cost + 1);
 	fp /= file_cost + 1;
 
 	fraction[0] = ap;
@@ -3453,7 +3484,7 @@ static int get_swappiness(struct lruvec *lruvec, struct scan_control *sc)
 	    mem_cgroup_get_nr_swap_pages(memcg) < MIN_LRU_BATCH)
 		return 0;
 
-	swappiness = mem_cgroup_swappiness(memcg);
+	swappiness = sc_swappiness(sc, memcg);
 	trace_android_vh_tune_swappiness(&swappiness);
 
 	return swappiness;
@@ -5285,7 +5316,7 @@ static int get_type_to_scan(struct lruvec *lruvec, int swappiness, int *tier_idx
 {
 	int type, tier;
 	struct ctrl_pos sp, pv;
-	int gain[ANON_AND_FILE] = { swappiness, 200 - swappiness };
+	int gain[ANON_AND_FILE] = { swappiness, MAX_SWAPPINESS - swappiness };
 
 	/*
 	 * Compare the first tier of anon with that of file to determine which
@@ -5329,7 +5360,7 @@ static int isolate_folios(struct lruvec *lruvec, struct scan_control *sc, int sw
 		type = LRU_GEN_ANON;
 	else if (swappiness == 1)
 		type = LRU_GEN_FILE;
-	else if (swappiness == 200)
+	else if (swappiness == MAX_SWAPPINESS)
 		type = LRU_GEN_ANON;
 	else
 		type = get_type_to_scan(lruvec, swappiness, &tier);
@@ -6282,9 +6313,9 @@ static int run_cmd(char cmd, int memcg_id, int nid, unsigned long seq,
 
 	lruvec = get_lruvec(memcg, nid);
 
-	if (swappiness < 0)
+	if (swappiness < MIN_SWAPPINESS)
 		swappiness = get_swappiness(lruvec, sc);
-	else if (swappiness > 200)
+	else if (swappiness > MAX_SWAPPINESS)
 		goto done;
 
 	switch (cmd) {
@@ -6712,6 +6743,7 @@ static void shrink_node_memcgs(pg_data_t *pgdat, struct scan_control *sc)
 		cond_resched();
 
 		trace_android_vh_shrink_node_memcgs(memcg, &skip);
+		trace_android_vh_should_memcg_bypass(memcg, sc->priority, &skip);
 		if (skip)
 			continue;
 
@@ -7353,6 +7385,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
 
 	return nr_reclaimed;
 }
+EXPORT_SYMBOL_GPL(try_to_free_pages);
 
 #ifdef CONFIG_MEMCG
 
@@ -7396,15 +7429,17 @@ unsigned long mem_cgroup_shrink_node(struct mem_cgroup *memcg,
 	return sc.nr_reclaimed;
 }
 
-unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
-					   unsigned long nr_pages,
-					   gfp_t gfp_mask,
-					   unsigned int reclaim_options)
+unsigned long try_to_free_mem_cgroup_pages_with_swappiness(struct mem_cgroup *memcg,
+							   unsigned long nr_pages,
+							   gfp_t gfp_mask,
+							   unsigned int reclaim_options,
+							   int *swappiness)
 {
 	unsigned long nr_reclaimed;
 	unsigned int noreclaim_flag;
 	struct scan_control sc = {
 		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
+		.proactive_swappiness = swappiness,
 		.gfp_mask = (current_gfp_context(gfp_mask) & GFP_RECLAIM_MASK) |
 				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
 		.reclaim_idx = MAX_NR_ZONES - 1,
@@ -7433,6 +7468,15 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
 	set_task_reclaim_state(current, NULL);
 
 	return nr_reclaimed;
+}
+
+unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
+					   unsigned long nr_pages,
+					   gfp_t gfp_mask,
+					   unsigned int reclaim_options)
+{
+	return try_to_free_mem_cgroup_pages_with_swappiness(
+		memcg, nr_pages, gfp_mask, reclaim_options, NULL);
 }
 EXPORT_SYMBOL_GPL(try_to_free_mem_cgroup_pages);
 #endif
@@ -7518,6 +7562,9 @@ static bool pgdat_balanced(pg_data_t *pgdat, int order, int highest_zoneidx)
 			mark = wmark_pages(zone, WMARK_PROMO);
 		else
 			mark = high_wmark_pages(zone);
+
+		trace_android_vh_mm_get_zone_mark(zone, &mark);
+
 		if (zone_watermark_ok_safe(zone, order, mark, highest_zoneidx))
 			return true;
 	}

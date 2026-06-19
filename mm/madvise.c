@@ -1058,7 +1058,7 @@ static long madvise_remove(struct vm_area_struct *vma,
 			return -EINVAL;
 	}
 
-	if ((vma->vm_flags & (VM_SHARED|VM_WRITE)) != (VM_SHARED|VM_WRITE))
+	if (!vma_is_shared_maywrite(vma))
 		return -EACCES;
 
 	offset = (loff_t)(start - vma->vm_start)
@@ -1644,6 +1644,7 @@ int do_madvise(struct mm_struct *mm, unsigned long start, size_t len_in, int beh
 	size_t len;
 	struct blk_plug plug;
 	struct madvise_behavior madv_behavior = {.behavior = behavior};
+	bool bypass = false;
 
 	if (!madvise_behavior_valid(behavior))
 		return -EINVAL;
@@ -1668,9 +1669,19 @@ int do_madvise(struct mm_struct *mm, unsigned long start, size_t len_in, int beh
 		return error;
 
 #ifdef CONFIG_MEMORY_FAILURE
-	if (behavior == MADV_HWPOISON || behavior == MADV_SOFT_OFFLINE)
-		return madvise_inject_error(behavior, start, start + len_in);
+	if (behavior == MADV_HWPOISON || behavior == MADV_SOFT_OFFLINE) {
+		int ret = madvise_inject_error(behavior, start, start + len_in);
+
+		madvise_unlock(mm, &madv_behavior);
+
+		return ret;
+	}
 #endif
+
+	trace_android_vh_mm_do_madvise_bypass(mm, start, len, behavior,
+					      &error, &bypass);
+	if (bypass)
+		return error;
 
 	start = get_untagged_addr(mm, start);
 	end = start + len;

@@ -281,6 +281,14 @@ DECLARE_HOOK(android_vh_free_task,
 	TP_PROTO(struct task_struct *p),
 	TP_ARGS(p));
 
+DECLARE_HOOK(android_vh_mmap_lock_init,
+	TP_PROTO(struct rw_semaphore *sem),
+	TP_ARGS(sem));
+
+DECLARE_HOOK(android_vh_mmap_lock_free,
+	TP_PROTO(struct rw_semaphore *sem),
+	TP_ARGS(sem));
+
 DECLARE_HOOK(android_vh_copy_process,
 	TP_PROTO(struct task_struct *p, int nr_threads),
 	TP_ARGS(p, nr_threads));
@@ -473,10 +481,6 @@ DECLARE_RESTRICTED_HOOK(android_rvh_update_blocked_fair,
 
 struct sched_attr;
 
-DECLARE_HOOK(android_vh_set_sugov_sched_attr,
-	TP_PROTO(struct sched_attr *attr),
-	TP_ARGS(attr));
-
 DECLARE_RESTRICTED_HOOK(android_rvh_set_iowait,
 	TP_PROTO(struct task_struct *p, struct rq *rq, int *should_iowait_boost),
 	TP_ARGS(p, rq, should_iowait_boost), 1);
@@ -496,6 +500,19 @@ DECLARE_HOOK(android_vh_prio_restore,
 DECLARE_HOOK(android_vh_set_task_comm,
 	TP_PROTO(struct task_struct *p),
 	TP_ARGS(p));
+
+DECLARE_HOOK(android_vh_chk_task,
+	TP_PROTO(struct task_struct **pp, struct rq *rq),
+	TP_ARGS(pp, rq));
+
+DECLARE_HOOK(android_vh_put_task,
+	TP_PROTO(struct task_struct *p),
+	TP_ARGS(p));
+
+DECLARE_RESTRICTED_HOOK(android_rvh_task_fits_cpu,
+	TP_PROTO(struct task_struct *tsk, unsigned long util, unsigned long uclamp_min,
+		 unsigned long uclamp_max, int cpu, bool *fits, bool *done),
+	TP_ARGS(tsk, util, uclamp_min, uclamp_max, cpu, fits, done), 1);
 
 #endif /* _TRACE_HOOK_SCHED_H */
 /* This part must be outside protection */

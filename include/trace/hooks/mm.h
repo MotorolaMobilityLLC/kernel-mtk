@@ -18,6 +18,7 @@ struct page_vma_mapped_walk;
 struct track;
 struct compact_control;
 struct vm_unmapped_area_info;
+struct cma;
 
 DECLARE_RESTRICTED_HOOK(android_rvh_shmem_get_folio,
 			TP_PROTO(struct shmem_inode_info *info, struct folio **folio),
@@ -55,6 +56,9 @@ DECLARE_RESTRICTED_HOOK(android_rvh_try_alloc_pages_gfp,
 			TP_PROTO(struct page **page, unsigned int order,
 				gfp_t gfp, enum zone_type highest_zoneidx),
 			TP_ARGS(page, order, gfp, highest_zoneidx), 1);
+DECLARE_RESTRICTED_HOOK(android_rvh_swap_bio_charge,
+			TP_PROTO(struct bio *bio),
+			TP_ARGS(bio), 1);
 DECLARE_HOOK(android_vh_slab_alloc_node,
 	TP_PROTO(void *object, unsigned long addr, struct kmem_cache *s),
 	TP_ARGS(object, addr, s));
@@ -262,6 +266,12 @@ DECLARE_HOOK(android_vh_mm_direct_reclaim_enter,
 DECLARE_HOOK(android_vh_mm_direct_reclaim_exit,
 	TP_PROTO(unsigned long did_some_progress, int retry_times),
 	TP_ARGS(did_some_progress, retry_times));
+DECLARE_HOOK(android_vh_mm_direct_reclaim_start,
+       TP_PROTO(u64 *stime),
+       TP_ARGS(stime));
+DECLARE_HOOK(android_vh_mm_direct_reclaim_end,
+       TP_PROTO(unsigned int order, u64 stime),
+       TP_ARGS(order, stime));
 struct oom_control;
 DECLARE_HOOK(android_vh_mm_may_oom_exit,
 	TP_PROTO(struct oom_control *oc, unsigned long did_some_progress),
@@ -397,6 +407,10 @@ DECLARE_HOOK(android_vh_page_should_be_protected,
 DECLARE_HOOK(android_vh_mark_page_accessed,
 	TP_PROTO(struct folio *folio),
 	TP_ARGS(folio));
+DECLARE_HOOK(android_vh_filemap_adjust_folio_flags,
+	TP_PROTO(struct address_space *mapping, struct folio *folio,
+		pgoff_t index),
+	TP_ARGS(mapping, folio, index));
 DECLARE_HOOK(android_vh_filemap_add_folio,
 	TP_PROTO(struct address_space *mapping, struct folio *folio,
 		pgoff_t index),
@@ -440,6 +454,9 @@ DECLARE_HOOK(android_vh_add_lazyfree_bypass,
 DECLARE_HOOK(android_vh_do_async_mmap_readahead,
 	TP_PROTO(struct vm_fault *vmf, struct folio *folio, bool *skip),
 	TP_ARGS(vmf, folio, skip));
+DECLARE_HOOK(android_vh_do_sync_mmap_readahead,
+	TP_PROTO(struct vm_fault *vmf, bool *skip),
+	TP_ARGS(vmf, skip));
 DECLARE_HOOK(android_vh_mm_free_page,
 	TP_PROTO(struct page *page),
 	TP_ARGS(page));
@@ -476,6 +493,12 @@ DECLARE_HOOK(android_vh_free_pages_ok_bypass,
 	TP_PROTO(struct page *page, unsigned int order,
 		int __bitwise flags, bool *skip_free_pages_ok),
 	TP_ARGS(page, order, flags, skip_free_pages_ok));
+DECLARE_HOOK(android_vh_free_page_bypass,
+	TP_PROTO(struct page *page, unsigned int order, bool *skip_free_page),
+	TP_ARGS(page, order, skip_free_page));
+DECLARE_HOOK(android_vh_free_folio_bypass,
+	TP_PROTO(struct folio *folio, unsigned int order, bool *skip_free_folio),
+	TP_ARGS(folio, order, skip_free_folio));
 DECLARE_HOOK(android_vh_free_unref_page_list_bypass,
 	TP_PROTO(struct list_head *list, bool *skip),
 	TP_ARGS(list, skip));
@@ -504,6 +527,9 @@ DECLARE_HOOK(android_vh_filemap_map_pages,
 	TP_PROTO(struct file *file, pgoff_t first_pgoff,
 		pgoff_t last_pgoff, vm_fault_t ret),
 	TP_ARGS(file, first_pgoff, last_pgoff, ret));
+DECLARE_HOOK(android_vh_thaw_killed_process,
+	TP_PROTO(bool *thaw),
+	TP_ARGS(thaw));
 DECLARE_HOOK(android_vh_page_cache_readahead_start,
 	TP_PROTO(struct file *file, pgoff_t pgoff,
 		unsigned int size, bool sync),
@@ -511,6 +537,10 @@ DECLARE_HOOK(android_vh_page_cache_readahead_start,
 DECLARE_HOOK(android_vh_page_cache_readahead_end,
 	TP_PROTO(struct file *file, pgoff_t pgoff),
 	TP_ARGS(file, pgoff));
+DECLARE_HOOK(android_vh_page_cache_ra_order_bypass,
+	TP_PROTO(struct readahead_control *ractl, struct file_ra_state *ra,
+		 int new_order, gfp_t *gfp, bool *bypass),
+	TP_ARGS(ractl, ra, new_order, gfp, bypass));
 DECLARE_HOOK(android_vh_filemap_fault_start,
 	TP_PROTO(struct file *file, pgoff_t pgoff),
 	TP_ARGS(file, pgoff));
@@ -521,9 +551,24 @@ DECLARE_HOOK(android_vh_filemap_fault_end,
 DECLARE_HOOK(android_vh_cma_alloc_set_max_retries,
 	TP_PROTO(int *max_retries),
 	TP_ARGS(max_retries));
+DECLARE_HOOK(android_vh_cma_alloc_bypass,
+	TP_PROTO(struct cma *cma, unsigned long count, unsigned int align,
+		gfp_t gfp_mask, struct page **page, bool *bypass),
+	TP_ARGS(cma, count, align, gfp_mask, page, bypass));
+DECLARE_HOOK(android_vh_cma_release_bypass,
+	TP_PROTO(struct cma *cma, const struct page *pages, unsigned long count,
+		bool *bypass),
+	TP_ARGS(cma, pages, count, bypass));
+DECLARE_HOOK(android_vh_cma_alloc_end,
+	TP_PROTO(struct cma *cma, unsigned long pfn, const struct page *pages,
+		unsigned long count, unsigned int align, int ret),
+	TP_ARGS(cma, pfn, pages, count, align, ret));
 DECLARE_HOOK(android_vh_compact_finished,
 	TP_PROTO(bool *abort_compact),
 	TP_ARGS(abort_compact));
+DECLARE_HOOK(android_vh_compact_bypass,
+	TP_PROTO(struct compact_control *cc, bool *bypass),
+	TP_ARGS(cc, bypass));
 DECLARE_HOOK(android_vh_madvise_cold_or_pageout_abort,
 	TP_PROTO(struct vm_area_struct *vma, bool *abort_madvise),
 	TP_ARGS(vma, abort_madvise));
@@ -548,12 +593,18 @@ DECLARE_HOOK(android_vh_init_adjust_zone_wmark,
 DECLARE_HOOK(android_vh_cma_alloc_retry,
 	TP_PROTO(char *name, int *retry),
 	TP_ARGS(name, retry));
+DECLARE_HOOK(android_vh_adjust_swap_info_flags,
+	TP_PROTO(unsigned long *flags),
+	TP_ARGS(flags));
 DECLARE_HOOK(android_vh_do_group_exit,
 	TP_PROTO(struct task_struct *tsk),
 	TP_ARGS(tsk));
 DECLARE_HOOK(android_vh_migration_target_bypass,
 	TP_PROTO(struct page *page, bool *bypass),
 	TP_ARGS(page, bypass));
+DECLARE_HOOK(android_vh_oom_evaluate_task_bypass,
+	TP_PROTO(struct task_struct *task, struct oom_control *oc, bool *bypass),
+	TP_ARGS(task, oc, bypass));
 DECLARE_HOOK(android_vh_swap_writepage,
 	TP_PROTO(unsigned long *sis_flags, struct page *page),
 	TP_ARGS(sis_flags, page));
@@ -578,9 +629,6 @@ DECLARE_HOOK(android_vh_copy_page_from_user,
 DECLARE_HOOK(android_vh_page_private_mod,
 	TP_PROTO(struct page *page, unsigned long private),
 	TP_ARGS(page, private));
-DECLARE_HOOK(android_vh_cma_alloc_fail,
-	TP_PROTO(char *name, unsigned long count, unsigned long req_count),
-	TP_ARGS(name, count, req_count));
 DECLARE_HOOK(android_vh_filemap_map_pages_range,
 	TP_PROTO(struct file *file, pgoff_t orig_start_pgoff,
 		pgoff_t last_pgoff, vm_fault_t ret),
@@ -621,9 +669,15 @@ DECLARE_HOOK(android_vh_filemap_folio_mapped,
 DECLARE_HOOK(android_vh_folio_remove_rmap_ptes,
 	TP_PROTO(struct folio *folio),
 	TP_ARGS(folio));
+DECLARE_HOOK(android_vh_folio_add_lru,
+        TP_PROTO(struct folio *folio),
+        TP_ARGS(folio));
 DECLARE_HOOK(android_vh_pageset_update,
 	TP_PROTO(unsigned long *high, unsigned long *batch),
 	TP_ARGS(high, batch));
+DECLARE_HOOK(android_vh_mempool_alloc_skip_wait,
+	TP_PROTO(gfp_t *gfp_flags, bool *skip_wait),
+	TP_ARGS(gfp_flags, skip_wait));
 DECLARE_HOOK(android_vh_mm_customize_ac,
 	TP_PROTO(gfp_t gfp, unsigned int order, struct zonelist **zonelist,
 		 struct zoneref **preferred_zoneref, enum zone_type *highest_zoneidx,
@@ -646,6 +700,79 @@ DECLARE_HOOK(android_vh_mm_customize_zone_pageset,
 DECLARE_HOOK(android_vh_mm_customize_lru_add_dst,
 	TP_PROTO(struct lruvec *lruvec, struct folio *src, struct folio *dst, bool *added),
 	TP_ARGS(lruvec, src, dst, added));
+DECLARE_HOOK(android_vh_oom_reaper_delay_bypass,
+	TP_PROTO(struct task_struct *tsk, bool *bypass),
+	TP_ARGS(tsk, bypass));
+DECLARE_HOOK(android_vh_filemap_get_folio_end,
+	TP_PROTO(struct address_space *mapping, struct folio *folio),
+	TP_ARGS(mapping, folio));
+DECLARE_HOOK(android_vh_nr_pcp_alloc,
+	TP_PROTO(struct per_cpu_pages *pcp, struct zone *zone,
+		unsigned long __percpu **pad, unsigned int order, int *batch),
+	TP_ARGS(pcp, zone, pad, order, batch));
+DECLARE_HOOK(android_vh_pcp_alloc_factor_adjust,
+	TP_PROTO(struct zone *zone, unsigned long __percpu *pad,
+		struct per_cpu_pages *pcp, struct page *page, int migratetype,
+		unsigned int order),
+	TP_ARGS(zone, pad, pcp, page, migratetype, order));
+DECLARE_RESTRICTED_HOOK(android_rvh_gup_longterm_locked,
+	TP_PROTO(long rc, long nr_pinned_pages,
+		unsigned long start, unsigned long nr_pages,
+		struct page **pages),
+	TP_ARGS(rc, nr_pinned_pages, start, nr_pages, pages), 5);
+DECLARE_RESTRICTED_HOOK(android_rvh_read_swap_cache_async_timeout,
+	TP_PROTO(size_t *count, bool *skip),
+	TP_ARGS(count, skip), 2);
+DECLARE_HOOK(android_vh_folio_add_file_rmap,
+	TP_PROTO(struct folio *folio, struct page *page, int nr_pages,
+		 int level),
+	TP_ARGS(folio, page, nr_pages, level));
+DECLARE_HOOK(android_vh_readahead_add_folio,
+	TP_PROTO(struct folio *folio, struct address_space *mapping),
+	TP_ARGS(folio, mapping));
+DECLARE_HOOK(android_vh_folio_remove_rmap,
+	TP_PROTO(struct folio *folio, struct page *page, int nr_pages,
+		 int level),
+	TP_ARGS(folio, page, nr_pages, level));
+DECLARE_HOOK(android_vh_folios_put_direct_free,
+	TP_PROTO(struct folio *folio, unsigned int nr_refs,
+		 struct lruvec **lruvec, unsigned long flags, bool *direct_free),
+	TP_ARGS(folio, nr_refs, lruvec, flags, direct_free));
+DECLARE_HOOK(android_vh_folios_put_refs_direct_free_extent,
+	TP_PROTO(struct folio *folio, unsigned int nr_refs,
+		 struct lruvec **lruvec, unsigned long flags, bool *direct_free),
+	TP_ARGS(folio, nr_refs, lruvec, flags, direct_free));
+DECLARE_HOOK(android_vh_free_pages_and_swap_cache,
+	TP_PROTO(struct folio *folio),
+	TP_ARGS(folio));
+DECLARE_HOOK(android_vh_cma_alloc_lat_start,
+	TP_PROTO(unsigned long long *stime),
+	TP_ARGS(stime));
+DECLARE_HOOK(android_vh_cma_alloc_lat_end,
+	TP_PROTO(unsigned long long stime,unsigned long count),
+	TP_ARGS(stime,count));
+DECLARE_HOOK(android_vh_mm_customize_longterm_pinnable,
+	TP_PROTO(struct folio *folio, bool *is_longterm_pinnable),
+	TP_ARGS(folio, is_longterm_pinnable));
+DECLARE_HOOK(android_vh_mm_migrate_one_page,
+	TP_PROTO(struct page *page, const vm_flags_t vm_flags),
+	TP_ARGS(page, vm_flags));
+DECLARE_HOOK(android_vh_mm_remove_migration_pte_bypass,
+	TP_PROTO(struct folio *dst, struct vm_area_struct *vma, unsigned long addr,
+		 struct folio *src, bool *bypass),
+	TP_ARGS(dst, vma, addr, src, bypass));
+DECLARE_HOOK(android_vh_mm_split_huge_page_bypass,
+	TP_PROTO(struct page *page, struct list_head *list, int *ret, bool *bypass),
+	TP_ARGS(page, list, ret, bypass));
+DECLARE_HOOK(android_vh_mm_try_split_folio_bypass,
+	TP_PROTO(struct folio *folio, bool *bypass),
+	TP_ARGS(folio, bypass));
+DECLARE_HOOK(android_vh_folio_end_writeback,
+	TP_PROTO(struct folio *folio),
+	TP_ARGS(folio));
+DECLARE_HOOK(android_vh_folio_start_writeback,
+	TP_PROTO(struct folio *folio),
+	TP_ARGS(folio));
 #endif /* _TRACE_HOOK_MM_H */
 
 /* This part must be outside protection */

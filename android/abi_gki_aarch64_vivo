@@ -74,7 +74,6 @@
   seq_put_decimal_ull
   seq_read_iter
   set_blocksize
-  set_task_ioprio
   __set_task_comm
   set_task_ioprio
   skb_orphan_partial
@@ -128,6 +127,8 @@
   __traceiter_android_vh_blk_mq_kick_requeue_list
   __traceiter_android_vh_build_skb_around
   __traceiter_android_vh_cgroup_attach
+  __traceiter_android_vh_cpuset_attach_task
+  __traceiter_android_vh_cpuset_css_online
   __traceiter_android_vh_check_folio_look_around_ref
   __traceiter_android_vh_check_nanosleep_syscall
   __traceiter_android_vh_clear_rwsem_reader_owned
@@ -163,6 +164,7 @@
   __traceiter_android_vh_look_around_migrate_folio
   __traceiter_android_vh_lruvec_add_folio
   __traceiter_android_vh_lruvec_del_folio
+  __traceiter_android_vh_mempool_alloc_skip_wait
   __traceiter_android_vh_mm_customize_ac
   __traceiter_android_vh_mm_customize_file_is_tiny
   __traceiter_android_vh_mm_customize_lru_add_dst
@@ -278,6 +280,8 @@
   __tracepoint_android_vh_blk_mq_kick_requeue_list
   __tracepoint_android_vh_build_skb_around
   __tracepoint_android_vh_cgroup_attach
+  __tracepoint_android_vh_cpuset_attach_task
+  __tracepoint_android_vh_cpuset_css_online
   __tracepoint_android_vh_check_folio_look_around_ref
   __tracepoint_android_vh_check_nanosleep_syscall
   __tracepoint_android_vh_clear_rwsem_reader_owned
@@ -312,6 +316,7 @@
   __tracepoint_android_vh_look_around_migrate_folio
   __tracepoint_android_vh_lruvec_add_folio
   __tracepoint_android_vh_lruvec_del_folio
+  __tracepoint_android_vh_mempool_alloc_skip_wait
   __tracepoint_android_vh_mm_customize_ac
   __tracepoint_android_vh_mm_customize_file_is_tiny
   __tracepoint_android_vh_mm_customize_lru_add_dst
