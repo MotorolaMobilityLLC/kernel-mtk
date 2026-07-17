@@ -221,9 +221,6 @@ static int seq_ump_group_init(struct seq_ump_client *client, int group_index)
 	if (skip_group(client, group))
 		return 0;
 
-	if (skip_group(client, group))
-		return 0;
-
 	port = kzalloc(sizeof(*port), GFP_KERNEL);
 	if (!port)
 		return -ENOMEM;

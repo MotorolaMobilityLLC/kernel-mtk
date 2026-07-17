@@ -267,6 +267,12 @@ static void guest_s2_put_page(void *addr)
 	hyp_put_page(&current_vm->pool, addr);
 }
 
+static void guest_s2_free_unlinked_table(void *addr, u32 level)
+{
+	/* We are trying to collapse a table into a block mapping. This is forbidden. */
+	WARN_ON(1);
+}
+
 static void *__fixmap_guest_page(void *va, size_t *size)
 {
 	void *addr;
@@ -348,6 +354,7 @@ int kvm_guest_prepare_stage2(struct pkvm_hyp_vm *vm, void *pgd)
 		.zalloc_pages_exact	= guest_s2_zalloc_pages_exact,
 		.free_pages_exact	= guest_s2_free_pages_exact,
 		.zalloc_page		= guest_s2_zalloc_page,
+		.free_unlinked_table	= guest_s2_free_unlinked_table,
 		.phys_to_virt		= hyp_phys_to_virt,
 		.virt_to_phys		= hyp_virt_to_phys,
 		.page_count		= hyp_page_count,
@@ -398,11 +405,6 @@ static int relinquish_walker(const struct kvm_pgtable_visit_ctx *ctx,
 	phys = kvm_pte_to_phys(pte);
 	phys += ctx->addr - addr;
 
-	if (state == PKVM_PAGE_OWNED) {
-		hyp_poison_page(phys, PAGE_SIZE);
-		psci_mem_protect_dec(1);
-	}
-
 	data->pa = phys;
 
 	return 0;
@@ -440,6 +442,11 @@ int __pkvm_guest_relinquish_to_host(struct pkvm_hyp_vcpu *vcpu,
 	ret = kvm_pgtable_stage2_unmap(&vm->pgt, ipa, PAGE_SIZE);
 	if (ret)
 		goto end;
+
+	if (pkvm_hyp_vcpu_is_protected(vcpu)) {
+		hyp_poison_page(data.pa, PAGE_SIZE);
+		psci_mem_protect_dec(1);
+	}
 
 	WARN_ON(host_stage2_set_owner_locked(data.pa, PAGE_SIZE, PKVM_ID_HOST));
 
@@ -495,17 +502,9 @@ int __pkvm_prot_finalize(void)
 
 int host_stage2_unmap_reg_locked(phys_addr_t start, u64 size)
 {
-	int ret;
-
 	hyp_assert_lock_held(&host_mmu.lock);
 
-	ret = kvm_pgtable_stage2_reclaim_leaves(&host_mmu.pgt, start, size);
-	if (ret)
-		return ret;
-
-	kvm_iommu_host_stage2_idmap(start, start + size, 0);
-
-	return 0;
+	return kvm_pgtable_stage2_reclaim_leaves(&host_mmu.pgt, start, size);
 }
 
 static int host_stage2_unmap_unmoveable_regs(void)
@@ -1538,16 +1537,26 @@ struct guest_request_walker_data {
 	int			max_ptes;
 };
 
-#define GUEST_WALKER_DATA_INIT(__state)			\
-{						 	\
-	.size		= 0,				\
-	.desired_state	= __state,			\
-	.desired_mask	= ~0,				\
-	/*						\
-	 * Arbitrary limit of walked PTEs to restrict	\
-	 * the time spent at EL2			\
-	 */						\
-	.max_ptes	= 512,				\
+#define GUEST_WALKER_DATA_INIT(__state)							\
+{											\
+	.size		= 0,								\
+	.desired_state	= __state,							\
+	.desired_mask	= ~0,								\
+	/*										\
+	 * In the very unlucky case where we have:					\
+	 *   1. A block-aligned start address						\
+	 *   2. An existing table							\
+	 *   3. Contiguous phys for the entire table					\
+	 *										\
+	 * The guest stage-2 mapping of that range would try to collapse the existing	\
+	 * table into a block mapping. We do not want this to happen: the		\
+	 * stage-2 geometry must remain synchronized with the host's			\
+	 * kvm_pinned_page tree at all time.						\
+	 *										\
+	 * As a mitigation, limit the number of processed PTEs to half the size		\
+	 * of a table on a 4K page-size system.						\
+	 */										\
+	.max_ptes	= 256,								\
 }
 
 static int guest_request_walker(const struct kvm_pgtable_visit_ctx *ctx,
@@ -1768,6 +1777,11 @@ static int __do_share(struct pkvm_mem_transition *tx,
 		break;
 	case PKVM_ID_HYP:
 		ret = hyp_complete_share(checked_tx, tx->completer.prot);
+		if (ret == -ENOMEM) {
+			WARN_ON(tx->initiator.id != PKVM_ID_HOST);
+			WARN_ON(host_initiate_unshare(checked_tx));
+			return ret;
+		}
 		break;
 	case PKVM_ID_FFA:
 		/*
@@ -1783,7 +1797,7 @@ static int __do_share(struct pkvm_mem_transition *tx,
 		ret = -EINVAL;
 	}
 
-	return ret;
+	return WARN_ON(ret);
 }
 
 /*
@@ -1809,7 +1823,7 @@ static int do_share(struct pkvm_mem_transition *share,
 		return ret;
 
 	ret = __do_share(share, &checked_tx);
-	if (WARN_ON(ret))
+	if (ret)
 		return ret;
 
 	*nr_shared = checked_tx.nr_pages;
@@ -1992,6 +2006,16 @@ static int __do_donate(struct pkvm_mem_transition *tx)
 		break;
 	case PKVM_ID_HYP:
 		ret = hyp_complete_donation(completer_addr, tx);
+		if (ret == -ENOMEM) {
+			struct pkvm_mem_transition abort = {
+				.nr_pages = tx->nr_pages,
+				.completer.id = PKVM_ID_HOST,
+			};
+
+			WARN_ON(tx->initiator.id != PKVM_ID_HOST);
+			WARN_ON(host_complete_donation(completer_addr, &abort));
+			return -ENOMEM;
+		}
 		break;
 	case PKVM_ID_GUEST:
 		ret = guest_complete_donation(completer_addr, tx);
@@ -2000,7 +2024,7 @@ static int __do_donate(struct pkvm_mem_transition *tx)
 		ret = -EINVAL;
 	}
 
-	return ret;
+	return WARN_ON(ret);
 }
 
 /*
@@ -2020,7 +2044,7 @@ static int do_donate(struct pkvm_mem_transition *donation)
 	if (ret)
 		return ret;
 
-	return WARN_ON(__do_donate(donation));
+	return __do_donate(donation);
 }
 
 int __pkvm_host_share_hyp(u64 pfn)

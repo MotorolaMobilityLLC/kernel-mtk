@@ -92,6 +92,17 @@ static int uvc_buffer_prepare(struct vb2_buffer *vb)
 				       video->reqs_per_frame);
 	}
 
+	if (video->reqs_per_frame != 0)	{
+			buf->req_payload_size =
+				DIV_ROUND_UP(buf->bytesused +
+					(video->reqs_per_frame * UVCG_REQUEST_HEADER_LEN),
+					video->reqs_per_frame);
+			if (buf->req_payload_size > video->req_size)
+				buf->req_payload_size = video->req_size;
+	} else {
+			buf->req_payload_size = video->max_req_size;
+	}
+
 	return 0;
 }
 

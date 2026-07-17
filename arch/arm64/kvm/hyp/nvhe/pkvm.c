@@ -447,8 +447,12 @@ struct pkvm_hyp_vcpu *pkvm_get_loaded_hyp_vcpu(void)
 
 static void pkvm_vcpu_init_features_from_host(struct pkvm_hyp_vcpu *hyp_vcpu)
 {
+	struct pkvm_hyp_vm *hyp_vm = pkvm_hyp_vcpu_to_hyp_vm(hyp_vcpu);
 	struct kvm_vcpu *host_vcpu = hyp_vcpu->host_vcpu;
 	DECLARE_BITMAP(allowed_features, KVM_VCPU_MAX_FEATURES);
+
+	/* Preserve the vgic model so that GICv3 emulation works */
+	hyp_vm->kvm.arch.vgic.vgic_model = hyp_vm->host_kvm->arch.vgic.vgic_model;
 
 	/* No restrictions for non-protected VMs. */
 	if (!pkvm_hyp_vcpu_is_protected(hyp_vcpu)) {

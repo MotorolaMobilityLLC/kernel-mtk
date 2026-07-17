@@ -56,6 +56,7 @@
   __bitmap_clear
   bitmap_find_next_zero_area_off
   bitmap_free
+  __bitmap_intersects
   __bitmap_or
   bitmap_print_to_pagebuf
   bitmap_release_region
@@ -341,6 +342,7 @@
   device_match_fwnode
   device_match_name
   device_match_of_node
+  device_node_to_regmap
   device_property_present
   device_property_read_string
   device_property_read_u16_array
@@ -756,6 +758,7 @@
   get_net_ns_by_pid
   get_option
   get_page_owner_handle
+  get_phy_device
   get_pid_task
   get_random_bytes
   get_random_u16
@@ -833,6 +836,7 @@
   hvc_remove
   __hw_addr_init
   __hw_addr_sync
+  __hw_addr_sync_dev
   __hw_addr_unsync
   hwspin_lock_bust
   hwspin_lock_free
@@ -1235,6 +1239,7 @@
   __netdev_alloc_frag_align
   __netdev_alloc_skb
   netdev_err
+  netdev_features_change
   netdev_info
   netdev_set_default_ethtool_ops
   netif_carrier_off
@@ -1308,6 +1313,7 @@
   __of_get_address
   of_get_child_by_name
   of_get_cpu_node
+  of_get_mac_address_nvmem
   of_get_named_gpio
   of_get_next_available_child
   of_get_next_child
@@ -1435,10 +1441,16 @@
   perf_trace_buf_alloc
   perf_trace_run_bpf_submit
   phy_calibrate
+  phy_check_valid
+  phy_device_free
+  phy_device_register
   phy_exit
   phy_init
+  phy_lookup_setting
+  phy_mac_interrupt
   phy_power_off
   phy_power_on
+  phy_restart_aneg
   phy_set_mode_ext
   pick_highest_pushable_task
   pick_migrate_task
@@ -2079,6 +2091,7 @@
   __traceiter_android_rvh_sched_newidle_balance
   __traceiter_android_rvh_sched_nohz_balancer_kick
   __traceiter_android_rvh_schedule
+  __traceiter_android_rvh_schedule_bug
   __traceiter_android_rvh_select_task_rq_fair
   __traceiter_android_rvh_select_task_rq_rt
   __traceiter_android_rvh_set_cpus_allowed_by_task
@@ -2135,6 +2148,7 @@
   __traceiter_android_vh_ufs_send_uic_command
   __traceiter_android_vh_ufs_update_sdev
   __traceiter_android_vh_update_topology_flags_workfn
+  __traceiter_android_vh_f2fs_ioc_set_pin_file
   __traceiter_cpu_frequency_limits
   __traceiter_ipi_entry
   __traceiter_ipi_raise
@@ -2185,6 +2199,7 @@
   __tracepoint_android_rvh_sched_newidle_balance
   __tracepoint_android_rvh_sched_nohz_balancer_kick
   __tracepoint_android_rvh_schedule
+  __tracepoint_android_rvh_schedule_bug
   __tracepoint_android_rvh_select_task_rq_fair
   __tracepoint_android_rvh_select_task_rq_rt
   __tracepoint_android_rvh_set_cpus_allowed_by_task
@@ -2241,6 +2256,7 @@
   __tracepoint_android_vh_ufs_send_uic_command
   __tracepoint_android_vh_ufs_update_sdev
   __tracepoint_android_vh_update_topology_flags_workfn
+  __tracepoint_android_vh_f2fs_ioc_set_pin_file
   __tracepoint_cpu_frequency_limits
   __tracepoint_ipi_entry
   __tracepoint_ipi_raise

@@ -200,6 +200,7 @@ l2cap_chan_close
 l2cap_chan_connect
 l2cap_chan_create
 l2cap_chan_del
+l2cap_chan_hold
 l2cap_chan_list
 l2cap_chan_put
 l2cap_chan_send
@@ -262,6 +263,7 @@ nfc_get_local_general_bytes
 nfc_proto_register
 nfc_proto_unregister
 nfc_register_device
+nfc_remove_device
 nfc_remove_se
 nfc_se_connectivity
 nfc_se_transaction
@@ -273,6 +275,7 @@ nfc_tm_activated
 nfc_tm_data_received
 nfc_tm_deactivated
 nfc_unregister_device
+nfc_unregister_rfkill
 nfc_vendor_cmd_reply
 nl802154_beaconing_done
 nl802154_scan_done

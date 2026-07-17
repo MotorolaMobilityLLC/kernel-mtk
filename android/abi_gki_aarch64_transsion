@@ -1,6 +1,11 @@
 [abi_symbol_list]
 # commonly used symbols
   register_tracepoint_module_notifier
+  cgroup_add_dfl_cftypes
+
+# required by tran mm
+  __tracepoint_android_vh_isolate_folio_type
+  __traceiter_android_vh_isolate_folio_type
 
 # required by tran block module
   __percpu_counter_init_many

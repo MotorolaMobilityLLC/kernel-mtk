@@ -682,10 +682,12 @@ static void flush_hyp_vcpu(struct pkvm_hyp_vcpu *hyp_vcpu)
 	 * vcpu.
 	 */
 	if (!pkvm_hyp_vcpu_is_protected(hyp_vcpu)) {
-		if (vcpu_get_flag(host_vcpu, PKVM_HOST_STATE_DIRTY))
+		u8 host_iflags = READ_ONCE(host_vcpu->arch.iflags);
+
+		if (host_iflags & unpack_vcpu_flag(PKVM_HOST_STATE_DIRTY))
 			__flush_hyp_vcpu(hyp_vcpu);
 
-		hyp_vcpu->vcpu.arch.iflags = READ_ONCE(host_vcpu->arch.iflags);
+		hyp_vcpu->vcpu.arch.iflags = host_iflags;
 		flush_debug_state(hyp_vcpu);
 
 		hyp_vcpu->vcpu.arch.hcr_el2 = HCR_GUEST_FLAGS & ~(HCR_RW | HCR_TWI | HCR_TWE);
@@ -1088,6 +1090,10 @@ static void handle___pkvm_host_split_guest(struct kvm_cpu_context *host_ctxt)
 	if (!hyp_vcpu)
 		goto out;
 
+	ret = pkvm_refill_memcache(hyp_vcpu);
+	if (ret)
+		goto out;
+
 	ret = __pkvm_host_split_guest(pfn, gfn, size, hyp_vcpu);
 
 out:
@@ -1469,6 +1475,8 @@ static void handle___pkvm_hyp_alloc_mgt_refill(struct kvm_cpu_context *host_ctxt
 	};
 
 	cpu_reg(host_ctxt, 1) = hyp_alloc_mgt_refill(id, &mc);
+	cpu_reg(host_ctxt, 2) = mc.head;
+	cpu_reg(host_ctxt, 3) = mc.nr_pages;
 }
 
 static void handle___pkvm_hyp_alloc_mgt_reclaimable(struct kvm_cpu_context *host_ctxt)
@@ -1574,6 +1582,17 @@ static void handle___pkvm_host_iommu_iova_to_phys(struct kvm_cpu_context *host_c
 	hyp_reqs_smccc_encode(ret, host_ctxt, this_cpu_ptr(&host_hyp_reqs));
 }
 
+static void handle___pkvm_host_iommu_iotlb_sync_map(struct kvm_cpu_context *host_ctxt)
+{
+	unsigned long ret;
+	DECLARE_REG(pkvm_handle_t, domain, host_ctxt, 1);
+	DECLARE_REG(unsigned long, iova, host_ctxt, 2);
+	DECLARE_REG(size_t, size, host_ctxt, 3);
+
+	ret = kvm_iommu_iotlb_sync_map(domain, iova, size);
+	hyp_reqs_smccc_encode(ret, host_ctxt, this_cpu_ptr(&host_hyp_reqs));
+}
+
 static void handle___pkvm_iommu_init(struct kvm_cpu_context *host_ctxt)
 {
 	DECLARE_REG(struct kvm_iommu_ops *, ops, host_ctxt, 1);
@@ -1603,6 +1622,16 @@ static void handle___pkvm_stage2_snapshot(struct kvm_cpu_context *host_ctxt)
 #else
 	cpu_reg(host_ctxt, 0) = SMCCC_RET_NOT_SUPPORTED;
 #endif
+}
+
+static void handle___pkvm_hyp_pool_report_free_pages(struct kvm_cpu_context *host_ctxt)
+{
+	cpu_reg(host_ctxt, 1) = hpool_get_free_pages();
+}
+
+static void handle___pkvm_hyp_pool_report_min_free_pages(struct kvm_cpu_context *host_ctxt)
+{
+	cpu_reg(host_ctxt, 1) = hpool_get_min_free_pages();
 }
 
 typedef void (*hcall_t)(struct kvm_cpu_context *);
@@ -1671,6 +1700,9 @@ static const hcall_t host_hcall[] = {
 	HANDLE_FUNC(__pkvm_host_iommu_iova_to_phys),
 	HANDLE_FUNC(__pkvm_host_hvc_pd),
 	HANDLE_FUNC(__pkvm_stage2_snapshot),
+	HANDLE_FUNC(__pkvm_host_iommu_iotlb_sync_map),
+	HANDLE_FUNC(__pkvm_hyp_pool_report_free_pages),
+	HANDLE_FUNC(__pkvm_hyp_pool_report_min_free_pages),
 };
 
 static void handle_host_hcall(struct kvm_cpu_context *host_ctxt)

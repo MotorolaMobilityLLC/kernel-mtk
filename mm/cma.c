@@ -46,7 +46,8 @@
 
 struct cma cma_areas[MAX_CMA_AREAS];
 unsigned cma_area_count;
-static DEFINE_MUTEX(cma_mutex);
+DEFINE_MUTEX(cma_mutex);
+EXPORT_SYMBOL_GPL(cma_mutex);
 
 phys_addr_t cma_get_base(const struct cma *cma)
 {
@@ -485,7 +486,6 @@ struct page *__cma_alloc(struct cma *cma, unsigned long count,
 		goto out;
 
 	trace_android_vh_cma_alloc_set_max_retries(&max_retries);
-	trace_cma_alloc_start(cma->name, count, align);
 
 	mask = cma_bitmap_aligned_mask(cma, align);
 	offset = cma_bitmap_aligned_offset(cma, align);
@@ -495,6 +495,7 @@ struct page *__cma_alloc(struct cma *cma, unsigned long count,
 	if (bitmap_count > bitmap_maxno)
 		goto out;
 
+	trace_cma_alloc_start(cma->name, count, align);
 	trace_android_vh_cma_alloc_retry(cma->name, &max_retries);
 	for (;;) {
 		spin_lock_irq(&cma->lock);

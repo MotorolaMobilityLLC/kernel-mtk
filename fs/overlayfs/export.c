@@ -192,10 +192,6 @@ static int ovl_check_encode_origin(struct inode *inode)
 	if (!ovl_upper_mnt(ofs))
 		return 1;
 
-	/* No upper layer? */
-	if (!ovl_upper_mnt(ofs))
-		return 1;
-
 	/* Lower file handle for non-upper non-decodable */
 	if (!ovl_inode_upper(inode) && !decodable)
 		return 1;

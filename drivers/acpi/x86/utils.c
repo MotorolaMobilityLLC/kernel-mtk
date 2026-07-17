@@ -512,14 +512,6 @@ static int acpi_dmi_skip_serdev_enumeration(struct device *controller_parent, bo
 		return 0;
 	}
 
-	if (!dev_is_platform(controller_parent)) {
-		/* PNP enumerated UARTs */
-		if ((quirks & ACPI_QUIRK_PNP_UART1_SKIP) && uid == 1)
-			*skip = true;
-
-		return 0;
-	}
-
 	if ((quirks & ACPI_QUIRK_UART1_SKIP) && uid == 1)
 		*skip = true;
 

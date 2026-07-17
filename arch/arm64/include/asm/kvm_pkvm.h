@@ -113,6 +113,7 @@ void pkvm_host_reclaim_page(struct kvm *host_kvm, phys_addr_t ipa);
 	ARM64_FEATURE_MASK(ID_AA64MMFR0_EL1_BIGEND) | \
 	ARM64_FEATURE_MASK(ID_AA64MMFR0_EL1_SNSMEM) | \
 	ARM64_FEATURE_MASK(ID_AA64MMFR0_EL1_BIGENDEL0) | \
+	ARM64_FEATURE_MASK(ID_AA64MMFR0_EL1_TGRAN16) | \
 	ARM64_FEATURE_MASK(ID_AA64MMFR0_EL1_EXS) | \
 	FIELD_PREP(ARM64_FEATURE_MASK(ID_AA64MMFR0_EL1_PARANGE), ID_AA64MMFR0_EL1_PARANGE_40) | \
 	FIELD_PREP(ARM64_FEATURE_MASK(ID_AA64MMFR0_EL1_ASIDBITS), ID_AA64MMFR0_EL1_ASIDBITS_16) \
@@ -559,11 +560,16 @@ static inline unsigned long __hyp_pgtable_moveable_regs_pages(void)
 	return res;
 }
 
+extern u64 kvm_nvhe_sym(hyp_lm_size_mb);
+
 static inline unsigned long hyp_s1_pgtable_pages(void)
 {
 	unsigned long res;
 
-	res = __hyp_pgtable_moveable_regs_pages();
+	if (!kvm_nvhe_sym(hyp_lm_size_mb))
+		res = __hyp_pgtable_moveable_regs_pages();
+	else
+		res = __hyp_pgtable_max_pages(kvm_nvhe_sym(hyp_lm_size_mb) * SZ_1M / PAGE_SIZE);
 
 	/* Allow 1 GiB for private mappings */
 	res += __hyp_pgtable_max_pages(SZ_1G >> PAGE_SHIFT);
@@ -593,7 +599,7 @@ static inline unsigned long host_s2_pgtable_pages(void)
  * Maximum number of consitutents allowed in a descriptor. This number is
  * arbitrary, see comment below on SG_MAX_SEGMENTS in hyp_ffa_proxy_pages().
  */
-#define KVM_FFA_MAX_NR_CONSTITUENTS	4096
+#define KVM_FFA_MAX_NR_CONSTITUENTS	12288
 
 static inline unsigned long hyp_ffa_proxy_pages(void)
 {
@@ -661,4 +667,9 @@ int pkvm_call_hyp_nvhe_ppage(struct kvm_pinned_page *ppage,
 
 int pkvm_guest_stage2_pa(pkvm_handle_t handle, u64 ipa, phys_addr_t *phys);
 
+#ifdef CONFIG_DEBUG_FS
+void kvm_hyp_s1_pool_debugfs(void);
+#else
+static inline void kvm_hyp_s1_pool_debugfs(void) { }
+#endif
 #endif	/* __ARM64_KVM_PKVM_H__ */

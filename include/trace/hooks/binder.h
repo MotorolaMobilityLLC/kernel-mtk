@@ -130,6 +130,9 @@ DECLARE_HOOK(android_vh_binder_thread_release,
 DECLARE_HOOK(android_vh_binder_read_done,
 	TP_PROTO(struct binder_proc *proc, struct binder_thread *thread),
 	TP_ARGS(proc, thread));
+DECLARE_HOOK(android_vh_binder_transaction_priority,
+	TP_PROTO(struct binder_thread *thread, struct binder_transaction *t),
+	TP_ARGS(thread, t));
 #endif /* _TRACE_HOOK_BINDER_H */
 /* This part must be outside protection */
 #include <trace/define_trace.h>

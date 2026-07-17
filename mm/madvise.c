@@ -87,7 +87,8 @@ void anon_vma_name_free(struct kref *kref)
 
 struct anon_vma_name *anon_vma_name(struct vm_area_struct *vma)
 {
-	mmap_assert_locked(vma->vm_mm);
+	if (!rwsem_is_locked(&vma->vm_mm->mmap_lock))
+		vma_assert_locked(vma);
 
 	return vma->anon_name;
 }
@@ -1058,7 +1059,7 @@ static long madvise_remove(struct vm_area_struct *vma,
 			return -EINVAL;
 	}
 
-	if ((vma->vm_flags & (VM_SHARED|VM_WRITE)) != (VM_SHARED|VM_WRITE))
+	if (!vma_is_shared_maywrite(vma))
 		return -EACCES;
 
 	offset = (loff_t)(start - vma->vm_start)
@@ -1668,8 +1669,13 @@ int do_madvise(struct mm_struct *mm, unsigned long start, size_t len_in, int beh
 		return error;
 
 #ifdef CONFIG_MEMORY_FAILURE
-	if (behavior == MADV_HWPOISON || behavior == MADV_SOFT_OFFLINE)
-		return madvise_inject_error(behavior, start, start + len_in);
+	if (behavior == MADV_HWPOISON || behavior == MADV_SOFT_OFFLINE) {
+		int ret = madvise_inject_error(behavior, start, start + len_in);
+
+		madvise_unlock(mm, &madv_behavior);
+
+		return ret;
+	}
 #endif
 
 	start = get_untagged_addr(mm, start);

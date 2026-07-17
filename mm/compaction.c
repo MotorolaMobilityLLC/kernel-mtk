@@ -57,11 +57,6 @@ static inline void count_compact_events(enum vm_event_item item, long delta)
 #include <trace/hooks/mm.h>
 #endif
 
-#undef CREATE_TRACE_POINTS
-#ifndef __GENKSYMS__
-#include <trace/hooks/mm.h>
-#endif
-
 #define block_start_pfn(pfn, order)	round_down(pfn, 1UL << (order))
 #define block_end_pfn(pfn, order)	ALIGN((pfn) + 1, 1UL << (order))
 

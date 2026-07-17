@@ -1952,7 +1952,7 @@ static void collect_longterm_unpinnable_pages(
 					struct page **pages)
 {
 	struct folio *prev_folio = NULL;
-	bool drain_allow = true;
+	int drained = 0;
 	unsigned long i;
 
 	for (i = 0; i < nr_pages; i++) {
@@ -1973,9 +1973,17 @@ static void collect_longterm_unpinnable_pages(
 			continue;
 		}
 
-		if (!folio_test_lru(folio) && drain_allow) {
+		if (drained == 0 && folio_may_be_lru_cached(folio) &&
+				folio_ref_count(folio) !=
+				folio_expected_ref_count(folio) + 1) {
+			lru_add_drain();
+			drained = 1;
+		}
+		if (drained == 1 && folio_may_be_lru_cached(folio) &&
+				folio_ref_count(folio) !=
+				folio_expected_ref_count(folio) + 1) {
 			lru_add_drain_all();
-			drain_allow = false;
+			drained = 2;
 		}
 
 		if (!folio_isolate_lru(folio))
@@ -2127,6 +2135,10 @@ static long __gup_longterm_locked(struct mm_struct *mm,
 		rc = check_and_migrate_movable_pages(nr_pinned_pages, pages);
 	} while (rc == -EAGAIN);
 	memalloc_pin_restore(flags);
+
+	if (rc)
+		trace_android_rvh_gup_longterm_locked(rc, nr_pinned_pages, start, nr_pages, pages);
+
 	return rc ? rc : nr_pinned_pages;
 }
 

@@ -475,7 +475,7 @@ void kernfs_put_active(struct kernfs_node *kn)
  * removers may invoke this function concurrently on @kn and all will
  * return after draining is complete.
  */
-static void kernfs_drain(struct kernfs_node *kn)
+static void kernfs_drain(struct kernfs_node *kn, bool drop_supers)
 	__releases(&kernfs_root(kn)->kernfs_rwsem)
 	__acquires(&kernfs_root(kn)->kernfs_rwsem)
 {
@@ -495,6 +495,8 @@ static void kernfs_drain(struct kernfs_node *kn)
 		return;
 
 	up_write(&root->kernfs_rwsem);
+	if (drop_supers)
+		up_read(&root->kernfs_supers_rwsem);
 
 	if (kernfs_lockdep(kn)) {
 		rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
@@ -513,6 +515,8 @@ static void kernfs_drain(struct kernfs_node *kn)
 	if (kernfs_should_drain_open_files(kn))
 		kernfs_drain_open_files(kn);
 
+	if (drop_supers)
+		down_read(&root->kernfs_supers_rwsem);
 	down_write(&root->kernfs_rwsem);
 }
 
@@ -1438,10 +1442,41 @@ void kernfs_show(struct kernfs_node *kn, bool show)
 		kn->flags |= KERNFS_HIDDEN;
 		if (kernfs_active(kn))
 			atomic_add(KN_DEACTIVATED_BIAS, &kn->active);
-		kernfs_drain(kn);
+		kernfs_drain(kn, false);
 	}
 
 	up_write(&root->kernfs_rwsem);
+}
+
+/*
+ * This function enables VFS to send fsnotify events for deletions.
+ * There is gap in this implementation for certain file removals due their
+ * unique nature in kernfs. Directory removals that trigger file removals occur
+ * through vfs_rmdir, which shrinks the dcache and emits fsnotify events after
+ * the rmdir operation; there is no issue here. However kernfs writes to
+ * particular files (e.g. cgroup.subtree_control) can also cause file removal,
+ * but vfs_write does not attempt to emit fsnotify events after the write
+ * operation, even if i_nlink counts are 0. As a usecase for monitoring this
+ * category of file removals is not known, they are left without having
+ * IN_DELETE or IN_DELETE_SELF events generated.
+ * Fanotify recursive monitoring also does not work for kernfs nodes that do not
+ * have inodes attached, as they are created on-demand in kernfs.
+ */
+static void kernfs_clear_inode_nlink(struct kernfs_node *kn)
+{
+	struct kernfs_root *root = kernfs_root(kn);
+	struct kernfs_super_info *info;
+
+	lockdep_assert_held_read(&root->kernfs_supers_rwsem);
+
+	list_for_each_entry(info, &root->supers, node) {
+		struct inode *inode = ilookup(info->sb, kernfs_ino(kn));
+
+		if (inode) {
+			clear_nlink(inode);
+			iput(inode);
+		}
+	}
 }
 
 static void __kernfs_remove(struct kernfs_node *kn)
@@ -1452,6 +1487,7 @@ static void __kernfs_remove(struct kernfs_node *kn)
 	if (!kn)
 		return;
 
+	lockdep_assert_held_read(&kernfs_root(kn)->kernfs_supers_rwsem);
 	lockdep_assert_held_write(&kernfs_root(kn)->kernfs_rwsem);
 
 	/*
@@ -1464,12 +1500,14 @@ static void __kernfs_remove(struct kernfs_node *kn)
 	pr_debug("kernfs %s: removing\n", kn->name);
 
 	/* prevent new usage by marking all nodes removing and deactivating */
+	down_write(&kernfs_root(kn)->kernfs_iattr_rwsem);
 	pos = NULL;
 	while ((pos = kernfs_next_descendant_post(pos, kn))) {
 		pos->flags |= KERNFS_REMOVING;
 		if (kernfs_active(pos))
 			atomic_add(KN_DEACTIVATED_BIAS, &pos->active);
 	}
+	up_write(&kernfs_root(kn)->kernfs_iattr_rwsem);
 
 	/* deactivate and unlink the subtree node-by-node */
 	do {
@@ -1483,7 +1521,7 @@ static void __kernfs_remove(struct kernfs_node *kn)
 		 */
 		kernfs_get(pos);
 
-		kernfs_drain(pos);
+		kernfs_drain(pos, true);
 
 		/*
 		 * kernfs_unlink_sibling() succeeds once per node.  Use it
@@ -1493,9 +1531,11 @@ static void __kernfs_remove(struct kernfs_node *kn)
 			struct kernfs_iattrs *ps_iattr =
 				pos->parent ? pos->parent->iattr : NULL;
 
-			/* update timestamps on the parent */
 			down_write(&kernfs_root(kn)->kernfs_iattr_rwsem);
 
+			kernfs_clear_inode_nlink(pos);
+
+			/* update timestamps on the parent */
 			if (ps_iattr) {
 				ktime_get_real_ts64(&ps_iattr->ia_ctime);
 				ps_iattr->ia_mtime = ps_iattr->ia_ctime;
@@ -1524,9 +1564,11 @@ void kernfs_remove(struct kernfs_node *kn)
 
 	root = kernfs_root(kn);
 
+	down_read(&root->kernfs_supers_rwsem);
 	down_write(&root->kernfs_rwsem);
 	__kernfs_remove(kn);
 	up_write(&root->kernfs_rwsem);
+	up_read(&root->kernfs_supers_rwsem);
 }
 
 /**
@@ -1560,8 +1602,9 @@ void kernfs_break_active_protection(struct kernfs_node *kn)
  * invoked before finishing the kernfs operation.  Note that while this
  * function restores the active reference, it doesn't and can't actually
  * restore the active protection - @kn may already or be in the process of
- * being removed.  Once kernfs_break_active_protection() is invoked, that
- * protection is irreversibly gone for the kernfs operation instance.
+ * being drained and removed.  Once kernfs_break_active_protection() is
+ * invoked, that protection is irreversibly gone for the kernfs operation
+ * instance.
  *
  * While this function may be called at any point after
  * kernfs_break_active_protection() is invoked, its most useful location
@@ -1616,6 +1659,7 @@ bool kernfs_remove_self(struct kernfs_node *kn)
 	bool ret;
 	struct kernfs_root *root = kernfs_root(kn);
 
+	down_read(&root->kernfs_supers_rwsem);
 	down_write(&root->kernfs_rwsem);
 	kernfs_break_active_protection(kn);
 
@@ -1645,7 +1689,9 @@ bool kernfs_remove_self(struct kernfs_node *kn)
 				break;
 
 			up_write(&root->kernfs_rwsem);
+			up_read(&root->kernfs_supers_rwsem);
 			schedule();
+			down_read(&root->kernfs_supers_rwsem);
 			down_write(&root->kernfs_rwsem);
 		}
 		finish_wait(waitq, &wait);
@@ -1660,6 +1706,7 @@ bool kernfs_remove_self(struct kernfs_node *kn)
 	kernfs_unbreak_active_protection(kn);
 
 	up_write(&root->kernfs_rwsem);
+	up_read(&root->kernfs_supers_rwsem);
 	return ret;
 }
 
@@ -1686,6 +1733,7 @@ int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
 	}
 
 	root = kernfs_root(parent);
+	down_read(&root->kernfs_supers_rwsem);
 	down_write(&root->kernfs_rwsem);
 
 	kn = kernfs_find_ns(parent, name, ns);
@@ -1696,6 +1744,7 @@ int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
 	}
 
 	up_write(&root->kernfs_rwsem);
+	up_read(&root->kernfs_supers_rwsem);
 
 	if (kn)
 		return 0;

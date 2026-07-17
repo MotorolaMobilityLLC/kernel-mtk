@@ -44,6 +44,8 @@
   mas_walk
   mas_prev
   mas_next
+  mii_check_media
+  mii_ethtool_gset
   mm_access
   netlink_ack
   param_get_uint
@@ -107,6 +109,8 @@
   __traceiter_android_vh_flush_wq_wait_start
   __traceiter_android_vh_free_pages_prepare_bypass
   __traceiter_android_vh_free_pages_ok_bypass
+  __traceiter_android_vh_free_page_bypass
+  __traceiter_android_vh_free_folio_bypass
   __traceiter_android_vh_is_fpsimd_save
   __traceiter_android_vh_logbuf
   __traceiter_android_vh_logbuf_pr_cont
@@ -117,6 +121,8 @@
   __traceiter_android_vh_meminfo_proc_show
   __traceiter_android_vh_migration_target_bypass
   __traceiter_android_vh_mmc_update_mmc_queue
+  __traceiter_android_vh_mm_free
+  __traceiter_android_vh_mm_init
   __traceiter_android_vh_si_meminfo_adjust_shmem
   __traceiter_android_vh_shmem_mod_shmem
   __traceiter_android_vh_shmem_mod_swapped
@@ -137,6 +143,7 @@
   __traceiter_android_vh_split_large_folio_bypass
   __traceiter_android_vh_sync_irq_wait_finish
   __traceiter_android_vh_sync_irq_wait_start
+  __traceiter_android_vh_task_mem
   __traceiter_android_vh_try_to_freeze_todo
   __traceiter_android_vh_try_to_freeze_todo_unfrozen
   __traceiter_android_vh_tune_scan_control
@@ -154,6 +161,7 @@
   __traceiter_console
   __traceiter_consume_skb
   __traceiter_error_report_end
+  __traceiter_rss_stat
   __traceiter_vm_unmapped_area
   __traceiter_workqueue_execute_start
   __traceiter_kfree_skb
@@ -196,6 +204,8 @@
   __tracepoint_android_vh_flush_wq_wait_start
   __tracepoint_android_vh_free_pages_prepare_bypass
   __tracepoint_android_vh_free_pages_ok_bypass
+  __tracepoint_android_vh_free_page_bypass
+  __tracepoint_android_vh_free_folio_bypass
   __tracepoint_android_vh_is_fpsimd_save
   __tracepoint_android_vh_logbuf
   __tracepoint_android_vh_logbuf_pr_cont
@@ -206,6 +216,8 @@
   __tracepoint_android_vh_meminfo_proc_show
   __tracepoint_android_vh_migration_target_bypass
   __tracepoint_android_vh_mmc_update_mmc_queue
+  __tracepoint_android_vh_mm_free
+  __tracepoint_android_vh_mm_init
   __tracepoint_android_vh_si_meminfo_adjust_shmem
   __tracepoint_android_vh_shmem_mod_shmem
   __tracepoint_android_vh_shmem_mod_swapped
@@ -226,6 +238,7 @@
   __tracepoint_android_vh_split_large_folio_bypass
   __tracepoint_android_vh_sync_irq_wait_finish
   __tracepoint_android_vh_sync_irq_wait_start
+  __tracepoint_android_vh_task_mem
   __tracepoint_android_vh_try_to_freeze_todo
   __tracepoint_android_vh_try_to_freeze_todo_unfrozen
   __tracepoint_android_vh_tune_scan_control
@@ -243,9 +256,14 @@
   __tracepoint_console
   __tracepoint_consume_skb
   __tracepoint_error_report_end
+  __tracepoint_rss_stat
   __tracepoint_vm_unmapped_area
   __tracepoint_workqueue_execute_start
   __tracepoint_kfree_skb
+  usbnet_get_link
+  usbnet_get_link_ksettings_mii
+  usbnet_nway_reset
+  usbnet_set_link_ksettings_mii
   usb_set_device_state
   yield
   regulator_get_current_limit

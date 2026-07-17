@@ -93,6 +93,7 @@
   blkdev_put
   blk_execute_rq
   __blk_mq_alloc_disk
+  blk_mq_alloc_disk_for_queue
   blk_mq_alloc_request
   blk_mq_alloc_tag_set
   blk_mq_complete_request
@@ -103,6 +104,7 @@
   blk_mq_free_tag_set
   blk_mq_freeze_queue
   blk_mq_map_queues
+  blk_mq_quiesce_queue_nowait
   blk_mq_requeue_request
   blk_mq_start_request
   blk_mq_start_stopped_hw_queues
@@ -506,6 +508,7 @@
   devlink_register
   devlink_unregister
   dev_load
+  dev_lstats_read
   __devm_add_action
   devm_alloc_etherdev_mqs
   __devm_alloc_percpu
@@ -793,10 +796,10 @@
   drm_atomic_helper_commit_planes
   __drm_atomic_helper_connector_destroy_state
   drm_atomic_helper_connector_destroy_state
-  __drm_atomic_helper_connector_duplicate_state
   drm_atomic_helper_connector_duplicate_state
-  __drm_atomic_helper_connector_reset
+  __drm_atomic_helper_connector_duplicate_state
   drm_atomic_helper_connector_reset
+  __drm_atomic_helper_connector_reset
   __drm_atomic_helper_crtc_destroy_state
   __drm_atomic_helper_crtc_duplicate_state
   drm_atomic_helper_damage_iter_init
@@ -1074,6 +1077,7 @@
   generic_file_llseek
   generic_handle_domain_irq
   generic_handle_irq
+  generic_handle_irq_safe
   generic_hwtstamp_get_lower
   generic_hwtstamp_set_lower
   genlmsg_multicast_allns
@@ -1196,9 +1200,14 @@
   hid_add_device
   hid_allocate_device
   hid_destroy_device
+  hid_field_extract
   hid_ignore
   hid_input_report
+  hid_is_usb
   hid_parse_report
+  hid_register_report
+  hid_report_raw_event
+  hid_validate_values
   housekeeping_cpumask
   housekeeping_overridden
   housekeeping_test_cpu
@@ -1322,6 +1331,7 @@
   input_alloc_absinfo
   input_allocate_device
   input_close_device
+  input_enable_softrepeat
   input_event
   input_free_device
   input_mt_destroy_slots
@@ -1594,8 +1604,8 @@
   mdiobus_c45_write
   mdiobus_free
   mdiobus_get_phy
-  __mdiobus_read
   mdiobus_read
+  __mdiobus_read
   __mdiobus_register
   mdiobus_unregister
   __mdiobus_write
@@ -1778,6 +1788,8 @@
   net_selftest_get_strings
   nf_conntrack_destroy
   nf_register_net_hooks
+  nf_sk_lookup_slow_v4
+  nf_sk_lookup_slow_v6
   nf_unregister_net_hooks
   nla_find
   nla_memcpy
@@ -2215,6 +2227,7 @@
   power_supply_get_drvdata
   power_supply_get_property
   power_supply_is_system_supplied
+  power_supply_powers
   power_supply_put
   power_supply_register
   power_supply_reg_notifier
@@ -3227,6 +3240,9 @@
   tty_vhangup
   tty_wakeup
   tty_write_room
+  tun_get_socket
+  tun_get_tx_ring
+  tun_ptr_free
   typec_get_drvdata
   typec_mux_get_drvdata
   typec_mux_put
@@ -3708,9 +3724,11 @@
   vring_transport_features
   vscnprintf
   vsnprintf
+  vsock_add_tap
   vsock_core_register
   vsock_core_unregister
   vsock_for_each_connected_socket
+  vsock_remove_tap
   vsprintf
   vunmap
   vzalloc
@@ -3801,6 +3819,7 @@
   zlib_deflateReset
   zlib_deflate_workspacesize
   zlib_inflate
+  zlib_inflateEnd
   zlib_inflateIncomp
   zlib_inflateInit2
   zlib_inflateReset

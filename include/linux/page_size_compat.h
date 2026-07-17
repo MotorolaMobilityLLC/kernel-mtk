@@ -20,25 +20,15 @@
  * be emulated.
  */
 
-#include <asm/page.h>
-
-#define __MAX_PAGE_SHIFT		14
-#define __MAX_PAGE_SIZE		(_AC(1,UL) << __MAX_PAGE_SHIFT)
-#define __MAX_PAGE_MASK		(~(__MAX_PAGE_SIZE-1))
+#include <linux/page_size_compat_defs.h>
 
 #ifndef __ASSEMBLY__
 
-#include <linux/align.h>
-#include <linux/jump_label.h>
 #include <linux/mman.h>
 #include <linux/printk.h>
-#include <linux/sched.h>
 
 #define pgcompat_err(fmt, ...) \
 	pr_err("pgcompat [%i (%s)]: " fmt, task_pid_nr(current), current->comm, ## __VA_ARGS__)
-
-DECLARE_STATIC_KEY_FALSE(page_shift_compat_enabled);
-extern int page_shift_compat;
 
 #ifdef CONFIG_SHMEM
 extern vm_fault_t shmem_fault(struct vm_fault *vmf);
@@ -47,26 +37,6 @@ extern vm_fault_t shmem_fault(struct vm_fault *vmf);
 #ifdef CONFIG_F2FS_FS
 extern vm_fault_t f2fs_filemap_fault(struct vm_fault *vmf);
 #endif	/* CONFIG_F2FS_FS */
-
-#ifdef CONFIG_X86_64
-static __always_inline unsigned __page_shift(void)
-{
-	if (static_branch_unlikely(&page_shift_compat_enabled))
-		return page_shift_compat;
-	else
-		return PAGE_SHIFT;
-}
-#else	/* !CONFIG_X86_64 */
-#define __page_shift() 	PAGE_SHIFT
-#endif	/* CONFIG_X86_64 */
-
-#define __PAGE_SHIFT 			__page_shift()
-#define __PAGE_SIZE 			(_AC(1,UL) << __PAGE_SHIFT)
-#define __PAGE_MASK 			(~(__PAGE_SIZE-1))
-#define __PAGE_ALIGN(addr) 		ALIGN(addr, __PAGE_SIZE)
-#define __PAGE_ALIGN_DOWN(addr)	ALIGN_DOWN(addr, __PAGE_SIZE)
-
-#define __offset_in_page(p)		((unsigned long)(p) & ~__PAGE_MASK)
 
 #define __offset_in_page_log(addr)							\
 ({											\
