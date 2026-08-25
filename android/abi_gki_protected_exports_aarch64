@@ -208,7 +208,6 @@ nfc_get_local_general_bytes
 nfc_proto_register
 nfc_proto_unregister
 nfc_register_device
-nfc_remove_device
 nfc_remove_se
 nfc_se_connectivity
 nfc_se_transaction
@@ -220,7 +219,6 @@ nfc_tm_activated
 nfc_tm_data_received
 nfc_tm_deactivated
 nfc_unregister_device
-nfc_unregister_rfkill
 nfc_vendor_cmd_reply
 of_can_transceiver
 open_candev
