@@ -10,6 +10,7 @@
  * Author: Ingo Molnar <mingo@elte.hu>
  *	   Paul E. McKenney <paulmck@linux.ibm.com>
  */
+#include <trace/hooks/rcu.h>
 
 #include "../locking/rtmutex_common.h"
 
@@ -612,10 +613,13 @@ notrace void rcu_preempt_deferred_qs(struct task_struct *t)
  */
 static void rcu_preempt_deferred_qs_handler(struct irq_work *iwp)
 {
+	unsigned long flags;
 	struct rcu_data *rdp;
 
 	rdp = container_of(iwp, struct rcu_data, defer_qs_iw);
+	local_irq_save(flags);
 	rdp->defer_qs_iw_pending = false;
+	local_irq_restore(flags);
 }
 
 /*
@@ -1108,7 +1112,9 @@ static int rcu_boost(struct rcu_node *rnp)
 	rt_mutex_init_proxy_locked(&rnp->boost_mtx.rtmutex, t);
 	raw_spin_unlock_irqrestore_rcu_node(rnp, flags);
 	/* Lock only for side effect: boosts task t's priority. */
+	trace_android_vh_rcu_boost_start(&rnp->boost_mtx, t);
 	rt_mutex_lock(&rnp->boost_mtx);
+	trace_android_vh_rcu_boost_end(&rnp->boost_mtx, t);
 	rt_mutex_unlock(&rnp->boost_mtx);  /* Then keep lockdep happy. */
 	rnp->n_boosts++;
 

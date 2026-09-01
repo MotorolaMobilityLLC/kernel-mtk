@@ -532,12 +532,24 @@ static int __init unknown_bootoption(char *param, char *val,
 				     const char *unused, void *arg)
 {
 	size_t len = strlen(param);
+	/*
+	 * Well-known bootloader identifiers:
+	 * 1. LILO/Grub pass "BOOT_IMAGE=...";
+	 * 2. kexec/kdump (kexec-tools) pass "kexec".
+	 */
+	const char *bootloader[] = { "BOOT_IMAGE=", "kexec", NULL };
 
 	/* Handle params aliased to sysctls */
 	if (sysctl_is_alias(param))
 		return 0;
 
 	repair_env_string(param, val);
+
+	/* Handle bootloader identifier */
+	for (int i = 0; bootloader[i]; i++) {
+		if (strstarts(param, bootloader[i]))
+			return 0;
+	}
 
 	/* Handle obsolete-style parameters */
 	if (obsolete_checksetup(param))
@@ -935,6 +947,31 @@ static void __init print_unknown_bootoptions(void)
 	memblock_free(unknown_options, len);
 }
 
+#ifdef CONFIG_GKI_DYNAMIC_TASK_STRUCT_SIZE
+static void __init setup_arch_task_struct_size(void)
+{
+	arch_task_struct_size = sizeof(struct task_struct);
+}
+
+static int __init task_struct_vendor_size_setup(char *str)
+{
+	u64 size;
+
+	if (!str)
+		return -EINVAL;
+
+	size = memparse(str, &str);
+
+	if (size < 0 || size > CONFIG_GKI_TASK_STRUCT_VENDOR_SIZE_MAX)
+		return -EINVAL;
+
+	arch_task_struct_size = sizeof(struct task_struct) + size;
+
+	return 0;
+}
+early_param("android_arch_task_struct_size", task_struct_vendor_size_setup);
+#endif
+
 asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 {
 	char *command_line;
@@ -957,6 +994,9 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	boot_cpu_init();
 	page_address_init();
 	pr_notice("%s", linux_banner);
+#ifdef CONFIG_GKI_DYNAMIC_TASK_STRUCT_SIZE
+	setup_arch_task_struct_size();
+#endif
 	early_security_init();
 	setup_arch(&command_line);
 	setup_boot_config();

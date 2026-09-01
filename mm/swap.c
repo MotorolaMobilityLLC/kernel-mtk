@@ -43,6 +43,9 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/pagemap.h>
 
+#undef CREATE_TRACE_POINTS
+#include <trace/hooks/mm.h>
+
 /* How many pages do we try to swap or page in/out together? */
 int page_cluster;
 
@@ -249,8 +252,8 @@ static void folio_batch_move_lru(struct folio_batch *fbatch, move_fn_t move_fn)
 static void folio_batch_add_and_move(struct folio_batch *fbatch,
 		struct folio *folio, move_fn_t move_fn)
 {
-	if (folio_batch_add(fbatch, folio) && !folio_test_large(folio) &&
-	    !lru_cache_disabled())
+	if (folio_batch_add(fbatch, folio) &&
+	    folio_may_be_lru_cached(folio) && !lru_cache_disabled())
 		return;
 	folio_batch_move_lru(fbatch, move_fn);
 }
@@ -471,6 +474,7 @@ void folio_mark_accessed(struct folio *folio)
 		return;
 	}
 
+	trace_android_vh_mark_folio_accessed(folio);
 	if (!folio_test_referenced(folio)) {
 		folio_set_referenced(folio);
 	} else if (folio_test_unevictable(folio)) {
@@ -517,8 +521,13 @@ void folio_add_lru(struct folio *folio)
 
 	/* see the comment in lru_gen_add_folio() */
 	if (lru_gen_enabled() && !folio_test_unevictable(folio) &&
-	    lru_gen_in_fault() && !(current->flags & PF_MEMALLOC))
-		folio_set_active(folio);
+	    lru_gen_in_fault() && !(current->flags & PF_MEMALLOC)) {
+		bool bypass = false;
+
+		trace_android_vh_folio_add_lru_folio_activate(folio, &bypass);
+		if (!bypass)
+			folio_set_active(folio);
+	}
 
 	folio_get(folio);
 	local_lock(&cpu_fbatches.lock);
